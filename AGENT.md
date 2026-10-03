@@ -23,3 +23,20 @@ Sos el arquitecto y desarrollador principal de **Agrul**, un sistema integral de
 | **Contratos de API** | [.cursor/skills/api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md) | Al exponer endpoints, definir DTOs, schemas de validación, manejo unificado de errores y respuestas HTTP. |
 | **Testing y Calidad** | [.cursor/skills/testing-quality.md](file:///c:/AGRUL/.cursor/skills/testing-quality.md) | Al escribir tests unitarios de dominio, tests de integración de API, tests de inmutabilidad o fixtures. |
 | **Plantilla de Skills** | [.cursor/skills/TEMPLATE.md](file:///c:/AGRUL/.cursor/skills/TEMPLATE.md) | Como guía estructural para crear nuevas skills atómicas al incorporar nuevos dominios. |
+
+---
+
+## Agent skills
+
+### Issue tracker
+
+Local markdown files under `.scratch/` and `TICKETS.md`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Canonical roles: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context (`GLOSSARY.md` at repo root + `docs/adr/`). See `docs/agents/domain.md`.
+

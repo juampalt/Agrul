@@ -17,12 +17,12 @@ Sos el arquitecto y desarrollador principal de **Agrul**, un sistema integral de
 
 | Skill | Archivo | Cuándo Consultar |
 | :--- | :--- | :--- |
-| **Dominio y Trazabilidad** | [.cursor/skills/domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md) | Al modelar lotes, eventos, linaje (splits/merges), actores, ubicaciones o reglas de negocio de trazabilidad. |
-| **Arquitectura y Capas** | [.cursor/skills/architecture.md](file:///c:/AGRUL/.cursor/skills/architecture.md) | Al crear nuevos módulos, servicios, repositorios, organizar carpetas o estructurar dependencias. |
-| **Base de Datos y Eventos** | [.cursor/skills/database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md) | Al diseñar esquemas SQL/ORM, transacciones ACID, bitácoras append-only, índices o proyecciones de estado. |
-| **Contratos de API** | [.cursor/skills/api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md) | Al exponer endpoints, definir DTOs, schemas de validación, manejo unificado de errores y respuestas HTTP. |
-| **Testing y Calidad** | [.cursor/skills/testing-quality.md](file:///c:/AGRUL/.cursor/skills/testing-quality.md) | Al escribir tests unitarios de dominio, tests de integración de API, tests de inmutabilidad o fixtures. |
-| **Plantilla de Skills** | [.cursor/skills/TEMPLATE.md](file:///c:/AGRUL/.cursor/skills/TEMPLATE.md) | Como guía estructural para crear nuevas skills atómicas al incorporar nuevos dominios. |
+| **Dominio y Trazabilidad** | [.cursor/skills/domain-traceability.md](.cursor/skills/domain-traceability.md) | Al modelar lotes, eventos, linaje (splits/merges), actores, ubicaciones o reglas de negocio de trazabilidad. |
+| **Arquitectura y Capas** | [.cursor/skills/architecture.md](.cursor/skills/architecture.md) | Al crear nuevos módulos, servicios, repositorios, organizar carpetas o estructurar dependencias. |
+| **Base de Datos y Eventos** | [.cursor/skills/database-events.md](.cursor/skills/database-events.md) | Al diseñar esquemas SQL/ORM, transacciones ACID, bitácoras append-only, índices o proyecciones de estado. |
+| **Contratos de API** | [.cursor/skills/api-contracts.md](.cursor/skills/api-contracts.md) | Al exponer endpoints, definir DTOs, schemas de validación, manejo unificado de errores y respuestas HTTP. |
+| **Testing y Calidad** | [.cursor/skills/testing-quality.md](.cursor/skills/testing-quality.md) | Al escribir tests unitarios de dominio, tests de integración de API, tests de inmutabilidad o fixtures. |
+| **Plantilla de Skills** | [.cursor/skills/TEMPLATE.md](.cursor/skills/TEMPLATE.md) | Como guía estructural para crear nuevas skills atómicas al incorporar nuevos dominios. |
 
 ---
 
@@ -39,4 +39,3 @@ Canonical roles: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-hum
 ### Domain docs
 
 Single-context (`GLOSSARY.md` at repo root + `docs/adr/`). See `docs/agents/domain.md`.
-

@@ -13,7 +13,7 @@
 | **Épica 2: Casos de Uso & Persistencia Base** | 3 | 3 | 0 | 0 |
 | **Épica 3: API REST Fastify & Integración** | 2 | 2 | 0 | 0 |
 | **Épica 4: Operaciones Avanzadas de Linaje (Split / Merge)** | 2 | 0 | 0 | 2 |
-| **Épica 5: Infraestructura PostgreSQL & Migraciones** | 2 | 0 | 0 | 2 |
+| **Épica 5: Infraestructura PostgreSQL & Migraciones** | 2 | 1 | 0 | 1 |
 | **Épica 6: Frontend Dashboard & Visualizador de Linaje** | 3 | 0 | 0 | 3 |
 
 ---
@@ -145,14 +145,14 @@
   - [ ] Test automatizado contra PostgreSQL real que intente ejecutar un UPDATE o DELETE y verifique el error `VIOLACION_DE_INMUTABILIDAD`.
 
 ### `[AGRUL-010]` Entorno Docker Compose para PostgreSQL Local
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Media (P2)
 - **Skills:** [.cursor/skills/architecture.md](file:///c:/AGRUL/.cursor/skills/architecture.md)
 - **Descripción:** Proveer un `docker-compose.yml` para levantar PostgreSQL 16 con extensiones y variables de entorno configuradas (`.env.example`).
 - **Criterios de Aceptación:**
-  - [ ] `docker compose up -d` inicializa la base de datos `agrul_db` en el puerto 5432.
-  - [ ] Healthcheck configurado en Docker Compose.
-  - [ ] `.env.example` documentado con `DATABASE_URL`.
+  - [x] `docker compose up -d` inicializa la base de datos `agrul_db` en el puerto 5432.
+  - [x] Healthcheck configurado en Docker Compose.
+  - [x] `.env.example` documentado con `DATABASE_URL`.
 
 ---
 
