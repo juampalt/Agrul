@@ -8,6 +8,7 @@ import { LinajeController } from './controllers/linaje.controller.js';
 import { CrearLoteUseCase } from '../../application/use-cases/crear-lote.use-case.js';
 import { RegistrarEventoUseCase } from '../../application/use-cases/registrar-evento.use-case.js';
 import { ObtenerLinajeUseCase } from '../../application/use-cases/obtener-linaje.use-case.js';
+import { DividirLoteUseCase } from '../../application/use-cases/dividir-lote.use-case.js';
 import { LotesRepositoryPort } from '../../core/ports/lotes-repository.port.js';
 import { EventosRepositoryPort } from '../../core/ports/eventos-repository.port.js';
 import { GenealogiaRepositoryPort } from '../../core/ports/genealogia-repository.port.js';
@@ -35,9 +36,14 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   const crearLoteUseCase = new CrearLoteUseCase(options.lotesRepo);
   const registrarEventoUseCase = new RegistrarEventoUseCase(options.lotesRepo, options.eventosRepo);
   const obtenerLinajeUseCase = new ObtenerLinajeUseCase(options.lotesRepo, options.genealogiaRepo);
+  const dividirLoteUseCase = new DividirLoteUseCase(
+    options.lotesRepo,
+    options.eventosRepo,
+    options.genealogiaRepo
+  );
 
   // Instanciación de Controladores
-  const lotesController = new LotesController(crearLoteUseCase, options.lotesRepo);
+  const lotesController = new LotesController(crearLoteUseCase, options.lotesRepo, dividirLoteUseCase);
   const eventosController = new EventosController(registrarEventoUseCase, options.eventosRepo);
   const linajeController = new LinajeController(obtenerLinajeUseCase);
 

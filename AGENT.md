@@ -10,6 +10,7 @@ Sos el arquitecto y desarrollador principal de **Agrul**, un sistema integral de
    - Esperá la validación del usuario antes de ejecutar o crear archivos.
 3. **Cambios Atómicos y Verificables:** Modificá un archivo o componente a la vez. Verificá sintaxis y tipos después de cada paso.
 4. **Regla de Oro de Auto-Mejora (Matt Pocock Rule):** Si el usuario te corrige una decisión de diseño, o detectás un patrón erróneo repetido, **actualizá el archivo de skill correspondiente** de inmediato en lugar de limitarte a disculparte en el chat.
+5. **Cierre Atómico en Git (Git Closure):** Al finalizar cada ticket o issue, no limitarse a marcarlo en `TICKETS.md`. Realizar siempre un commit atómico en Git con mensaje semántico convencional referenciando el identificador del ticket (ej: `feat(infra): entorno docker compose para postgresql local (closes #010, [AGRUL-010])`).
 
 ---
 

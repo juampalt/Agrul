@@ -158,4 +158,76 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     expect(body.data.insertados).toBe(1);
     expect(body.data.fallidos).toHaveLength(0);
   });
+
+  it('POST /api/v1/lotes/:id/split debe fraccionar un lote y responder 201 Created con el envelope estándar', async () => {
+    // 1. Crear lote inicial
+    const loteRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-00300',
+        producto: 'Uva Red Globe',
+        cantidadInicial: 6000,
+        unidadMedida: 'KG',
+      },
+    });
+    const lotePadre = JSON.parse(loteRes.body).data;
+
+    // 2. Ejecutar split
+    const splitRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/lotes/${lotePadre.id}/split`,
+      payload: {
+        actorId: '11111111-1111-1111-1111-111111111111',
+        ubicacionId: '22222222-2222-2222-2222-222222222222',
+        motivo: 'Clasificación para empaque exportación',
+        hijos: [
+          { cantidad: 2500, variedad: 'Primera' },
+          { cantidad: 3500, variedad: 'Segunda' },
+        ],
+      },
+    });
+
+    expect(splitRes.statusCode).toBe(201);
+    const splitBody = JSON.parse(splitRes.body);
+    expect(splitBody.success).toBe(true);
+    expect(splitBody.data.lotePadre.cantidadActual).toBe(0);
+    expect(splitBody.data.lotePadre.estadoActual).toBe('EN_PROCESO');
+    expect(splitBody.data.lotesHijos).toHaveLength(2);
+    expect(splitBody.data.aristasGenealogia).toHaveLength(2);
+    expect(splitBody.data.eventoSplit.tipoEvento).toBe('DIVISION_SPLIT');
+  });
+
+  it('POST /api/v1/lotes/:id/split debe responder 422 Unprocessable si la suma de hijos excede la cantidad del padre', async () => {
+    const loteRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-00301',
+        producto: 'Pera Williams',
+        cantidadInicial: 1000,
+        unidadMedida: 'KG',
+      },
+    });
+    const lotePadre = JSON.parse(loteRes.body).data;
+
+    const splitRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/lotes/${lotePadre.id}/split`,
+      payload: {
+        actorId: '11111111-1111-1111-1111-111111111111',
+        ubicacionId: '22222222-2222-2222-2222-222222222222',
+        hijos: [
+          { cantidad: 800 },
+          { cantidad: 500 }, // Total: 1300 > 1000
+        ],
+      },
+    });
+
+    expect(splitRes.statusCode).toBe(422);
+    const body = JSON.parse(splitRes.body);
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe('CANTIDAD_INSUFICIENTE');
+  });
 });
+

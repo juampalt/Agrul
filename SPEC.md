@@ -166,6 +166,7 @@ FOR EACH ROW EXECUTE FUNCTION rechazar_mutacion_evento_trazabilidad();
 | `GET` | `/api/v1/health` | `200 OK` | Chequeo de estado y conectividad del servicio. |
 | `POST` | `/api/v1/lotes` | `201 Created` | Alta de lote con código validado o generado algorítmicamente. |
 | `GET` | `/api/v1/lotes/:id` | `200 OK` | Ficha técnica completa del lote con stock y estado actual. |
+| `POST` | `/api/v1/lotes/:id/split` | `201 Created` | Fraccionamiento atómico de lote (Split 1:N) con balance de masa y linaje. |
 | `POST` | `/api/v1/lotes/:id/eventos` | `201 Created` | Registro atómico de evento + transición de estado (ACID). |
 | `GET` | `/api/v1/lotes/:id/eventos` | `200 OK` | Bitácora histórica completa y cronológica de eventos. |
 | `GET` | `/api/v1/lotes/:id/linaje` | `200 OK` | Reconstrucción recursiva de ancestros (*trace-back*) y descendientes (*trace-forward*). |
@@ -178,7 +179,7 @@ FOR EACH ROW EXECUTE FUNCTION rechazar_mutacion_evento_trazabilidad();
 | Código | Significado | Disparador en Agrul |
 | :--- | :--- | :--- |
 | `200 OK` | Operación exitosa | Consultas y batch sync completados. |
-| `201 Created` | Recurso creado | Alta de lotes y registro de eventos. |
+| `201 Created` | Recurso creado | Alta de lotes, split y registro de eventos. |
 | `400 Bad Request` | Fallo sintáctico | Violación de schemas Zod (campos faltantes, formato de fecha o UUID inválido). |
 | `404 Not Found` | No encontrado | `Lote` o `TraceEvent` inexistente en la base de datos. |
 | `409 Conflict` | Conflicto de datos | `CodigoLote` ya registrado por otro lote. |
@@ -190,12 +191,12 @@ FOR EACH ROW EXECUTE FUNCTION rechazar_mutacion_evento_trazabilidad();
 ## 8. Estado Actual de la Suite de Calidad
 
 - **Runner:** Vitest v3
-- **Total de pruebas automatizadas:** 31 tests activos
+- **Total de pruebas automatizadas:** 39 tests activos
 - **Tasa de éxito:** 100% de tests pasando en < 5 segundos
 - **Categorías cubiertas:**
   1. *Unitarios de Dominio:* `CodigoLote`, `MaquinaEstadosLote`, `TraceEvent` y `LoteGenealogia`.
-  2. *Unitarios de Aplicación:* `CrearLoteUseCase`, `RegistrarEventoUseCase` y `ObtenerLinajeUseCase`.
-  3. *Integración HTTP Fastify:* Healthcheck, validación Zod, errores semánticos, avance de estados y batch offline.
+  2. *Unitarios de Aplicación:* `CrearLoteUseCase`, `RegistrarEventoUseCase`, `ObtenerLinajeUseCase` y `DividirLoteUseCase`.
+  3. *Integración HTTP Fastify:* Healthcheck, validación Zod, errores semánticos, avance de estados, split 1:N y batch offline.
 - **Chequeo de Tipos:** `tsc --noEmit` con 0 errores bajo configuración estricta.
 
 ---

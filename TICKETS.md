@@ -12,7 +12,7 @@
 | **Épica 1: Núcleo de Dominio & Tooling** | 3 | 3 | 0 | 0 |
 | **Épica 2: Casos de Uso & Persistencia Base** | 3 | 3 | 0 | 0 |
 | **Épica 3: API REST Fastify & Integración** | 2 | 2 | 0 | 0 |
-| **Épica 4: Operaciones Avanzadas de Linaje (Split / Merge)** | 2 | 0 | 0 | 2 |
+| **Épica 4: Operaciones Avanzadas de Linaje (Split / Merge)** | 2 | 1 | 0 | 1 |
 | **Épica 5: Infraestructura PostgreSQL & Migraciones** | 2 | 1 | 0 | 1 |
 | **Épica 6: Frontend Dashboard & Visualizador de Linaje** | 3 | 0 | 0 | 3 |
 
@@ -95,7 +95,7 @@
 ## ÉPICA 4: Operaciones Avanzadas de Linaje (Fase 2 - Ready to Start 🟡)
 
 ### `[AGRUL-007]` Caso de Uso y Endpoint: División de Lote (Split 1:N)
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Skills:** [.cursor/skills/domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [.cursor/skills/api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
 - **Descripción:** Implementar la lógica completa para fraccionar un lote padre en N lotes hijos (ej: clasificación por calibre o empaque).
@@ -107,9 +107,9 @@
   5. Registrar el evento `DIVISION_SPLIT` en el log de auditoría.
   6. Exponer endpoint `POST /api/v1/lotes/:id/split`.
 - **Criterios de Aceptación:**
-  - [ ] Arrojar `CantidadInsuficienteError` (HTTP 422) si la suma excede la cantidad del padre.
-  - [ ] Persistencia atómica de hijos, padre, aristas genealógicas y evento en la misma transacción.
-  - [ ] Tests unitarios y de integración HTTP que validen el balance de masa.
+  - [x] Arrojar `CantidadInsuficienteError` (HTTP 422) si la suma excede la cantidad del padre.
+  - [x] Persistencia atómica de hijos, padre, aristas genealógicas y evento en la misma transacción.
+  - [x] Tests unitarios y de integración HTTP que validen el balance de masa.
 
 ### `[AGRUL-008]` Caso de Uso y Endpoint: Fusión de Lotes (Merge / Blend N:1)
 - **Estado:** `TODO` 📌
