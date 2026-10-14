@@ -25,6 +25,9 @@
         <div class="connection-badge">
           <span class="status-dot"></span> API v1 Online
         </div>
+        <button id="btn-abrir-escaner" class="btn btn-secondary">
+          <span class="btn-icon">📷</span> Escanear QR
+        </button>
         <button id="btn-nuevo-lote" class="btn btn-primary">
           <span class="btn-icon">+</span> Nuevo Lote
         </button>
@@ -235,6 +238,8 @@
         <button type="button" class="btn btn-secondary" data-close="modal-historial">Cerrar</button>
       </div>
     </div>
+  </div>
+
   <!-- MODAL: Visualizador Gráfico de Linaje Interactivo (Grafo N:M) -->
   <div class="modal-backdrop" id="modal-linaje" aria-hidden="true">
     <div class="modal-dialog glass modal-lineage">
@@ -356,6 +361,144 @@
 
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" data-close="modal-linaje">Cerrar Visualizador</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Etiqueta Imprimible con Código QR para Bines/Pallets (AGRUL-013) -->
+  <div class="modal-backdrop" id="modal-qr-label" aria-hidden="true">
+    <div class="modal-dialog glass modal-qr-dialog">
+      <div class="modal-header">
+        <div>
+          <h2>Etiqueta Oficial de Trazabilidad</h2>
+          <p class="subtitle" id="qr-label-subtitle">Rótulo estandarizado para bines y pallets de campo (RN-07)</p>
+        </div>
+        <button class="close-btn" data-close="modal-qr-label">&times;</button>
+      </div>
+
+      <!-- Contenedor de la Etiqueta Imprimible -->
+      <div class="qr-label-preview-wrapper">
+        <div class="pallet-label" id="printable-pallet-label">
+          <div class="label-brand-header">
+            <div class="label-brand-left">
+              <span class="label-brand-logo">🌱</span>
+              <div>
+                <div class="label-brand-title">AGRUL TRACEENGINE</div>
+                <div class="label-brand-sub">ESTÁNDAR GLOBALG.A.P. / SENASA</div>
+              </div>
+            </div>
+            <div class="label-badge-tipo" id="label-tipo-lote">LOTE AGRÍCOLA</div>
+          </div>
+
+          <div class="label-body-grid">
+            <div class="label-info-col">
+              <div class="label-field">
+                <span class="field-title">CÓDIGO DE LOTE</span>
+                <span class="field-value-code" id="label-codigo-lote">LOT-2026-00000</span>
+              </div>
+              <div class="label-field">
+                <span class="field-title">PRODUCTO / ESPECIE</span>
+                <span class="field-value" id="label-producto">-</span>
+              </div>
+              <div class="label-field-inline">
+                <div class="label-field">
+                  <span class="field-title">VARIEDAD</span>
+                  <span class="field-value" id="label-variedad">-</span>
+                </div>
+                <div class="label-field">
+                  <span class="field-title">ESTADO</span>
+                  <span class="field-value status-tag" id="label-estado">-</span>
+                </div>
+              </div>
+              <div class="label-field-inline">
+                <div class="label-field">
+                  <span class="field-title">CANTIDAD / PESO</span>
+                  <span class="field-value highlight" id="label-cantidad">-</span>
+                </div>
+                <div class="label-field">
+                  <span class="field-title">FECHA REGISTRO</span>
+                  <span class="field-value" id="label-fecha">-</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="label-qr-col">
+              <div class="qr-canvas-container" id="qr-canvas-container">
+                <div class="qr-loading-placeholder">Generando QR...</div>
+              </div>
+              <div class="qr-caption">ESCANEAR PARA TRAZABILIDAD</div>
+            </div>
+          </div>
+
+          <div class="label-footer">
+            <span>ID: <code id="label-uuid">-</code></span>
+            <span>Verificación Oficial: https://agrul.app</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close="modal-qr-label">Cerrar</button>
+        <a id="btn-descargar-qr-svg" class="btn btn-secondary" download="etiqueta-qr.svg" href="#" target="_blank">
+          ⬇️ Descargar SVG
+        </a>
+        <button type="button" class="btn btn-primary" id="btn-imprimir-etiqueta">
+          🖨️ Imprimir Etiqueta
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Lector de Cámara HTML5 / Escáner QR de Campo (AGRUL-013) -->
+  <div class="modal-backdrop" id="modal-qr-scanner" aria-hidden="true">
+    <div class="modal-dialog glass modal-scanner-dialog">
+      <div class="modal-header">
+        <div>
+          <h2>Escanear Código QR de Lote</h2>
+          <p class="subtitle">Identificación instantánea para operarios de campo y packing</p>
+        </div>
+        <button class="close-btn" data-close="modal-qr-scanner">&times;</button>
+      </div>
+
+      <div class="scanner-container">
+        <!-- Visor de Video de Cámara -->
+        <div class="camera-viewport-wrap" id="camera-viewport-wrap">
+          <video id="scanner-video" autoplay playsinline muted></video>
+          <div class="scanner-reticle">
+            <div class="reticle-corner top-left"></div>
+            <div class="reticle-corner top-right"></div>
+            <div class="reticle-corner bottom-left"></div>
+            <div class="reticle-corner bottom-right"></div>
+            <div class="scanner-laser-line"></div>
+          </div>
+          <div class="scanner-status-overlay" id="scanner-status-overlay">
+            <span class="scanner-status-text" id="scanner-status-text">Iniciando cámara trasera...</span>
+          </div>
+        </div>
+
+        <!-- Controles del Escáner -->
+        <div class="scanner-controls">
+          <button type="button" id="btn-switch-camera" class="btn btn-secondary btn-sm" title="Alternar Cámara">
+            🔄 Alternar Cámara
+          </button>
+          <label class="btn btn-secondary btn-sm btn-upload-label">
+            📁 Subir Foto de QR
+            <input type="file" id="scanner-file-input" accept="image/*" capture="environment" style="display: none;">
+          </label>
+        </div>
+
+        <!-- Entrada Manual de Respaldo -->
+        <div class="scanner-manual-fallback">
+          <label for="scanner-manual-code">¿Sin acceso a cámara? Ingrese el código manual:</label>
+          <div class="manual-code-row">
+            <input type="text" id="scanner-manual-code" placeholder="Ej: LOT-2026-00001" autocomplete="off" autocorrect="off" autocapitalize="characters">
+            <button type="button" id="btn-submit-manual-code" class="btn btn-primary btn-sm">Buscar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close="modal-qr-scanner">Cerrar Escáner</button>
       </div>
     </div>
   </div>

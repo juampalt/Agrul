@@ -30,6 +30,33 @@ document.addEventListener('DOMContentLoaded', () => {
   const historialLista = document.getElementById('historial-eventos-lista');
   const historialSubtitulo = document.getElementById('historial-subtitulo');
 
+  // Modales QR y Escáner (AGRUL-013)
+  const modalQrLabel = document.getElementById('modal-qr-label');
+  const qrLabelSubtitle = document.getElementById('qr-label-subtitle');
+  const labelCodigoLote = document.getElementById('label-codigo-lote');
+  const labelProducto = document.getElementById('label-producto');
+  const labelVariedad = document.getElementById('label-variedad');
+  const labelEstado = document.getElementById('label-estado');
+  const labelCantidad = document.getElementById('label-cantidad');
+  const labelFecha = document.getElementById('label-fecha');
+  const labelUuid = document.getElementById('label-uuid');
+  const qrCanvasContainer = document.getElementById('qr-canvas-container');
+  const btnDescargarQrSvg = document.getElementById('btn-descargar-qr-svg');
+  const btnImprimirEtiqueta = document.getElementById('btn-imprimir-etiqueta');
+
+  const btnAbrirEscaner = document.getElementById('btn-abrir-escaner');
+  const modalQrScanner = document.getElementById('modal-qr-scanner');
+  const scannerVideo = document.getElementById('scanner-video');
+  const scannerStatusText = document.getElementById('scanner-status-text');
+  const btnSwitchCamera = document.getElementById('btn-switch-camera');
+  const scannerFileInput = document.getElementById('scanner-file-input');
+  const scannerManualCode = document.getElementById('scanner-manual-code');
+  const btnSubmitManualCode = document.getElementById('btn-submit-manual-code');
+
+  let activeMediaStream = null;
+  let isScanningActive = false;
+  let currentCameraFacingMode = 'environment';
+
   // Toast Container
   const toastContainer = document.getElementById('toast-container');
 
@@ -158,6 +185,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <button class="btn-action action-lineage" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Ver grafo interactivo de linaje N:M">
                 🕸️ Linaje
               </button>
+              <button class="btn-action action-qr" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Ver e imprimir etiqueta oficial con código QR">
+                🏷️ QR
+              </button>
             </div>
           </td>
         </tr>
@@ -180,6 +210,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.action-lineage').forEach(btn => {
       btn.addEventListener('click', () => {
         abrirModalLinaje(btn.dataset.id, btn.dataset.codigo);
+      });
+    });
+
+    document.querySelectorAll('.action-qr').forEach(btn => {
+      btn.addEventListener('click', () => {
+        abrirModalEtiquetaQR(btn.dataset.id, btn.dataset.codigo);
       });
     });
   }
@@ -216,6 +252,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-close]').forEach(btn => {
     btn.addEventListener('click', () => {
       const modalId = btn.dataset.close;
+      if (modalId === 'modal-qr-scanner') {
+        detenerCamara();
+      }
       closeModal(document.getElementById(modalId));
     });
   });
@@ -790,6 +829,265 @@ document.addEventListener('DOMContentLoaded', () => {
     g.appendChild(stockText);
 
     return g;
+  }
+
+  // ==========================================================================
+  // AGRUL-013: Generador y Lector de Códigos QR para Operarios de Campo
+  // ==========================================================================
+
+  // Abrir Modal de Etiqueta QR
+  async function abrirModalEtiquetaQR(loteId, codigoLote) {
+    qrLabelSubtitle.textContent = `Generando rótulo oficial para lote ${codigoLote}...`;
+    qrCanvasContainer.innerHTML = '<div class="qr-loading-placeholder">Generando QR...</div>';
+    openModal(modalQrLabel);
+
+    try {
+      const res = await fetch(`/api/v1/lotes/${loteId}/qr`);
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.error?.message || 'Error al obtener código QR');
+      }
+
+      const data = json.data;
+      qrLabelSubtitle.textContent = `Rótulo estandarizado para bines y pallets de campo (RN-07)`;
+      labelCodigoLote.textContent = data.codigoLote;
+      labelProducto.textContent = data.producto;
+      labelVariedad.textContent = data.variedad || 'Sin variedad';
+      labelEstado.textContent = data.estadoActual;
+      labelEstado.className = `field-value status-tag status-badge ${(data.estadoActual || 'creado').toLowerCase()}`;
+      labelCantidad.textContent = `${Number(data.cantidadActual).toLocaleString('es-AR')} ${data.unidadMedida}`;
+      labelFecha.textContent = new Date().toLocaleDateString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      labelUuid.textContent = data.loteId;
+
+      // Inyectar SVG generado por el backend
+      qrCanvasContainer.innerHTML = data.qrSvg;
+
+      // Configurar enlace de descarga SVG
+      btnDescargarQrSvg.href = `/api/v1/lotes/${loteId}/qr/image`;
+      btnDescargarQrSvg.download = `etiqueta-${data.codigoLote}.svg`;
+    } catch (err) {
+      console.error(err);
+      qrCanvasContainer.innerHTML = `<span style="color:#ef4444;font-size:0.75rem;">Error al generar QR</span>`;
+      showToast(`Error al generar QR: ${err.message}`, 'error');
+    }
+  }
+
+  // Imprimir etiqueta
+  if (btnImprimirEtiqueta) {
+    btnImprimirEtiqueta.addEventListener('click', () => {
+      window.print();
+    });
+  }
+
+  // Abrir Modal de Escáner
+  if (btnAbrirEscaner) {
+    btnAbrirEscaner.addEventListener('click', () => {
+      openModal(modalQrScanner);
+      iniciarCamara();
+    });
+  }
+
+  // Iniciar Stream de Cámara
+  async function iniciarCamara() {
+    detenerCamara();
+    if (scannerStatusText) {
+      scannerStatusText.textContent = 'Solicitando acceso a la cámara...';
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (scannerStatusText) {
+        scannerStatusText.textContent = 'Cámara no soportada en este entorno. Ingrese el código manual abajo.';
+      }
+      showToast('Cámara web no soportada en este navegador.', 'error');
+      return;
+    }
+
+    try {
+      const constraints = {
+        video: {
+          facingMode: { ideal: currentCameraFacingMode },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      };
+
+      activeMediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (scannerVideo) {
+        scannerVideo.srcObject = activeMediaStream;
+        await scannerVideo.play();
+      }
+
+      isScanningActive = true;
+      if (scannerStatusText) {
+        scannerStatusText.textContent = 'Enfocá el código QR del bin/pallet...';
+      }
+
+      iniciarBucleDeteccionQR();
+    } catch (err) {
+      console.warn('Error accediendo a cámara:', err);
+      if (scannerStatusText) {
+        scannerStatusText.textContent = 'No se pudo acceder a la cámara. Ingrese el código manual abajo.';
+      }
+      showToast('Acceso a cámara no disponible. Utilice el selector de foto o código manual.', 'error');
+    }
+  }
+
+  // Detener Stream de Cámara
+  function detenerCamara() {
+    isScanningActive = false;
+    if (activeMediaStream) {
+      activeMediaStream.getTracks().forEach(track => track.stop());
+      activeMediaStream = null;
+    }
+    if (scannerVideo) {
+      scannerVideo.srcObject = null;
+    }
+  }
+
+  // Alternar entre cámara trasera y frontal
+  if (btnSwitchCamera) {
+    btnSwitchCamera.addEventListener('click', () => {
+      currentCameraFacingMode = currentCameraFacingMode === 'environment' ? 'user' : 'environment';
+      iniciarCamara();
+    });
+  }
+
+  // Bucle de Detección de QR
+  function iniciarBucleDeteccionQR() {
+    if (!('BarcodeDetector' in window)) {
+      if (scannerStatusText) {
+        scannerStatusText.textContent = 'Cámara activa (use selector de foto o código manual para escanear)';
+      }
+      return;
+    }
+
+    try {
+      // @ts-ignore
+      const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+
+      async function escanearFrame() {
+        if (!isScanningActive || !scannerVideo || scannerVideo.readyState < 2) {
+          if (isScanningActive) requestAnimationFrame(escanearFrame);
+          return;
+        }
+
+        try {
+          const barcodes = await barcodeDetector.detect(scannerVideo);
+          if (barcodes.length > 0) {
+            const rawValue = barcodes[0].rawValue;
+            procesarCodigoQRDetectado(rawValue);
+            return;
+          }
+        } catch (e) {
+          // Ignorar excepciones de frames intermedios
+        }
+
+        if (isScanningActive) {
+          requestAnimationFrame(escanearFrame);
+        }
+      }
+
+      requestAnimationFrame(escanearFrame);
+    } catch (err) {
+      console.warn('BarcodeDetector no pudo inicializarse:', err);
+    }
+  }
+
+  // Procesar archivo de imagen subido
+  if (scannerFileInput) {
+    scannerFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (scannerStatusText) {
+        scannerStatusText.textContent = 'Analizando imagen subida...';
+      }
+
+      if ('BarcodeDetector' in window) {
+        try {
+          // @ts-ignore
+          const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+          const imgBitmap = await createImageBitmap(file);
+          const barcodes = await barcodeDetector.detect(imgBitmap);
+          if (barcodes.length > 0) {
+            procesarCodigoQRDetectado(barcodes[0].rawValue);
+            return;
+          } else {
+            showToast('No se detectó ningún código QR en la foto.', 'error');
+            if (scannerStatusText) {
+              scannerStatusText.textContent = 'No se detectó QR. Pruebe con otra imagen.';
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Error al analizar la imagen.', 'error');
+        }
+      } else {
+        showToast('Navegador sin BarcodeDetector nativo. Ingrese el código manual.', 'error');
+      }
+    });
+  }
+
+  // Procesar entrada manual
+  if (btnSubmitManualCode) {
+    btnSubmitManualCode.addEventListener('click', () => {
+      const codigo = (scannerManualCode?.value || '').trim().toUpperCase();
+      if (!codigo) {
+        showToast('Ingrese un código de lote válido.', 'error');
+        return;
+      }
+      procesarCodigoQRDetectado(codigo);
+    });
+  }
+
+  if (scannerManualCode) {
+    scannerManualCode.addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') {
+        btnSubmitManualCode?.click();
+      }
+    });
+  }
+
+  // Procesar Código QR Detectado o Ingresado
+  function procesarCodigoQRDetectado(rawText) {
+    detenerCamara();
+    closeModal(modalQrScanner);
+
+    let codigo = String(rawText || '').trim();
+    if (codigo.includes('/lotes/')) {
+      const parts = codigo.split('/lotes/');
+      codigo = parts[parts.length - 1];
+    } else if (codigo.includes('=')) {
+      const parts = codigo.split('=');
+      codigo = parts[parts.length - 1];
+    }
+
+    codigo = codigo.replace(/[^A-Za-z0-9-]/g, '').toUpperCase();
+
+    showToast(`🎯 Lote escaneado: ${codigo}`, 'success');
+
+    const loteEncontrado = allLotes.find(l => (l.codigoLote || '').toUpperCase() === codigo || l.id === codigo);
+
+    if (loteEncontrado) {
+      abrirModalEvento(loteEncontrado.id, loteEncontrado.codigoLote);
+    } else {
+      fetch('/api/v1/lotes')
+        .then(r => r.json())
+        .then(json => {
+          if (json.success && json.data) {
+            allLotes = json.data;
+            const lote = allLotes.find(l => (l.codigoLote || '').toUpperCase() === codigo || l.id === codigo);
+            if (lote) {
+              abrirModalEvento(lote.id, lote.codigoLote);
+            } else {
+              showToast(`Lote ${codigo} no encontrado en la base de datos.`, 'error');
+            }
+          }
+        })
+        .catch(() => {
+          showToast(`Error al consultar el lote ${codigo}.`, 'error');
+        });
+    }
   }
 
   // Carga inicial

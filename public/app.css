@@ -1225,3 +1225,405 @@ input:focus, select:focus {
   background: rgba(168, 85, 247, 0.25);
   border-color: rgba(168, 85, 247, 0.6);
 }
+
+/* ==========================================================================
+   AGRUL-013: Generador y Lector de Códigos QR para Operarios de Campo
+   ========================================================================== */
+
+/* Botón de acción QR en tabla */
+.btn-action.action-qr {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.btn-action.action-qr:hover {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: rgba(56, 189, 248, 0.6);
+}
+
+/* Modal Etiqueta QR */
+.modal-qr-dialog {
+  max-width: 580px;
+}
+
+.qr-label-preview-wrapper {
+  margin: 1.25rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* Diseño de Etiqueta Industrial para Bines / Pallets (A4 / Térmica) */
+.pallet-label {
+  background: #ffffff;
+  color: #0f172a;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  box-sizing: border-box;
+}
+
+.label-brand-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.label-brand-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.label-brand-logo {
+  font-size: 1.8rem;
+}
+
+.label-brand-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.label-brand-sub {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.label-badge-tipo {
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  letter-spacing: 1px;
+}
+
+.label-body-grid {
+  display: grid;
+  grid-template-columns: 1fr 150px;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.label-info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.label-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.field-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.field-value-code {
+  font-family: 'Outfit', monospace;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #047857;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.field-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.field-value.highlight {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.label-field-inline {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.label-qr-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-canvas-container {
+  width: 140px;
+  height: 140px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.qr-canvas-container svg,
+.qr-canvas-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.qr-loading-placeholder {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.qr-caption {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #64748b;
+  text-align: center;
+  margin-top: 0.35rem;
+  letter-spacing: 0.5px;
+}
+
+.label-footer {
+  margin-top: 1rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed #cbd5e1;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.label-footer code {
+  font-family: monospace;
+}
+
+/* ==========================================================================
+   Lector de Cámara HTML5 / Escáner QR de Campo
+   ========================================================================== */
+.modal-scanner-dialog {
+  max-width: 520px;
+}
+
+.scanner-container {
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.camera-viewport-wrap {
+  position: relative;
+  width: 100%;
+  height: 290px;
+  background: #020617;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#scanner-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanner-reticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 190px;
+  height: 190px;
+  pointer-events: none;
+}
+
+.reticle-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: #10b981;
+  border-style: solid;
+}
+
+.reticle-corner.top-left {
+  top: 0;
+  left: 0;
+  border-width: 3px 0 0 3px;
+  border-top-left-radius: 6px;
+}
+
+.reticle-corner.top-right {
+  top: 0;
+  right: 0;
+  border-width: 3px 3px 0 0;
+  border-top-right-radius: 6px;
+}
+
+.reticle-corner.bottom-left {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 3px 3px;
+  border-bottom-left-radius: 6px;
+}
+
+.reticle-corner.bottom-right {
+  bottom: 0;
+  right: 0;
+  border-width: 0 3px 3px 0;
+  border-bottom-right-radius: 6px;
+}
+
+.scanner-laser-line {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981, 0 0 20px #10b981;
+  animation: laser-scan 2s infinite ease-in-out alternate;
+}
+
+@keyframes laser-scan {
+  0% { top: 6px; opacity: 0.8; }
+  100% { top: 180px; opacity: 1; }
+}
+
+.scanner-status-overlay {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.scanner-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.btn-upload-label {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.scanner-manual-fallback {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.scanner-manual-fallback label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.manual-code-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.manual-code-row input {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 0.45rem 0.75rem;
+  color: #f8fafc;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.manual-code-row input:focus {
+  outline: none;
+  border-color: #10b981;
+}
+
+/* ==========================================================================
+   ESTILOS DE IMPRESIÓN (Etiqueta Térmica / A4 para Bines y Pallets)
+   ========================================================================== */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Ocultar toda la interfaz interactiva y backdrops */
+  .app-container,
+  .modal-header,
+  .modal-actions,
+  .close-btn,
+  .toast-container,
+  #modal-historial,
+  #modal-linaje,
+  #modal-qr-scanner,
+  #modal-nuevo-lote,
+  #modal-nuevo-evento {
+    display: none !important;
+  }
+
+  .modal-backdrop#modal-qr-label {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  .modal-dialog.modal-qr-dialog {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .pallet-label {
+    box-shadow: none !important;
+    border: 2px solid #000000 !important;
+    width: 100% !important;
+    max-width: 600px !important;
+    margin: 0 auto !important;
+  }
+
+  .qr-canvas-container {
+    border: 1px solid #000000 !important;
+  }
+
+  .field-value-code {
+    color: #000000 !important;
+  }
+}

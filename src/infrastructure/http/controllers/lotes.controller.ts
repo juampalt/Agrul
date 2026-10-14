@@ -7,6 +7,7 @@ import { CrearLoteBodySchema, LoteIdParamSchema, ListarLotesQuerySchema } from '
 import { DividirLoteBodySchema } from '../schemas/split-lote.schema.js';
 import { FusionarLotesBodySchema } from '../schemas/merge-lote.schema.js';
 import { EntidadNoEncontradaError } from '../../../core/domain/errors/domain.error.js';
+import { QRService } from '../../services/qr.service.js';
 
 export class LotesController {
   constructor(
@@ -103,6 +104,57 @@ export class LotesController {
       error: null,
       timestamp: new Date().toISOString(),
     });
+  }
+
+  async generarQr(req: FastifyRequest, reply: FastifyReply) {
+    const { id } = LoteIdParamSchema.parse(req.params);
+    const lote = await this.lotesRepo.buscarPorId(id);
+
+    if (!lote) {
+      throw new EntidadNoEncontradaError('Lote', id);
+    }
+
+    const codigo = lote.codigoLote.value;
+    const trackingUrl = `https://agrul.app/lotes/${codigo}`;
+
+    const [qrDataUrl, qrSvg] = await Promise.all([
+      QRService.generarDataUrl(codigo),
+      QRService.generarSvg(codigo),
+    ]);
+
+    return reply.status(200).send({
+      success: true,
+      data: {
+        loteId: lote.id,
+        codigoLote: codigo,
+        producto: lote.producto,
+        variedad: lote.variedad,
+        cantidadActual: lote.cantidadActual,
+        unidadMedida: lote.unidadMedida,
+        estadoActual: lote.estadoActual,
+        qrDataUrl,
+        qrSvg,
+        trackingUrl,
+      },
+      error: null,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  async descargarQrImagen(req: FastifyRequest, reply: FastifyReply) {
+    const { id } = LoteIdParamSchema.parse(req.params);
+    const lote = await this.lotesRepo.buscarPorId(id);
+
+    if (!lote) {
+      throw new EntidadNoEncontradaError('Lote', id);
+    }
+
+    const codigo = lote.codigoLote.value;
+    const qrSvg = await QRService.generarSvg(codigo);
+
+    reply.header('Content-Type', 'image/svg+xml');
+    reply.header('Content-Disposition', `inline; filename="qr-${codigo}.svg"`);
+    return reply.status(200).send(qrSvg);
   }
 }
 

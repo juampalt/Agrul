@@ -14,7 +14,7 @@
 | **Épica 3: API REST Fastify & Integración** | 2 | 2 | 0 | 0 |
 | **Épica 4: Operaciones Avanzadas de Linaje** | 2 | 2 | 0 | 0 |
 | **Épica 5: Infraestructura PostgreSQL & Migraciones** | 2 | 2 | 0 | 0 |
-| **Épica 6: Frontend Dashboard & Visualizador de Trazabilidad** | 3 | 2 | 0 | 1 |
+| **Épica 6: Frontend Dashboard & Visualizador de Trazabilidad** | 3 | 3 | 0 | 0 |
 | **Épica 7: Módulo 1 — Gestión de Fincas, Lotes y Suelos** | 3 | 0 | 0 | 3 |
 | **Épica 8: Módulo 2 — Gestión de Cultivos y Ciclos Productivos** | 3 | 0 | 0 | 3 |
 | **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 0 | 0 | 4 |
@@ -26,7 +26,7 @@
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **10** | **0** | **40** |
+| **TOTAL GENERAL** | **50** | **11** | **0** | **39** |
 
 ---
 
@@ -260,20 +260,20 @@
   - [x] Modo Recall Simulator operativo destacando lotes derivados.
 
 ### `[AGRUL-013]` Generador y Lector de Códigos QR para Operarios de Campo
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Baja (P3)
 - **Módulo:** Frontend
 - **Reglas de Negocio:** RN-07
 - **Skills:** [api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
-- **Etiquetas:** `frontend`, `qr`, `mobile`, `ready-for-agent`
+- **Etiquetas:** `frontend`, `qr`, `mobile`, `status:done`
 - **Descripción:** Generación de etiquetas con código QR descargables e imprimibles para bines/pallets y lector de cámara para escaneo rápido.
 - **Tareas Técnicas:**
   1. Implementar generador de QR con código único de lote.
   2. Diseñar plantilla imprimible de campo con datos clave y QR.
   3. Implementar lector de cámara HTML5/Webcam que redirija a la ficha o registro de evento.
 - **Criterios de Aceptación:**
-  - [ ] Generación de QR descargable e imprimible.
-  - [ ] Lector funcional en navegador móvil desde cámara trasera.
+  - [x] Generación de QR descargable e imprimible.
+  - [x] Lector funcional en navegador móvil desde cámara trasera.
 
 ---
 

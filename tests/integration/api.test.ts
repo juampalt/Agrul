@@ -464,5 +464,73 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     expect(resCss.headers['content-type']).toContain('text/css');
     expect(resCss.body).toContain('.graph-node.is-recalled');
   });
+
+  it('GET /api/v1/lotes/:id/qr debe generar código QR en formato dataUrl y SVG con trackingUrl (AGRUL-013)', async () => {
+    // 1. Crear lote
+    const loteRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-QR001',
+        producto: 'Arándano Duke',
+        variedad: 'Export',
+        cantidadInicial: 1200,
+        unidadMedida: 'KG',
+      },
+    });
+    const lote = JSON.parse(loteRes.body).data;
+
+    // 2. Consultar QR
+    const qrRes = await app.inject({
+      method: 'GET',
+      url: `/api/v1/lotes/${lote.id}/qr`,
+    });
+
+    expect(qrRes.statusCode).toBe(200);
+    const body = JSON.parse(qrRes.body);
+    expect(body.success).toBe(true);
+    expect(body.data.codigoLote).toBe('LOT-2026-QR001');
+    expect(body.data.qrDataUrl).toContain('data:image/png;base64');
+    expect(body.data.qrSvg).toContain('<svg');
+    expect(body.data.trackingUrl).toContain('https://agrul.app/lotes/LOT-2026-QR001');
+  });
+
+  it('GET /api/v1/lotes/:id/qr/image debe devolver el archivo vectorial SVG con cabeceras de imagen', async () => {
+    const loteRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-QR002',
+        producto: 'Limón Eureka',
+        cantidadInicial: 5000,
+        unidadMedida: 'KG',
+      },
+    });
+    const lote = JSON.parse(loteRes.body).data;
+
+    const imgRes = await app.inject({
+      method: 'GET',
+      url: `/api/v1/lotes/${lote.id}/qr/image`,
+    });
+
+    expect(imgRes.statusCode).toBe(200);
+    expect(imgRes.headers['content-type']).toContain('image/svg+xml');
+    expect(imgRes.headers['content-disposition']).toContain('filename="qr-LOT-2026-QR002.svg"');
+    expect(imgRes.body).toContain('<svg');
+  });
+
+  it('GET / debe incluir los componentes para Rótulos QR y Escáner de Campo (AGRUL-013)', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/',
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toContain('id="btn-abrir-escaner"');
+    expect(res.body).toContain('id="modal-qr-label"');
+    expect(res.body).toContain('id="modal-qr-scanner"');
+    expect(res.body).toContain('id="printable-pallet-label"');
+    expect(res.body).toContain('id="scanner-video"');
+  });
 });
 

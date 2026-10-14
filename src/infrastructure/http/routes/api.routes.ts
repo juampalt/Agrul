@@ -26,6 +26,8 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
       v1.post('/lotes/merge', (req, rep) => deps.lotesController.fusionar(req, rep));
       v1.get('/lotes/:id', (req, rep) => deps.lotesController.obtenerPorId(req, rep));
       v1.post('/lotes/:id/split', (req, rep) => deps.lotesController.dividir(req, rep));
+      v1.get('/lotes/:id/qr', (req, rep) => deps.lotesController.generarQr(req, rep));
+      v1.get('/lotes/:id/qr/image', (req, rep) => deps.lotesController.descargarQrImagen(req, rep));
 
       // Eventos de un Lote
       v1.post('/lotes/:id/eventos', (req, rep) => deps.eventosController.registrar(req, rep));
