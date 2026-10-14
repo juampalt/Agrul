@@ -422,7 +422,7 @@
   - [x] RF-M3-06: Catálogo de maquinaria con condición (propio, alquilado, servicio contratado).
 
 ### `[AGRUL-021]` Registro de Labores Ejecutadas y Consumo de Mano de Obra
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 3: Actividades
 - **Requisitos Funcionales:** RF-M3-02, RF-M3-04, RF-M3-05, RF-M3-15
@@ -436,10 +436,10 @@
   3. Asociar mano de obra (jornales, cantidad personas, horas) en actividad_mano_obra.
   4. Validar RN-01 (pertenece a finca/lote/ciclo), RN-03 (ciclo debe estar abierto) y RN-04 (fecha hecho <= hoy).
 - **Criterios de Aceptación:**
-  - [ ] RF-M3-02 / RN-01: Cada labor queda atada al lote y ciclo productivo abierto.
-  - [ ] RF-M3-04: Superficie trabajada toma por defecto la del ciclo si no se especifica.
-  - [ ] RF-M3-05 / RF-M3-15: Maquinaria con horas y mano de obra registradas correctamente.
-  - [ ] RN-04: La fecha del hecho no puede ser futura para actividades realizadas.
+  - [x] RF-M3-02 / RN-01: Cada labor queda atada al lote y ciclo productivo abierto.
+  - [x] RF-M3-04: Superficie trabajada toma por defecto la del ciclo si no se especifica.
+  - [x] RF-M3-05 / RF-M3-15: Maquinaria con horas y mano de obra registradas correctamente.
+  - [x] RN-04: La fecha del hecho no puede ser futura para actividades realizadas.
 
 ### `[AGRUL-022]` Planificación de Actividades, Vencimientos y Workflow de Ejecución
 - **Estado:** `TODO` 📌

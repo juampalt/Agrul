@@ -4,6 +4,7 @@ import { EventosController } from '../controllers/eventos.controller.js';
 import { LinajeController } from '../controllers/linaje.controller.js';
 import { FincasController } from '../controllers/fincas.controller.js';
 import { CatalogosController } from '../controllers/catalogos.controller.js';
+import { ActividadesController } from '../controllers/actividades.controller.js';
 
 export interface ApiRoutesDependencies {
   lotesController: LotesController;
@@ -11,6 +12,7 @@ export interface ApiRoutesDependencies {
   linajeController: LinajeController;
   fincasController?: FincasController;
   catalogosController?: CatalogosController;
+  actividadesController?: ActividadesController;
 }
 
 export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDependencies) {
@@ -67,6 +69,13 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/catalogos/maquinaria', (req, rep) => deps.catalogosController!.listarMaquinaria(req, rep));
         v1.post('/catalogos/maquinaria', (req, rep) => deps.catalogosController!.crearMaquinaria(req, rep));
         v1.get('/catalogos/maquinaria/:id', (req, rep) => deps.catalogosController!.obtenerMaquinariaPorId(req, rep));
+      }
+
+      // Actividades Agrícolas / Labores de Campo (Módulo 3 — AGRUL-021)
+      if (deps.actividadesController) {
+        v1.post('/actividades', (req, rep) => deps.actividadesController!.registrarActividad(req, rep));
+        v1.get('/actividades', (req, rep) => deps.actividadesController!.listarActividades(req, rep));
+        v1.get('/actividades/:id', (req, rep) => deps.actividadesController!.obtenerActividadPorId(req, rep));
       }
     },
     { prefix: '/api/v1' }

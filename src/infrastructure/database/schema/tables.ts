@@ -155,3 +155,73 @@ export const maquinariaCatalogoTable = pgTable('maquinaria_catalogo', {
   index('idx_maquinaria_activo').on(table.activo),
 ]);
 
+// ============================================================================
+// ÉPICA 8 & 9: CICLOS PRODUCTIVOS Y ACTIVIDADES AGRÍCOLAS (AGRUL-021)
+// ============================================================================
+
+// TABLA READ/WRITE MODEL: Ciclos Productivos (Módulo 2 / RF-M2-02 / RF-M3-02)
+export const ciclosProductivosTable = pgTable('ciclos_productivos', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  codigoCiclo: varchar('codigo_ciclo', { length: 60 }).notNull().unique(),
+  loteId: uuid('lote_id').notNull().references(() => lotesTable.id, { onDelete: 'restrict' }),
+  cultivo: varchar('cultivo', { length: 120 }).notNull(),
+  variedad: varchar('variedad', { length: 100 }),
+  estado: varchar('estado', { length: 30 }).notNull().default('ABIERTO'), // PLANIFICADO | ABIERTO | CERRADO
+  superficieCultivadaHa: numeric('superficie_cultivada_ha', { precision: 10, scale: 2 }).notNull(),
+  fechaInicio: varchar('fecha_inicio', { length: 30 }).notNull(),
+  fechaFin: varchar('fecha_fin', { length: 30 }),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_ciclos_lote_estado').on(table.loteId, table.estado),
+  index('idx_ciclos_codigo').on(table.codigoCiclo),
+]);
+
+// TABLA READ/WRITE MODEL: Actividades Agrícolas / Labores de Campo (RF-M3-02 / RN-01)
+export const actividadesAgricolasTable = pgTable('actividades_agricolas', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  codigoActividad: varchar('codigo_actividad', { length: 60 }).notNull().unique(),
+  tipoActividadId: uuid('tipo_actividad_id').notNull().references(() => tiposActividadTable.id, { onDelete: 'restrict' }),
+  loteId: uuid('lote_id').notNull().references(() => lotesTable.id, { onDelete: 'restrict' }),
+  cicloId: uuid('ciclo_id').notNull().references(() => ciclosProductivosTable.id, { onDelete: 'restrict' }),
+  fechaHecho: varchar('fecha_hecho', { length: 30 }).notNull(),
+  hora: varchar('hora', { length: 15 }),
+  usuarioCargaId: uuid('usuario_carga_id').notNull(),
+  trabajadorResponsableId: uuid('trabajador_responsable_id').references(() => personalCuadrillasTable.id, { onDelete: 'set null' }),
+  superficieTrabajadaHa: numeric('superficie_trabajada_ha', { precision: 10, scale: 2 }).notNull(),
+  observaciones: text('observaciones'),
+  estado: varchar('estado', { length: 30 }).notNull().default('REALIZADA'), // REALIZADA | PLANIFICADA | VENCIDA | CANCELADA
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_actividades_lote').on(table.loteId),
+  index('idx_actividades_ciclo').on(table.cicloId),
+  index('idx_actividades_tipo').on(table.tipoActividadId),
+  index('idx_actividades_fecha').on(table.fechaHecho),
+]);
+
+// TABLA DETALLE: Maquinaria Utilizada en Actividad (RF-M3-05)
+export const actividadMaquinariaTable = pgTable('actividad_maquinaria', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  actividadId: uuid('actividad_id').notNull().references(() => actividadesAgricolasTable.id, { onDelete: 'cascade' }),
+  maquinariaId: uuid('maquinaria_id').notNull().references(() => maquinariaCatalogoTable.id, { onDelete: 'restrict' }),
+  horasUso: numeric('horas_uso', { precision: 8, scale: 2 }).notNull(),
+}, (table) => [
+  index('idx_act_maq_actividad').on(table.actividadId),
+  index('idx_act_maq_maquinaria').on(table.maquinariaId),
+]);
+
+// TABLA DETALLE: Mano de Obra Consumida en Actividad (RF-M3-15)
+export const actividadManoObraTable = pgTable('actividad_mano_obra', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  actividadId: uuid('actividad_id').notNull().references(() => actividadesAgricolasTable.id, { onDelete: 'cascade' }),
+  personalCuadrillaId: uuid('personal_cuadrilla_id').notNull().references(() => personalCuadrillasTable.id, { onDelete: 'restrict' }),
+  cantidadPersonas: numeric('cantidad_personas', { precision: 6, scale: 0 }).notNull(),
+  horasTrabajadas: numeric('horas_trabajadas', { precision: 8, scale: 2 }).notNull(),
+  jornales: numeric('jornales', { precision: 8, scale: 2 }).notNull(),
+}, (table) => [
+  index('idx_act_mo_actividad').on(table.actividadId),
+  index('idx_act_mo_personal').on(table.personalCuadrillaId),
+]);
+
+

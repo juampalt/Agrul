@@ -27,6 +27,14 @@ import {
   CrearMaquinariaUseCase,
   ListarMaquinariaUseCase,
 } from '../../application/use-cases/catalogos-actividades.use-cases.js';
+import { ActividadesRepositoryPort } from '../../core/ports/actividades-repository.port.js';
+import { CiclosRepositoryPort } from '../../core/ports/ciclos-repository.port.js';
+import { ActividadesController } from './controllers/actividades.controller.js';
+import {
+  RegistrarActividadEjecutadaUseCase,
+  ObtenerActividadPorIdUseCase,
+  ListarActividadesUseCase,
+} from '../../application/use-cases/actividades-agricolas.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -37,6 +45,8 @@ export interface BuildAppOptions {
   genealogiaRepo: GenealogiaRepositoryPort;
   fincasRepo?: FincasRepositoryPort;
   catalogosRepo?: CatalogosActividadesRepositoryPort;
+  actividadesRepo?: ActividadesRepositoryPort;
+  ciclosRepo?: CiclosRepositoryPort;
   logger?: boolean;
 }
 
@@ -140,6 +150,24 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     );
   }
 
+  let actividadesController: ActividadesController | undefined;
+  if (options.actividadesRepo && options.ciclosRepo && options.catalogosRepo) {
+    const registrarActividadUseCase = new RegistrarActividadEjecutadaUseCase(
+      options.actividadesRepo,
+      options.lotesRepo,
+      options.ciclosRepo,
+      options.catalogosRepo
+    );
+    const obtenerActividadUseCase = new ObtenerActividadPorIdUseCase(options.actividadesRepo);
+    const listarActividadesUseCase = new ListarActividadesUseCase(options.actividadesRepo);
+
+    actividadesController = new ActividadesController(
+      registrarActividadUseCase,
+      obtenerActividadUseCase,
+      listarActividadesUseCase
+    );
+  }
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -147,7 +175,9 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     linajeController,
     fincasController,
     catalogosController,
+    actividadesController,
   });
 
   return app;
 }
+

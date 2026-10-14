@@ -39,3 +39,28 @@ export class ViolacionInmutabilidadError extends DomainError {
     super(mensaje);
   }
 }
+
+export class CicloNoAbiertoError extends DomainError {
+  public readonly code = 'CICLO_NO_ABIERTO';
+
+  constructor(mensaje: string = 'El ciclo productivo debe encontrarse en estado ABIERTO para registrar labores ejecutadas (RN-03).') {
+    super(mensaje);
+  }
+}
+
+export class FechaFuturaInvalidaError extends DomainError {
+  public readonly code = 'FECHA_FUTURA_INVALIDA';
+
+  constructor(fecha: string) {
+    super(`La fecha del hecho '${fecha}' no puede ser posterior a la fecha actual para actividades realizadas (RN-04).`);
+  }
+}
+
+export class InconsistenciaLoteCicloError extends DomainError {
+  public readonly code = 'INCONSISTENCIA_LOTE_CICLO';
+
+  constructor(mensaje: string = 'El ciclo productivo no corresponde al lote especificado (RN-01).') {
+    super(mensaje);
+  }
+}
+

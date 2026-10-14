@@ -1,3 +1,8 @@
 export * from './lotes-repository.port.js';
 export * from './eventos-repository.port.js';
 export * from './genealogia-repository.port.js';
+export * from './fincas-repository.port.js';
+export * from './catalogos-actividades-repository.port.js';
+export * from './actividades-repository.port.js';
+export * from './ciclos-repository.port.js';
+

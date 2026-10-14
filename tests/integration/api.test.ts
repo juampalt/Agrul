@@ -6,6 +6,9 @@ import { InMemoryEventosRepository } from '../mocks/in-memory-eventos.repository
 import { InMemoryGenealogiaRepository } from '../mocks/in-memory-genealogia.repository.js';
 import { InMemoryFincasRepository } from '../mocks/in-memory-fincas.repository.js';
 import { InMemoryCatalogosActividadesRepository } from '../mocks/in-memory-catalogos-actividades.repository.js';
+import { InMemoryActividadesRepository } from '../mocks/in-memory-actividades.repository.js';
+import { InMemoryCiclosRepository } from '../mocks/in-memory-ciclos.repository.js';
+import { CicloProductivo } from '../../src/core/domain/entities/ciclo-productivo.entity.js';
 
 describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let app: FastifyInstance;
@@ -14,6 +17,8 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let genealogiaRepo: InMemoryGenealogiaRepository;
   let fincasRepo: InMemoryFincasRepository;
   let catalogosRepo: InMemoryCatalogosActividadesRepository;
+  let actividadesRepo: InMemoryActividadesRepository;
+  let ciclosRepo: InMemoryCiclosRepository;
 
   beforeEach(async () => {
     lotesRepo = new InMemoryLotesRepository();
@@ -21,6 +26,8 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     genealogiaRepo = new InMemoryGenealogiaRepository();
     fincasRepo = new InMemoryFincasRepository();
     catalogosRepo = new InMemoryCatalogosActividadesRepository();
+    actividadesRepo = new InMemoryActividadesRepository();
+    ciclosRepo = new InMemoryCiclosRepository();
 
     app = buildApp({
       lotesRepo,
@@ -28,6 +35,8 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       genealogiaRepo,
       fincasRepo,
       catalogosRepo,
+      actividadesRepo,
+      ciclosRepo,
       logger: false,
     });
     await app.ready();
@@ -1239,6 +1248,279 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       const body = JSON.parse(res.body);
       expect(body.success).toBe(false);
       expect(body.error.code).toBe('ENTITY_NOT_FOUND');
+    });
+  });
+
+  describe('Módulo 3: Registro de Actividades y Labores Agrícolas (AGRUL-021)', () => {
+    let testLoteId: string;
+    let testCicloAbiertoId: string;
+    let testTipoActividadId: string;
+    let testMaquinariaId: string;
+    let testPersonalId: string;
+    const testUsuarioId = crypto.randomUUID();
+
+    beforeEach(async () => {
+      // 1. Crear lote vía API
+      const loteRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/lotes',
+        payload: {
+          codigoLote: 'LOT-2026-INTACT',
+          producto: 'Frutilla Albión',
+          cantidadInicial: 2000,
+          unidadMedida: 'KG',
+          superficieHa: 3.0,
+        },
+      });
+      testLoteId = JSON.parse(loteRes.body).data.id;
+
+      // 2. Crear ciclo productivo ABIERTO en ciclosRepo
+      testCicloAbiertoId = crypto.randomUUID();
+      await ciclosRepo.guardar(
+        CicloProductivo.crear({
+          id: testCicloAbiertoId,
+          codigoCiclo: 'CICLO-2026-INT01',
+          loteId: testLoteId,
+          cultivo: 'Frutilla',
+          variedad: 'Albión',
+          estado: 'ABIERTO',
+          superficieCultivadaHa: 3.0,
+          fechaInicio: '2026-04-01',
+        })
+      );
+
+      // 3. Obtener tipo de actividad estándar del catálogo
+      const tiposRes = await app.inject({
+        method: 'GET',
+        url: '/api/v1/catalogos/tipos-actividad',
+      });
+      testTipoActividadId = JSON.parse(tiposRes.body).data[0].id;
+
+      // 4. Crear maquinaria y cuadrilla
+      const maqRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/maquinaria',
+        payload: {
+          identificacion: 'Tractor Agrícola JD 6110M',
+          tipo: 'TRACTOR',
+          condicion: 'PROPIO',
+        },
+      });
+      testMaquinariaId = JSON.parse(maqRes.body).data.id;
+
+      const persRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/personal',
+        payload: {
+          nombre: 'Cuadrilla Cosecha San Pedro',
+          tipo: 'CUADRILLA',
+        },
+      });
+      testPersonalId = JSON.parse(persRes.body).data.id;
+    });
+
+    it('POST /api/v1/actividades debe registrar labor ejecutada vinculada a lote y ciclo productivo abierto (RF-M3-02 / RN-01)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: testTipoActividadId,
+          loteId: testLoteId,
+          cicloId: testCicloAbiertoId,
+          fechaHecho: '2026-10-10',
+          hora: '07:30',
+          usuarioCargaId: testUsuarioId,
+          trabajadorResponsableId: testPersonalId,
+          observaciones: 'Desmalezado manual y mecánico intensivo',
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.id).toBeDefined();
+      expect(body.data.codigoActividad).toMatch(/^ACT-\d{4}-\d{5}$/);
+      expect(body.data.loteId).toBe(testLoteId);
+      expect(body.data.cicloId).toBe(testCicloAbiertoId);
+      expect(body.data.estado).toBe('REALIZADA');
+      // RF-M3-04: por defecto adopta la superficie del ciclo (3.0 ha)
+      expect(body.data.superficieTrabajadaHa).toBe(3.0);
+    });
+
+    it('POST /api/v1/actividades debe registrar maquinaria utilizada con horas y mano de obra con jornales (RF-M3-05 / RF-M3-15)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: testTipoActividadId,
+          loteId: testLoteId,
+          cicloId: testCicloAbiertoId,
+          fechaHecho: '2026-10-12',
+          usuarioCargaId: testUsuarioId,
+          superficieTrabajadaHa: 1.5,
+          maquinarias: [
+            {
+              maquinariaId: testMaquinariaId,
+              horasUso: 5.5,
+            },
+          ],
+          manoDeObra: [
+            {
+              personalCuadrillaId: testPersonalId,
+              cantidadPersonas: 6,
+              horasTrabajadas: 48,
+              jornales: 6,
+            },
+          ],
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const data = JSON.parse(res.body).data;
+      expect(data.superficieTrabajadaHa).toBe(1.5);
+      expect(data.maquinarias.length).toBe(1);
+      expect(data.maquinarias[0].maquinariaId).toBe(testMaquinariaId);
+      expect(data.maquinarias[0].horasUso).toBe(5.5);
+      expect(data.manoDeObra.length).toBe(1);
+      expect(data.manoDeObra[0].personalCuadrillaId).toBe(testPersonalId);
+      expect(data.manoDeObra[0].cantidadPersonas).toBe(6);
+      expect(data.manoDeObra[0].jornales).toBe(6);
+    });
+
+    it('POST /api/v1/actividades debe rechazar fecha futura con 422 Unprocessable Entity (RN-04)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: testTipoActividadId,
+          loteId: testLoteId,
+          cicloId: testCicloAbiertoId,
+          fechaHecho: '2099-01-01', // Futura
+          usuarioCargaId: testUsuarioId,
+        },
+      });
+
+      expect(res.statusCode).toBe(422);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('FECHA_FUTURA_INVALIDA');
+    });
+
+    it('POST /api/v1/actividades debe rechazar ciclo productivo cerrado con 422 (RN-03)', async () => {
+      const cicloCerradoId = crypto.randomUUID();
+      await ciclosRepo.guardar(
+        CicloProductivo.crear({
+          id: cicloCerradoId,
+          codigoCiclo: 'CICLO-2026-CERR-API',
+          loteId: testLoteId,
+          cultivo: 'Frutilla',
+          estado: 'CERRADO',
+          superficieCultivadaHa: 3.0,
+          fechaInicio: '2026-01-01',
+          fechaFin: '2026-05-01',
+        })
+      );
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: testTipoActividadId,
+          loteId: testLoteId,
+          cicloId: cicloCerradoId,
+          fechaHecho: '2026-10-10',
+          usuarioCargaId: testUsuarioId,
+        },
+      });
+
+      expect(res.statusCode).toBe(422);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('CICLO_NO_ABIERTO');
+    });
+
+    it('POST /api/v1/actividades debe rechazar inconsistencia si ciclo pertenece a otro lote (RN-01)', async () => {
+      // Crear segundo lote
+      const lote2Res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/lotes',
+        payload: {
+          codigoLote: 'LOT-2026-INTOTRO',
+          producto: 'Arándano',
+          cantidadInicial: 500,
+          unidadMedida: 'KG',
+        },
+      });
+      const lote2Id = JSON.parse(lote2Res.body).data.id;
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: testTipoActividadId,
+          loteId: lote2Id, // Lote diferente al del ciclo
+          cicloId: testCicloAbiertoId,
+          fechaHecho: '2026-10-10',
+          usuarioCargaId: testUsuarioId,
+        },
+      });
+
+      expect(res.statusCode).toBe(422);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('INCONSISTENCIA_LOTE_CICLO');
+    });
+
+    it('GET /api/v1/actividades/:id debe retornar detalle de actividad', async () => {
+      const createRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: testTipoActividadId,
+          loteId: testLoteId,
+          cicloId: testCicloAbiertoId,
+          fechaHecho: '2026-10-10',
+          usuarioCargaId: testUsuarioId,
+        },
+      });
+      const createdId = JSON.parse(createRes.body).data.id;
+
+      const getRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/actividades/${createdId}`,
+      });
+
+      expect(getRes.statusCode).toBe(200);
+      const body = JSON.parse(getRes.body);
+      expect(body.data.id).toBe(createdId);
+      expect(body.data.loteId).toBe(testLoteId);
+    });
+
+    it('GET /api/v1/actividades?loteId=... debe listar actividades filtrando por lote', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: testTipoActividadId,
+          loteId: testLoteId,
+          cicloId: testCicloAbiertoId,
+          fechaHecho: '2026-10-10',
+          usuarioCargaId: testUsuarioId,
+        },
+      });
+
+      const listRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/actividades?loteId=${testLoteId}`,
+      });
+
+      expect(listRes.statusCode).toBe(200);
+      const body = JSON.parse(listRes.body);
+      expect(body.success).toBe(true);
+      expect(body.data.length).toBeGreaterThanOrEqual(1);
+      body.data.forEach((act: { loteId: string }) => {
+        expect(act.loteId).toBe(testLoteId);
+      });
     });
   });
 });
