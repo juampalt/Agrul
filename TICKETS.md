@@ -13,7 +13,7 @@
 | **Épica 2: Casos de Uso & Persistencia Base** | 2 | 2 | 0 | 0 |
 | **Épica 3: API REST Fastify & Integración** | 2 | 2 | 0 | 0 |
 | **Épica 4: Operaciones Avanzadas de Linaje** | 2 | 2 | 0 | 0 |
-| **Épica 5: Infraestructura PostgreSQL & Migraciones** | 2 | 1 | 0 | 1 |
+| **Épica 5: Infraestructura PostgreSQL & Migraciones** | 2 | 2 | 0 | 0 |
 | **Épica 6: Frontend Dashboard & Visualizador de Trazabilidad** | 3 | 1 | 0 | 2 |
 | **Épica 7: Módulo 1 — Gestión de Fincas, Lotes y Suelos** | 3 | 0 | 0 | 3 |
 | **Épica 8: Módulo 2 — Gestión de Cultivos y Ciclos Productivos** | 3 | 0 | 0 | 3 |
@@ -190,21 +190,21 @@
 ## ÉPICA 5: INFRAESTRUCTURA POSTGRESQL & MIGRACIONES
 
 ### `[AGRUL-009]` Generación de Migraciones SQL y Triggers de Inmutabilidad
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Base de Datos
 - **Reglas de Negocio:** RN-04, RN-05
 - **Skills:** [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
-- **Etiquetas:** `database`, `postgres`, `migrations`, `ready-for-agent`
+- **Etiquetas:** `database`, `postgres`, `migrations`, `status:done`
 - **Descripción:** Generar migraciones SQL formales mediante Drizzle Kit y configurar trigger PL/pgSQL que bloquea UPDATE y DELETE sobre eventos_trazabilidad.
 - **Tareas Técnicas:**
   1. Ejecutar npx drizzle-kit generate para emitir sentencias DDL iniciales.
   2. Añadir migración custom del trigger trg_bloquear_mutacion_eventos.
   3. Crear script npm run db:migrate y test de rechazo de mutación.
 - **Criterios de Aceptación:**
-  - [ ] Migraciones versionadas en drizzle/migrations/.
-  - [ ] Test automatizado contra PostgreSQL real que valide rechazo de UPDATE/DELETE con VIOLACION_DE_INMUTABILIDAD.
-  - [ ] Script de migración automatizado en package.json.
+  - [x] Migraciones versionadas en drizzle/migrations/.
+  - [x] Test automatizado contra PostgreSQL real que valide rechazo de UPDATE/DELETE con VIOLACION_DE_INMUTABILIDAD.
+  - [x] Script de migración automatizado en package.json.
 
 ### `[AGRUL-010]` Entorno Docker Compose para PostgreSQL Local
 - **Estado:** `DONE` ✅
