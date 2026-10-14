@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agrul — Dashboard Operativo de Trazabilidad y Lotes</title>
+  <meta name="description" content="Sistema integral de trazabilidad agroindustrial y gestión de lotes agrícolas.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Barra Superior / Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">🌱</div>
+        <div class="brand-info">
+          <h1>Agrul <span>TraceEngine</span></h1>
+          <p class="tagline">Trazabilidad Agroindustrial de Precisión</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="connection-badge">
+          <span class="status-dot"></span> API v1 Online
+        </div>
+        <button id="btn-nuevo-lote" class="btn btn-primary">
+          <span class="btn-icon">+</span> Nuevo Lote
+        </button>
+      </div>
+    </header>
+
+    <!-- Contadores / KPIs de Producción -->
+    <section class="kpi-grid">
+      <div class="kpi-card glass">
+        <div class="kpi-icon-wrap emerald">🌾</div>
+        <div class="kpi-data">
+          <span class="kpi-title">Lotes Totales</span>
+          <span class="kpi-value" id="kpi-total-lotes">0</span>
+          <span class="kpi-subtext">Registrados en sistema</span>
+        </div>
+      </div>
+      <div class="kpi-card glass">
+        <div class="kpi-icon-wrap blue">⚡</div>
+        <div class="kpi-data">
+          <span class="kpi-title">Lotes Activos</span>
+          <span class="kpi-value" id="kpi-lotes-activos">0</span>
+          <span class="kpi-subtext">En proceso / Creados</span>
+        </div>
+      </div>
+      <div class="kpi-card glass">
+        <div class="kpi-icon-wrap amber">📦</div>
+        <div class="kpi-data">
+          <span class="kpi-title">Embalados / Despacho</span>
+          <span class="kpi-value" id="kpi-lotes-embalados">0</span>
+          <span class="kpi-subtext">Listos para distribución</span>
+        </div>
+      </div>
+      <div class="kpi-card glass">
+        <div class="kpi-icon-wrap purple">⚖️</div>
+        <div class="kpi-data">
+          <span class="kpi-title">Masa Disponible</span>
+          <span class="kpi-value" id="kpi-masa-total">0 kg</span>
+          <span class="kpi-subtext">Acumulada en lotes</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Barra de Controles y Filtros -->
+    <section class="table-controls glass">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="input-busqueda" placeholder="Buscar por código de lote, producto o variedad..." aria-label="Buscar lote">
+      </div>
+      <div class="filter-tabs" id="filter-tabs" role="tablist">
+        <button class="tab-btn active" data-filter="TODOS">Todos</button>
+        <button class="tab-btn" data-filter="CREADO">Creados</button>
+        <button class="tab-btn" data-filter="EN_PROCESO">En Proceso</button>
+        <button class="tab-btn" data-filter="EMBALADO">Embalados</button>
+        <button class="tab-btn" data-filter="DESPACHADO">Despachados</button>
+        <button class="tab-btn" data-filter="CERRADO">Cerrados</button>
+      </div>
+      <button id="btn-recargar" class="btn btn-secondary" title="Actualizar datos">
+        🔄 Refrescar
+      </button>
+    </section>
+
+    <!-- Tabla Operativa de Lotes -->
+    <main class="table-container glass">
+      <table class="lotes-table" id="tabla-lotes">
+        <thead>
+          <tr>
+            <th>Código de Lote</th>
+            <th>Producto & Variedad</th>
+            <th>Estado</th>
+            <th>Stock Actual</th>
+            <th>Fecha Alta</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="lotes-tbody">
+          <!-- Renderizado dinámico desde app.js -->
+          <tr class="empty-row">
+            <td colspan="6" class="text-center loading-indicator">
+              <span class="spinner"></span> Cargando lotes del sistema...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>Agrul Engine &copy; 2026 — Lules, Tucumán. Motor de trazabilidad inmutable conforme BPA y SENASA.</p>
+    </footer>
+  </div>
+
+  <!-- MODAL: Crear Nuevo Lote -->
+  <div class="modal-backdrop" id="modal-nuevo-lote" aria-hidden="true">
+    <div class="modal-dialog glass">
+      <div class="modal-header">
+        <h2>Alta de Nuevo Lote</h2>
+        <button class="close-btn" data-close="modal-nuevo-lote">&times;</button>
+      </div>
+      <form id="form-nuevo-lote">
+        <div class="form-group">
+          <label for="nuevo-codigo">Código de Lote (Opcional, autogenerado si se omite)</label>
+          <input type="text" id="nuevo-codigo" placeholder="Ej: LOT-2026-00412">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nuevo-producto">Producto Agrícola *</label>
+            <input type="text" id="nuevo-producto" required placeholder="Ej: Arándano Emerald">
+          </div>
+          <div class="form-group">
+            <label for="nuevo-variedad">Variedad / Calidad</label>
+            <input type="text" id="nuevo-variedad" placeholder="Ej: Primera Selección">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nuevo-cantidad">Cantidad Inicial *</label>
+            <input type="number" id="nuevo-cantidad" required min="0.01" step="0.01" placeholder="Ej: 5000">
+          </div>
+          <div class="form-group">
+            <label for="nuevo-unidad">Unidad de Medida *</label>
+            <select id="nuevo-unidad" required>
+              <option value="KG">KG (Kilogramos)</option>
+              <option value="TON">TON (Toneladas)</option>
+              <option value="L">L (Litros)</option>
+              <option value="UNIDADES">UNIDADES</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close="modal-nuevo-lote">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-lote">Registrar Lote</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Registrar Evento de Trazabilidad -->
+  <div class="modal-backdrop" id="modal-registrar-evento" aria-hidden="true">
+    <div class="modal-dialog glass">
+      <div class="modal-header">
+        <h2>Registrar Evento de Trazabilidad</h2>
+        <button class="close-btn" data-close="modal-registrar-evento">&times;</button>
+      </div>
+      <form id="form-registrar-evento">
+        <input type="hidden" id="evento-lote-id">
+        <div class="form-group info-box">
+          <span class="info-label">Lote Destino:</span>
+          <span class="info-value" id="evento-lote-codigo">-</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="evento-tipo">Tipo de Evento *</label>
+            <select id="evento-tipo" required>
+              <option value="COSECHA">COSECHA</option>
+              <option value="PROCESO">PROCESO (Tratamiento/Selección)</option>
+              <option value="EMBALAJE">EMBALAJE (Palletizado)</option>
+              <option value="DESPACHO">DESPACHO (Salida logística)</option>
+              <option value="AUDITORIA">AUDITORIA (Inspección SENASA/BPA)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="evento-nuevo-estado">Avanzar Estado del Lote</label>
+            <select id="evento-nuevo-estado">
+              <option value="">Mantener estado actual</option>
+              <option value="EN_PROCESO">Avanzar a EN_PROCESO</option>
+              <option value="EMBALADO">Avanzar a EMBALADO</option>
+              <option value="DESPACHADO">Avanzar a DESPACHADO</option>
+              <option value="CERRADO">CERRAR Lote</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="evento-actor-id">ID de Actor / Operario (UUID) *</label>
+            <input type="text" id="evento-actor-id" required value="a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11">
+          </div>
+          <div class="form-group">
+            <label for="evento-ubicacion-id">ID de Ubicación / Finca (UUID) *</label>
+            <input type="text" id="evento-ubicacion-id" required value="b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="evento-detalles">Detalles / Observaciones Técnicas (JSON opcional)</label>
+          <input type="text" id="evento-detalles" placeholder='Ej: {"temperatura": 4.5, "operador": "Juan Pérez", "linea": 2}'>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close="modal-registrar-evento">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-evento">Asentar Evento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Historial de Eventos del Lote -->
+  <div class="modal-backdrop" id="modal-historial" aria-hidden="true">
+    <div class="modal-dialog glass modal-wide">
+      <div class="modal-header">
+        <div>
+          <h2>Bitácora de Trazabilidad</h2>
+          <p class="subtitle" id="historial-subtitulo">Eventos inmutables registrados</p>
+        </div>
+        <button class="close-btn" data-close="modal-historial">&times;</button>
+      </div>
+      <div class="events-timeline" id="historial-eventos-lista">
+        <!-- Renderizado dinámico -->
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close="modal-historial">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificaciones Toast -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -340,7 +340,7 @@
     "epic": "Épica 6: Frontend Dashboard & Visualizador de Trazabilidad",
     "epicId": "epic-6-frontend",
     "title": "Dashboard Web Operativo de Lotes",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Media (P2)",
     "skills": [
       ".cursor/skills/architecture.md"
@@ -351,7 +351,7 @@
     "labels": [
       "frontend",
       "ui",
-      "ready-for-agent"
+      "status:done"
     ],
     "description": "Interfaz moderna para visualizar la lista de lotes activos, estados, stock y registrar nuevos eventos o lotes.",
     "tasks": [

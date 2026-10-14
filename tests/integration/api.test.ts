@@ -229,5 +229,66 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     expect(body.success).toBe(false);
     expect(body.error.code).toBe('CANTIDAD_INSUFICIENTE');
   });
+
+  it('GET /api/v1/lotes debe listar todos los lotes y soportar filtro por estado', async () => {
+    // Crear lote 1 en estado CREADO
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-00401',
+        producto: 'Frutilla San Andreas',
+        cantidadInicial: 2000,
+        unidadMedida: 'KG',
+      },
+    });
+
+    // Listar todos
+    const resTodos = await app.inject({
+      method: 'GET',
+      url: '/api/v1/lotes',
+    });
+    expect(resTodos.statusCode).toBe(200);
+    const bodyTodos = JSON.parse(resTodos.body);
+    expect(bodyTodos.success).toBe(true);
+    expect(Array.isArray(bodyTodos.data)).toBe(true);
+    expect(bodyTodos.data.length).toBeGreaterThanOrEqual(1);
+
+    // Listar filtrado por CREADO
+    const resCreados = await app.inject({
+      method: 'GET',
+      url: '/api/v1/lotes?estado=CREADO',
+    });
+    expect(resCreados.statusCode).toBe(200);
+    const bodyCreados = JSON.parse(resCreados.body);
+    expect(bodyCreados.data.every((l: { estadoActual: string }) => l.estadoActual === 'CREADO')).toBe(true);
+
+    // Listar filtrado por estado inexistente
+    const resVacio = await app.inject({
+      method: 'GET',
+      url: '/api/v1/lotes?estado=CERRADO',
+    });
+    expect(resVacio.statusCode).toBe(200);
+    const bodyVacio = JSON.parse(resVacio.body);
+    expect(bodyVacio.data.length).toBe(0);
+  });
+
+  it('GET / y GET /dashboard deben servir la interfaz del Dashboard Web de Lotes', async () => {
+    const resRoot = await app.inject({
+      method: 'GET',
+      url: '/',
+    });
+    expect(resRoot.statusCode).toBe(200);
+    expect(resRoot.headers['content-type']).toContain('text/html');
+    expect(resRoot.body).toContain('Agrul');
+    expect(resRoot.body).toContain('Dashboard Operativo de Trazabilidad');
+
+    const resDashboard = await app.inject({
+      method: 'GET',
+      url: '/dashboard',
+    });
+    expect(resDashboard.statusCode).toBe(200);
+    expect(resDashboard.headers['content-type']).toContain('text/html');
+  });
 });
 

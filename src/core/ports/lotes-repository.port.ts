@@ -7,4 +7,5 @@ export interface LotesRepositoryPort {
   buscarPorCodigo(codigo: CodigoLote | string): Promise<Lote | null>;
   actualizar(lote: Lote): Promise<void>;
   existeCodigo(codigo: string): Promise<boolean>;
+  listarTodos(filtro?: { estado?: string }): Promise<Lote[]>;
 }

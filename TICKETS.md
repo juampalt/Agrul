@@ -14,7 +14,7 @@
 | **Épica 3: API REST Fastify & Integración** | 2 | 2 | 0 | 0 |
 | **Épica 4: Operaciones Avanzadas de Linaje** | 2 | 1 | 0 | 1 |
 | **Épica 5: Infraestructura PostgreSQL & Migraciones** | 2 | 1 | 0 | 1 |
-| **Épica 6: Frontend Dashboard & Visualizador de Trazabilidad** | 3 | 0 | 0 | 3 |
+| **Épica 6: Frontend Dashboard & Visualizador de Trazabilidad** | 3 | 1 | 0 | 2 |
 | **Épica 7: Módulo 1 — Gestión de Fincas, Lotes y Suelos** | 3 | 0 | 0 | 3 |
 | **Épica 8: Módulo 2 — Gestión de Cultivos y Ciclos Productivos** | 3 | 0 | 0 | 3 |
 | **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 0 | 0 | 4 |
@@ -26,7 +26,7 @@
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **8** | **0** | **42** |
+| **TOTAL GENERAL** | **50** | **9** | **0** | **41** |
 
 ---
 
@@ -227,20 +227,20 @@
 ## ÉPICA 6: FRONTEND DASHBOARD & VISUALIZADOR DE TRAZABILIDAD
 
 ### `[AGRUL-011]` Dashboard Web Operativo de Lotes
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Media (P2)
 - **Módulo:** Frontend
 - **Skills:** [architecture.md](file:///c:/AGRUL/.cursor/skills/architecture.md)
-- **Etiquetas:** `frontend`, `ui`, `ready-for-agent`
+- **Etiquetas:** `frontend`, `ui`, `status:done`
 - **Descripción:** Interfaz moderna para visualizar la lista de lotes activos, estados, stock y registrar nuevos eventos o lotes.
 - **Tareas Técnicas:**
   1. Crear layout base con diseño estético premium (dark mode / glassmorphism).
   2. Implementar tabla interactiva de lotes con filtros por estado.
   3. Construir modal/formulario de registro de eventos con validación en cliente.
 - **Criterios de Aceptación:**
-  - [ ] Diseño estético premium con tipografía moderna y paleta cuidada.
-  - [ ] Filtro interactivo por estado (CREADO, EN_PROCESO, EMBALADO, DESPACHADO).
-  - [ ] Formulario de registro de eventos conectado a la API REST.
+  - [x] Diseño estético premium con tipografía moderna y paleta cuidada.
+  - [x] Filtro interactivo por estado (CREADO, EN_PROCESO, EMBALADO, DESPACHADO).
+  - [x] Formulario de registro de eventos conectado a la API REST.
 
 ### `[AGRUL-012]` Visualizador Gráfico de Linaje Interactivo (Grafo N:M)
 - **Estado:** `TODO` 📌

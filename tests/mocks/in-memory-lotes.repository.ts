@@ -29,4 +29,13 @@ export class InMemoryLotesRepository implements LotesRepositoryPort {
     const l = await this.buscarPorCodigo(codigo);
     return l !== null;
   }
+
+  async listarTodos(filtro?: { estado?: string }): Promise<Lote[]> {
+    const todos = Array.from(this.lotes.values());
+    if (filtro?.estado) {
+      const estadoBuscado = filtro.estado.toUpperCase();
+      return todos.filter((l) => l.estadoActual === estadoBuscado);
+    }
+    return todos;
+  }
 }

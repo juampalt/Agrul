@@ -2,10 +2,10 @@
 id: AGRUL-011
 title: "AGRUL-011: Dashboard Web Operativo de Lotes"
 epic: "Épica 6: Frontend Dashboard & Visualizador de Trazabilidad"
-status: ready-for-agent
+status: resolved
 priority: "Media (P2)"
 module: "Frontend"
-labels: ["frontend", "ui", "ready-for-agent"]
+labels: ["frontend", "ui", "status:done"]
 ---
 
 # AGRUL-011 — Dashboard Web Operativo de Lotes
@@ -13,7 +13,7 @@ labels: ["frontend", "ui", "ready-for-agent"]
 - **Épica:** Épica 6: Frontend Dashboard & Visualizador de Trazabilidad
 - **Módulo:** Frontend
 - **Prioridad:** Media (P2)
-- **Status:** ready-for-agent
+- **Status:** resolved
 - **Skills:** .cursor/skills/architecture.md
 
 ## Descripción
@@ -25,8 +25,8 @@ Interfaz moderna para visualizar la lista de lotes activos, estados, stock y reg
 3. Construir modal/formulario de registro de eventos con validación en cliente.
 
 ## Criterios de Aceptación
-- [ ] Diseño estético premium con tipografía moderna y paleta cuidada.
-- [ ] Filtro interactivo por estado (CREADO, EN_PROCESO, EMBALADO, DESPACHADO).
-- [ ] Formulario de registro de eventos conectado a la API REST.
+- [x] Diseño estético premium con tipografía moderna y paleta cuidada.
+- [x] Filtro interactivo por estado (CREADO, EN_PROCESO, EMBALADO, DESPACHADO).
+- [x] Formulario de registro de eventos conectado a la API REST.
 
 ## Comments

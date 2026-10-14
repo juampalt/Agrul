@@ -12,6 +12,8 @@ import { DividirLoteUseCase } from '../../application/use-cases/dividir-lote.use
 import { LotesRepositoryPort } from '../../core/ports/lotes-repository.port.js';
 import { EventosRepositoryPort } from '../../core/ports/eventos-repository.port.js';
 import { GenealogiaRepositoryPort } from '../../core/ports/genealogia-repository.port.js';
+import fastifyStatic from '@fastify/static';
+import { fileURLToPath } from 'node:url';
 
 export interface BuildAppOptions {
   lotesRepo: LotesRepositoryPort;
@@ -23,6 +25,18 @@ export interface BuildAppOptions {
 export function buildApp(options: BuildAppOptions): FastifyInstance {
   const app = Fastify({
     logger: options.logger ?? false,
+  });
+
+  // Configuración de archivos estáticos para el Dashboard Web
+  const publicPath = fileURLToPath(new URL('../../../public', import.meta.url));
+  app.register(fastifyStatic, {
+    root: publicPath,
+    prefix: '/',
+  });
+
+  // Ruta explícita para /dashboard
+  app.get('/dashboard', async (_req, reply) => {
+    return reply.sendFile('index.html');
   });
 
   // Configuración de validación Zod en Fastify

@@ -2,7 +2,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import { CrearLoteUseCase } from '../../../application/use-cases/crear-lote.use-case.js';
 import { DividirLoteUseCase } from '../../../application/use-cases/dividir-lote.use-case.js';
 import { LotesRepositoryPort } from '../../../core/ports/lotes-repository.port.js';
-import { CrearLoteBodySchema, LoteIdParamSchema } from '../schemas/lotes.schema.js';
+import { CrearLoteBodySchema, LoteIdParamSchema, ListarLotesQuerySchema } from '../schemas/lotes.schema.js';
 import { DividirLoteBodySchema } from '../schemas/split-lote.schema.js';
 import { EntidadNoEncontradaError } from '../../../core/domain/errors/domain.error.js';
 
@@ -36,6 +36,18 @@ export class LotesController {
     return reply.status(200).send({
       success: true,
       data: lote.toJSON(),
+      error: null,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  async listar(req: FastifyRequest, reply: FastifyReply) {
+    const query = ListarLotesQuerySchema.parse(req.query ?? {});
+    const lotes = await this.lotesRepo.listarTodos(query);
+
+    return reply.status(200).send({
+      success: true,
+      data: lotes.map((l) => l.toJSON()),
       error: null,
       timestamp: new Date().toISOString(),
     });

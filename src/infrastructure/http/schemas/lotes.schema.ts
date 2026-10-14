@@ -12,5 +12,10 @@ export const LoteIdParamSchema = z.object({
   id: z.string().uuid('El ID del lote debe ser un UUID válido'),
 }).strict();
 
+export const ListarLotesQuerySchema = z.object({
+  estado: z.string().trim().optional(),
+}).strict();
+
 export type CrearLoteBody = z.infer<typeof CrearLoteBodySchema>;
 export type LoteIdParam = z.infer<typeof LoteIdParamSchema>;
+export type ListarLotesQuery = z.infer<typeof ListarLotesQuerySchema>;
