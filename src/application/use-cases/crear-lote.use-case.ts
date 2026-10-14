@@ -36,6 +36,9 @@ export class CrearLoteUseCase {
       variedad: dto.variedad,
       cantidadInicial: dto.cantidadInicial,
       unidadMedida: dto.unidadMedida,
+      fincaId: dto.fincaId,
+      superficieHa: dto.superficieHa,
+      geometria: dto.geometria,
     });
 
     await this.lotesRepo.guardar(nuevoLote);
@@ -48,6 +51,9 @@ export class CrearLoteUseCase {
       estadoActual: nuevoLote.estadoActual,
       cantidadActual: nuevoLote.cantidadActual,
       unidadMedida: nuevoLote.unidadMedida,
+      fincaId: nuevoLote.fincaId,
+      superficieHa: nuevoLote.superficieHa,
+      geometria: nuevoLote.geometria,
       creadoEn: nuevoLote.creadoEn,
       actualizadoEn: nuevoLote.actualizadoEn,
     };

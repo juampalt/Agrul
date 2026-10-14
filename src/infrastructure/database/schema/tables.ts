@@ -1,6 +1,23 @@
 import { pgTable, uuid, varchar, numeric, timestamp, jsonb, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
+// TABLA FINCAS: Gestión de Fincas y Establecimientos Productivos
+export const fincasTable = pgTable('fincas', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  nombre: varchar('nombre', { length: 150 }).notNull().unique(),
+  localidad: varchar('localidad', { length: 120 }).notNull(),
+  departamento: varchar('departamento', { length: 120 }).notNull(),
+  provincia: varchar('provincia', { length: 120 }).notNull(),
+  superficieTotalHa: numeric('superficie_total_ha', { precision: 10, scale: 2 }).notNull(),
+  responsableId: uuid('responsable_id'),
+  renspa: varchar('renspa', { length: 50 }),
+  geometria: jsonb('geometria'),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_fincas_provincia_depto').on(table.provincia, table.departamento),
+]);
+
 // TABLA READ MODEL: Lotes
 export const lotesTable = pgTable('lotes', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -10,9 +27,15 @@ export const lotesTable = pgTable('lotes', {
   estadoActual: varchar('estado_actual', { length: 30 }).notNull().default('CREADO'),
   cantidadActual: numeric('cantidad_actual', { precision: 14, scale: 4 }).notNull().default('0'),
   unidadMedida: varchar('unidad_medida', { length: 20 }).notNull(),
+  fincaId: uuid('finca_id').references(() => fincasTable.id, { onDelete: 'set null' }),
+  superficieHa: numeric('superficie_ha', { precision: 10, scale: 2 }),
+  geometria: jsonb('geometria'),
   creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-});
+}, (table) => [
+  index('idx_lotes_finca').on(table.fincaId),
+  index('idx_lotes_estado').on(table.estadoActual),
+]);
 
 // TABLA WRITE MODEL: Eventos de Trazabilidad (Append-Only)
 export const eventosTrazabilidadTable = pgTable('eventos_trazabilidad', {
@@ -47,7 +70,15 @@ export const loteGenealogiaTable = pgTable('lote_genealogia', {
 ]);
 
 // RELACIONES DRIZZLE
-export const lotesRelations = relations(lotesTable, ({ many }) => ({
+export const fincasRelations = relations(fincasTable, ({ many }) => ({
+  lotes: many(lotesTable),
+}));
+
+export const lotesRelations = relations(lotesTable, ({ one, many }) => ({
+  finca: one(fincasTable, {
+    fields: [lotesTable.fincaId],
+    references: [fincasTable.id],
+  }),
   eventos: many(eventosTrazabilidadTable),
   relacionesComoPadre: many(loteGenealogiaTable, { relationName: 'lotePadre' }),
   relacionesComoHijo: many(loteGenealogiaTable, { relationName: 'loteHijo' }),

@@ -4,22 +4,26 @@ import { buildApp } from '../../src/infrastructure/http/app.js';
 import { InMemoryLotesRepository } from '../mocks/in-memory-lotes.repository.js';
 import { InMemoryEventosRepository } from '../mocks/in-memory-eventos.repository.js';
 import { InMemoryGenealogiaRepository } from '../mocks/in-memory-genealogia.repository.js';
+import { InMemoryFincasRepository } from '../mocks/in-memory-fincas.repository.js';
 
 describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let app: FastifyInstance;
   let lotesRepo: InMemoryLotesRepository;
   let eventosRepo: InMemoryEventosRepository;
   let genealogiaRepo: InMemoryGenealogiaRepository;
+  let fincasRepo: InMemoryFincasRepository;
 
   beforeEach(async () => {
     lotesRepo = new InMemoryLotesRepository();
     eventosRepo = new InMemoryEventosRepository(lotesRepo);
     genealogiaRepo = new InMemoryGenealogiaRepository();
+    fincasRepo = new InMemoryFincasRepository();
 
     app = buildApp({
       lotesRepo,
       eventosRepo,
       genealogiaRepo,
+      fincasRepo,
       logger: false,
     });
     await app.ready();
@@ -532,5 +536,398 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     expect(res.body).toContain('id="printable-pallet-label"');
     expect(res.body).toContain('id="scanner-video"');
   });
+
+  // ==========================================================================
+  // AGRUL-016: Búsqueda Filtrada, Polígonos Geográficos y Ficha Imprimible
+  // ==========================================================================
+
+  it('POST /api/v1/fincas debe registrar una finca con GeoJSON Point y responder 201 Created', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/fincas',
+      payload: {
+        nombre: 'Finca La Florida',
+        localidad: 'Lules',
+        departamento: 'Lules',
+        provincia: 'Tucumán',
+        superficieTotalHa: 120.5,
+        renspa: '23.001.0.00123/00',
+        geometria: {
+          type: 'Point',
+          coordinates: [-65.3444, -26.9211],
+        },
+      },
+    });
+
+    expect(res.statusCode).toBe(201);
+    const body = JSON.parse(res.body);
+    expect(body.success).toBe(true);
+    expect(body.data.id).toBeDefined();
+    expect(body.data.nombre).toBe('Finca La Florida');
+    expect(body.data.geometria.type).toBe('Point');
+    expect(body.data.geometria.coordinates).toEqual([-65.3444, -26.9211]);
+  });
+
+  it('POST /api/v1/fincas debe registrar una finca con GeoJSON Polygon cerrado y responder 201 Created', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/fincas',
+      payload: {
+        nombre: 'Finca San José',
+        localidad: 'Famaillá',
+        departamento: 'Famaillá',
+        provincia: 'Tucumán',
+        superficieTotalHa: 85,
+        geometria: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [-65.40, -27.05],
+              [-65.38, -27.05],
+              [-65.38, -27.03],
+              [-65.40, -27.03],
+              [-65.40, -27.05], // Polígono cerrado
+            ],
+          ],
+        },
+      },
+    });
+
+    expect(res.statusCode).toBe(201);
+    const body = JSON.parse(res.body);
+    expect(body.success).toBe(true);
+    expect(body.data.geometria.type).toBe('Polygon');
+    expect(body.data.geometria.coordinates[0].length).toBe(5);
+  });
+
+  it('POST /api/v1/fincas debe rechazar finca con datos inválidos con 400 Bad Request', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/fincas',
+      payload: {
+        nombre: '', // Nombre vacío
+        localidad: 'Lules',
+        departamento: 'Lules',
+        provincia: 'Tucumán',
+        superficieTotalHa: -10, // Superficie negativa
+      },
+    });
+
+    expect(res.statusCode).toBe(400);
+    const body = JSON.parse(res.body);
+    expect(body.success).toBe(false);
+  });
+
+  it('GET /api/v1/fincas debe listar fincas y permitir filtrado por provincia o nombre', async () => {
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/fincas',
+      payload: {
+        nombre: 'Finca Salta Norte',
+        localidad: 'Cafayate',
+        departamento: 'Cafayate',
+        provincia: 'Salta',
+        superficieTotalHa: 50,
+      },
+    });
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/fincas',
+      payload: {
+        nombre: 'Finca Tucumán Sur',
+        localidad: 'Concepción',
+        departamento: 'Chicligasta',
+        provincia: 'Tucumán',
+        superficieTotalHa: 75,
+      },
+    });
+
+    // Filtro por provincia
+    const resSalta = await app.inject({
+      method: 'GET',
+      url: '/api/v1/fincas?provincia=Salta',
+    });
+    expect(resSalta.statusCode).toBe(200);
+    const dataSalta = JSON.parse(resSalta.body).data;
+    expect(dataSalta.length).toBe(1);
+    expect(dataSalta[0].nombre).toBe('Finca Salta Norte');
+
+    // Filtro por nombre parcial
+    const resTuc = await app.inject({
+      method: 'GET',
+      url: '/api/v1/fincas?nombre=Tucumán',
+    });
+    expect(resTuc.statusCode).toBe(200);
+    const dataTuc = JSON.parse(resTuc.body).data;
+    expect(dataTuc.length).toBe(1);
+    expect(dataTuc[0].nombre).toBe('Finca Tucumán Sur');
+  });
+
+  it('POST /api/v1/lotes debe registrar lote con fincaId, superficie en ha y GeoJSON', async () => {
+    // 1. Crear Finca previa
+    const fincaRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/fincas',
+      payload: {
+        nombre: 'Finca Don Pedro',
+        localidad: 'Lules',
+        departamento: 'Lules',
+        provincia: 'Tucumán',
+        superficieTotalHa: 200,
+      },
+    });
+    const finca = JSON.parse(fincaRes.body).data;
+
+    // 2. Crear Lote vinculado a la Finca con Polígono GeoJSON
+    const loteRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-GEO001',
+        producto: 'Frutilla San Andreas',
+        variedad: 'Día Neutro',
+        cantidadInicial: 8000,
+        unidadMedida: 'KG',
+        fincaId: finca.id,
+        superficieHa: 4.5,
+        geometria: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [-65.3400, -26.9200],
+              [-65.3380, -26.9200],
+              [-65.3380, -26.9180],
+              [-65.3400, -26.9180],
+              [-65.3400, -26.9200],
+            ],
+          ],
+        },
+      },
+    });
+
+    expect(loteRes.statusCode).toBe(201);
+    const lote = JSON.parse(loteRes.body).data;
+    expect(lote.fincaId).toBe(finca.id);
+    expect(lote.superficieHa).toBe(4.5);
+    expect(lote.geometria.type).toBe('Polygon');
+  });
+
+  it('POST /api/v1/lotes debe rechazar geometría GeoJSON inválida (polígono no cerrado)', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-ERRGEO',
+        producto: 'Frutilla',
+        cantidadInicial: 1000,
+        unidadMedida: 'KG',
+        geometria: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [-65.34, -26.92],
+              [-65.33, -26.92],
+              [-65.33, -26.91],
+              // Falta cerrar con el primer vértice
+            ],
+          ],
+        },
+      },
+    });
+
+    expect(res.statusCode).toBe(400);
+    const body = JSON.parse(res.body);
+    expect(body.success).toBe(false);
+  });
+
+  it('GET /api/v1/lotes debe ejecutar búsqueda filtrada combinada (estado, finca, superficie, producto)', async () => {
+    const t0 = performance.now();
+
+    // Crear Finca A y B
+    const fincaARes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/fincas',
+      payload: {
+        nombre: 'Finca Alfa',
+        localidad: 'Lules',
+        departamento: 'Lules',
+        provincia: 'Tucumán',
+        superficieTotalHa: 100,
+      },
+    });
+    const fincaAId = JSON.parse(fincaARes.body).data.id;
+
+    const fincaBRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/fincas',
+      payload: {
+        nombre: 'Finca Beta',
+        localidad: 'Lules',
+        departamento: 'Lules',
+        provincia: 'Tucumán',
+        superficieTotalHa: 100,
+      },
+    });
+    const fincaBId = JSON.parse(fincaBRes.body).data.id;
+
+    // Crear 3 lotes con distintas combinaciones
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-FLT01',
+        producto: 'Arándano Emerald',
+        cantidadInicial: 2000,
+        unidadMedida: 'KG',
+        fincaId: fincaAId,
+        superficieHa: 2.5,
+      },
+    });
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-FLT02',
+        producto: 'Arándano Jewel',
+        cantidadInicial: 5000,
+        unidadMedida: 'KG',
+        fincaId: fincaAId,
+        superficieHa: 8.0,
+      },
+    });
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-FLT03',
+        producto: 'Frutilla',
+        cantidadInicial: 3000,
+        unidadMedida: 'KG',
+        fincaId: fincaBId,
+        superficieHa: 2.0,
+      },
+    });
+
+    // Filtrar por Finca A y rango de superficie [1 ha, 5 ha]
+    const resFiltrado = await app.inject({
+      method: 'GET',
+      url: `/api/v1/lotes?fincaId=${fincaAId}&superficieMinHa=1&superficieMaxHa=5&producto=Arándano`,
+    });
+
+    const elapsedMs = performance.now() - t0;
+
+    expect(resFiltrado.statusCode).toBe(200);
+    expect(elapsedMs).toBeLessThan(2000); // RNF-03: tiempo de respuesta < 2s
+
+    const lotesResult = JSON.parse(resFiltrado.body).data;
+    expect(lotesResult.length).toBe(1);
+    expect(lotesResult[0].codigoLote).toBe('LOT-2026-FLT01');
+    expect(lotesResult[0].superficieHa).toBe(2.5);
+  });
+
+  it('GET /api/v1/lotes/:id/ficha-imprimible debe retornar JSON completo para cartel de cabecera (RF-M1-11)', async () => {
+    // 1. Crear Finca
+    const fRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/fincas',
+      payload: {
+        nombre: 'Establecimiento El Trébol',
+        localidad: 'Lules',
+        departamento: 'Lules',
+        provincia: 'Tucumán',
+        superficieTotalHa: 150,
+        renspa: '23.001.0.09999/01',
+      },
+    });
+    const finca = JSON.parse(fRes.body).data;
+
+    // 2. Crear Lote con Punto GPS
+    const lRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-CAB01',
+        producto: 'Frutilla Fronteras',
+        variedad: 'Día Corto',
+        cantidadInicial: 6000,
+        unidadMedida: 'KG',
+        fincaId: finca.id,
+        superficieHa: 3.2,
+        geometria: {
+          type: 'Point',
+          coordinates: [-65.34123, -26.92456],
+        },
+      },
+    });
+    const lote = JSON.parse(lRes.body).data;
+
+    // 3. Obtener Ficha Imprimible
+    const fichaRes = await app.inject({
+      method: 'GET',
+      url: `/api/v1/lotes/${lote.id}/ficha-imprimible`,
+    });
+
+    expect(fichaRes.statusCode).toBe(200);
+    const body = JSON.parse(fichaRes.body);
+    expect(body.success).toBe(true);
+
+    const ficha = body.data;
+    expect(ficha.codigoLote).toBe('LOT-2026-CAB01');
+    expect(ficha.producto).toBe('Frutilla Fronteras');
+    expect(ficha.variedad).toBe('Día Corto');
+    expect(ficha.superficieHa).toBe(3.2);
+    expect(ficha.finca.nombre).toBe('Establecimiento El Trébol');
+    expect(ficha.finca.renspa).toBe('23.001.0.09999/01');
+    expect(ficha.coordenadasFormateadas).toContain('GPS: Lat -26.92456, Lng -65.34123');
+    expect(ficha.qrSvg).toContain('<svg');
+    expect(ficha.qrDataUrl).toContain('data:image/png;base64');
+  });
+
+  it('GET /api/v1/lotes/:id/ficha-imprimible?format=html debe retornar documento HTML para impresión (RF-M1-11)', async () => {
+    const lRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-HTM01',
+        producto: 'Limón',
+        cantidadInicial: 10000,
+        unidadMedida: 'KG',
+        superficieHa: 12.0,
+      },
+    });
+    const lote = JSON.parse(lRes.body).data;
+
+    const htmlRes = await app.inject({
+      method: 'GET',
+      url: `/api/v1/lotes/${lote.id}/ficha-imprimible?format=html`,
+    });
+
+    expect(htmlRes.statusCode).toBe(200);
+    expect(htmlRes.headers['content-type']).toContain('text/html');
+    expect(htmlRes.body).toContain('CARTEL DE CABECERA DE LOTE');
+    expect(htmlRes.body).toContain('LOT-2026-HTM01');
+    expect(htmlRes.body).toContain('12 ha');
+    expect(htmlRes.body).toContain('<svg');
+    expect(htmlRes.body).toContain('@media print');
+  });
+
+  it('GET / debe incluir los componentes para Cartel de Cabecera y Filtros Avanzados (AGRUL-016)', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/',
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toContain('id="modal-ficha-cabecera"');
+    expect(res.body).toContain('id="printable-cartel-cabecera"');
+    expect(res.body).toContain('id="cartel-codigo"');
+    expect(res.body).toContain('id="filtro-finca"');
+    expect(res.body).toContain('id="filtro-sup-min"');
+    expect(res.body).toContain('id="filtro-sup-max"');
+  });
 });
+
 

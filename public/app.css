@@ -1574,7 +1574,212 @@ input:focus, select:focus {
 }
 
 /* ==========================================================================
-   ESTILOS DE IMPRESIÓN (Etiqueta Térmica / A4 para Bines y Pallets)
+   FILTROS AVANZADOS (Finca y Superficie — AGRUL-016)
+   ========================================================================== */
+.advanced-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--accent-emerald);
+}
+
+.surface-filter-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+}
+
+.surface-filter-inputs input {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  width: 70px;
+  font-size: 13px;
+  padding: 4px;
+}
+
+.surface-filter-inputs input:focus {
+  outline: none;
+}
+
+.range-sep {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+/* ==========================================================================
+   CARTEL DE CABECERA DE LOTE (SEÑALÉTICA DE CAMPO — RF-M1-11)
+   ========================================================================== */
+.modal-cartel-dialog {
+  max-width: 720px;
+}
+
+.cartel-cabecera-preview-wrapper {
+  padding: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.cartel-cabecera {
+  background: #ffffff;
+  color: #0f172a;
+  border: 4px solid #059669;
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 640px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cartel-top-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
+.cartel-brand-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #059669;
+}
+
+.cartel-estandar-tag {
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #a7f3d0;
+}
+
+.cartel-hero-code {
+  font-size: 2.2rem;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  color: #0f172a;
+  text-align: center;
+  letter-spacing: 2px;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.cartel-grid-content {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 20px;
+  align-items: center;
+}
+
+.cartel-data-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cartel-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.cartel-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.cartel-val {
+  font-size: 15px;
+  color: #1e293b;
+}
+
+.cartel-val.bold {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.cartel-val.highlight {
+  color: #047857;
+  font-weight: 700;
+}
+
+.cartel-val.mono {
+  font-family: monospace;
+  font-size: 13px;
+  color: #475569;
+}
+
+.cartel-qr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.cartel-qr-img {
+  background: #ffffff;
+  padding: 8px;
+  border: 2px solid #0f172a;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cartel-qr-img svg {
+  width: 170px;
+  height: 170px;
+  display: block;
+}
+
+.cartel-qr-sub {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.cartel-footer {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 10px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   ESTILOS DE IMPRESIÓN (Etiquetas y Carteles de Cabecera)
    ========================================================================== */
 @media print {
   body {
@@ -1596,14 +1801,16 @@ input:focus, select:focus {
     display: none !important;
   }
 
-  .modal-backdrop#modal-qr-label {
+  .modal-backdrop#modal-qr-label,
+  .modal-backdrop#modal-ficha-cabecera {
     position: static !important;
     background: transparent !important;
     padding: 0 !important;
     display: block !important;
   }
 
-  .modal-dialog.modal-qr-dialog {
+  .modal-dialog.modal-qr-dialog,
+  .modal-dialog.modal-cartel-dialog {
     background: transparent !important;
     box-shadow: none !important;
     border: none !important;
@@ -1611,19 +1818,23 @@ input:focus, select:focus {
     max-width: 100% !important;
   }
 
-  .pallet-label {
+  .pallet-label,
+  .cartel-cabecera {
     box-shadow: none !important;
-    border: 2px solid #000000 !important;
+    border: 3px solid #000000 !important;
     width: 100% !important;
     max-width: 600px !important;
     margin: 0 auto !important;
   }
 
-  .qr-canvas-container {
+  .qr-canvas-container,
+  .cartel-qr-img {
     border: 1px solid #000000 !important;
   }
 
-  .field-value-code {
+  .field-value-code,
+  .cartel-hero-code {
     color: #000000 !important;
+    border-color: #000000 !important;
   }
 }

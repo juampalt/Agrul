@@ -2,6 +2,7 @@ import { CodigoLote } from '../value-objects/codigo-lote.vo.js';
 import { EstadoLote, EstadoLoteEnum, MaquinaEstadosLote } from '../value-objects/estado-lote.vo.js';
 import { TipoEvento } from '../value-objects/tipo-evento.vo.js';
 import { CantidadInsuficienteError, InvalidStateTransitionError } from '../errors/domain.error.js';
+import { GeoJSONGeometry, GeoJSONValidator } from '../value-objects/geojson.vo.js';
 
 export interface LoteProps {
   id: string;
@@ -11,6 +12,9 @@ export interface LoteProps {
   estadoActual: EstadoLote;
   cantidadActual: number;
   unidadMedida: string;
+  fincaId?: string | null;
+  superficieHa?: number | null;
+  geometria?: GeoJSONGeometry | null;
   creadoEn: string;
   actualizadoEn: string;
 }
@@ -22,6 +26,9 @@ export interface CrearLoteParams {
   variedad?: string | null;
   cantidadInicial: number;
   unidadMedida: string;
+  fincaId?: string | null;
+  superficieHa?: number | null;
+  geometria?: unknown;
 }
 
 /**
@@ -36,6 +43,11 @@ export class Lote {
       ? CodigoLote.crear(params.codigoLote)
       : params.codigoLote;
 
+    let geomValidada: GeoJSONGeometry | null = null;
+    if (params.geometria) {
+      geomValidada = GeoJSONValidator.validar(params.geometria);
+    }
+
     const ahora = new Date().toISOString();
 
     return new Lote({
@@ -46,6 +58,9 @@ export class Lote {
       estadoActual: EstadoLoteEnum.CREADO,
       cantidadActual: params.cantidadInicial,
       unidadMedida: params.unidadMedida.trim().toUpperCase(),
+      fincaId: params.fincaId ?? null,
+      superficieHa: params.superficieHa !== undefined && params.superficieHa !== null ? Number(params.superficieHa) : null,
+      geometria: geomValidada,
       creadoEn: ahora,
       actualizadoEn: ahora,
     });
@@ -112,6 +127,9 @@ export class Lote {
   public get estadoActual(): EstadoLote { return this.props.estadoActual; }
   public get cantidadActual(): number { return this.props.cantidadActual; }
   public get unidadMedida(): string { return this.props.unidadMedida; }
+  public get fincaId(): string | null | undefined { return this.props.fincaId; }
+  public get superficieHa(): number | null | undefined { return this.props.superficieHa; }
+  public get geometria(): GeoJSONGeometry | null | undefined { return this.props.geometria; }
   public get creadoEn(): string { return this.props.creadoEn; }
   public get actualizadoEn(): string { return this.props.actualizadoEn; }
 
@@ -124,6 +142,9 @@ export class Lote {
       estadoActual: this.props.estadoActual,
       cantidadActual: this.props.cantidadActual,
       unidadMedida: this.props.unidadMedida,
+      fincaId: this.props.fincaId,
+      superficieHa: this.props.superficieHa,
+      geometria: this.props.geometria,
       creadoEn: this.props.creadoEn,
       actualizadoEn: this.props.actualizadoEn,
     };

@@ -84,6 +84,16 @@
         <button class="tab-btn" data-filter="DESPACHADO">Despachados</button>
         <button class="tab-btn" data-filter="CERRADO">Cerrados</button>
       </div>
+      <div class="advanced-filters">
+        <select id="filtro-finca" class="filter-select" aria-label="Filtrar por finca">
+          <option value="">Todas las Fincas</option>
+        </select>
+        <div class="surface-filter-inputs">
+          <input type="number" id="filtro-sup-min" placeholder="Min Ha" step="0.1" min="0" title="Superficie mínima (ha)">
+          <span class="range-sep">-</span>
+          <input type="number" id="filtro-sup-max" placeholder="Max Ha" step="0.1" min="0" title="Superficie máxima (ha)">
+        </div>
+      </div>
       <button id="btn-recargar" class="btn btn-secondary" title="Actualizar datos">
         🔄 Refrescar
       </button>
@@ -154,6 +164,28 @@
               <option value="L">L (Litros)</option>
               <option value="UNIDADES">UNIDADES</option>
             </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nuevo-finca-id">Finca / Establecimiento</label>
+            <select id="nuevo-finca-id">
+              <option value="">Sin finca asignada</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="nuevo-superficie">Superficie Lote (ha)</label>
+            <input type="number" id="nuevo-superficie" step="0.01" min="0.01" placeholder="Ej: 3.5">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nuevo-geo-lat">Latitud GPS (Punto)</label>
+            <input type="number" id="nuevo-geo-lat" step="any" placeholder="Ej: -26.8341">
+          </div>
+          <div class="form-group">
+            <label for="nuevo-geo-lng">Longitud GPS (Punto)</label>
+            <input type="number" id="nuevo-geo-lng" step="any" placeholder="Ej: -65.3195">
           </div>
         </div>
         <div class="modal-actions">
@@ -444,6 +476,75 @@
         </a>
         <button type="button" class="btn btn-primary" id="btn-imprimir-etiqueta">
           🖨️ Imprimir Etiqueta
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Ficha Técnica / Cartel de Cabecera de Lote (RF-M1-11 / AGRUL-016) -->
+  <div class="modal-backdrop" id="modal-ficha-cabecera" aria-hidden="true">
+    <div class="modal-dialog glass modal-cartel-dialog">
+      <div class="modal-header">
+        <div>
+          <h2>Cartel de Cabecera de Lote</h2>
+          <p class="subtitle">Señalética de campo imprimible con código legible y QR oficial</p>
+        </div>
+        <button class="close-btn" data-close="modal-ficha-cabecera">&times;</button>
+      </div>
+
+      <div class="cartel-cabecera-preview-wrapper">
+        <div class="cartel-cabecera" id="printable-cartel-cabecera">
+          <div class="cartel-top-banner">
+            <div class="cartel-brand-title">AGRUL &bull; SEÑALÉTICA DE CAMPO</div>
+            <div class="cartel-estandar-tag">GLOBALG.A.P. / SENASA</div>
+          </div>
+          <div class="cartel-hero-code" id="cartel-codigo">LOT-2026-00000</div>
+          
+          <div class="cartel-grid-content">
+            <div class="cartel-data-box">
+              <div class="cartel-item">
+                <span class="cartel-label">ESPECIE / CULTIVO</span>
+                <span class="cartel-val bold" id="cartel-producto">-</span>
+              </div>
+              <div class="cartel-item">
+                <span class="cartel-label">VARIEDAD</span>
+                <span class="cartel-val" id="cartel-variedad">-</span>
+              </div>
+              <div class="cartel-item">
+                <span class="cartel-label">SUPERFICIE</span>
+                <span class="cartel-val highlight" id="cartel-superficie">-</span>
+              </div>
+              <div class="cartel-item">
+                <span class="cartel-label">ESTABLECIMIENTO / FINCA</span>
+                <span class="cartel-val" id="cartel-finca">-</span>
+              </div>
+              <div class="cartel-item">
+                <span class="cartel-label">UBICACIÓN / GPS</span>
+                <span class="cartel-val mono" id="cartel-coords">-</span>
+              </div>
+            </div>
+            <div class="cartel-qr-box">
+              <div class="cartel-qr-img" id="cartel-qr-container">
+                <div class="qr-loading-placeholder">Cargando QR...</div>
+              </div>
+              <div class="cartel-qr-sub">ESCANEO OFICIAL DE CAMPO</div>
+            </div>
+          </div>
+
+          <div class="cartel-footer">
+            <span id="cartel-emision">Emisión: -</span>
+            <span>Sistema Agrul Engine &bull; Lules, Tucumán</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close="modal-ficha-cabecera">Cerrar</button>
+        <a id="btn-abrir-html-cartel" class="btn btn-secondary" href="#" target="_blank">
+          📄 Abrir Ficha Web
+        </a>
+        <button type="button" class="btn btn-primary" id="btn-imprimir-cartel">
+          🖨️ Imprimir Cartel
         </button>
       </div>
     </div>

@@ -57,6 +57,29 @@ document.addEventListener('DOMContentLoaded', () => {
   let isScanningActive = false;
   let currentCameraFacingMode = 'environment';
 
+  // Fincas y Filtros Avanzados (AGRUL-016)
+  let allFincas = [];
+  const filtroFinca = document.getElementById('filtro-finca');
+  const filtroSupMin = document.getElementById('filtro-sup-min');
+  const filtroSupMax = document.getElementById('filtro-sup-max');
+  const nuevoFincaId = document.getElementById('nuevo-finca-id');
+  const nuevoSuperficie = document.getElementById('nuevo-superficie');
+  const nuevoGeoLat = document.getElementById('nuevo-geo-lat');
+  const nuevoGeoLng = document.getElementById('nuevo-geo-lng');
+
+  // Modal Cartel de Cabecera (RF-M1-11)
+  const modalFichaCabecera = document.getElementById('modal-ficha-cabecera');
+  const cartelCodigo = document.getElementById('cartel-codigo');
+  const cartelProducto = document.getElementById('cartel-producto');
+  const cartelVariedad = document.getElementById('cartel-variedad');
+  const cartelSuperficie = document.getElementById('cartel-superficie');
+  const cartelFinca = document.getElementById('cartel-finca');
+  const cartelCoords = document.getElementById('cartel-coords');
+  const cartelQrContainer = document.getElementById('cartel-qr-container');
+  const cartelEmision = document.getElementById('cartel-emision');
+  const btnAbrirHtmlCartel = document.getElementById('btn-abrir-html-cartel');
+  const btnImprimirCartel = document.getElementById('btn-imprimir-cartel');
+
   // Toast Container
   const toastContainer = document.getElementById('toast-container');
 
@@ -124,12 +147,47 @@ document.addEventListener('DOMContentLoaded', () => {
     kpiMasa.textContent = `${masaKg.toLocaleString('es-AR')} kg`;
   }
 
+  // Cargar Catálogo de Fincas (AGRUL-016)
+  async function cargarFincas() {
+    try {
+      const res = await fetch('/api/v1/fincas');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        allFincas = json.data;
+        if (filtroFinca) {
+          filtroFinca.innerHTML = '<option value="">Todas las Fincas</option>' +
+            allFincas.map(f => `<option value="${f.id}">${f.nombre} (${f.ubicacion.provincia})</option>`).join('');
+        }
+        if (nuevoFincaId) {
+          nuevoFincaId.innerHTML = '<option value="">Sin finca asignada</option>' +
+            allFincas.map(f => `<option value="${f.id}">${f.nombre} (${f.superficieTotalHa} ha)</option>`).join('');
+        }
+      }
+    } catch (e) {
+      console.warn('No se pudieron cargar las fincas:', e);
+    }
+  }
+
   // Renderizar Tabla con Filtros
   function renderizarTabla() {
     let filtrados = allLotes;
 
     if (currentFilter !== 'TODOS') {
       filtrados = filtrados.filter(l => l.estadoActual === currentFilter);
+    }
+
+    if (filtroFinca && filtroFinca.value) {
+      filtrados = filtrados.filter(l => l.fincaId === filtroFinca.value);
+    }
+
+    if (filtroSupMin && filtroSupMin.value !== '') {
+      const min = Number(filtroSupMin.value);
+      filtrados = filtrados.filter(l => l.superficieHa !== null && l.superficieHa !== undefined && Number(l.superficieHa) >= min);
+    }
+
+    if (filtroSupMax && filtroSupMax.value !== '') {
+      const max = Number(filtroSupMax.value);
+      filtrados = filtrados.filter(l => l.superficieHa !== null && l.superficieHa !== undefined && Number(l.superficieHa) <= max);
     }
 
     if (searchTerm.trim() !== '') {
@@ -145,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
       lotesTbody.innerHTML = `
         <tr class="empty-row">
           <td colspan="6" class="text-center" style="color: var(--text-muted); padding: 32px;">
-            No se encontraron lotes para el filtro seleccionado.
+            No se encontraron lotes para los filtros seleccionados.
           </td>
         </tr>`;
       return;
@@ -157,13 +215,15 @@ document.addEventListener('DOMContentLoaded', () => {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
       }) : '-';
 
+      const surfaceBadge = l.superficieHa ? `<span style="font-size:11px; color:#10b981; font-weight:600; margin-left:6px;">📐 ${l.superficieHa} ha</span>` : '';
+
       return `
         <tr>
           <td>
             <span class="batch-code">${l.codigoLote}</span>
           </td>
           <td>
-            <div class="product-title">${l.producto}</div>
+            <div class="product-title">${l.producto} ${surfaceBadge}</div>
             <div class="product-variety">${l.variedad || 'Sin variedad especificada'}</div>
           </td>
           <td>
@@ -187,6 +247,9 @@ document.addEventListener('DOMContentLoaded', () => {
               </button>
               <button class="btn-action action-qr" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Ver e imprimir etiqueta oficial con código QR">
                 🏷️ QR
+              </button>
+              <button class="btn-action action-cartel" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Ver e imprimir Cartel de Cabecera de Lote (RF-M1-11)">
+                📋 Cartel
               </button>
             </div>
           </td>
@@ -218,6 +281,12 @@ document.addEventListener('DOMContentLoaded', () => {
         abrirModalEtiquetaQR(btn.dataset.id, btn.dataset.codigo);
       });
     });
+
+    document.querySelectorAll('.action-cartel').forEach(btn => {
+      btn.addEventListener('click', () => {
+        abrirModalCartelCabecera(btn.dataset.id, btn.dataset.codigo);
+      });
+    });
   }
 
   // Filtrado por pestañas
@@ -230,13 +299,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Filtros Avanzados
+  if (filtroFinca) {
+    filtroFinca.addEventListener('change', () => {
+      renderizarTabla();
+    });
+  }
+
+  if (filtroSupMin) {
+    filtroSupMin.addEventListener('input', () => {
+      renderizarTabla();
+    });
+  }
+
+  if (filtroSupMax) {
+    filtroSupMax.addEventListener('input', () => {
+      renderizarTabla();
+    });
+  }
+
   // Búsqueda en tiempo real
   inputBusqueda.addEventListener('input', (e) => {
     searchTerm = e.target.value;
     renderizarTabla();
   });
 
-  btnRecargar.addEventListener('click', cargarLotes);
+  btnRecargar.addEventListener('click', async () => {
+    await Promise.all([cargarLotes(), cargarFincas()]);
+  });
 
   // Manejo de Modales
   function openModal(modal) {
@@ -273,8 +363,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const cantidadInicial = Number(document.getElementById('nuevo-cantidad').value);
     const unidadMedida = document.getElementById('nuevo-unidad').value;
 
+    const fincaId = nuevoFincaId ? nuevoFincaId.value.trim() : '';
+    const superficieHaRaw = nuevoSuperficie ? nuevoSuperficie.value.trim() : '';
+    const geoLatRaw = nuevoGeoLat ? nuevoGeoLat.value.trim() : '';
+    const geoLngRaw = nuevoGeoLng ? nuevoGeoLng.value.trim() : '';
+
     const payload = { producto, variedad, cantidadInicial, unidadMedida };
     if (codigoLote) payload.codigoLote = codigoLote;
+    if (fincaId) payload.fincaId = fincaId;
+    if (superficieHaRaw) payload.superficieHa = Number(superficieHaRaw);
+    if (geoLatRaw && geoLngRaw) {
+      payload.geometria = {
+        type: 'Point',
+        coordinates: [Number(geoLngRaw), Number(geoLatRaw)],
+      };
+    }
 
     try {
       const res = await fetch('/api/v1/lotes', {
@@ -879,6 +982,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ==========================================================================
+  // AGRUL-016: Cartel de Cabecera de Lote y Ficha Imprimible de Campo (RF-M1-11)
+  // ==========================================================================
+  async function abrirModalCartelCabecera(loteId, codigoLote) {
+    if (!modalFichaCabecera) return;
+    openModal(modalFichaCabecera);
+    cartelCodigo.textContent = codigoLote || 'Cargando...';
+    cartelQrContainer.innerHTML = '<div class="qr-loading-placeholder">Generando QR de campo...</div>';
+    if (btnAbrirHtmlCartel) {
+      btnAbrirHtmlCartel.href = `/api/v1/lotes/${loteId}/ficha-imprimible?format=html`;
+    }
+
+    try {
+      const res = await fetch(`/api/v1/lotes/${loteId}/ficha-imprimible`);
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error?.message || 'Error al obtener ficha imprimible');
+
+      const f = json.data;
+      cartelCodigo.textContent = f.codigoLote;
+      cartelProducto.textContent = f.producto;
+      cartelVariedad.textContent = f.variedad || 'Sin variedad';
+      cartelSuperficie.textContent = f.superficieHa ? `${f.superficieHa} ha` : 'No especificada';
+      cartelFinca.textContent = f.finca ? `${f.finca.nombre} (${f.finca.localidad}, ${f.finca.provincia})` : 'Establecimiento General';
+      cartelCoords.textContent = f.coordenadasFormateadas;
+      cartelEmision.textContent = `Emisión: ${new Date(f.fechaEmision).toLocaleDateString('es-AR')}`;
+      cartelQrContainer.innerHTML = f.qrSvg;
+    } catch (err) {
+      console.error(err);
+      cartelQrContainer.innerHTML = `<span style="color:#ef4444;font-size:0.75rem;">Error al cargar QR</span>`;
+      showToast(`Error al obtener ficha de lote: ${err.message}`, 'error');
+    }
+  }
+
+  if (btnImprimirCartel) {
+    btnImprimirCartel.addEventListener('click', () => {
+      window.print();
+    });
+  }
+
   // Abrir Modal de Escáner
   if (btnAbrirEscaner) {
     btnAbrirEscaner.addEventListener('click', () => {
@@ -1092,4 +1234,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Carga inicial
   cargarLotes();
+  cargarFincas();
 });

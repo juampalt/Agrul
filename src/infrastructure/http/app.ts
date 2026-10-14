@@ -13,6 +13,10 @@ import { FusionarLotesUseCase } from '../../application/use-cases/fusionar-lotes
 import { LotesRepositoryPort } from '../../core/ports/lotes-repository.port.js';
 import { EventosRepositoryPort } from '../../core/ports/eventos-repository.port.js';
 import { GenealogiaRepositoryPort } from '../../core/ports/genealogia-repository.port.js';
+import { FincasRepositoryPort } from '../../core/ports/fincas-repository.port.js';
+import { FincasController } from './controllers/fincas.controller.js';
+import { RegistrarFincaUseCase } from '../../application/use-cases/registrar-finca.use-case.js';
+import { ListarFincasUseCase } from '../../application/use-cases/listar-fincas.use-case.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +25,7 @@ export interface BuildAppOptions {
   lotesRepo: LotesRepositoryPort;
   eventosRepo: EventosRepositoryPort;
   genealogiaRepo: GenealogiaRepositoryPort;
+  fincasRepo?: FincasRepositoryPort;
   logger?: boolean;
 }
 
@@ -91,16 +96,25 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     crearLoteUseCase,
     options.lotesRepo,
     dividirLoteUseCase,
-    fusionarLotesUseCase
+    fusionarLotesUseCase,
+    options.fincasRepo
   );
   const eventosController = new EventosController(registrarEventoUseCase, options.eventosRepo);
   const linajeController = new LinajeController(obtenerLinajeUseCase);
+
+  let fincasController: FincasController | undefined;
+  if (options.fincasRepo) {
+    const registrarFincaUseCase = new RegistrarFincaUseCase(options.fincasRepo);
+    const listarFincasUseCase = new ListarFincasUseCase(options.fincasRepo);
+    fincasController = new FincasController(registrarFincaUseCase, listarFincasUseCase, options.fincasRepo);
+  }
 
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
     eventosController,
     linajeController,
+    fincasController,
   });
 
   return app;
