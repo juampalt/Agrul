@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, numeric, timestamp, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, numeric, timestamp, jsonb, index, boolean, text } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // TABLA FINCAS: Gestión de Fincas y Establecimientos Productivos
@@ -103,3 +103,55 @@ export const genealogiaRelations = relations(loteGenealogiaTable, ({ one }) => (
     relationName: 'loteHijo',
   }),
 }));
+
+// ============================================================================
+// ÉPICA 9: MÓDULO 3 — CATÁLOGOS DE ACTIVIDADES AGRÍCOLAS (AGRUL-020)
+// ============================================================================
+
+// TABLA CATÁLOGO: Tipos de Actividad Agrícola (RF-M3-01 / RNF-13)
+export const tiposActividadTable = pgTable('tipo_actividad_catalogo', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  nombre: varchar('nombre', { length: 120 }).notNull().unique(),
+  categoria: varchar('categoria', { length: 50 }).notNull().default('MANEJO'),
+  descripcion: text('descripcion'),
+  requiereMaquinaria: boolean('requiere_maquinaria').notNull().default(false),
+  requiereInsumos: boolean('requiere_insumos').notNull().default(false),
+  activo: boolean('activo').notNull().default(true),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_tipos_actividad_categoria').on(table.categoria),
+  index('idx_tipos_actividad_activo').on(table.activo),
+]);
+
+// TABLA CATÁLOGO: Personal y Cuadrillas de Campo (RF-M3-03)
+export const personalCuadrillasTable = pgTable('personal_cuadrilla', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  nombre: varchar('nombre', { length: 150 }).notNull(),
+  tipo: varchar('tipo', { length: 30 }).notNull().default('INDIVIDUAL'), // INDIVIDUAL | CUADRILLA
+  dniOIdentificacion: varchar('dni_o_identificacion', { length: 50 }),
+  usuarioId: uuid('usuario_id'), // Opcionalmente asociado a un usuario del sistema
+  telefono: varchar('telefono', { length: 50 }),
+  activo: boolean('activo').notNull().default(true),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_personal_tipo').on(table.tipo),
+  index('idx_personal_activo').on(table.activo),
+]);
+
+// TABLA CATÁLOGO: Maquinaria Agrícola (RF-M3-06)
+export const maquinariaCatalogoTable = pgTable('maquinaria_catalogo', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  identificacion: varchar('identificacion', { length: 120 }).notNull().unique(),
+  tipo: varchar('tipo', { length: 50 }).notNull().default('TRACTOR'),
+  condicion: varchar('condicion', { length: 40 }).notNull().default('PROPIO'), // PROPIO | ALQUILADO | SERVICIO_CONTRATADO
+  marcaModelo: varchar('marca_modelo', { length: 120 }),
+  activo: boolean('activo').notNull().default(true),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_maquinaria_condicion').on(table.condicion),
+  index('idx_maquinaria_activo').on(table.activo),
+]);
+

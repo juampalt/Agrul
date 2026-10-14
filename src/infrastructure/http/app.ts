@@ -17,6 +17,16 @@ import { FincasRepositoryPort } from '../../core/ports/fincas-repository.port.js
 import { FincasController } from './controllers/fincas.controller.js';
 import { RegistrarFincaUseCase } from '../../application/use-cases/registrar-finca.use-case.js';
 import { ListarFincasUseCase } from '../../application/use-cases/listar-fincas.use-case.js';
+import { CatalogosActividadesRepositoryPort } from '../../core/ports/catalogos-actividades-repository.port.js';
+import { CatalogosController } from './controllers/catalogos.controller.js';
+import {
+  CrearTipoActividadUseCase,
+  ListarTiposActividadUseCase,
+  CrearPersonalCuadrillaUseCase,
+  ListarPersonalCuadrillaUseCase,
+  CrearMaquinariaUseCase,
+  ListarMaquinariaUseCase,
+} from '../../application/use-cases/catalogos-actividades.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,6 +36,7 @@ export interface BuildAppOptions {
   eventosRepo: EventosRepositoryPort;
   genealogiaRepo: GenealogiaRepositoryPort;
   fincasRepo?: FincasRepositoryPort;
+  catalogosRepo?: CatalogosActividadesRepositoryPort;
   logger?: boolean;
 }
 
@@ -109,12 +120,33 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     fincasController = new FincasController(registrarFincaUseCase, listarFincasUseCase, options.fincasRepo);
   }
 
+  let catalogosController: CatalogosController | undefined;
+  if (options.catalogosRepo) {
+    const crearTipoActividadUseCase = new CrearTipoActividadUseCase(options.catalogosRepo);
+    const listarTiposActividadUseCase = new ListarTiposActividadUseCase(options.catalogosRepo);
+    const crearPersonalUseCase = new CrearPersonalCuadrillaUseCase(options.catalogosRepo);
+    const listarPersonalUseCase = new ListarPersonalCuadrillaUseCase(options.catalogosRepo);
+    const crearMaquinariaUseCase = new CrearMaquinariaUseCase(options.catalogosRepo);
+    const listarMaquinariaUseCase = new ListarMaquinariaUseCase(options.catalogosRepo);
+
+    catalogosController = new CatalogosController(
+      crearTipoActividadUseCase,
+      listarTiposActividadUseCase,
+      crearPersonalUseCase,
+      listarPersonalUseCase,
+      crearMaquinariaUseCase,
+      listarMaquinariaUseCase,
+      options.catalogosRepo
+    );
+  }
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
     eventosController,
     linajeController,
     fincasController,
+    catalogosController,
   });
 
   return app;

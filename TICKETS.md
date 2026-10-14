@@ -403,7 +403,7 @@
 ## ÉPICA 9: MÓDULO 3 — REGISTRO DE ACTIVIDADES Y LABORES AGRÍCOLAS
 
 ### `[AGRUL-020]` Catálogos de Tipos de Actividad, Personal, Cuadrillas y Maquinaria
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Media (P2)
 - **Módulo:** Módulo 3: Actividades
 - **Requisitos Funcionales:** RF-M3-01, RF-M3-03, RF-M3-05, RF-M3-06
@@ -417,9 +417,9 @@
   3. Crear tabla maquinaria_catalogo (id, identificacion, tipo, condicion: PROPIO | ALQUILADO | SERVICIO_CONTRATADO, activo).
   4. Endpoints CRUD para cada catálogo.
 - **Criterios de Aceptación:**
-  - [ ] RF-M3-01: Catálogo configurable con tipos estándar precargados.
-  - [ ] RF-M3-03: Registro de trabajadores/cuadrillas asociados opcionalmente a un usuario del sistema.
-  - [ ] RF-M3-06: Catálogo de maquinaria con condición (propio, alquilado, servicio contratado).
+  - [x] RF-M3-01: Catálogo configurable con tipos estándar precargados.
+  - [x] RF-M3-03: Registro de trabajadores/cuadrillas asociados opcionalmente a un usuario del sistema.
+  - [x] RF-M3-06: Catálogo de maquinaria con condición (propio, alquilado, servicio contratado).
 
 ### `[AGRUL-021]` Registro de Labores Ejecutadas y Consumo de Mano de Obra
 - **Estado:** `TODO` 📌

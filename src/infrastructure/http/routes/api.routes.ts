@@ -3,12 +3,14 @@ import { LotesController } from '../controllers/lotes.controller.js';
 import { EventosController } from '../controllers/eventos.controller.js';
 import { LinajeController } from '../controllers/linaje.controller.js';
 import { FincasController } from '../controllers/fincas.controller.js';
+import { CatalogosController } from '../controllers/catalogos.controller.js';
 
 export interface ApiRoutesDependencies {
   lotesController: LotesController;
   eventosController: EventosController;
   linajeController: LinajeController;
   fincasController?: FincasController;
+  catalogosController?: CatalogosController;
 }
 
 export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDependencies) {
@@ -48,6 +50,24 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
 
       // Sincronización Batch Offline
       v1.post('/eventos/sincronizar', (req, rep) => deps.eventosController.sincronizarBatchOffline(req, rep));
+
+      // Catálogos Agrícolas (Módulo 3 — AGRUL-020)
+      if (deps.catalogosController) {
+        // Tipos de Actividad
+        v1.get('/catalogos/tipos-actividad', (req, rep) => deps.catalogosController!.listarTiposActividad(req, rep));
+        v1.post('/catalogos/tipos-actividad', (req, rep) => deps.catalogosController!.crearTipoActividad(req, rep));
+        v1.get('/catalogos/tipos-actividad/:id', (req, rep) => deps.catalogosController!.obtenerTipoActividadPorId(req, rep));
+
+        // Personal y Cuadrillas
+        v1.get('/catalogos/personal', (req, rep) => deps.catalogosController!.listarPersonal(req, rep));
+        v1.post('/catalogos/personal', (req, rep) => deps.catalogosController!.crearPersonal(req, rep));
+        v1.get('/catalogos/personal/:id', (req, rep) => deps.catalogosController!.obtenerPersonalPorId(req, rep));
+
+        // Maquinaria Agrícola
+        v1.get('/catalogos/maquinaria', (req, rep) => deps.catalogosController!.listarMaquinaria(req, rep));
+        v1.post('/catalogos/maquinaria', (req, rep) => deps.catalogosController!.crearMaquinaria(req, rep));
+        v1.get('/catalogos/maquinaria/:id', (req, rep) => deps.catalogosController!.obtenerMaquinariaPorId(req, rep));
+      }
     },
     { prefix: '/api/v1' }
   );

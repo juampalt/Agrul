@@ -5,6 +5,7 @@ import { InMemoryLotesRepository } from '../mocks/in-memory-lotes.repository.js'
 import { InMemoryEventosRepository } from '../mocks/in-memory-eventos.repository.js';
 import { InMemoryGenealogiaRepository } from '../mocks/in-memory-genealogia.repository.js';
 import { InMemoryFincasRepository } from '../mocks/in-memory-fincas.repository.js';
+import { InMemoryCatalogosActividadesRepository } from '../mocks/in-memory-catalogos-actividades.repository.js';
 
 describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let app: FastifyInstance;
@@ -12,18 +13,21 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let eventosRepo: InMemoryEventosRepository;
   let genealogiaRepo: InMemoryGenealogiaRepository;
   let fincasRepo: InMemoryFincasRepository;
+  let catalogosRepo: InMemoryCatalogosActividadesRepository;
 
   beforeEach(async () => {
     lotesRepo = new InMemoryLotesRepository();
     eventosRepo = new InMemoryEventosRepository(lotesRepo);
     genealogiaRepo = new InMemoryGenealogiaRepository();
     fincasRepo = new InMemoryFincasRepository();
+    catalogosRepo = new InMemoryCatalogosActividadesRepository();
 
     app = buildApp({
       lotesRepo,
       eventosRepo,
       genealogiaRepo,
       fincasRepo,
+      catalogosRepo,
       logger: false,
     });
     await app.ready();
@@ -928,6 +932,316 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     expect(res.body).toContain('id="filtro-sup-min"');
     expect(res.body).toContain('id="filtro-sup-max"');
   });
+
+  // ==========================================================================
+  // AGRUL-020: Catálogos de Tipos de Actividad, Personal, Cuadrillas y Maquinaria
+  // ==========================================================================
+
+  describe('Módulo 3: Catálogos Agrícolas (AGRUL-020)', () => {
+    it('GET /api/v1/catalogos/tipos-actividad debe listar el catálogo estándar precargado (RF-M3-01 / RNF-13)', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/catalogos/tipos-actividad',
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(Array.isArray(body.data)).toBe(true);
+      expect(body.data.length).toBeGreaterThanOrEqual(10);
+
+      // Verificar que incluya tipos agrícolas indispensables
+      const nombres = body.data.map((t: { nombre: string }) => t.nombre);
+      expect(nombres).toContain('Preparación de Suelo / Arado');
+      expect(nombres).toContain('Siembra y Plantación');
+      expect(nombres).toContain('Riego y Fertirriego');
+      expect(nombres).toContain('Fertilización de Fondo / Foliar');
+      expect(nombres).toContain('Control de Malezas / Deshierbe');
+      expect(nombres).toContain('Aplicación Fitosanitaria (Plagas y Enfermedades)');
+      expect(nombres).toContain('Cosecha Manual');
+    });
+
+    it('POST /api/v1/catalogos/tipos-actividad debe registrar un nuevo tipo y responder 201 Created', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/tipos-actividad',
+        payload: {
+          nombre: 'Instalación de Manta Térmica Antihelada',
+          categoria: 'MANEJO',
+          descripcion: 'Colocación de tela no tejida para protección contra heladas invernales en frutilla.',
+          requiereMaquinaria: false,
+          requiereInsumos: true,
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.id).toBeDefined();
+      expect(body.data.nombre).toBe('Instalación de Manta Térmica Antihelada');
+      expect(body.data.categoria).toBe('MANEJO');
+      expect(body.data.requiereInsumos).toBe(true);
+      expect(body.data.activo).toBe(true);
+    });
+
+    it('POST /api/v1/catalogos/tipos-actividad debe rechazar nombre vacío con 400 Bad Request', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/tipos-actividad',
+        payload: {
+          nombre: '', // Nombre vacío
+          categoria: 'MANEJO',
+        },
+      });
+
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+    });
+
+    it('GET /api/v1/catalogos/tipos-actividad?categoria=SANIDAD debe filtrar por categoría', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/catalogos/tipos-actividad?categoria=SANIDAD',
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.length).toBeGreaterThanOrEqual(1);
+      body.data.forEach((t: { categoria: string }) => {
+        expect(t.categoria).toBe('SANIDAD');
+      });
+    });
+
+    it('POST /api/v1/catalogos/personal debe registrar un trabajador individual (RF-M3-03)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/personal',
+        payload: {
+          nombre: 'Juan Carlos Mansilla',
+          tipo: 'INDIVIDUAL',
+          dniOIdentificacion: '30.123.456',
+          telefono: '+54 381 4123456',
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.id).toBeDefined();
+      expect(body.data.nombre).toBe('Juan Carlos Mansilla');
+      expect(body.data.tipo).toBe('INDIVIDUAL');
+      expect(body.data.usuarioId).toBeNull();
+      expect(body.data.activo).toBe(true);
+    });
+
+    it('POST /api/v1/catalogos/personal debe registrar una cuadrilla asociada a un usuario del sistema (RF-M3-03)', async () => {
+      const usuarioId = crypto.randomUUID();
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/personal',
+        payload: {
+          nombre: 'Cuadrilla Norte - Cosecheros Temporarios',
+          tipo: 'CUADRILLA',
+          usuarioId: usuarioId,
+          telefono: '+54 381 5998877',
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.nombre).toBe('Cuadrilla Norte - Cosecheros Temporarios');
+      expect(body.data.tipo).toBe('CUADRILLA');
+      expect(body.data.usuarioId).toBe(usuarioId);
+    });
+
+    it('POST /api/v1/catalogos/personal debe rechazar usuarioId no UUID o nombre vacío', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/personal',
+        payload: {
+          nombre: 'Pedro',
+          usuarioId: 'no-es-uuid',
+        },
+      });
+
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+    });
+
+    it('GET /api/v1/catalogos/personal debe listar y filtrar por tipo CUADRILLA', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/personal',
+        payload: {
+          nombre: 'Cuadrilla Test A',
+          tipo: 'CUADRILLA',
+        },
+      });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/personal',
+        payload: {
+          nombre: 'Operario Individual Test',
+          tipo: 'INDIVIDUAL',
+        },
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/catalogos/personal?tipo=CUADRILLA',
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.length).toBeGreaterThanOrEqual(1);
+      body.data.forEach((p: { tipo: string }) => {
+        expect(p.tipo).toBe('CUADRILLA');
+      });
+    });
+
+    it('POST /api/v1/catalogos/maquinaria debe registrar maquinaria con condición PROPIO, ALQUILADO o SERVICIO_CONTRATADO (RF-M3-06)', async () => {
+      // 1. Maquinaria propia
+      const resPropia = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/maquinaria',
+        payload: {
+          identificacion: 'Tractor John Deere 5075E (Nº Interno 01)',
+          tipo: 'TRACTOR',
+          condicion: 'PROPIO',
+          marcaModelo: 'John Deere 5075E 4WD',
+        },
+      });
+
+      expect(resPropia.statusCode).toBe(201);
+      const dataPropia = JSON.parse(resPropia.body).data;
+      expect(dataPropia.identificacion).toContain('Tractor John Deere');
+      expect(dataPropia.condicion).toBe('PROPIO');
+
+      // 2. Maquinaria de servicio contratado
+      const resServicio = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/maquinaria',
+        payload: {
+          identificacion: 'Pulverizadora Autopropulsada Metalfor',
+          tipo: 'PULVERIZADORA',
+          condicion: 'SERVICIO_CONTRATADO',
+          marcaModelo: 'Metalfor Multiple 3000',
+        },
+      });
+
+      expect(resServicio.statusCode).toBe(201);
+      const dataServicio = JSON.parse(resServicio.body).data;
+      expect(dataServicio.condicion).toBe('SERVICIO_CONTRATADO');
+
+      // 3. Maquinaria alquilada
+      const resAlquilado = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/maquinaria',
+        payload: {
+          identificacion: 'Atomizadora de Arrastre 2000L',
+          tipo: 'ATOMIZADORA',
+          condicion: 'ALQUILADO',
+        },
+      });
+
+      expect(resAlquilado.statusCode).toBe(201);
+      expect(JSON.parse(resAlquilado.body).data.condicion).toBe('ALQUILADO');
+    });
+
+    it('POST /api/v1/catalogos/maquinaria debe rechazar condición inválida con 400 Bad Request', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/maquinaria',
+        payload: {
+          identificacion: 'Desmalezadora',
+          condicion: 'PRESTADO_POR_VECINO', // No permitida
+        },
+      });
+
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+    });
+
+    it('GET /api/v1/catalogos/maquinaria debe listar y filtrar por condición PROPIO', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/maquinaria',
+        payload: {
+          identificacion: 'Tractor Fendt Test',
+          tipo: 'TRACTOR',
+          condicion: 'PROPIO',
+        },
+      });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/maquinaria',
+        payload: {
+          identificacion: 'Cosechadora Alquilada Test',
+          tipo: 'COSECHADORA',
+          condicion: 'ALQUILADO',
+        },
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/catalogos/maquinaria?condicion=PROPIO',
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.length).toBeGreaterThanOrEqual(1);
+      body.data.forEach((m: { condicion: string }) => {
+        expect(m.condicion).toBe('PROPIO');
+      });
+    });
+
+    it('GET /api/v1/catalogos/maquinaria/:id debe obtener el detalle por identificador', async () => {
+      const createRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/maquinaria',
+        payload: {
+          identificacion: 'Motocultivador Honda F501',
+          tipo: 'MOTOCULTIVADOR',
+          condicion: 'PROPIO',
+        },
+      });
+      const created = JSON.parse(createRes.body).data;
+
+      const getRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/catalogos/maquinaria/${created.id}`,
+      });
+
+      expect(getRes.statusCode).toBe(200);
+      const body = JSON.parse(getRes.body);
+      expect(body.data.id).toBe(created.id);
+      expect(body.data.identificacion).toBe('Motocultivador Honda F501');
+    });
+
+    it('GET /api/v1/catalogos/maquinaria/:id inexistente debe responder 404 Not Found', async () => {
+      const randomId = crypto.randomUUID();
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/catalogos/maquinaria/${randomId}`,
+      });
+
+      expect(res.statusCode).toBe(404);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('ENTITY_NOT_FOUND');
+    });
+  });
 });
+
 
 
