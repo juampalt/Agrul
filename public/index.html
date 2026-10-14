@@ -235,6 +235,129 @@
         <button type="button" class="btn btn-secondary" data-close="modal-historial">Cerrar</button>
       </div>
     </div>
+  <!-- MODAL: Visualizador Gráfico de Linaje Interactivo (Grafo N:M) -->
+  <div class="modal-backdrop" id="modal-linaje" aria-hidden="true">
+    <div class="modal-dialog glass modal-lineage">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title-with-badge">
+            <h2>Árbol Genealógico de Linaje <span class="badge-nm">Grafo N:M</span></h2>
+          </div>
+          <p class="subtitle" id="linaje-subtitulo">Reconstrucción bidireccional upstream & downstream</p>
+        </div>
+        <button class="close-btn" data-close="modal-linaje">&times;</button>
+      </div>
+
+      <!-- Barra de herramientas del grafo -->
+      <div class="lineage-toolbar glass">
+        <div class="toolbar-left">
+          <div class="lote-focus-info">
+            <span class="focus-label">Lote Foco:</span>
+            <span class="focus-code" id="linaje-foco-codigo">-</span>
+            <span class="focus-meta" id="linaje-foco-meta">-</span>
+          </div>
+        </div>
+        <div class="toolbar-right">
+          <!-- Control Recall Simulator -->
+          <div class="recall-toggle-wrap">
+            <button id="btn-toggle-recall" class="btn-recall" title="Simular retiro preventivo sanitario">
+              <span class="pulse-indicator"></span> 🚨 Recall Simulator
+            </button>
+          </div>
+          <div class="zoom-controls">
+            <button id="btn-zoom-in" class="btn-icon-sm" title="Acercar">+</button>
+            <button id="btn-zoom-reset" class="btn-icon-sm" title="Centrar">⟲</button>
+            <button id="btn-zoom-out" class="btn-icon-sm" title="Alejar">−</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Banner de Alerta Sanitaria (oculto por defecto, visible en Recall Mode) -->
+      <div class="recall-alert-banner" id="recall-alert-banner" style="display: none;">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-content">
+          <div class="alert-heading">SIMULACIÓN DE RETIRO PREVENTIVO ACTIVA (RECALL SANITARIO)</div>
+          <div class="alert-details" id="recall-alert-details">
+            Se destacan en rojo el lote seleccionado y todos los descendientes directos e indirectos derivados de su mezcla o fraccionamiento.
+          </div>
+        </div>
+        <div class="alert-kpi">
+          <span class="alert-kpi-label">Masa en Riesgo:</span>
+          <span class="alert-kpi-val" id="recall-masa-riesgo">0 kg</span>
+        </div>
+      </div>
+
+      <!-- Área Principal del Grafo + Panel de Detalles -->
+      <div class="lineage-body">
+        <div class="graph-viewport-container" id="graph-viewport-container">
+          <svg id="lineage-svg" class="lineage-svg" width="100%" height="100%">
+            <defs>
+              <marker id="arrow-default" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+              </marker>
+              <marker id="arrow-recall" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#f43f5e" />
+              </marker>
+              <marker id="arrow-split" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8" />
+              </marker>
+              <marker id="arrow-merge" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#a855f7" />
+              </marker>
+            </defs>
+            <g id="lineage-zoom-group">
+              <g id="graph-edges"></g>
+              <g id="graph-nodes"></g>
+            </g>
+          </svg>
+          <div class="graph-legend">
+            <span class="legend-item"><span class="legend-dot split"></span> Split (1:N)</span>
+            <span class="legend-item"><span class="legend-dot merge"></span> Merge (N:1)</span>
+            <span class="legend-item"><span class="legend-dot target"></span> Lote Foco</span>
+            <span class="legend-item recall-legend"><span class="legend-dot recall"></span> En Riesgo (Recall)</span>
+          </div>
+        </div>
+
+        <!-- Panel Lateral de Inspección -->
+        <aside class="node-inspector glass" id="node-inspector">
+          <div class="inspector-header">
+            <h3>Ficha del Lote</h3>
+            <span class="inspector-status-badge" id="inspector-estado">-</span>
+          </div>
+          <div class="inspector-body">
+            <div class="inspector-field">
+              <label>Código:</label>
+              <div class="inspector-value highlight" id="inspector-codigo">-</div>
+            </div>
+            <div class="inspector-field">
+              <label>Producto:</label>
+              <div class="inspector-value" id="inspector-producto">-</div>
+            </div>
+            <div class="inspector-field">
+              <label>Stock / Cantidad:</label>
+              <div class="inspector-value" id="inspector-stock">-</div>
+            </div>
+            <div class="inspector-field" id="inspector-relacion-field" style="display: none;">
+              <label>Aporte en Relación:</label>
+              <div class="inspector-value" id="inspector-aporte">-</div>
+            </div>
+            <div class="inspector-field" id="inspector-motivo-field" style="display: none;">
+              <label>Motivo Relación:</label>
+              <div class="inspector-value badge-relacion" id="inspector-motivo">-</div>
+            </div>
+            <div class="inspector-actions">
+              <button id="btn-recenter-graph" class="btn btn-secondary btn-sm" style="width: 100%;">
+                🔍 Centrar Linaje en este Lote
+              </button>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close="modal-linaje">Cerrar Visualizador</button>
+      </div>
+    </div>
   </div>
 
   <!-- Notificaciones Toast -->

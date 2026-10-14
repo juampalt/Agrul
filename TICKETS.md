@@ -14,7 +14,7 @@
 | **Épica 3: API REST Fastify & Integración** | 2 | 2 | 0 | 0 |
 | **Épica 4: Operaciones Avanzadas de Linaje** | 2 | 2 | 0 | 0 |
 | **Épica 5: Infraestructura PostgreSQL & Migraciones** | 2 | 2 | 0 | 0 |
-| **Épica 6: Frontend Dashboard & Visualizador de Trazabilidad** | 3 | 1 | 0 | 2 |
+| **Épica 6: Frontend Dashboard & Visualizador de Trazabilidad** | 3 | 2 | 0 | 1 |
 | **Épica 7: Módulo 1 — Gestión de Fincas, Lotes y Suelos** | 3 | 0 | 0 | 3 |
 | **Épica 8: Módulo 2 — Gestión de Cultivos y Ciclos Productivos** | 3 | 0 | 0 | 3 |
 | **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 0 | 0 | 4 |
@@ -26,7 +26,7 @@
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **9** | **0** | **41** |
+| **TOTAL GENERAL** | **50** | **10** | **0** | **40** |
 
 ---
 
@@ -243,21 +243,21 @@
   - [x] Formulario de registro de eventos conectado a la API REST.
 
 ### `[AGRUL-012]` Visualizador Gráfico de Linaje Interactivo (Grafo N:M)
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Media (P2)
 - **Módulo:** Frontend
 - **Reglas de Negocio:** RN-07
 - **Skills:** [domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md)
-- **Etiquetas:** `frontend`, `linaje`, `graph`, `ready-for-agent`
+- **Etiquetas:** `frontend`, `linaje`, `graph`, `status:done`
 - **Descripción:** Componente visual interactivo que renderiza el árbol genealógico completo (padres, transformaciones, hijos) a partir de /api/v1/lotes/:id/linaje.
 - **Tareas Técnicas:**
-  1. Integrar librería de grafos dirigida (ej. Cytoscape.js o React Flow / D3).
+  1. Integrar librería de grafos dirigida (ej. Cytoscape.js o React Flow / D3 / SVG Nativo Reactivo).
   2. Mapear respuesta de ancestros y descendientes a nodos y aristas con motivos SPLIT/BLEND.
   3. Implementar simulación de retiro preventivo (Recall) resaltando descendencia en rojo.
 - **Criterios de Aceptación:**
-  - [ ] Visualización clara de flujos de Split y Merge.
-  - [ ] Navegación al hacer clic en un lote a su vista de detalle.
-  - [ ] Modo Recall Simulator operativo destacando lotes derivados.
+  - [x] Visualización clara de flujos de Split y Merge.
+  - [x] Navegación al hacer clic en un lote a su vista de detalle.
+  - [x] Modo Recall Simulator operativo destacando lotes derivados.
 
 ### `[AGRUL-013]` Generador y Lector de Códigos QR para Operarios de Campo
 - **Estado:** `TODO` 📌

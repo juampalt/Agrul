@@ -155,6 +155,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <button class="btn-action action-timeline" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Ver bitácora inmutable de eventos">
                 📜 Bitácora
               </button>
+              <button class="btn-action action-lineage" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Ver grafo interactivo de linaje N:M">
+                🕸️ Linaje
+              </button>
             </div>
           </td>
         </tr>
@@ -171,6 +174,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.action-timeline').forEach(btn => {
       btn.addEventListener('click', () => {
         abrirModalHistorial(btn.dataset.id, btn.dataset.codigo);
+      });
+    });
+
+    document.querySelectorAll('.action-lineage').forEach(btn => {
+      btn.addEventListener('click', () => {
+        abrirModalLinaje(btn.dataset.id, btn.dataset.codigo);
       });
     });
   }
@@ -348,6 +357,439 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       historialLista.innerHTML = `<p class="text-center" style="color: var(--accent-rose); padding: 20px;">${err.message}</p>`;
     }
+  }
+
+  // ==========================================================================
+  // AGRUL-012: Visualizador Gráfico de Linaje Interactivo (Grafo N:M) & Recall
+  // ==========================================================================
+
+  const modalLinaje = document.getElementById('modal-linaje');
+  const linajeSubtitulo = document.getElementById('linaje-subtitulo');
+  const linajeFocoCodigo = document.getElementById('linaje-foco-codigo');
+  const linajeFocoMeta = document.getElementById('linaje-foco-meta');
+  const lineageSvg = document.getElementById('lineage-svg');
+  const lineageZoomGroup = document.getElementById('lineage-zoom-group');
+  const graphEdges = document.getElementById('graph-edges');
+  const graphNodes = document.getElementById('graph-nodes');
+  const btnToggleRecall = document.getElementById('btn-toggle-recall');
+  const recallAlertBanner = document.getElementById('recall-alert-banner');
+  const recallMasaRiesgo = document.getElementById('recall-masa-riesgo');
+  const graphViewportContainer = document.getElementById('graph-viewport-container');
+
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  const btnZoomReset = document.getElementById('btn-zoom-reset');
+
+  // Inspector
+  const inspectorEstado = document.getElementById('inspector-estado');
+  const inspectorCodigo = document.getElementById('inspector-codigo');
+  const inspectorProducto = document.getElementById('inspector-producto');
+  const inspectorStock = document.getElementById('inspector-stock');
+  const inspectorRelacionField = document.getElementById('inspector-relacion-field');
+  const inspectorAporte = document.getElementById('inspector-aporte');
+  const inspectorMotivoField = document.getElementById('inspector-motivo-field');
+  const inspectorMotivo = document.getElementById('inspector-motivo');
+  const btnRecenterGraph = document.getElementById('btn-recenter-graph');
+
+  let currentLinajeData = null;
+  let isRecallActive = false;
+  let selectedInspectorLote = null;
+
+  // Pan y Zoom
+  let zoomLevel = 1;
+  let panOffsetX = 0;
+  let panOffsetY = 0;
+  let isDraggingGraph = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+
+  function aplicarTransformacionGrafo() {
+    lineageZoomGroup.setAttribute('transform', `translate(${panOffsetX}, ${panOffsetY}) scale(${zoomLevel})`);
+  }
+
+  btnZoomIn.addEventListener('click', () => {
+    zoomLevel = Math.min(2.5, zoomLevel + 0.2);
+    aplicarTransformacionGrafo();
+  });
+
+  btnZoomOut.addEventListener('click', () => {
+    zoomLevel = Math.max(0.4, zoomLevel - 0.2);
+    aplicarTransformacionGrafo();
+  });
+
+  btnZoomReset.addEventListener('click', () => {
+    zoomLevel = 1;
+    panOffsetX = 0;
+    panOffsetY = 0;
+    aplicarTransformacionGrafo();
+  });
+
+  // Paneo con el ratón
+  graphViewportContainer.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.graph-node')) return; // Permitir clic en nodos
+    isDraggingGraph = true;
+    graphViewportContainer.classList.add('grabbing');
+    dragStartX = e.clientX - panOffsetX;
+    dragStartY = e.clientY - panOffsetY;
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDraggingGraph) return;
+    panOffsetX = e.clientX - dragStartX;
+    panOffsetY = e.clientY - dragStartY;
+    aplicarTransformacionGrafo();
+  });
+
+  window.addEventListener('mouseup', () => {
+    isDraggingGraph = false;
+    graphViewportContainer.classList.remove('grabbing');
+  });
+
+  graphViewportContainer.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    zoomLevel = Math.min(2.5, Math.max(0.4, zoomLevel + delta));
+    aplicarTransformacionGrafo();
+  }, { passive: false });
+
+  // Toggle Recall Simulator
+  btnToggleRecall.addEventListener('click', () => {
+    isRecallActive = !isRecallActive;
+    if (isRecallActive) {
+      btnToggleRecall.classList.add('active');
+      recallAlertBanner.style.display = 'flex';
+      showToast('🚨 Recall Simulator Activado: Se destacan en rojo los lotes derivados en riesgo.', 'error');
+    } else {
+      btnToggleRecall.classList.remove('active');
+      recallAlertBanner.style.display = 'none';
+      showToast('Recall Simulator Desactivado.', 'success');
+    }
+    if (currentLinajeData) {
+      renderizarGrafoLinaje(currentLinajeData);
+    }
+  });
+
+  // Centrar en lote seleccionado desde el inspector
+  btnRecenterGraph.addEventListener('click', () => {
+    if (selectedInspectorLote && selectedInspectorLote.id) {
+      abrirModalLinaje(selectedInspectorLote.id, selectedInspectorLote.codigoLote);
+    }
+  });
+
+  // Abrir Modal de Linaje y consultar API
+  async function abrirModalLinaje(loteId, codigoLote) {
+    linajeSubtitulo.textContent = `Consultando árbol genealógico del lote ${codigoLote}...`;
+    linajeFocoCodigo.textContent = codigoLote;
+    linajeFocoMeta.textContent = 'Cargando topología...';
+    graphEdges.innerHTML = '';
+    graphNodes.innerHTML = '';
+
+    // Reset estado
+    isRecallActive = false;
+    btnToggleRecall.classList.remove('active');
+    recallAlertBanner.style.display = 'none';
+    zoomLevel = 1;
+    panOffsetX = 0;
+    panOffsetY = 0;
+    aplicarTransformacionGrafo();
+
+    openModal(modalLinaje);
+
+    try {
+      const res = await fetch(`/api/v1/lotes/${loteId}/linaje`);
+      const json = await res.json();
+
+      if (!json.success) {
+        throw new Error(json.error?.message || 'Error al obtener linaje');
+      }
+
+      currentLinajeData = json.data;
+      const target = currentLinajeData.loteObjetivo;
+
+      linajeSubtitulo.textContent = `Lote ${target.codigoLote} — ${target.producto} (${target.cantidadActual} ${target.unidadMedida})`;
+      linajeFocoCodigo.textContent = target.codigoLote;
+      linajeFocoMeta.textContent = `${target.producto} | Stock: ${Number(target.cantidadActual).toLocaleString('es-AR')} ${target.unidadMedida}`;
+
+      // Actualizar inspector inicial con el lote objetivo
+      actualizarInspectorLote({
+        id: target.id,
+        codigoLote: target.codigoLote,
+        producto: target.producto,
+        estadoActual: target.estadoActual,
+        cantidadActual: target.cantidadActual,
+        unidadMedida: target.unidadMedida,
+      });
+
+      renderizarGrafoLinaje(currentLinajeData);
+    } catch (err) {
+      console.error(err);
+      linajeSubtitulo.textContent = `Error al cargar linaje: ${err.message}`;
+      showToast(`Error al cargar linaje: ${err.message}`, 'error');
+    }
+  }
+
+  // Actualizar datos del panel de inspección lateral
+  function actualizarInspectorLote(loteData, relacionData = null) {
+    selectedInspectorLote = loteData;
+    inspectorCodigo.textContent = loteData.codigoLote || '-';
+    inspectorProducto.textContent = loteData.producto || '-';
+
+    const estado = loteData.estadoActual || 'CREADO';
+    inspectorEstado.textContent = estado;
+    inspectorEstado.className = `inspector-status-badge status-badge ${estado.toLowerCase()}`;
+
+    const stock = Number(loteData.cantidadActual !== undefined ? loteData.cantidadActual : loteData.cantidadAportada) || 0;
+    inspectorStock.textContent = `${stock.toLocaleString('es-AR')} ${loteData.unidadMedida || 'KG'}`;
+
+    if (relacionData) {
+      inspectorRelacionField.style.display = 'block';
+      inspectorAporte.textContent = `${Number(relacionData.cantidadAportada || 0).toLocaleString('es-AR')} ${relacionData.unidadMedida || 'KG'}`;
+
+      inspectorMotivoField.style.display = 'block';
+      const motivo = relacionData.motivoRelacion || 'TRANSFORMACION';
+      inspectorMotivo.textContent = motivo;
+      inspectorMotivo.className = `inspector-value badge-relacion ${motivo.toLowerCase()}`;
+    } else {
+      inspectorRelacionField.style.display = 'none';
+      inspectorMotivoField.style.display = 'none';
+    }
+
+    if (currentLinajeData && currentLinajeData.loteObjetivo && loteData.id === currentLinajeData.loteObjetivo.id) {
+      btnRecenterGraph.style.display = 'none';
+    } else {
+      btnRecenterGraph.style.display = 'block';
+    }
+  }
+
+  // Motor de renderizado SVG del Grafo N:M
+  function renderizarGrafoLinaje(data) {
+    graphEdges.innerHTML = '';
+    graphNodes.innerHTML = '';
+
+    const target = data.loteObjetivo;
+    const ancestros = data.ancestros || [];
+    const descendientes = data.descendientes || [];
+
+    // Dimensiones de nodos
+    const nodeW = 190;
+    const nodeH = 74;
+
+    // Calcular distribución vertical
+    const maxRows = Math.max(1, ancestros.length, descendientes.length);
+    const rowGap = 100;
+    const totalHeight = Math.max(380, maxRows * rowGap + 80);
+
+    const centerY = totalHeight / 2 - nodeH / 2;
+    const targetX = 460;
+    const targetY = centerY;
+
+    const targetNodeCoords = { x: targetX, y: targetY };
+
+    // Coordenadas de ancestros (Columna izquierda)
+    const ancestorX = 90;
+    const ancestorNodes = ancestros.map((anc, idx) => {
+      const spacing = totalHeight / (ancestros.length + 1);
+      const y = spacing * (idx + 1) - nodeH / 2;
+      return { data: anc, x: ancestorX, y };
+    });
+
+    // Coordenadas de descendientes (Columna derecha)
+    const descendantX = 830;
+    const descendantNodes = descendientes.map((desc, idx) => {
+      const spacing = totalHeight / (descendientes.length + 1);
+      const y = spacing * (idx + 1) - nodeH / 2;
+      return { data: desc, x: descendantX, y };
+    });
+
+    // Calcular masa comprometida en Recall
+    let masaRecallRiesgo = 0;
+    if (isRecallActive) {
+      // Masa de todos los descendientes en riesgo
+      masaRecallRiesgo = descendientes.reduce((sum, d) => sum + (Number(d.cantidadAportada) || 0), 0);
+      recallMasaRiesgo.textContent = `${masaRecallRiesgo.toLocaleString('es-AR')} kg (${descendientes.length} lotes)`;
+    }
+
+    // 1. Renderizar Aristas de Ancestros -> Lote Objetivo
+    ancestorNodes.forEach(({ data: anc, x, y }) => {
+      const startX = x + nodeW;
+      const startY = y + nodeH / 2;
+      const endX = targetX;
+      const endY = targetY + nodeH / 2;
+
+      const edgePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const cp1X = startX + (endX - startX) * 0.5;
+      const cp2X = startX + (endX - startX) * 0.5;
+      const d = `M ${startX} ${startY} C ${cp1X} ${startY}, ${cp2X} ${endY}, ${endX} ${endY}`;
+      edgePath.setAttribute('d', d);
+
+      const motivo = (anc.motivoRelacion || 'BLEND_MERGE').toLowerCase();
+      edgePath.setAttribute('class', `graph-edge ${motivo}`);
+      edgePath.setAttribute('marker-end', motivo === 'split' ? 'url(#arrow-split)' : 'url(#arrow-merge)');
+      graphEdges.appendChild(edgePath);
+
+      // Etiqueta intermedia en la arista
+      const midX = (startX + endX) / 2;
+      const midY = (startY + endY) / 2;
+      const labelText = `${anc.motivoRelacion || 'FUSIÓN'} (${Number(anc.cantidadAportada || 0).toLocaleString('es-AR')} ${anc.unidadMedida || 'KG'})`;
+      crearEtiquetaArista(midX, midY, labelText, motivo);
+    });
+
+    // 2. Renderizar Aristas de Lote Objetivo -> Descendientes
+    descendantNodes.forEach(({ data: desc, x, y }) => {
+      const startX = targetX + nodeW;
+      const startY = targetY + nodeH / 2;
+      const endX = x;
+      const endY = y + nodeH / 2;
+
+      const edgePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const cp1X = startX + (endX - startX) * 0.5;
+      const cp2X = startX + (endX - startX) * 0.5;
+      const d = `M ${startX} ${startY} C ${cp1X} ${startY}, ${cp2X} ${endY}, ${endX} ${endY}`;
+      edgePath.setAttribute('d', d);
+
+      const motivo = (desc.motivoRelacion || 'SPLIT').toLowerCase();
+      const isRecallEdge = isRecallActive;
+
+      edgePath.setAttribute('class', `graph-edge ${motivo} ${isRecallEdge ? 'recall-edge' : ''}`);
+      edgePath.setAttribute('marker-end', isRecallEdge ? 'url(#arrow-recall)' : (motivo === 'merge' ? 'url(#arrow-merge)' : 'url(#arrow-split)'));
+      graphEdges.appendChild(edgePath);
+
+      // Etiqueta intermedia
+      const midX = (startX + endX) / 2;
+      const midY = (startY + endY) / 2;
+      const labelText = `${desc.motivoRelacion || 'DIVISIÓN'} (${Number(desc.cantidadAportada || 0).toLocaleString('es-AR')} ${desc.unidadMedida || 'KG'})`;
+      crearEtiquetaArista(midX, midY, labelText, isRecallEdge ? 'recall' : motivo);
+    });
+
+    // 3. Renderizar Nodos de Ancestros
+    ancestorNodes.forEach(({ data: anc, x, y }) => {
+      const g = crearElementoNodoSVG(anc, x, y, nodeW, nodeH, {
+        isTarget: false,
+        isRecalled: false,
+        isSource: false,
+      });
+      g.addEventListener('click', () => {
+        actualizarInspectorLote(anc, anc);
+      });
+      graphNodes.appendChild(g);
+    });
+
+    // 4. Renderizar Nodo Lote Objetivo (Foco)
+    const targetG = crearElementoNodoSVG(target, targetNodeCoords.x, targetNodeCoords.y, nodeW, nodeH, {
+      isTarget: true,
+      isRecalled: false,
+      isSource: isRecallActive,
+    });
+    targetG.addEventListener('click', () => {
+      actualizarInspectorLote(target);
+    });
+    graphNodes.appendChild(targetG);
+
+    // 5. Renderizar Nodos de Descendientes
+    descendantNodes.forEach(({ data: desc, x, y }) => {
+      const g = crearElementoNodoSVG(desc, x, y, nodeW, nodeH, {
+        isTarget: false,
+        isRecalled: isRecallActive,
+        isSource: false,
+      });
+      g.addEventListener('click', () => {
+        actualizarInspectorLote(desc, desc);
+      });
+      graphNodes.appendChild(g);
+    });
+  }
+
+  // Crear Etiqueta SVG para Aristas
+  function crearEtiquetaArista(x, y, texto, tipo) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const width = Math.max(80, texto.length * 6.5 + 16);
+    const height = 20;
+
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', x - width / 2);
+    rect.setAttribute('y', y - height / 2);
+    rect.setAttribute('width', width);
+    rect.setAttribute('height', height);
+    rect.setAttribute('class', 'edge-label-bg');
+    if (tipo === 'recall') {
+      rect.setAttribute('stroke', '#f43f5e');
+      rect.setAttribute('fill', '#450a0a');
+    }
+
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', x);
+    text.setAttribute('y', y);
+    text.setAttribute('class', 'edge-label-text');
+    if (tipo === 'recall') {
+      text.setAttribute('fill', '#fca5a5');
+    }
+    text.textContent = texto;
+
+    g.appendChild(rect);
+    g.appendChild(text);
+    graphEdges.appendChild(g);
+  }
+
+  // Crear Elemento Gráfico de Nodo SVG
+  function crearElementoNodoSVG(lote, x, y, w, h, flags) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    let classes = 'graph-node';
+    if (flags.isTarget) classes += ' is-target';
+    if (flags.isSource) classes += ' is-source-contaminated';
+    if (flags.isRecalled) classes += ' is-recalled';
+    g.setAttribute('class', classes);
+    g.setAttribute('transform', `translate(${x}, ${y})`);
+
+    // Rectángulo de fondo
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('width', w);
+    rect.setAttribute('height', h);
+    rect.setAttribute('class', 'node-card-rect');
+    g.appendChild(rect);
+
+    // Indicador circular de estado
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', 16);
+    circle.setAttribute('cy', 22);
+    circle.setAttribute('r', 5);
+    const estado = (lote.estadoActual || 'CREADO').toUpperCase();
+    let fillColor = '#38bdf8'; // Creado
+    if (estado === 'EN_PROCESO') fillColor = '#f59e0b';
+    if (estado === 'EMBALADO') fillColor = '#a855f7';
+    if (estado === 'DESPACHADO') fillColor = '#10b981';
+    if (estado === 'CERRADO') fillColor = '#64748b';
+    if (flags.isRecalled || flags.isSource) fillColor = '#f43f5e';
+    circle.setAttribute('fill', fillColor);
+    g.appendChild(circle);
+
+    // Texto: Código de lote
+    const codeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    codeText.setAttribute('x', 28);
+    codeText.setAttribute('y', 25);
+    codeText.setAttribute('class', 'node-code-text');
+    codeText.textContent = lote.codigoLote || 'LOTE-SIN-CODIGO';
+    g.appendChild(codeText);
+
+    // Texto: Producto
+    const prodText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    prodText.setAttribute('x', 14);
+    prodText.setAttribute('y', 44);
+    prodText.setAttribute('class', 'node-prod-text');
+    const prodStr = lote.producto || 'Producto Agrícola';
+    prodText.textContent = prodStr.length > 22 ? `${prodStr.substring(0, 20)}...` : prodStr;
+    g.appendChild(prodText);
+
+    // Texto: Stock / Masa
+    const stockText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    stockText.setAttribute('x', 14);
+    stockText.setAttribute('y', 61);
+    stockText.setAttribute('class', 'node-stock-text');
+    const cant = Number(lote.cantidadActual !== undefined ? lote.cantidadActual : lote.cantidadAportada) || 0;
+    const unit = lote.unidadMedida || 'KG';
+    stockText.textContent = `Stock: ${cant.toLocaleString('es-AR')} ${unit}`;
+    g.appendChild(stockText);
+
+    return g;
   }
 
   // Carga inicial

@@ -431,5 +431,38 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     expect(mergeBody.success).toBe(false);
     expect(mergeBody.error.code).toBe('VALIDATION_ERROR');
   });
+
+  it('GET / debe servir la SPA incluyendo el Visualizador Gráfico de Linaje y Simulador de Recall (AGRUL-012)', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/',
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('text/html');
+    expect(res.body).toContain('id="modal-linaje"');
+    expect(res.body).toContain('id="lineage-svg"');
+    expect(res.body).toContain('id="btn-toggle-recall"');
+    expect(res.body).toContain('id="recall-alert-banner"');
+    expect(res.body).toContain('id="node-inspector"');
+  });
+
+  it('GET /app.js y /app.css deben servirse correctamente para soportar la visualización del grafo', async () => {
+    const resJs = await app.inject({
+      method: 'GET',
+      url: '/app.js',
+    });
+    expect(resJs.statusCode).toBe(200);
+    expect(resJs.headers['content-type']).toContain('application/javascript');
+    expect(resJs.body).toContain('renderizarGrafoLinaje');
+
+    const resCss = await app.inject({
+      method: 'GET',
+      url: '/app.css',
+    });
+    expect(resCss.statusCode).toBe(200);
+    expect(resCss.headers['content-type']).toContain('text/css');
+    expect(resCss.body).toContain('.graph-node.is-recalled');
+  });
 });
 
