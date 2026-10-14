@@ -12,7 +12,7 @@
 | **Épica 1: Núcleo de Dominio & Tooling** | 2 | 2 | 0 | 0 |
 | **Épica 2: Casos de Uso & Persistencia Base** | 2 | 2 | 0 | 0 |
 | **Épica 3: API REST Fastify & Integración** | 2 | 2 | 0 | 0 |
-| **Épica 4: Operaciones Avanzadas de Linaje** | 2 | 1 | 0 | 1 |
+| **Épica 4: Operaciones Avanzadas de Linaje** | 2 | 2 | 0 | 0 |
 | **Épica 5: Infraestructura PostgreSQL & Migraciones** | 2 | 1 | 0 | 1 |
 | **Épica 6: Frontend Dashboard & Visualizador de Trazabilidad** | 3 | 1 | 0 | 2 |
 | **Épica 7: Módulo 1 — Gestión de Fincas, Lotes y Suelos** | 3 | 0 | 0 | 3 |
@@ -166,12 +166,12 @@
   - [x] Tests unitarios y de integración HTTP que validen el balance de masa.
 
 ### `[AGRUL-008]` Caso de Uso y Endpoint: Fusión de Lotes (Merge / Blend N:1)
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Linaje
 - **Reglas de Negocio:** RN-07
 - **Skills:** [domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
-- **Etiquetas:** `domain`, `use-case`, `linaje`, `ready-for-agent`
+- **Etiquetas:** `domain`, `use-case`, `linaje`, `status:done`
 - **Descripción:** Implementar la combinación de materias primas de múltiples lotes origen en un único lote destino (mezcla en tanque o bines).
 - **Tareas Técnicas:**
   1. Crear FusionarLotesUseCase en src/application/use-cases/.
@@ -181,9 +181,9 @@
   5. Registrar aristas en lote_genealogia con motivo_relacion = 'BLEND_MERGE'.
   6. Exponer endpoint POST /api/v1/lotes/merge.
 - **Criterios de Aceptación:**
-  - [ ] Rollback total si cualquiera de los lotes origen no tiene stock suficiente.
-  - [ ] El árbol de linaje del lote hijo debe mostrar a todos los padres como ancestros inmediatos.
-  - [ ] Tests unitarios y de integración verificando la conservación de masa.
+  - [x] Rollback total si cualquiera de los lotes origen no tiene stock suficiente.
+  - [x] El árbol de linaje del lote hijo debe mostrar a todos los padres como ancestros inmediatos.
+  - [x] Tests unitarios y de integración verificando la conservación de masa.
 
 ---
 

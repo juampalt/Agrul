@@ -290,5 +290,146 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     expect(resDashboard.statusCode).toBe(200);
     expect(resDashboard.headers['content-type']).toContain('text/html');
   });
+
+  it('POST /api/v1/lotes/merge debe fusionar múltiples lotes padres en un nuevo lote y reflejar el linaje N:M', async () => {
+    // 1. Crear dos lotes padres
+    const p1Res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-M01',
+        producto: 'Uva Bonarda',
+        cantidadInicial: 4000,
+        unidadMedida: 'KG',
+      },
+    });
+    const padre1 = JSON.parse(p1Res.body).data;
+
+    const p2Res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-M02',
+        producto: 'Uva Syrah',
+        cantidadInicial: 2500,
+        unidadMedida: 'KG',
+      },
+    });
+    const padre2 = JSON.parse(p2Res.body).data;
+
+    // 2. Ejecutar fusión (Merge N:1)
+    const mergeRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes/merge',
+      payload: {
+        padres: [
+          { loteId: padre1.id, cantidad: 2000 },
+          { loteId: padre2.id, cantidad: 2500 },
+        ],
+        nuevoLote: {
+          codigoLote: 'LOT-2026-CORTE01',
+          producto: 'Vino Tinto Bonarda-Syrah',
+          unidadMedida: 'KG',
+        },
+        actorId: '11111111-1111-1111-1111-111111111111',
+        ubicacionId: '22222222-2222-2222-2222-222222222222',
+        motivo: 'Mezcla en pileta subterránea 12',
+      },
+    });
+
+    expect(mergeRes.statusCode).toBe(201);
+    const mergeBody = JSON.parse(mergeRes.body);
+    expect(mergeBody.success).toBe(true);
+    expect(mergeBody.data.loteHijo.codigoLote).toBe('LOT-2026-CORTE01');
+    expect(mergeBody.data.loteHijo.cantidadActual).toBe(4500); // 2000 + 2500
+    expect(mergeBody.data.aristasGenealogia).toHaveLength(2);
+    expect(mergeBody.data.eventosOrigen).toHaveLength(2);
+    expect(mergeBody.data.eventoRecepcion.tipoEvento).toBe('FUSION_RECEPCION');
+
+    // 3. Consultar linaje del lote hijo resultante
+    const linajeRes = await app.inject({
+      method: 'GET',
+      url: `/api/v1/lotes/${mergeBody.data.loteHijo.id}/linaje`,
+    });
+    expect(linajeRes.statusCode).toBe(200);
+    const linajeBody = JSON.parse(linajeRes.body);
+    expect(linajeBody.success).toBe(true);
+    expect(linajeBody.data.ancestros).toHaveLength(2);
+
+    const idsAncestros = linajeBody.data.ancestros.map((a: { loteId: string }) => a.loteId);
+    expect(idsAncestros).toContain(padre1.id);
+    expect(idsAncestros).toContain(padre2.id);
+  });
+
+  it('POST /api/v1/lotes/merge debe responder 422 si algún lote padre no tiene stock suficiente', async () => {
+    const p1Res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-M03',
+        producto: 'Cereza Lapins',
+        cantidadInicial: 500,
+        unidadMedida: 'KG',
+      },
+    });
+    const padre1 = JSON.parse(p1Res.body).data;
+
+    const p2Res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes',
+      payload: {
+        codigoLote: 'LOT-2026-M04',
+        producto: 'Cereza Sweetheart',
+        cantidadInicial: 1000,
+        unidadMedida: 'KG',
+      },
+    });
+    const padre2 = JSON.parse(p2Res.body).data;
+
+    const mergeRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes/merge',
+      payload: {
+        padres: [
+          { loteId: padre1.id, cantidad: 600 }, // Supera el stock de 500
+          { loteId: padre2.id, cantidad: 500 },
+        ],
+        nuevoLote: {
+          producto: 'Cereza Mix Descarte',
+          unidadMedida: 'KG',
+        },
+        actorId: '11111111-1111-1111-1111-111111111111',
+        ubicacionId: '22222222-2222-2222-2222-222222222222',
+      },
+    });
+
+    expect(mergeRes.statusCode).toBe(422);
+    const mergeBody = JSON.parse(mergeRes.body);
+    expect(mergeBody.success).toBe(false);
+    expect(mergeBody.error.code).toBe('CANTIDAD_INSUFICIENTE');
+  });
+
+  it('POST /api/v1/lotes/merge debe responder 400 Bad Request si se envían menos de 2 lotes padres', async () => {
+    const mergeRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/lotes/merge',
+      payload: {
+        padres: [
+          { loteId: '11111111-1111-1111-1111-111111111111', cantidad: 500 },
+        ],
+        nuevoLote: {
+          producto: 'Mix',
+          unidadMedida: 'KG',
+        },
+        actorId: '11111111-1111-1111-1111-111111111111',
+        ubicacionId: '22222222-2222-2222-2222-222222222222',
+      },
+    });
+
+    expect(mergeRes.statusCode).toBe(400);
+    const mergeBody = JSON.parse(mergeRes.body);
+    expect(mergeBody.success).toBe(false);
+    expect(mergeBody.error.code).toBe('VALIDATION_ERROR');
+  });
 });
 

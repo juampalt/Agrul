@@ -23,6 +23,7 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
       // Lotes
       v1.get('/lotes', (req, rep) => deps.lotesController.listar(req, rep));
       v1.post('/lotes', (req, rep) => deps.lotesController.crear(req, rep));
+      v1.post('/lotes/merge', (req, rep) => deps.lotesController.fusionar(req, rep));
       v1.get('/lotes/:id', (req, rep) => deps.lotesController.obtenerPorId(req, rep));
       v1.post('/lotes/:id/split', (req, rep) => deps.lotesController.dividir(req, rep));
 
