@@ -15,9 +15,9 @@
 | **Épica 4: Operaciones Avanzadas de Linaje** | 2 | 2 | 0 | 0 |
 | **Épica 5: Infraestructura PostgreSQL & Migraciones** | 2 | 2 | 0 | 0 |
 | **Épica 6: Frontend Dashboard & Visualizador de Trazabilidad** | 3 | 3 | 0 | 0 |
-| **Épica 7: Módulo 1 — Gestión de Fincas, Lotes y Suelos** | 3 | 0 | 0 | 3 |
+| **Épica 7: Módulo 1 — Gestión de Fincas, Lotes y Suelos** | 3 | 1 | 0 | 2 |
 | **Épica 8: Módulo 2 — Gestión de Cultivos y Ciclos Productivos** | 3 | 0 | 0 | 3 |
-| **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 0 | 0 | 4 |
+| **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 2 | 0 | 2 |
 | **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 0 | 0 | 4 |
 | **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 0 | 0 | 4 |
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 0 | 0 | 3 |
@@ -26,7 +26,7 @@
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **11** | **0** | **39** |
+| **TOTAL GENERAL** | **50** | **16** | **0** | **34** |
 
 ---
 
