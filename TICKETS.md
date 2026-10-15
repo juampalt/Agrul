@@ -17,7 +17,7 @@
 | **Épica 6: Frontend Dashboard & Visualizador de Trazabilidad** | 3 | 3 | 0 | 0 |
 | **Épica 7: Módulo 1 — Gestión de Fincas, Lotes y Suelos** | 3 | 1 | 0 | 2 |
 | **Épica 8: Módulo 2 — Gestión de Cultivos y Ciclos Productivos** | 3 | 0 | 0 | 3 |
-| **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 2 | 0 | 2 |
+| **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 3 | 0 | 1 |
 | **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 0 | 0 | 4 |
 | **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 0 | 0 | 4 |
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 0 | 0 | 3 |
@@ -26,7 +26,7 @@
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **16** | **0** | **34** |
+| **TOTAL GENERAL** | **50** | **17** | **0** | **33** |
 
 ---
 
@@ -463,13 +463,13 @@
   - [ ] RF-M3-14: Consulta rápida de pendientes vencidas y de próximos días.
 
 ### `[AGRUL-023]` Monitoreo de Campo (Síntomas/Plagas) y Edición/Anulación de Labores
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Media (P2)
 - **Módulo:** Módulo 3: Actividades
 - **Requisitos Funcionales:** RF-M3-10, RF-M3-11, RF-M3-12, RF-M3-13
 - **Reglas de Negocio:** RN-05, RN-06
 - **Skills:** [domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
-- **Etiquetas:** `monitoreo`, `auditoria`, `fotos`, `ready-for-agent`
+- **Etiquetas:** `monitoreo`, `auditoria`, `fotos`, `status:done`
 - **Descripción:** Registro de observaciones de campo del productor (síntomas, plagas, fotos adjuntas) como disparador de tareas, y soporte de edición/anulación auditada de actividades con compensaciones.
 - **Tareas Técnicas:**
   1. Crear tabla observacion_monitoreo (id, loteId, cicloId, fecha, sintomas, plagas, estadoCultivo, fotosUrls, usuarioId).
@@ -477,9 +477,9 @@
   3. Implementar AnularActividadUseCase con baja lógica (RN-05) y motivo obligatorio.
   4. Si la actividad anulada involucró consumo de insumos, coordinar la reversión de stock con Módulo 9 (RF-M3-12).
 - **Criterios de Aceptación:**
-  - [ ] RF-M3-11: Carga de observaciones de monitoreo con fotos adjuntas.
-  - [ ] RF-M3-10: Vínculo explícito entre actividad realizada y observación de monitoreo previa.
-  - [ ] RF-M3-12 / RN-05 / RN-06: Anulación conserva el registro original y revierte movimientos asociados.
+  - [x] RF-M3-11: Carga de observaciones de monitoreo con fotos adjuntas.
+  - [x] RF-M3-10: Vínculo explícito entre actividad realizada y observación de monitoreo previa.
+  - [x] RF-M3-12 / RN-05 / RN-06: Anulación conserva el registro original y revierte movimientos asociados.
 
 ---
 

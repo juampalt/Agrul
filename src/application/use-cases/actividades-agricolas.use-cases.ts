@@ -4,8 +4,10 @@ import { ActividadesRepositoryPort } from '../../core/ports/actividades-reposito
 import { CiclosRepositoryPort } from '../../core/ports/ciclos-repository.port.js';
 import { LotesRepositoryPort } from '../../core/ports/lotes-repository.port.js';
 import { CatalogosActividadesRepositoryPort } from '../../core/ports/catalogos-actividades-repository.port.js';
+import { ObservacionesMonitoreoRepositoryPort } from '../../core/ports/observaciones-monitoreo-repository.port.js';
 import {
   RegistrarActividadEjecutadaInputDto,
+  AnularActividadInputDto,
   ActividadOutputDto,
   ListarActividadesFiltrosDto,
 } from '../dtos/actividades.dto.js';
@@ -16,6 +18,7 @@ export class RegistrarActividadEjecutadaUseCase {
     private readonly lotesRepo: LotesRepositoryPort,
     private readonly ciclosRepo: CiclosRepositoryPort,
     private readonly catalogosRepo: CatalogosActividadesRepositoryPort,
+    private readonly observacionesRepo?: ObservacionesMonitoreoRepositoryPort,
   ) {}
 
   public async execute(input: RegistrarActividadEjecutadaInputDto): Promise<ActividadOutputDto> {
@@ -79,6 +82,19 @@ export class RegistrarActividadEjecutadaUseCase {
       }
     }
 
+    // 8.5. Validar Observación de Monitoreo si se especifica (RF-M3-10)
+    if (input.observacionMonitoreoId && this.observacionesRepo) {
+      const obs = await this.observacionesRepo.buscarPorId(input.observacionMonitoreoId);
+      if (!obs) {
+        throw new EntidadNoEncontradaError('ObservacionMonitoreo', input.observacionMonitoreoId);
+      }
+      if (obs.loteId !== lote.id || obs.cicloId !== ciclo.id) {
+        throw new InconsistenciaLoteCicloError(
+          `La observación de monitoreo '${obs.id}' no corresponde al lote '${lote.id}' o ciclo '${ciclo.id}' (RF-M3-10).`
+        );
+      }
+    }
+
     // 9. Requisito RF-M3-04: Superficie trabajada toma por defecto la del ciclo si no se especifica
     const superficieTrabajadaHa = input.superficieTrabajadaHa !== undefined && input.superficieTrabajadaHa !== null
       ? Number(input.superficieTrabajadaHa)
@@ -102,6 +118,7 @@ export class RegistrarActividadEjecutadaUseCase {
       trabajadorResponsableId: input.trabajadorResponsableId ?? null,
       superficieTrabajadaHa,
       observaciones: input.observaciones ?? null,
+      observacionMonitoreoId: input.observacionMonitoreoId ?? null,
       estado: 'REALIZADA',
       maquinarias: input.maquinarias?.map(m => ({
         id: crypto.randomUUID(),
@@ -137,7 +154,10 @@ export class RegistrarActividadEjecutadaUseCase {
       trabajadorResponsableId: raw.trabajadorResponsableId ?? null,
       superficieTrabajadaHa: raw.superficieTrabajadaHa,
       observaciones: raw.observaciones ?? null,
+      observacionMonitoreoId: raw.observacionMonitoreoId ?? null,
       estado: raw.estado,
+      motivoCancelacion: raw.motivoCancelacion ?? null,
+      canceladoEn: raw.canceladoEn ?? null,
       maquinarias: raw.maquinarias.map(m => ({
         id: m.id!,
         maquinariaId: m.maquinariaId,
@@ -177,7 +197,59 @@ export class ObtenerActividadPorIdUseCase {
       trabajadorResponsableId: raw.trabajadorResponsableId ?? null,
       superficieTrabajadaHa: raw.superficieTrabajadaHa,
       observaciones: raw.observaciones ?? null,
+      observacionMonitoreoId: raw.observacionMonitoreoId ?? null,
       estado: raw.estado,
+      motivoCancelacion: raw.motivoCancelacion ?? null,
+      canceladoEn: raw.canceladoEn ?? null,
+      maquinarias: raw.maquinarias.map(m => ({
+        id: m.id!,
+        maquinariaId: m.maquinariaId,
+        horasUso: m.horasUso,
+      })),
+      manoDeObra: raw.manoDeObra.map(mo => ({
+        id: mo.id!,
+        personalCuadrillaId: mo.personalCuadrillaId,
+        cantidadPersonas: mo.cantidadPersonas,
+        horasTrabajadas: mo.horasTrabajadas,
+        jornales: mo.jornales,
+      })),
+      creadoEn: raw.creadoEn,
+      actualizadoEn: raw.actualizadoEn,
+    };
+  }
+}
+
+export class AnularActividadUseCase {
+  constructor(private readonly actividadesRepo: ActividadesRepositoryPort) {}
+
+  public async execute(input: AnularActividadInputDto): Promise<ActividadOutputDto> {
+    const actividad = await this.actividadesRepo.buscarPorId(input.id);
+    if (!actividad) {
+      throw new EntidadNoEncontradaError('ActividadAgricola', input.id);
+    }
+
+    // Reglas RN-05 y RN-06: Baja lógica auditada con motivo obligatorio
+    actividad.anular(input.motivo);
+
+    await this.actividadesRepo.guardar(actividad);
+
+    const raw = actividad.toJSON();
+    return {
+      id: raw.id,
+      codigoActividad: raw.codigoActividad,
+      tipoActividadId: raw.tipoActividadId,
+      loteId: raw.loteId,
+      cicloId: raw.cicloId,
+      fechaHecho: raw.fechaHecho,
+      hora: raw.hora ?? null,
+      usuarioCargaId: raw.usuarioCargaId,
+      trabajadorResponsableId: raw.trabajadorResponsableId ?? null,
+      superficieTrabajadaHa: raw.superficieTrabajadaHa,
+      observaciones: raw.observaciones ?? null,
+      observacionMonitoreoId: raw.observacionMonitoreoId ?? null,
+      estado: raw.estado,
+      motivoCancelacion: raw.motivoCancelacion ?? null,
+      canceladoEn: raw.canceladoEn ?? null,
       maquinarias: raw.maquinarias.map(m => ({
         id: m.id!,
         maquinariaId: m.maquinariaId,
@@ -215,7 +287,10 @@ export class ListarActividadesUseCase {
         trabajadorResponsableId: raw.trabajadorResponsableId ?? null,
         superficieTrabajadaHa: raw.superficieTrabajadaHa,
         observaciones: raw.observaciones ?? null,
+        observacionMonitoreoId: raw.observacionMonitoreoId ?? null,
         estado: raw.estado,
+        motivoCancelacion: raw.motivoCancelacion ?? null,
+        canceladoEn: raw.canceladoEn ?? null,
         maquinarias: raw.maquinarias.map(m => ({
           id: m.id!,
           maquinariaId: m.maquinariaId,
@@ -234,3 +309,4 @@ export class ListarActividadesUseCase {
     });
   }
 }
+

@@ -11,6 +11,7 @@ export const RegistrarActividadBodySchema = z.object({
   trabajadorResponsableId: z.string().uuid('trabajadorResponsableId debe ser un UUID válido').optional().nullable(),
   superficieTrabajadaHa: z.number().positive('superficieTrabajadaHa debe ser mayor a 0').optional().nullable(),
   observaciones: z.string().trim().max(1000).optional().nullable(),
+  observacionMonitoreoId: z.string().uuid('observacionMonitoreoId debe ser un UUID válido').optional().nullable(),
   maquinarias: z.array(
     z.object({
       maquinariaId: z.string().uuid('maquinariaId debe ser un UUID válido'),
@@ -39,3 +40,9 @@ export const ListarActividadesQuerySchema = z.object({
 export const ActividadIdParamSchema = z.object({
   id: z.string().uuid('El ID de la actividad debe ser un UUID válido'),
 }).strict();
+
+export const AnularActividadBodySchema = z.object({
+  motivo: z.string().trim().min(3, 'El motivo de anulación es obligatorio y debe tener al menos 3 caracteres'),
+  usuarioId: z.string().uuid('usuarioId debe ser un UUID válido').optional(),
+}).strict();
+

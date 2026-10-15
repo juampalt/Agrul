@@ -190,7 +190,10 @@ export const actividadesAgricolasTable = pgTable('actividades_agricolas', {
   trabajadorResponsableId: uuid('trabajador_responsable_id').references(() => personalCuadrillasTable.id, { onDelete: 'set null' }),
   superficieTrabajadaHa: numeric('superficie_trabajada_ha', { precision: 10, scale: 2 }).notNull(),
   observaciones: text('observaciones'),
+  observacionMonitoreoId: uuid('observacion_monitoreo_id'),
   estado: varchar('estado', { length: 30 }).notNull().default('REALIZADA'), // REALIZADA | PLANIFICADA | VENCIDA | CANCELADA
+  motivoCancelacion: text('motivo_cancelacion'),
+  canceladoEn: timestamp('cancelado_en', { withTimezone: true, mode: 'string' }),
   creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
@@ -198,6 +201,26 @@ export const actividadesAgricolasTable = pgTable('actividades_agricolas', {
   index('idx_actividades_ciclo').on(table.cicloId),
   index('idx_actividades_tipo').on(table.tipoActividadId),
   index('idx_actividades_fecha').on(table.fechaHecho),
+  index('idx_actividades_monitoreo').on(table.observacionMonitoreoId),
+]);
+
+// TABLA READ/WRITE MODEL: Observaciones de Monitoreo de Campo (AGRUL-023 / RF-M3-11)
+export const observacionesMonitoreoTable = pgTable('observaciones_monitoreo', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  loteId: uuid('lote_id').notNull().references(() => lotesTable.id, { onDelete: 'restrict' }),
+  cicloId: uuid('ciclo_id').notNull().references(() => ciclosProductivosTable.id, { onDelete: 'restrict' }),
+  fecha: varchar('fecha', { length: 30 }).notNull(),
+  sintomas: text('sintomas').notNull(),
+  plagas: text('plagas'),
+  estadoCultivo: varchar('estado_cultivo', { length: 60 }).notNull().default('GENERAL'),
+  fotosUrls: jsonb('fotos_urls').notNull().default([]),
+  usuarioId: uuid('usuario_id').notNull(),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_obs_monitoreo_lote').on(table.loteId),
+  index('idx_obs_monitoreo_ciclo').on(table.cicloId),
+  index('idx_obs_monitoreo_fecha').on(table.fecha),
 ]);
 
 // TABLA DETALLE: Maquinaria Utilizada en Actividad (RF-M3-05)

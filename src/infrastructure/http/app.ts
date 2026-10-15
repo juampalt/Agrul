@@ -29,12 +29,20 @@ import {
 } from '../../application/use-cases/catalogos-actividades.use-cases.js';
 import { ActividadesRepositoryPort } from '../../core/ports/actividades-repository.port.js';
 import { CiclosRepositoryPort } from '../../core/ports/ciclos-repository.port.js';
+import { ObservacionesMonitoreoRepositoryPort } from '../../core/ports/observaciones-monitoreo-repository.port.js';
 import { ActividadesController } from './controllers/actividades.controller.js';
+import { MonitoreoController } from './controllers/monitoreo.controller.js';
 import {
   RegistrarActividadEjecutadaUseCase,
   ObtenerActividadPorIdUseCase,
   ListarActividadesUseCase,
+  AnularActividadUseCase,
 } from '../../application/use-cases/actividades-agricolas.use-cases.js';
+import {
+  RegistrarObservacionMonitoreoUseCase,
+  ListarObservacionesMonitoreoUseCase,
+  ObtenerObservacionMonitoreoPorIdUseCase,
+} from '../../application/use-cases/monitoreo.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -47,6 +55,7 @@ export interface BuildAppOptions {
   catalogosRepo?: CatalogosActividadesRepositoryPort;
   actividadesRepo?: ActividadesRepositoryPort;
   ciclosRepo?: CiclosRepositoryPort;
+  observacionesRepo?: ObservacionesMonitoreoRepositoryPort;
   logger?: boolean;
 }
 
@@ -156,15 +165,35 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       options.actividadesRepo,
       options.lotesRepo,
       options.ciclosRepo,
-      options.catalogosRepo
+      options.catalogosRepo,
+      options.observacionesRepo
     );
     const obtenerActividadUseCase = new ObtenerActividadPorIdUseCase(options.actividadesRepo);
     const listarActividadesUseCase = new ListarActividadesUseCase(options.actividadesRepo);
+    const anularActividadUseCase = new AnularActividadUseCase(options.actividadesRepo);
 
     actividadesController = new ActividadesController(
       registrarActividadUseCase,
       obtenerActividadUseCase,
-      listarActividadesUseCase
+      listarActividadesUseCase,
+      anularActividadUseCase
+    );
+  }
+
+  let monitoreoController: MonitoreoController | undefined;
+  if (options.observacionesRepo && options.ciclosRepo) {
+    const registrarObservacionUseCase = new RegistrarObservacionMonitoreoUseCase(
+      options.observacionesRepo,
+      options.lotesRepo,
+      options.ciclosRepo
+    );
+    const listarObservacionesUseCase = new ListarObservacionesMonitoreoUseCase(options.observacionesRepo);
+    const obtenerObservacionUseCase = new ObtenerObservacionMonitoreoPorIdUseCase(options.observacionesRepo);
+
+    monitoreoController = new MonitoreoController(
+      registrarObservacionUseCase,
+      listarObservacionesUseCase,
+      obtenerObservacionUseCase
     );
   }
 
@@ -176,6 +205,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     fincasController,
     catalogosController,
     actividadesController,
+    monitoreoController,
   });
 
   return app;

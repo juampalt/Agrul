@@ -2,10 +2,10 @@
 id: AGRUL-023
 title: "AGRUL-023: Monitoreo de Campo (Síntomas/Plagas) y Edición/Anulación de Labores"
 epic: "Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas"
-status: ready-for-agent
+status: closed
 priority: "Media (P2)"
 module: "Módulo 3: Actividades"
-labels: ["monitoreo", "auditoria", "fotos", "ready-for-agent"]
+labels: ["monitoreo", "auditoria", "fotos", "status:done"]
 ---
 
 # AGRUL-023 — Monitoreo de Campo (Síntomas/Plagas) y Edición/Anulación de Labores
@@ -13,7 +13,7 @@ labels: ["monitoreo", "auditoria", "fotos", "ready-for-agent"]
 - **Épica:** Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas
 - **Módulo:** Módulo 3: Actividades
 - **Prioridad:** Media (P2)
-- **Status:** ready-for-agent
+- **Status:** closed
 - **Requisitos Funcionales:** RF-M3-10, RF-M3-11, RF-M3-12, RF-M3-13
 - **Reglas de Negocio:** RN-05, RN-06
 - **Skills:** .cursor/skills/domain-traceability.md, .cursor/skills/database-events.md
@@ -28,8 +28,9 @@ Registro de observaciones de campo del productor (síntomas, plagas, fotos adjun
 4. Si la actividad anulada involucró consumo de insumos, coordinar la reversión de stock con Módulo 9 (RF-M3-12).
 
 ## Criterios de Aceptación
-- [ ] RF-M3-11: Carga de observaciones de monitoreo con fotos adjuntas.
-- [ ] RF-M3-10: Vínculo explícito entre actividad realizada y observación de monitoreo previa.
-- [ ] RF-M3-12 / RN-05 / RN-06: Anulación conserva el registro original y revierte movimientos asociados.
+- [x] RF-M3-11: Carga de observaciones de monitoreo con fotos adjuntas.
+- [x] RF-M3-10: Vínculo explícito entre actividad realizada y observación de monitoreo previa.
+- [x] RF-M3-12 / RN-05 / RN-06: Anulación conserva el registro original y revierte movimientos asociados.
 
 ## Comments
+Implementado con endpoints /api/v1/monitoreo y /api/v1/actividades/:id/anular con envelope estándar y 100% de tests pasando.

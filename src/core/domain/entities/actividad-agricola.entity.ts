@@ -1,4 +1,20 @@
-import { FechaFuturaInvalidaError } from '../errors/domain.error.js';
+import { FechaFuturaInvalidaError, DomainError } from '../errors/domain.error.js';
+
+export class MotivoCancelacionRequeridoError extends DomainError {
+  public readonly code = 'CANCELLATION_REASON_REQUIRED';
+
+  constructor(mensaje: string = 'El motivo de anulación o cancelación de la actividad es obligatorio.') {
+    super(mensaje);
+  }
+}
+
+export class ActividadYaCanceladaError extends DomainError {
+  public readonly code = 'ACTIVITY_ALREADY_CANCELLED';
+
+  constructor(codigo: string) {
+    super(`La actividad agrícola '${codigo}' ya se encuentra anulada/cancelada.`);
+  }
+}
 
 export type EstadoActividad = 'REALIZADA' | 'PLANIFICADA' | 'VENCIDA' | 'CANCELADA';
 
@@ -28,7 +44,10 @@ export interface ActividadAgricolaProps {
   trabajadorResponsableId?: string | null;
   superficieTrabajadaHa: number;
   observaciones?: string | null;
+  observacionMonitoreoId?: string | null;
   estado: EstadoActividad;
+  motivoCancelacion?: string | null;
+  canceladoEn?: string | null;
   maquinarias: ActividadMaquinariaItem[];
   manoDeObra: ActividadManoObraItem[];
   creadoEn: string;
@@ -47,6 +66,7 @@ export interface RegistrarActividadParams {
   trabajadorResponsableId?: string | null;
   superficieTrabajadaHa: number;
   observaciones?: string | null;
+  observacionMonitoreoId?: string | null;
   estado?: EstadoActividad;
   maquinarias?: ActividadMaquinariaItem[];
   manoDeObra?: ActividadManoObraItem[];
@@ -152,7 +172,10 @@ export class ActividadAgricola {
       trabajadorResponsableId: params.trabajadorResponsableId ?? null,
       superficieTrabajadaHa: params.superficieTrabajadaHa,
       observaciones: params.observaciones ?? null,
+      observacionMonitoreoId: params.observacionMonitoreoId ?? null,
       estado,
+      motivoCancelacion: null,
+      canceladoEn: null,
       maquinarias: maquinariasValidadas,
       manoDeObra: manoDeObraValidada,
       creadoEn: ahora,
@@ -162,6 +185,24 @@ export class ActividadAgricola {
 
   public static reconstituir(props: ActividadAgricolaProps): ActividadAgricola {
     return new ActividadAgricola({ ...props });
+  }
+
+  /**
+   * Anula la actividad agrícola registrando baja lógica inmutable y motivo obligatorio (RN-05, RN-06).
+   */
+  public anular(motivo: string, fechaReferencia?: Date): void {
+    if (this.props.estado === 'CANCELADA') {
+      throw new ActividadYaCanceladaError(this.props.codigoActividad);
+    }
+    if (!motivo || motivo.trim().length === 0) {
+      throw new MotivoCancelacionRequeridoError();
+    }
+
+    const ahora = (fechaReferencia ?? new Date()).toISOString();
+    this.props.estado = 'CANCELADA';
+    this.props.motivoCancelacion = motivo.trim();
+    this.props.canceladoEn = ahora;
+    this.props.actualizadoEn = ahora;
   }
 
   public get id(): string { return this.props.id; }
@@ -175,7 +216,10 @@ export class ActividadAgricola {
   public get trabajadorResponsableId(): string | null | undefined { return this.props.trabajadorResponsableId; }
   public get superficieTrabajadaHa(): number { return this.props.superficieTrabajadaHa; }
   public get observaciones(): string | null | undefined { return this.props.observaciones; }
+  public get observacionMonitoreoId(): string | null | undefined { return this.props.observacionMonitoreoId; }
   public get estado(): EstadoActividad { return this.props.estado; }
+  public get motivoCancelacion(): string | null | undefined { return this.props.motivoCancelacion; }
+  public get canceladoEn(): string | null | undefined { return this.props.canceladoEn; }
   public get maquinarias(): ActividadMaquinariaItem[] { return [...this.props.maquinarias]; }
   public get manoDeObra(): ActividadManoObraItem[] { return [...this.props.manoDeObra]; }
   public get creadoEn(): string { return this.props.creadoEn; }

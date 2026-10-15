@@ -5,6 +5,7 @@ import { LinajeController } from '../controllers/linaje.controller.js';
 import { FincasController } from '../controllers/fincas.controller.js';
 import { CatalogosController } from '../controllers/catalogos.controller.js';
 import { ActividadesController } from '../controllers/actividades.controller.js';
+import { MonitoreoController } from '../controllers/monitoreo.controller.js';
 
 export interface ApiRoutesDependencies {
   lotesController: LotesController;
@@ -13,6 +14,7 @@ export interface ApiRoutesDependencies {
   fincasController?: FincasController;
   catalogosController?: CatalogosController;
   actividadesController?: ActividadesController;
+  monitoreoController?: MonitoreoController;
 }
 
 export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDependencies) {
@@ -71,11 +73,19 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/catalogos/maquinaria/:id', (req, rep) => deps.catalogosController!.obtenerMaquinariaPorId(req, rep));
       }
 
-      // Actividades Agrícolas / Labores de Campo (Módulo 3 — AGRUL-021)
+      // Actividades Agrícolas / Labores de Campo (Módulo 3 — AGRUL-021, AGRUL-023)
       if (deps.actividadesController) {
         v1.post('/actividades', (req, rep) => deps.actividadesController!.registrarActividad(req, rep));
         v1.get('/actividades', (req, rep) => deps.actividadesController!.listarActividades(req, rep));
         v1.get('/actividades/:id', (req, rep) => deps.actividadesController!.obtenerActividadPorId(req, rep));
+        v1.post('/actividades/:id/anular', (req, rep) => deps.actividadesController!.anularActividad(req, rep));
+      }
+
+      // Monitoreo de Campo (Módulo 3 — AGRUL-023 / RF-M3-11)
+      if (deps.monitoreoController) {
+        v1.post('/monitoreo', (req, rep) => deps.monitoreoController!.registrar(req, rep));
+        v1.get('/monitoreo', (req, rep) => deps.monitoreoController!.listar(req, rep));
+        v1.get('/monitoreo/:id', (req, rep) => deps.monitoreoController!.obtenerPorId(req, rep));
       }
     },
     { prefix: '/api/v1' }

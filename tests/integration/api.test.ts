@@ -8,7 +8,9 @@ import { InMemoryFincasRepository } from '../mocks/in-memory-fincas.repository.j
 import { InMemoryCatalogosActividadesRepository } from '../mocks/in-memory-catalogos-actividades.repository.js';
 import { InMemoryActividadesRepository } from '../mocks/in-memory-actividades.repository.js';
 import { InMemoryCiclosRepository } from '../mocks/in-memory-ciclos.repository.js';
+import { InMemoryObservacionesMonitoreoRepository } from '../mocks/in-memory-observaciones-monitoreo.repository.js';
 import { CicloProductivo } from '../../src/core/domain/entities/ciclo-productivo.entity.js';
+import { TipoActividad } from '../../src/core/domain/entities/tipo-actividad.entity.js';
 
 describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let app: FastifyInstance;
@@ -19,6 +21,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let catalogosRepo: InMemoryCatalogosActividadesRepository;
   let actividadesRepo: InMemoryActividadesRepository;
   let ciclosRepo: InMemoryCiclosRepository;
+  let observacionesRepo: InMemoryObservacionesMonitoreoRepository;
 
   beforeEach(async () => {
     lotesRepo = new InMemoryLotesRepository();
@@ -28,6 +31,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     catalogosRepo = new InMemoryCatalogosActividadesRepository();
     actividadesRepo = new InMemoryActividadesRepository();
     ciclosRepo = new InMemoryCiclosRepository();
+    observacionesRepo = new InMemoryObservacionesMonitoreoRepository();
 
     app = buildApp({
       lotesRepo,
@@ -37,6 +41,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       catalogosRepo,
       actividadesRepo,
       ciclosRepo,
+      observacionesRepo,
       logger: false,
     });
     await app.ready();
@@ -1521,6 +1526,195 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       body.data.forEach((act: { loteId: string }) => {
         expect(act.loteId).toBe(testLoteId);
       });
+    });
+  });
+
+  // ==========================================================================
+  // AGRUL-023: Monitoreo de Campo y Anulación Auditada de Labores
+  // ==========================================================================
+  describe('AGRUL-023: Endpoints de Monitoreo de Campo y Anulación', () => {
+    const monLoteId = '77777777-7777-7777-7777-777777777777';
+    const monCicloId = '88888888-8888-8888-8888-888888888888';
+    const monTipoId = '99999999-9999-9999-9999-999999999999';
+    const monUsuarioId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+
+    beforeEach(async () => {
+      // Lote
+      await lotesRepo.guardar(
+        (await import('../../src/core/domain/entities/lote.entity.js')).Lote.crear({
+          id: monLoteId,
+          codigoLote: 'LOT-2026-MON01',
+          producto: 'Frutilla San Andreas',
+          cantidadInicial: 2000,
+          unidadMedida: 'KG',
+        })
+      );
+
+      // Ciclo abierto
+      await ciclosRepo.guardar(
+        CicloProductivo.crear({
+          id: monCicloId,
+          codigoCiclo: 'CIC-2026-MON',
+          loteId: monLoteId,
+          cultivo: 'Frutilla',
+          estado: 'ABIERTO',
+          superficieCultivadaHa: 2.0,
+          fechaInicio: '2026-02-01',
+        })
+      );
+
+      // Tipo de actividad
+      await catalogosRepo.guardarTipoActividad(
+        TipoActividad.crear({
+          id: monTipoId,
+          nombre: 'Control Fitosanitario Monitoreo',
+          categoria: 'SANIDAD',
+          requiereMaquinaria: false,
+          requiereInsumos: true,
+        })
+      );
+    });
+
+    it('POST /api/v1/monitoreo debe registrar una observación de campo y responder 201 Created', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/monitoreo',
+        payload: {
+          loteId: monLoteId,
+          cicloId: monCicloId,
+          fecha: '2026-10-14',
+          sintomas: 'Presencia de oídio en hojas medias',
+          plagas: 'Oídio (Podosphaera aphanis)',
+          estadoCultivo: 'FLORACION',
+          fotosUrls: ['https://storage.agrul.local/fotos/oidio-1.jpg'],
+          usuarioId: monUsuarioId,
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.id).toBeDefined();
+      expect(body.data.sintomas).toBe('Presencia de oídio en hojas medias');
+      expect(body.data.fotosUrls).toHaveLength(1);
+    });
+
+    it('GET /api/v1/monitoreo debe listar observaciones registradas', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/monitoreo',
+        payload: {
+          loteId: monLoteId,
+          cicloId: monCicloId,
+          fecha: '2026-10-14',
+          sintomas: 'Presencia de trips',
+          usuarioId: monUsuarioId,
+        },
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/monitoreo?loteId=${monLoteId}`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.length).toBeGreaterThanOrEqual(1);
+      expect(body.data[0].loteId).toBe(monLoteId);
+    });
+
+    it('POST /api/v1/actividades con observacionMonitoreoId debe vincular la actividad a la observación (RF-M3-10)', async () => {
+      const obsRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/monitoreo',
+        payload: {
+          loteId: monLoteId,
+          cicloId: monCicloId,
+          fecha: '2026-10-14',
+          sintomas: 'Botrytis detectada en frutos verdes',
+          usuarioId: monUsuarioId,
+        },
+      });
+      const obsId = JSON.parse(obsRes.body).data.id;
+
+      const actRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: monTipoId,
+          loteId: monLoteId,
+          cicloId: monCicloId,
+          fechaHecho: '2026-10-14',
+          usuarioCargaId: monUsuarioId,
+          observacionMonitoreoId: obsId,
+          observaciones: 'Pulverización fungicida preventiva',
+        },
+      });
+
+      expect(actRes.statusCode).toBe(201);
+      const act = JSON.parse(actRes.body).data;
+      expect(act.observacionMonitoreoId).toBe(obsId);
+    });
+
+    it('POST /api/v1/actividades/:id/anular debe cancelar la actividad con motivo obligatorio (RF-M3-12, RN-05, RN-06)', async () => {
+      const actRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: monTipoId,
+          loteId: monLoteId,
+          cicloId: monCicloId,
+          fechaHecho: '2026-10-14',
+          usuarioCargaId: monUsuarioId,
+        },
+      });
+      const actId = JSON.parse(actRes.body).data.id;
+
+      const anularRes = await app.inject({
+        method: 'POST',
+        url: `/api/v1/actividades/${actId}/anular`,
+        payload: {
+          motivo: 'Lluvia torrencial lavó el producto fitosanitario aplicado',
+          usuarioId: monUsuarioId,
+        },
+      });
+
+      expect(anularRes.statusCode).toBe(200);
+      const body = JSON.parse(anularRes.body);
+      expect(body.success).toBe(true);
+      expect(body.data.estado).toBe('CANCELADA');
+      expect(body.data.motivoCancelacion).toBe(
+        'Lluvia torrencial lavó el producto fitosanitario aplicado'
+      );
+    });
+
+    it('POST /api/v1/actividades/:id/anular debe fallar con HTTP 400 si falta el motivo', async () => {
+      const actRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: monTipoId,
+          loteId: monLoteId,
+          cicloId: monCicloId,
+          fechaHecho: '2026-10-14',
+          usuarioCargaId: monUsuarioId,
+        },
+      });
+      const actId = JSON.parse(actRes.body).data.id;
+
+      const badRes = await app.inject({
+        method: 'POST',
+        url: `/api/v1/actividades/${actId}/anular`,
+        payload: {
+          motivo: 'ab', // Demasiado corto (min 3)
+        },
+      });
+
+      expect(badRes.statusCode).toBe(400);
+      const body = JSON.parse(badRes.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('VALIDATION_ERROR');
     });
   });
 });
