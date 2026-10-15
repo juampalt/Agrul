@@ -82,18 +82,14 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   });
 
   // Configuración de archivos estáticos para el Dashboard Web
-  const candidatePaths = [
-    resolve(process.cwd(), 'public'),
-    fileURLToPath(new URL('../../../public', import.meta.url)),
-  ];
-  const publicPath = candidatePaths.find(p => existsSync(p)) || candidatePaths[0];
+  const publicPath = fileURLToPath(new URL('../../../public', import.meta.url));
 
   app.get('/', async (_req, reply) => {
     const indexPath = resolve(publicPath, 'index.html');
     if (existsSync(indexPath)) {
       return reply.type('text/html; charset=utf-8').send(readFileSync(indexPath, 'utf-8'));
     }
-    return reply.type('text/html; charset=utf-8').send('<!DOCTYPE html><html><head><title>Agrul</title></head><body><h1>Agrul Traceability API Operativa</h1><p><a href="/api/v1/health">Ver Healthcheck</a></p></body></html>');
+    return reply.status(404).send('Not Found');
   });
 
   app.get('/dashboard', async (_req, reply) => {
@@ -101,7 +97,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     if (existsSync(indexPath)) {
       return reply.type('text/html; charset=utf-8').send(readFileSync(indexPath, 'utf-8'));
     }
-    return reply.redirect('/');
+    return reply.status(404).send('Not Found');
   });
 
   app.get('/app.css', async (_req, reply) => {
@@ -109,7 +105,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     if (existsSync(cssPath)) {
       return reply.type('text/css; charset=utf-8').send(readFileSync(cssPath, 'utf-8'));
     }
-    return reply.status(404).send('/* CSS Not Found */');
+    return reply.status(404).send('Not Found');
   });
 
   app.get('/app.js', async (_req, reply) => {
@@ -117,7 +113,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     if (existsSync(jsPath)) {
       return reply.type('application/javascript; charset=utf-8').send(readFileSync(jsPath, 'utf-8'));
     }
-    return reply.status(404).send('/* JS Not Found */');
+    return reply.status(404).send('Not Found');
   });
 
   // Configuración de validación Zod en Fastify

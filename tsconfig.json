@@ -20,6 +20,6 @@
       "@config/*": ["src/config/*"]
     }
   },
-  "include": ["src/**/*", "tests/**/*", "api/**/*", "vitest.config.ts"],
+  "include": ["src/**/*", "tests/**/*", "vitest.config.ts"],
   "exclude": ["node_modules", "dist"]
 }
