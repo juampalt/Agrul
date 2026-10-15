@@ -19,14 +19,14 @@
 | **Épica 8: Módulo 2 — Gestión de Cultivos y Ciclos Productivos** | 3 | 0 | 0 | 3 |
 | **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 3 | 0 | 1 |
 | **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 2 | 0 | 2 |
-| **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 0 | 0 | 4 |
+| **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 1 | 0 | 3 |
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 0 | 0 | 3 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 0 | 0 | 3 |
 | **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 0 | 0 | 3 |
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **19** | **0** | **31** |
+| **TOTAL GENERAL** | **50** | **20** | **0** | **30** |
 
 ---
 
@@ -560,13 +560,13 @@
 ## ÉPICA 11: MÓDULO 5 — COSECHA, DESTINOS Y SALDO COMERCIALIZABLE
 
 ### `[AGRUL-028]` Registro de Cosechas, Descarte y Código de Trazabilidad Único
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 5: Cosecha y Destino
 - **Requisitos Funcionales:** RF-M5-01, RF-M5-02, RF-M5-03, RF-M5-04, RF-M5-05, RF-M5-06
 - **Reglas de Negocio:** RN-07, RN-08, RN-09
-- **Skills:** [domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
-- **Etiquetas:** `domain`, `cosecha`, `trazabilidad`, `descarte`, `ready-for-agent`
+- **Skills:** [.cursor/skills/domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [.cursor/skills/database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
+- **Etiquetas:** `domain`, `cosecha`, `trazabilidad`, `descarte`, `status:done`
 - **Descripción:** Registro de cosechas con desglose estricto: cantidad cosechada = comercializable + descarte (RN-09), motivos configurables de descarte y asignación automática del código de trazabilidad único (ej. COS-L03-20260915-01).
 - **Tareas Técnicas:**
   1. Crear entidad Cosecha (id, codigoTrazabilidad UK, loteId, cicloId, fecha, cantidadCosechadaKg, cantidadComercializableKg, cantidadDescarteKg, motivoDescarte, observacionesCalidad, responsableId, cuadrillaId, recipientes, superficieCosechadaHa).
@@ -574,9 +574,9 @@
   3. Generador de código algorítmico RN-07 / RN-08: formato COS-L[nro]-[YYYYMMDD]-[secuencia], inmodificable y único.
   4. Permitir múltiples cosechas sucesivas sin sobrescribir y acumulando saldo (RF-M5-04).
 - **Criterios de Aceptación:**
-  - [ ] RF-M5-01 / RF-M5-02: Registro con total kg, comercializable y descarte justificado.
-  - [ ] RF-M5-03 / RN-08: Cada cosecha recibe un código de trazabilidad único e inalterable.
-  - [ ] RN-09: Falla con HTTP 422 si la suma de comercializable + descarte no coincide con el total cosechado.
+  - [x] RF-M5-01 / RF-M5-02: Registro con total kg, comercializable y descarte justificado.
+  - [x] RF-M5-03 / RN-08: Cada cosecha recibe un código de trazabilidad único e inalterable.
+  - [x] RN-09: Falla con HTTP 422 si la suma de comercializable + descarte no coincide con el total cosechado.
 
 ### `[AGRUL-029]` Asignación de Destinos, Saldo Comercializable y Despachos BPA
 - **Estado:** `TODO` 📌

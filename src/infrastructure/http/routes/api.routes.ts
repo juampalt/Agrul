@@ -8,6 +8,7 @@ import { ActividadesController } from '../controllers/actividades.controller.js'
 import { MonitoreoController } from '../controllers/monitoreo.controller.js';
 import { InsumosController } from '../controllers/insumos.controller.js';
 import { AplicacionesController } from '../controllers/aplicaciones.controller.js';
+import { CosechasController } from '../controllers/cosechas.controller.js';
 
 export interface ApiRoutesDependencies {
   lotesController: LotesController;
@@ -19,6 +20,7 @@ export interface ApiRoutesDependencies {
   monitoreoController?: MonitoreoController;
   insumosController?: InsumosController;
   aplicacionesController?: AplicacionesController;
+  cosechasController?: CosechasController;
 }
 
 export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDependencies) {
@@ -111,6 +113,13 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
 
         // Consumo Acumulado de Insumos por Ciclo y Hectárea (Módulo 4 — AGRUL-027 / RF-M4-10)
         v1.get('/ciclos/:id/insumos-acumulados', (req, rep) => deps.aplicacionesController!.calcularConsumoInsumosCiclo(req, rep));
+      }
+
+      // Cosechas y Saldo Comercializable (Módulo 5 — AGRUL-028 / RF-M5-01 a RF-M5-06)
+      if (deps.cosechasController) {
+        v1.post('/cosechas', (req, rep) => deps.cosechasController!.registrar(req, rep));
+        v1.get('/cosechas', (req, rep) => deps.cosechasController!.listar(req, rep));
+        v1.get('/cosechas/:id', (req, rep) => deps.cosechasController!.obtenerPorId(req, rep));
       }
     },
     { prefix: '/api/v1' }

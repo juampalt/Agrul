@@ -64,3 +64,21 @@ export class InconsistenciaLoteCicloError extends DomainError {
   }
 }
 
+export class DesgloseCosechaInvalidoError extends DomainError {
+  public readonly code = 'DESGLOSE_COSECHA_INVALIDO';
+
+  constructor(cosechada: number, comercializable: number, descarte: number) {
+    super(
+      `Desglose de cosecha inválido (RN-09): La suma de cantidad comercializable (${comercializable} kg) y cantidad de descarte (${descarte} kg) debe coincidir exactamente con el total cosechado (${cosechada} kg).`
+    );
+  }
+}
+
+export class CosechaInvalidaError extends DomainError {
+  public readonly code = 'COSECHA_INVALIDA';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+

@@ -1009,7 +1009,7 @@
     "epic": "Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable",
     "epicId": "epic-11-modulo-5-cosecha",
     "title": "Registro de Cosechas, Descarte y Código de Trazabilidad Único",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Alta (P1)",
     "skills": [
       ".cursor/skills/domain-traceability.md",
@@ -1034,7 +1034,7 @@
       "cosecha",
       "trazabilidad",
       "descarte",
-      "ready-for-agent"
+      "status:done"
     ],
     "description": "Registro de cosechas con desglose estricto: cantidad cosechada = comercializable + descarte (RN-09), motivos configurables de descarte y asignación automática del código de trazabilidad único (ej. COS-L03-20260915-01).",
     "tasks": [

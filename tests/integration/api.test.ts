@@ -11,6 +11,7 @@ import { InMemoryCiclosRepository } from '../mocks/in-memory-ciclos.repository.j
 import { InMemoryObservacionesMonitoreoRepository } from '../mocks/in-memory-observaciones-monitoreo.repository.js';
 import { InMemoryInsumosCatalogoRepository } from '../mocks/in-memory-insumos-catalogo.repository.js';
 import { InMemoryAplicacionesRepository } from '../mocks/in-memory-aplicaciones.repository.js';
+import { InMemoryCosechasRepository } from '../mocks/in-memory-cosechas.repository.js';
 import { CicloProductivo } from '../../src/core/domain/entities/ciclo-productivo.entity.js';
 import { TipoActividad } from '../../src/core/domain/entities/tipo-actividad.entity.js';
 
@@ -26,6 +27,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let observacionesRepo: InMemoryObservacionesMonitoreoRepository;
   let insumosRepo: InMemoryInsumosCatalogoRepository;
   let aplicacionesRepo: InMemoryAplicacionesRepository;
+  let cosechasRepo: InMemoryCosechasRepository;
 
   beforeEach(async () => {
     lotesRepo = new InMemoryLotesRepository();
@@ -38,6 +40,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     observacionesRepo = new InMemoryObservacionesMonitoreoRepository();
     insumosRepo = new InMemoryInsumosCatalogoRepository();
     aplicacionesRepo = new InMemoryAplicacionesRepository();
+    cosechasRepo = new InMemoryCosechasRepository();
 
     app = buildApp({
       lotesRepo,
@@ -50,6 +53,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       observacionesRepo,
       insumosRepo,
       aplicacionesRepo,
+      cosechasRepo,
       logger: false,
     });
     await app.ready();
@@ -2687,6 +2691,219 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       const body = JSON.parse(res.body);
       expect(body.success).toBe(false);
       expect(body.error.code).toBe('VALIDATION_ERROR');
+    });
+  });
+
+  // ============================================================================
+  // AGRUL-028: Registro de Cosechas, Descarte y Código de Trazabilidad Único (Módulo 5)
+  // ============================================================================
+  describe('AGRUL-028: Registro de Cosechas, Descarte y Código de Trazabilidad Único', () => {
+    let loteCosechaId: string;
+    let cicloCosechaId: string;
+
+    beforeEach(async () => {
+      // 1. Crear Lote
+      const loteRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/lotes',
+        payload: {
+          codigoLote: 'LOT-2026-00028',
+          producto: 'Cereza Lapins Export',
+          variedad: 'Lapins',
+          cantidadInicial: 1000,
+          unidadMedida: 'KG',
+        },
+      });
+      loteCosechaId = JSON.parse(loteRes.body).data.id;
+
+      // 2. Crear Ciclo Productivo ABIERTO en el repositorio
+      cicloCosechaId = crypto.randomUUID();
+      const ciclo = CicloProductivo.crear({
+        id: cicloCosechaId,
+        codigoCiclo: 'CICLO-2026-CER-028',
+        loteId: loteCosechaId,
+        cultivo: 'Cereza',
+        variedad: 'Lapins',
+        estado: 'ABIERTO',
+        superficieCultivadaHa: 5.0,
+        fechaInicio: '2026-08-01',
+      });
+      await ciclosRepo.guardar(ciclo);
+    });
+
+    it('POST /api/v1/cosechas debe registrar una cosecha, asignar código algorítmico y responder 201 Created (RF-M5-01 / RN-07 / RN-08)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas',
+        payload: {
+          loteId: loteCosechaId,
+          cicloId: cicloCosechaId,
+          fecha: '2026-09-20',
+          cantidadCosechadaKg: 2000,
+          cantidadComercializableKg: 1750,
+          cantidadDescarteKg: 250,
+          motivoDescarte: 'CALIBRE_CHICO_Y_DANIO_MECANICO',
+          observacionesCalidad: '18 Brix promedio, fruta firme',
+          recipientes: [{ tipo: 'BIN', cantidad: 6 }],
+          superficieCosechadaHa: 2.5,
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.error).toBeNull();
+      expect(body.timestamp).toBeDefined();
+
+      const data = body.data;
+      expect(data.id).toBeDefined();
+      expect(data.codigoTrazabilidad).toBe('COS-L28-20260920-01');
+      expect(data.loteId).toBe(loteCosechaId);
+      expect(data.codigoLote).toBe('LOT-2026-00028');
+      expect(data.cicloId).toBe(cicloCosechaId);
+      expect(data.codigoCiclo).toBe('CICLO-2026-CER-028');
+      expect(data.cantidadCosechadaKg).toBe(2000);
+      expect(data.cantidadComercializableKg).toBe(1750);
+      expect(data.cantidadDescarteKg).toBe(250);
+      expect(data.porcentajeComercializable).toBe(87.5);
+      expect(data.porcentajeDescarte).toBe(12.5);
+      expect(data.motivoDescarte).toBe('CALIBRE_CHICO_Y_DANIO_MECANICO');
+      expect(data.recipientes).toEqual([{ tipo: 'BIN', cantidad: 6 }]);
+      expect(data.superficieCosechadaHa).toBe(2.5);
+    });
+
+    it('POST /api/v1/cosechas cosechas sucesivas en la misma fecha deben recibir secuencias correlativas (RN-08 / RF-M5-04)', async () => {
+      // Cosecha 1
+      const res1 = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas',
+        payload: {
+          loteId: loteCosechaId,
+          cicloId: cicloCosechaId,
+          fecha: '2026-09-20',
+          cantidadCosechadaKg: 1000,
+          cantidadComercializableKg: 900,
+          cantidadDescarteKg: 100,
+          motivoDescarte: 'PICAZON_PAJARO',
+        },
+      });
+      expect(res1.statusCode).toBe(201);
+      expect(JSON.parse(res1.body).data.codigoTrazabilidad).toBe('COS-L28-20260920-01');
+
+      // Cosecha 2
+      const res2 = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas',
+        payload: {
+          loteId: loteCosechaId,
+          cicloId: cicloCosechaId,
+          fecha: '2026-09-20',
+          cantidadCosechadaKg: 800,
+          cantidadComercializableKg: 800,
+          cantidadDescarteKg: 0,
+        },
+      });
+      expect(res2.statusCode).toBe(201);
+      expect(JSON.parse(res2.body).data.codigoTrazabilidad).toBe('COS-L28-20260920-02');
+    });
+
+    it('POST /api/v1/cosechas debe fallar con HTTP 422 si la suma comercializable + descarte != total (RN-09)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas',
+        payload: {
+          loteId: loteCosechaId,
+          cicloId: cicloCosechaId,
+          fecha: '2026-09-20',
+          cantidadCosechadaKg: 1000,
+          cantidadComercializableKg: 700,
+          cantidadDescarteKg: 200, // 700 + 200 = 900 != 1000
+          motivoDescarte: 'DANIO',
+        },
+      });
+
+      expect(res.statusCode).toBe(422);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('DESGLOSE_COSECHA_INVALIDO');
+    });
+
+    it('POST /api/v1/cosechas debe fallar con HTTP 422 si descarte > 0 y falta motivoDescarte (RF-M5-02)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas',
+        payload: {
+          loteId: loteCosechaId,
+          cicloId: cicloCosechaId,
+          fecha: '2026-09-20',
+          cantidadCosechadaKg: 1000,
+          cantidadComercializableKg: 900,
+          cantidadDescarteKg: 100,
+          motivoDescarte: null,
+        },
+      });
+
+      expect(res.statusCode).toBe(422);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('COSECHA_INVALIDA');
+    });
+
+    it('GET /api/v1/cosechas debe listar cosechas registradas y filtrar por lote y ciclo', async () => {
+      // Registrar 1 cosecha
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas',
+        payload: {
+          loteId: loteCosechaId,
+          cicloId: cicloCosechaId,
+          fecha: '2026-09-20',
+          cantidadCosechadaKg: 600,
+          cantidadComercializableKg: 600,
+          cantidadDescarteKg: 0,
+        },
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/cosechas?loteId=${loteCosechaId}`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0].codigoTrazabilidad).toBe('COS-L28-20260920-01');
+    });
+
+    it('GET /api/v1/cosechas/:id debe retornar la cosecha o 404 si no existe', async () => {
+      const postRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas',
+        payload: {
+          loteId: loteCosechaId,
+          cicloId: cicloCosechaId,
+          fecha: '2026-09-20',
+          cantidadCosechadaKg: 500,
+          cantidadComercializableKg: 500,
+          cantidadDescarteKg: 0,
+        },
+      });
+      const id = JSON.parse(postRes.body).data.id;
+
+      const getRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/cosechas/${id}`,
+      });
+      expect(getRes.statusCode).toBe(200);
+      expect(JSON.parse(getRes.body).data.id).toBe(id);
+
+      const notFoundRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/cosechas/${crypto.randomUUID()}`,
+      });
+      expect(notFoundRes.statusCode).toBe(404);
+      expect(JSON.parse(notFoundRes.body).error.code).toBe('ENTITY_NOT_FOUND');
     });
   });
 });

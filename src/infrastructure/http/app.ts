@@ -59,6 +59,13 @@ import {
 } from '../../application/use-cases/aplicaciones.use-cases.js';
 import { VerificarCarenciaLoteUseCase } from '../../application/use-cases/verificar-carencia.use-case.js';
 import { CalcularConsumoInsumosCicloUseCase } from '../../application/use-cases/consumo-insumos.use-cases.js';
+import { CosechasRepositoryPort } from '../../core/ports/cosechas-repository.port.js';
+import { CosechasController } from './controllers/cosechas.controller.js';
+import {
+  RegistrarCosechaUseCase,
+  ListarCosechasUseCase,
+  ObtenerCosechaPorIdUseCase,
+} from '../../application/use-cases/cosechas.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -74,6 +81,7 @@ export interface BuildAppOptions {
   observacionesRepo?: ObservacionesMonitoreoRepositoryPort;
   insumosRepo?: InsumosCatalogoRepository;
   aplicacionesRepo?: AplicacionesRepositoryPort;
+  cosechasRepo?: CosechasRepositoryPort;
   logger?: boolean;
 }
 
@@ -265,6 +273,32 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     );
   }
 
+  let cosechasController: CosechasController | undefined;
+  if (options.cosechasRepo && options.ciclosRepo) {
+    const registrarCosechaUseCase = new RegistrarCosechaUseCase(
+      options.cosechasRepo,
+      options.lotesRepo,
+      options.ciclosRepo,
+      options.eventosRepo
+    );
+    const listarCosechasUseCase = new ListarCosechasUseCase(
+      options.cosechasRepo,
+      options.lotesRepo,
+      options.ciclosRepo
+    );
+    const obtenerCosechaUseCase = new ObtenerCosechaPorIdUseCase(
+      options.cosechasRepo,
+      options.lotesRepo,
+      options.ciclosRepo
+    );
+
+    cosechasController = new CosechasController(
+      registrarCosechaUseCase,
+      listarCosechasUseCase,
+      obtenerCosechaUseCase
+    );
+  }
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -276,6 +310,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     monitoreoController,
     insumosController,
     aplicacionesController,
+    cosechasController,
   });
 
   return app;

@@ -316,3 +316,32 @@ export const aplicacionLineaInsumoTable = pgTable('aplicacion_linea_insumo', {
   index('idx_apl_linea_aplicacion').on(table.aplicacionId),
   index('idx_apl_linea_insumo').on(table.insumoId),
 ]);
+
+// ============================================================================
+// ÉPICA 11: MÓDULO 5 — COSECHA, DESTINOS Y SALDO COMERCIALIZABLE (AGRUL-028)
+// ============================================================================
+
+// TABLA READ/WRITE MODEL: Cosechas de Campo y Código de Trazabilidad Único (RF-M5-01 a RF-M5-06 / RN-07, RN-08, RN-09)
+export const cosechasTable = pgTable('cosechas', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  codigoTrazabilidad: varchar('codigo_trazabilidad', { length: 80 }).notNull().unique(),
+  loteId: uuid('lote_id').notNull().references(() => lotesTable.id, { onDelete: 'restrict' }),
+  cicloId: uuid('ciclo_id').notNull().references(() => ciclosProductivosTable.id, { onDelete: 'restrict' }),
+  fecha: varchar('fecha', { length: 30 }).notNull(),
+  cantidadCosechadaKg: numeric('cantidad_cosechada_kg', { precision: 14, scale: 4 }).notNull(),
+  cantidadComercializableKg: numeric('cantidad_comercializable_kg', { precision: 14, scale: 4 }).notNull(),
+  cantidadDescarteKg: numeric('cantidad_descarte_kg', { precision: 14, scale: 4 }).notNull(),
+  motivoDescarte: varchar('motivo_descarte', { length: 150 }),
+  observacionesCalidad: text('observaciones_calidad'),
+  responsableId: uuid('responsable_id'),
+  cuadrillaId: uuid('cuadrilla_id'),
+  recipientes: jsonb('recipientes'),
+  superficieCosechadaHa: numeric('superficie_cosechada_ha', { precision: 10, scale: 2 }),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_cosechas_lote').on(table.loteId),
+  index('idx_cosechas_ciclo').on(table.cicloId),
+  index('idx_cosechas_codigo').on(table.codigoTrazabilidad),
+  index('idx_cosechas_fecha').on(table.fecha),
+]);
