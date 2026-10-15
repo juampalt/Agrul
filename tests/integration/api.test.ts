@@ -2424,6 +2424,271 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       expect(body.data.alertasCarencia[0].diasRestantes).toBe(10);
     });
   });
+
+  // ============================================================================
+  // AGRUL-027: Consumo Acumulado de Insumos por Lote, Ciclo y Hectárea (RF-M4-10 / RNF-03)
+  // ============================================================================
+  describe('AGRUL-027: Consumo Acumulado de Insumos por Lote, Ciclo y Hectárea', () => {
+    let loteAcumuladoId: string;
+    let cicloAcumuladoId: string;
+    let insumoNitrogenoId: string;
+    let insumoFungicidaId: string;
+
+    beforeEach(async () => {
+      // 1. Crear Lote
+      loteAcumuladoId = crypto.randomUUID();
+      const loteRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/lotes',
+        payload: {
+          codigoLote: 'LOT-2026-99027',
+          producto: 'Manzana Gala',
+          variedad: 'Royal Gala',
+          cantidadInicial: 25000,
+          unidadMedida: 'KG',
+        },
+      });
+      const loteBody = JSON.parse(loteRes.body);
+      loteAcumuladoId = loteBody.data.id;
+
+      // 2. Crear Ciclo Productivo en el repositorio (superficieCultivadaHa = 4.0)
+      cicloAcumuladoId = crypto.randomUUID();
+      const ciclo = CicloProductivo.crear({
+        id: cicloAcumuladoId,
+        codigoCiclo: 'CICLO-2026-GALA-01',
+        loteId: loteAcumuladoId,
+        cultivo: 'Manzana',
+        variedad: 'Royal Gala',
+        estado: 'ABIERTO',
+        superficieCultivadaHa: 4.0,
+        fechaInicio: '2026-08-01',
+      });
+      await ciclosRepo.guardar(ciclo);
+
+      // 2.5 Crear tipo de actividad en el catálogo
+      const tipoActRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/tipos-actividad',
+        payload: {
+          nombre: 'Aplicación Acumulada AGRUL-027',
+          categoria: 'SANIDAD',
+          requiereInsumos: true,
+        },
+      });
+      const tipoActId = JSON.parse(tipoActRes.body).data.id;
+
+      // 3. Crear Actividades Agrícolas en el repositorio
+      const act1Res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: tipoActId,
+          loteId: loteAcumuladoId,
+          cicloId: cicloAcumuladoId,
+          fechaHecho: '2026-08-15',
+          hora: '08:00',
+          usuarioCargaId: crypto.randomUUID(),
+          superficieTrabajadaHa: 4.0,
+        },
+      });
+      const act1Body = JSON.parse(act1Res.body);
+
+      const act2Res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: tipoActId,
+          loteId: loteAcumuladoId,
+          cicloId: cicloAcumuladoId,
+          fechaHecho: '2026-08-25',
+          hora: '09:00',
+          usuarioCargaId: crypto.randomUUID(),
+          superficieTrabajadaHa: 4.0,
+        },
+      });
+      const act2Body = JSON.parse(act2Res.body);
+
+      // 4. Crear Insumos en Catálogo
+      const ins1Res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/insumos',
+        payload: {
+          nombreComercial: 'Nitrato de Calcio Agrícola',
+          categoria: 'FERTILIZANTE',
+          unidadMedidaId: 'KG',
+          presentacion: 'Bolsa 25kg',
+        },
+      });
+      insumoNitrogenoId = JSON.parse(ins1Res.body).data.id;
+
+      const ins2Res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/insumos',
+        payload: {
+          nombreComercial: 'Captan 80 WP Fungicida',
+          categoria: 'FITOSANITARIO',
+          unidadMedidaId: 'KG',
+          presentacion: 'Caja 10kg',
+          fichaFitosanitaria: {
+            principioActivo: 'Captan',
+            periodoCarenciaDias: 7,
+            periodoReingresoHoras: 24,
+            nroRegistroSenasa: 'SENASA-F-9988',
+          },
+        },
+      });
+      insumoFungicidaId = JSON.parse(ins2Res.body).data.id;
+
+      // 5. Registrar Aplicación 1: 20 kg de Nitrato
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/aplicaciones',
+        payload: {
+          actividadId: act1Body.data.id,
+          loteId: loteAcumuladoId,
+          cicloId: cicloAcumuladoId,
+          fecha: '2026-08-15',
+          metodo: 'FERTIRRIEGO',
+          motivo: 'Aporte de calcio inicial',
+          equipoAplicacion: 'Sistema de goteo presurizado',
+          lineas: [
+            {
+              insumoId: insumoNitrogenoId,
+              cantidadTotal: 20,
+              unidadMedidaId: 'KG',
+              dosisPorSuperficie: 5,
+            },
+          ],
+        },
+      });
+
+      // 6. Registrar Aplicación 2: 12 kg de Nitrato y 6 kg de Captan (mezcla)
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/aplicaciones',
+        payload: {
+          actividadId: act2Body.data.id,
+          loteId: loteAcumuladoId,
+          cicloId: cicloAcumuladoId,
+          fecha: '2026-08-25',
+          metodo: 'FOLIAR',
+          motivo: 'Control fúngico y nutrición foliar',
+          equipoAplicacion: 'Atomizador hidroneumático 1500L',
+          lineas: [
+            {
+              insumoId: insumoNitrogenoId,
+              cantidadTotal: 12,
+              unidadMedidaId: 'KG',
+              dosisPorSuperficie: 3,
+            },
+            {
+              insumoId: insumoFungicidaId,
+              cantidadTotal: 6,
+              unidadMedidaId: 'KG',
+              dosisPorSuperficie: 1.5,
+            },
+          ],
+        },
+      });
+    });
+
+    it('GET /api/v1/ciclos/:id/insumos-acumulados debe calcular métricas precisas por lote, ciclo y por ha (RF-M4-10)', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/ciclos/${cicloAcumuladoId}/insumos-acumulados`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.error).toBeNull();
+      expect(body.timestamp).toBeDefined();
+
+      const data = body.data;
+      expect(data.cicloId).toBe(cicloAcumuladoId);
+      expect(data.codigoCiclo).toBe('CICLO-2026-GALA-01');
+      expect(data.loteId).toBe(loteAcumuladoId);
+      expect(data.superficieCultivadaHa).toBe(4.0);
+      expect(data.estadoCiclo).toBe('ABIERTO');
+      expect(data.totalAplicaciones).toBe(2);
+      expect(data.totalInsumosDistintos).toBe(2);
+      expect(data.insumos).toHaveLength(2);
+
+      // Nitrato: 20 + 12 = 32 kg. Por ha = 32 / 4 = 8 kg/ha. En 2 aplicaciones.
+      const nitrato = data.insumos.find((i: any) => i.insumoId === insumoNitrogenoId);
+      expect(nitrato).toBeDefined();
+      expect(nitrato.nombreComercial).toBe('Nitrato de Calcio Agrícola');
+      expect(nitrato.categoria).toBe('FERTILIZANTE');
+      expect(nitrato.unidadMedidaId).toBe('KG');
+      expect(nitrato.cantidadTotalConsumida).toBe(32);
+      expect(nitrato.cantidadPorHectarea).toBe(8);
+      expect(nitrato.numeroAplicaciones).toBe(2);
+
+      // Captan: 6 kg. Por ha = 6 / 4 = 1.5 kg/ha. En 1 aplicación.
+      const captan = data.insumos.find((i: any) => i.insumoId === insumoFungicidaId);
+      expect(captan).toBeDefined();
+      expect(captan.nombreComercial).toBe('Captan 80 WP Fungicida');
+      expect(captan.categoria).toBe('FITOSANITARIO');
+      expect(captan.unidadMedidaId).toBe('KG');
+      expect(captan.cantidadTotalConsumida).toBe(6);
+      expect(captan.cantidadPorHectarea).toBe(1.5);
+      expect(captan.numeroAplicaciones).toBe(1);
+
+      // Orden descendente por cantidadTotalConsumida
+      expect(data.insumos[0].insumoId).toBe(insumoNitrogenoId);
+      expect(data.insumos[1].insumoId).toBe(insumoFungicidaId);
+    });
+
+    it('GET /api/v1/ciclos/:id/insumos-acumulados debe responder con métricas en cero si el ciclo no tiene aplicaciones', async () => {
+      // Crear ciclo sin aplicaciones
+      const cicloVacioId = crypto.randomUUID();
+      const cicloVacio = CicloProductivo.crear({
+        id: cicloVacioId,
+        codigoCiclo: 'CICLO-2026-VACIO',
+        loteId: loteAcumuladoId,
+        cultivo: 'Manzana',
+        superficieCultivadaHa: 2.5,
+        fechaInicio: '2026-09-01',
+      });
+      await ciclosRepo.guardar(cicloVacio);
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/ciclos/${cicloVacioId}/insumos-acumulados`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.totalAplicaciones).toBe(0);
+      expect(body.data.totalInsumosDistintos).toBe(0);
+      expect(body.data.insumos).toEqual([]);
+    });
+
+    it('GET /api/v1/ciclos/:id/insumos-acumulados debe devolver 404 si el ciclo no existe', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/ciclos/${crypto.randomUUID()}/insumos-acumulados`,
+      });
+
+      expect(res.statusCode).toBe(404);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('ENTITY_NOT_FOUND');
+    });
+
+    it('GET /api/v1/ciclos/:id/insumos-acumulados debe devolver 400 si el id no es un UUID válido', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/ciclos/ciclo-invalido-123/insumos-acumulados',
+      });
+
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('VALIDATION_ERROR');
+    });
+  });
 });
 
 

@@ -5,12 +5,14 @@ import {
   ObtenerAplicacionPorIdUseCase,
 } from '../../../application/use-cases/aplicaciones.use-cases.js';
 import { VerificarCarenciaLoteUseCase } from '../../../application/use-cases/verificar-carencia.use-case.js';
+import { CalcularConsumoInsumosCicloUseCase } from '../../../application/use-cases/consumo-insumos.use-cases.js';
 import {
   RegistrarAplicacionBodySchema,
   ListarAplicacionesQuerySchema,
   AplicacionIdParamSchema,
   VerificarCarenciaParamsSchema,
   VerificarCarenciaQuerySchema,
+  ConsumoInsumosCicloParamsSchema,
 } from '../schemas/aplicaciones.schema.js';
 
 export class AplicacionesController {
@@ -19,6 +21,7 @@ export class AplicacionesController {
     private readonly listarAplicacionesUseCase: ListarAplicacionesUseCase,
     private readonly obtenerAplicacionUseCase: ObtenerAplicacionPorIdUseCase,
     private readonly verificarCarenciaUseCase?: VerificarCarenciaLoteUseCase,
+    private readonly calcularConsumoInsumosCicloUseCase?: CalcularConsumoInsumosCicloUseCase,
   ) {}
 
   public async registrar(req: FastifyRequest, reply: FastifyReply) {
@@ -73,6 +76,27 @@ export class AplicacionesController {
       loteId: id,
       fecha: query.fecha,
     });
+
+    return reply.status(200).send({
+      success: true,
+      data: result,
+      error: null,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  public async calcularConsumoInsumosCiclo(req: FastifyRequest, reply: FastifyReply) {
+    if (!this.calcularConsumoInsumosCicloUseCase) {
+      return reply.status(501).send({
+        success: false,
+        data: null,
+        error: { code: 'NOT_IMPLEMENTED', message: 'Servicio de cálculo de consumo de insumos no disponible.' },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const { id } = ConsumoInsumosCicloParamsSchema.parse(req.params);
+    const result = await this.calcularConsumoInsumosCicloUseCase.execute(id);
 
     return reply.status(200).send({
       success: true,

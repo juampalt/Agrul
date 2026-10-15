@@ -59,3 +59,7 @@ export const VerificarCarenciaParamsSchema = z.object({
 export const VerificarCarenciaQuerySchema = z.object({
   fecha: z.string().trim().optional(),
 }).strict();
+
+export const ConsumoInsumosCicloParamsSchema = z.object({
+  id: z.string().uuid('El ID del ciclo productivo debe ser un UUID válido'),
+}).strict();

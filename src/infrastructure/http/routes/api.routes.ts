@@ -108,6 +108,9 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         // Validación de Carencia y Reingreso por Lote (Módulo 4 — AGRUL-026 / RF-M4-09, RN-14)
         v1.get('/lotes/:id/carencia', (req, rep) => deps.aplicacionesController!.verificarCarencia(req, rep));
         v1.get('/aplicaciones/carencia/lote/:id', (req, rep) => deps.aplicacionesController!.verificarCarencia(req, rep));
+
+        // Consumo Acumulado de Insumos por Ciclo y Hectárea (Módulo 4 — AGRUL-027 / RF-M4-10)
+        v1.get('/ciclos/:id/insumos-acumulados', (req, rep) => deps.aplicacionesController!.calcularConsumoInsumosCiclo(req, rep));
       }
     },
     { prefix: '/api/v1' }

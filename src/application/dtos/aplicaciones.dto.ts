@@ -119,3 +119,28 @@ export interface VerificarCarenciaLoteInputDto {
   loteId: string;
   fecha?: string;
 }
+
+// ============================================================================
+// AGRUL-027: Consumo Acumulado de Insumos por Lote, Ciclo y Hectárea (RF-M4-10)
+// ============================================================================
+
+export interface InsumoConsumoAcumuladoItemDto {
+  insumoId: string;
+  nombreComercial?: string;
+  categoria?: string;
+  unidadMedidaId: string;
+  cantidadTotalConsumida: number;
+  cantidadPorHectarea: number;
+  numeroAplicaciones: number;
+}
+
+export interface ConsumoInsumosCicloOutputDto {
+  cicloId: string;
+  codigoCiclo: string;
+  loteId: string;
+  superficieCultivadaHa: number;
+  estadoCiclo: string;
+  totalInsumosDistintos: number;
+  totalAplicaciones: number;
+  insumos: InsumoConsumoAcumuladoItemDto[];
+}

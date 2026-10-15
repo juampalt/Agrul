@@ -540,20 +540,20 @@
   - [x] RF-M4-08: Posibilidad de adjuntar firma o documento de recomendación profesional.
 
 ### `[AGRUL-027]` Consumo Acumulado de Insumos por Lote, Ciclo y Hectárea
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Media (P2)
 - **Módulo:** Módulo 4: Insumos y Aplicaciones
 - **Requisitos Funcionales:** RF-M4-10
 - **Skills:** [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md), [api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
-- **Etiquetas:** `indicadores`, `insumos`, `consumo`, `ready-for-agent`
+- **Etiquetas:** `indicadores`, `insumos`, `consumo`, `status:done`
 - **Descripción:** Cálculo analítico del acumulado de consumo de cada insumo por lote y ciclo productivo, así como la intensidad de uso expresada por hectárea tratada.
 - **Tareas Técnicas:**
   1. Crear query de agregación agrupando por cicloId, loteId e insumoId.
   2. Calcular cantidadTotalConsumida y cantidadPorHectarea dividiendo por la superficie cultivada del ciclo.
   3. Endpoint GET /api/v1/ciclos/:id/insumos-acumulados.
 - **Criterios de Aceptación:**
-  - [ ] RF-M4-10: Métricas precisas de consumo acumulado y consumo por ha por insumo en cada campaña.
-  - [ ] Tiempos de respuesta < 2s (RNF-03).
+  - [x] RF-M4-10: Métricas precisas de consumo acumulado y consumo por ha por insumo en cada campaña.
+  - [x] Tiempos de respuesta < 2s (RNF-03).
 
 ---
 
