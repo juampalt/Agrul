@@ -276,5 +276,42 @@ export const insumosFitosanitariosFichaTable = pgTable('insumos_fitosanitarios_f
   index('idx_ficha_fito_principio').on(table.principioActivo),
   index('idx_ficha_fito_senasa').on(table.nroRegistroSenasa),
 ]);
+// ============================================================================
+// ÉPICA 10: MÓDULO 4 — APLICACIONES DE CAMPO Y DOSIS (AGRUL-025)
+// ============================================================================
 
+// TABLA READ/WRITE MODEL: Aplicación Agrícola de Campo (RF-M4-03 / RF-M4-11 / RF-M4-12)
+export const aplicacionesAgricolasTable = pgTable('aplicaciones_agricolas', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  actividadId: uuid('actividad_id').notNull().references(() => actividadesAgricolasTable.id, { onDelete: 'restrict' }),
+  loteId: uuid('lote_id').notNull().references(() => lotesTable.id, { onDelete: 'restrict' }),
+  cicloId: uuid('ciclo_id').notNull().references(() => ciclosProductivosTable.id, { onDelete: 'restrict' }),
+  fecha: varchar('fecha', { length: 30 }).notNull(),
+  responsableId: uuid('responsable_id'),
+  metodo: varchar('metodo', { length: 50 }).notNull(),
+  motivo: text('motivo').notNull(),
+  equipoAplicacion: varchar('equipo_aplicacion', { length: 200 }).notNull(),
+  condicionesClima: jsonb('condiciones_clima'),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_aplicaciones_lote').on(table.loteId),
+  index('idx_aplicaciones_ciclo').on(table.cicloId),
+  index('idx_aplicaciones_actividad').on(table.actividadId),
+  index('idx_aplicaciones_fecha').on(table.fecha),
+]);
 
+// TABLA DETALLE: Línea de Insumo de Aplicación (RF-M4-04 / RF-M4-06)
+export const aplicacionLineaInsumoTable = pgTable('aplicacion_linea_insumo', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  aplicacionId: uuid('aplicacion_id').notNull().references(() => aplicacionesAgricolasTable.id, { onDelete: 'cascade' }),
+  insumoId: uuid('insumo_id').notNull().references(() => insumosCatalogoTable.id, { onDelete: 'restrict' }),
+  cantidadTotal: numeric('cantidad_total', { precision: 12, scale: 3 }).notNull(),
+  unidadMedidaId: varchar('unidad_medida_id', { length: 30 }).notNull(),
+  dosisPorSuperficie: numeric('dosis_por_superficie', { precision: 10, scale: 3 }),
+  dosisPorPlanta: numeric('dosis_por_planta', { precision: 10, scale: 3 }),
+  concentracion: varchar('concentracion', { length: 100 }),
+}, (table) => [
+  index('idx_apl_linea_aplicacion').on(table.aplicacionId),
+  index('idx_apl_linea_insumo').on(table.insumoId),
+]);

@@ -50,6 +50,13 @@ import {
   ListarInsumosCatalogoUseCase,
   ObtenerInsumoPorIdUseCase,
 } from '../../application/use-cases/insumos-catalogo.use-cases.js';
+import { AplicacionesRepositoryPort } from '../../core/ports/aplicaciones-repository.port.js';
+import { AplicacionesController } from './controllers/aplicaciones.controller.js';
+import {
+  RegistrarAplicacionUseCase,
+  ListarAplicacionesUseCase,
+  ObtenerAplicacionPorIdUseCase,
+} from '../../application/use-cases/aplicaciones.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -64,6 +71,7 @@ export interface BuildAppOptions {
   ciclosRepo?: CiclosRepositoryPort;
   observacionesRepo?: ObservacionesMonitoreoRepositoryPort;
   insumosRepo?: InsumosCatalogoRepository;
+  aplicacionesRepo?: AplicacionesRepositoryPort;
   logger?: boolean;
 }
 
@@ -218,6 +226,31 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     );
   }
 
+  let aplicacionesController: AplicacionesController | undefined;
+  if (options.aplicacionesRepo && options.actividadesRepo && options.ciclosRepo && options.insumosRepo) {
+    const registrarAplicacionUseCase = new RegistrarAplicacionUseCase(
+      options.aplicacionesRepo,
+      options.actividadesRepo,
+      options.lotesRepo,
+      options.ciclosRepo,
+      options.insumosRepo
+    );
+    const listarAplicacionesUseCase = new ListarAplicacionesUseCase(
+      options.aplicacionesRepo,
+      options.insumosRepo
+    );
+    const obtenerAplicacionUseCase = new ObtenerAplicacionPorIdUseCase(
+      options.aplicacionesRepo,
+      options.insumosRepo
+    );
+
+    aplicacionesController = new AplicacionesController(
+      registrarAplicacionUseCase,
+      listarAplicacionesUseCase,
+      obtenerAplicacionUseCase
+    );
+  }
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -228,6 +261,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     actividadesController,
     monitoreoController,
     insumosController,
+    aplicacionesController,
   });
 
   return app;

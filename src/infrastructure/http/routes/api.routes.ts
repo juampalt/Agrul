@@ -7,6 +7,7 @@ import { CatalogosController } from '../controllers/catalogos.controller.js';
 import { ActividadesController } from '../controllers/actividades.controller.js';
 import { MonitoreoController } from '../controllers/monitoreo.controller.js';
 import { InsumosController } from '../controllers/insumos.controller.js';
+import { AplicacionesController } from '../controllers/aplicaciones.controller.js';
 
 export interface ApiRoutesDependencies {
   lotesController: LotesController;
@@ -17,6 +18,7 @@ export interface ApiRoutesDependencies {
   actividadesController?: ActividadesController;
   monitoreoController?: MonitoreoController;
   insumosController?: InsumosController;
+  aplicacionesController?: AplicacionesController;
 }
 
 export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDependencies) {
@@ -95,6 +97,13 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.post('/insumos', (req, rep) => deps.insumosController!.registrar(req, rep));
         v1.get('/insumos', (req, rep) => deps.insumosController!.listar(req, rep));
         v1.get('/insumos/:id', (req, rep) => deps.insumosController!.obtenerPorId(req, rep));
+      }
+
+      // Aplicaciones Agrícolas de Campo (Módulo 4 — AGRUL-025 / RF-M4-03 a RF-M4-12)
+      if (deps.aplicacionesController) {
+        v1.post('/aplicaciones', (req, rep) => deps.aplicacionesController!.registrar(req, rep));
+        v1.get('/aplicaciones', (req, rep) => deps.aplicacionesController!.listar(req, rep));
+        v1.get('/aplicaciones/:id', (req, rep) => deps.aplicacionesController!.obtenerPorId(req, rep));
       }
     },
     { prefix: '/api/v1' }

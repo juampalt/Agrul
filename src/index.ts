@@ -4,6 +4,10 @@ import { InMemoryLotesRepository } from '../tests/mocks/in-memory-lotes.reposito
 import { InMemoryEventosRepository } from '../tests/mocks/in-memory-eventos.repository.js';
 import { InMemoryGenealogiaRepository } from '../tests/mocks/in-memory-genealogia.repository.js';
 import { InMemoryInsumosCatalogoRepository } from '../tests/mocks/in-memory-insumos-catalogo.repository.js';
+import { InMemoryAplicacionesRepository } from '../tests/mocks/in-memory-aplicaciones.repository.js';
+import { InMemoryActividadesRepository } from '../tests/mocks/in-memory-actividades.repository.js';
+import { InMemoryCiclosRepository } from '../tests/mocks/in-memory-ciclos.repository.js';
+import { InMemoryCatalogosActividadesRepository } from '../tests/mocks/in-memory-catalogos-actividades.repository.js';
 import { Lote } from './core/domain/entities/lote.entity.js';
 import { InsumoCatalogo } from './core/domain/entities/insumo-catalogo.entity.js';
 
@@ -15,6 +19,10 @@ async function bootstrap() {
   const eventosRepo = new InMemoryEventosRepository(lotesRepo);
   const genealogiaRepo = new InMemoryGenealogiaRepository();
   const insumosRepo = new InMemoryInsumosCatalogoRepository();
+  const catalogosRepo = new InMemoryCatalogosActividadesRepository();
+  const actividadesRepo = new InMemoryActividadesRepository();
+  const ciclosRepo = new InMemoryCiclosRepository();
+  const aplicacionesRepo = new InMemoryAplicacionesRepository();
 
   // Semilla de prueba para demo
   const loteDemo = Lote.crear({
@@ -48,6 +56,10 @@ async function bootstrap() {
     eventosRepo,
     genealogiaRepo,
     insumosRepo,
+    catalogosRepo,
+    actividadesRepo,
+    ciclosRepo,
+    aplicacionesRepo,
     logger: true,
   });
 

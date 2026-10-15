@@ -7,3 +7,4 @@ export * from './actividades-repository.port.js';
 export * from './ciclos-repository.port.js';
 export * from './observaciones-monitoreo-repository.port.js';
 export * from './insumos-catalogo-repository.port.js';
+export * from './aplicaciones-repository.port.js';

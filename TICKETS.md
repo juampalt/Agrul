@@ -18,7 +18,7 @@
 | **Épica 7: Módulo 1 — Gestión de Fincas, Lotes y Suelos** | 3 | 1 | 0 | 2 |
 | **Épica 8: Módulo 2 — Gestión de Cultivos y Ciclos Productivos** | 3 | 0 | 0 | 3 |
 | **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 3 | 0 | 1 |
-| **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 1 | 0 | 3 |
+| **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 2 | 0 | 2 |
 | **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 0 | 0 | 4 |
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 0 | 0 | 3 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 0 | 0 | 3 |
@@ -26,7 +26,7 @@
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **18** | **0** | **32** |
+| **TOTAL GENERAL** | **50** | **19** | **0** | **31** |
 
 ---
 
@@ -504,23 +504,23 @@
   - [x] Validaciones Zod de tipos y rangos numéricos.
 
 ### `[AGRUL-025]` Registro de Aplicaciones de Campo, Mezclas y Dosis Diferenciadas
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 4: Insumos y Aplicaciones
 - **Requisitos Funcionales:** RF-M4-03, RF-M4-04, RF-M4-05, RF-M4-06, RF-M4-11, RF-M4-12
 - **Reglas de Negocio:** RN-01, RN-04, RN-10
 - **Skills:** [domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
-- **Etiquetas:** `aplicaciones`, `dosis`, `mezclas`, `campo`, `ready-for-agent`
+- **Etiquetas:** `aplicaciones`, `dosis`, `mezclas`, `campo`, `status:done`
 - **Descripción:** Registro de aplicaciones de insumos sobre lotes y ciclos, permitiendo caldos/mezclas (múltiples insumos por labor), descomposición de dosis (total, por ha, por planta, concentración) y condiciones climáticas de aplicación.
 - **Tareas Técnicas:**
   1. Crear tabla aplicacion_agricola (id, actividadId FK, loteId FK, cicloId FK, fecha, responsableId, metodo, motivo, equipoAplicacion, condicionesClima: { vientoKmH, tempC, lluviaMm }).
   2. Crear tabla aplicacion_linea_insumo (id, aplicacionId FK, insumoId FK, cantidadTotal, unidadMedidaId, dosisPorSuperficie, dosisPorPlanta, concentracion).
   3. Validar RN-01 (atada a lote y ciclo) y RN-10 (disparar movimiento de stock correspondiente en Módulo 9).
 - **Criterios de Aceptación:**
-  - [ ] RF-M4-03 / RF-M4-05: Cada aplicación está atada a una actividad, un lote y un ciclo abierto.
-  - [ ] RF-M4-04: Campos independientes para dosis total, por ha, por planta y concentración.
-  - [ ] RF-M4-06: Soporta mezclas de múltiples insumos en la misma actividad.
-  - [ ] RF-M4-11 / RF-M4-12: Registro de equipo utilizado y condiciones ambientales al aplicar.
+  - [x] RF-M4-03 / RF-M4-05: Cada aplicación está atada a una actividad, un lote y un ciclo abierto.
+  - [x] RF-M4-04: Campos independientes para dosis total, por ha, por planta y concentración.
+  - [x] RF-M4-06: Soporta mezclas de múltiples insumos en la misma actividad.
+  - [x] RF-M4-11 / RF-M4-12: Registro de equipo utilizado y condiciones ambientales al aplicar.
 
 ### `[AGRUL-026]` Motor de Validación de Carencia, Reingreso y Recomendaciones Técnicas
 - **Estado:** `TODO` 📌

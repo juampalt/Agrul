@@ -10,6 +10,7 @@ import { InMemoryActividadesRepository } from '../mocks/in-memory-actividades.re
 import { InMemoryCiclosRepository } from '../mocks/in-memory-ciclos.repository.js';
 import { InMemoryObservacionesMonitoreoRepository } from '../mocks/in-memory-observaciones-monitoreo.repository.js';
 import { InMemoryInsumosCatalogoRepository } from '../mocks/in-memory-insumos-catalogo.repository.js';
+import { InMemoryAplicacionesRepository } from '../mocks/in-memory-aplicaciones.repository.js';
 import { CicloProductivo } from '../../src/core/domain/entities/ciclo-productivo.entity.js';
 import { TipoActividad } from '../../src/core/domain/entities/tipo-actividad.entity.js';
 
@@ -24,6 +25,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let ciclosRepo: InMemoryCiclosRepository;
   let observacionesRepo: InMemoryObservacionesMonitoreoRepository;
   let insumosRepo: InMemoryInsumosCatalogoRepository;
+  let aplicacionesRepo: InMemoryAplicacionesRepository;
 
   beforeEach(async () => {
     lotesRepo = new InMemoryLotesRepository();
@@ -35,6 +37,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     ciclosRepo = new InMemoryCiclosRepository();
     observacionesRepo = new InMemoryObservacionesMonitoreoRepository();
     insumosRepo = new InMemoryInsumosCatalogoRepository();
+    aplicacionesRepo = new InMemoryAplicacionesRepository();
 
     app = buildApp({
       lotesRepo,
@@ -46,6 +49,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       ciclosRepo,
       observacionesRepo,
       insumosRepo,
+      aplicacionesRepo,
       logger: false,
     });
     await app.ready();
@@ -1854,6 +1858,353 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
         url: '/api/v1/insumos/00000000-0000-0000-0000-000000000000',
       });
       expect(notFoundRes.statusCode).toBe(404);
+    });
+  });
+
+  describe('Módulo 4: Aplicaciones Agrícolas de Campo (AGRUL-025)', () => {
+    let loteId: string;
+    let cicloId: string;
+    let actividadId: string;
+    let insumo1Id: string;
+    let insumo2Id: string;
+
+    beforeEach(async () => {
+      // 1. Crear lote
+      const loteRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/lotes',
+        payload: {
+          codigoLote: 'LOT-2026-APL01',
+          producto: 'Frutilla San Andreas',
+          cantidadInicial: 8000,
+          unidadMedida: 'KG',
+        },
+      });
+      loteId = JSON.parse(loteRes.body).data.id;
+
+      // 2. Crear ciclo abierto en el lote
+      cicloId = crypto.randomUUID();
+      await ciclosRepo.guardar(
+        CicloProductivo.crear({
+          id: cicloId,
+          codigoCiclo: 'CICLO-2026-INT-01',
+          loteId,
+          cultivo: 'Frutilla',
+          variedad: 'San Andreas',
+          estado: 'ABIERTO',
+          superficieCultivadaHa: 4.0,
+          fechaInicio: '2026-03-01',
+        })
+      );
+
+      // 3. Crear tipo de actividad y actividad agrícola
+      const tipoActRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/tipos-actividad',
+        payload: {
+          nombre: 'Aplicación Fitosanitaria Preventiva',
+          categoria: 'SANIDAD',
+          requiereInsumos: true,
+        },
+      });
+      const tipoId = JSON.parse(tipoActRes.body).data.id;
+
+      const actRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: tipoId,
+          loteId,
+          cicloId,
+          fechaHecho: '2026-10-14',
+          superficieTrabajadaHa: 4.0,
+          usuarioCargaId: crypto.randomUUID(),
+        },
+      });
+      actividadId = JSON.parse(actRes.body).data.id;
+
+      // 4. Crear insumos en catálogo
+      const ins1Res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/insumos',
+        payload: {
+          nombreComercial: 'Fungicida Azoxistrobin 25%',
+          categoria: 'FITOSANITARIO',
+          unidadMedidaId: 'LT',
+          presentacion: 'Bidón 5L',
+          fichaFitosanitaria: {
+            principioActivo: 'Azoxistrobin',
+            periodoCarenciaDias: 3,
+            periodoReingresoHoras: 12,
+            nroRegistroSenasa: 'SENASA-55891',
+          },
+        },
+      });
+      insumo1Id = JSON.parse(ins1Res.body).data.id;
+
+      const ins2Res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/insumos',
+        payload: {
+          nombreComercial: 'Bioestimulante Aminoácidos',
+          categoria: 'FERTILIZANTE',
+          unidadMedidaId: 'LT',
+          presentacion: 'Bidón 20L',
+        },
+      });
+      insumo2Id = JSON.parse(ins2Res.body).data.id;
+    });
+
+    it('POST /api/v1/aplicaciones debe registrar una aplicación monoproducto con dosis diferenciadas (RF-M4-03, RF-M4-04, RF-M4-11, RF-M4-12)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/aplicaciones',
+        payload: {
+          actividadId,
+          loteId,
+          cicloId,
+          fecha: '2026-10-14',
+          metodo: 'FOLIAR',
+          motivo: 'Control preventivo de oídio y manchas foliares',
+          equipoAplicacion: 'Pulverizadora de arrastre con picos antideriva',
+          condicionesClima: {
+            vientoKmH: 6.5,
+            tempC: 22.0,
+            lluviaMm: 0,
+            observaciones: 'Viento calmo, aplicación matutina óptima',
+          },
+          lineas: [
+            {
+              insumoId: insumo1Id,
+              cantidadTotal: 3.2,
+              unidadMedidaId: 'LT',
+              dosisPorSuperficie: 0.8, // 0.8 L/ha
+              dosisPorPlanta: null,
+              concentracion: '80 cc/100L',
+            },
+          ],
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.id).toBeDefined();
+      expect(body.data.actividadId).toBe(actividadId);
+      expect(body.data.loteId).toBe(loteId);
+      expect(body.data.cicloId).toBe(cicloId);
+      expect(body.data.equipoAplicacion).toContain('Pulverizadora de arrastre');
+      expect(body.data.condicionesClima.tempC).toBe(22.0);
+      expect(body.data.condicionesClima.vientoKmH).toBe(6.5);
+      expect(body.data.esMezcla).toBe(false);
+      expect(body.data.lineas).toHaveLength(1);
+      expect(body.data.lineas[0].insumoId).toBe(insumo1Id);
+      expect(body.data.lineas[0].nombreComercial).toBe('Fungicida Azoxistrobin 25%');
+      expect(body.data.lineas[0].cantidadTotal).toBe(3.2);
+      expect(body.data.lineas[0].dosisPorSuperficie).toBe(0.8);
+      expect(body.data.lineas[0].concentracion).toBe('80 cc/100L');
+    });
+
+    it('POST /api/v1/aplicaciones debe registrar una mezcla (caldo) con múltiples insumos (RF-M4-06)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/aplicaciones',
+        payload: {
+          actividadId,
+          loteId,
+          cicloId,
+          fecha: '2026-10-14',
+          metodo: 'FOLIAR',
+          motivo: 'Fungicida + Bioestimulante en caldo único',
+          equipoAplicacion: 'Mochila manual a palanca',
+          lineas: [
+            {
+              insumoId: insumo1Id,
+              cantidadTotal: 2.0,
+              unidadMedidaId: 'LT',
+              dosisPorSuperficie: 0.5,
+              concentracion: '100 cc/100L',
+            },
+            {
+              insumoId: insumo2Id,
+              cantidadTotal: 5.0,
+              unidadMedidaId: 'LT',
+              dosisPorSuperficie: 1.25,
+              concentracion: '250 cc/100L',
+            },
+          ],
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.esMezcla).toBe(true);
+      expect(body.data.lineas).toHaveLength(2);
+      expect(body.data.lineas[0].nombreComercial).toBe('Fungicida Azoxistrobin 25%');
+      expect(body.data.lineas[1].nombreComercial).toBe('Bioestimulante Aminoácidos');
+    });
+
+    it('POST /api/v1/aplicaciones debe rechazar con 422 si el ciclo productivo se encuentra CERRADO (RF-M4-05 / RN-03)', async () => {
+      const cicloCerradoId = crypto.randomUUID();
+      await ciclosRepo.guardar(
+        CicloProductivo.crear({
+          id: cicloCerradoId,
+          codigoCiclo: 'CICLO-CERRADO-INT',
+          loteId,
+          cultivo: 'Frutilla',
+          estado: 'CERRADO',
+          superficieCultivadaHa: 4.0,
+          fechaInicio: '2026-01-01',
+          fechaFin: '2026-05-01',
+        })
+      );
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/aplicaciones',
+        payload: {
+          actividadId,
+          loteId,
+          cicloId: cicloCerradoId,
+          fecha: '2026-10-14',
+          metodo: 'FOLIAR',
+          motivo: 'Intento en ciclo cerrado',
+          equipoAplicacion: 'Mochila',
+          lineas: [
+            {
+              insumoId: insumo1Id,
+              cantidadTotal: 2.0,
+              unidadMedidaId: 'LT',
+            },
+          ],
+        },
+      });
+
+      expect(res.statusCode).toBe(422);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('CICLO_NO_ABIERTO');
+    });
+
+    it('POST /api/v1/aplicaciones debe rechazar con 422 si la actividad no coincide con el lote/ciclo (RN-01)', async () => {
+      const otroLoteRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/lotes',
+        payload: {
+          codigoLote: 'LOT-2026-APL02',
+          producto: 'Arándano',
+          cantidadInicial: 2000,
+          unidadMedida: 'KG',
+        },
+      });
+      const otroLoteId = JSON.parse(otroLoteRes.body).data.id;
+
+      const otroCicloId = crypto.randomUUID();
+      await ciclosRepo.guardar(
+        CicloProductivo.crear({
+          id: otroCicloId,
+          codigoCiclo: 'CICLO-OTRO-01',
+          loteId: otroLoteId,
+          cultivo: 'Arándano',
+          estado: 'ABIERTO',
+          superficieCultivadaHa: 2.0,
+          fechaInicio: '2026-02-01',
+        })
+      );
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/aplicaciones',
+        payload: {
+          actividadId, // Actividad pertenece a loteId original
+          loteId: otroLoteId,
+          cicloId: otroCicloId,
+          fecha: '2026-10-14',
+          metodo: 'FOLIAR',
+          motivo: 'Inconsistencia lote/ciclo',
+          equipoAplicacion: 'Mochila',
+          lineas: [
+            {
+              insumoId: insumo1Id,
+              cantidadTotal: 1.0,
+              unidadMedidaId: 'LT',
+            },
+          ],
+        },
+      });
+
+      expect(res.statusCode).toBe(422);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('INCONSISTENCIA_LOTE_CICLO');
+    });
+
+    it('POST /api/v1/aplicaciones debe rechazar con 400 Bad Request si faltan campos obligatorios o lineas está vacío', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/aplicaciones',
+        payload: {
+          actividadId,
+          loteId,
+          cicloId,
+          fecha: '2026-10-14',
+          metodo: 'FOLIAR',
+          motivo: 'Sin equipo ni líneas',
+          equipoAplicacion: '', // Vacío
+          lineas: [],          // Vacío
+        },
+      });
+
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('GET /api/v1/aplicaciones y GET /api/v1/aplicaciones/:id deben retornar listado y detalle con envelope', async () => {
+      const postRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/aplicaciones',
+        payload: {
+          actividadId,
+          loteId,
+          cicloId,
+          fecha: '2026-10-14',
+          metodo: 'FERTIRRIEGO',
+          motivo: 'Aporte nutricional por goteo',
+          equipoAplicacion: 'Cabezal de fertirriego automatizado con venturi',
+          lineas: [
+            {
+              insumoId: insumo2Id,
+              cantidadTotal: 25.0,
+              unidadMedidaId: 'LT',
+              dosisPorSuperficie: 6.25,
+            },
+          ],
+        },
+      });
+      const appId = JSON.parse(postRes.body).data.id;
+
+      const listRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/aplicaciones?loteId=${loteId}`,
+      });
+      expect(listRes.statusCode).toBe(200);
+      const listBody = JSON.parse(listRes.body);
+      expect(listBody.success).toBe(true);
+      expect(listBody.data.length).toBeGreaterThanOrEqual(1);
+
+      const getRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/aplicaciones/${appId}`,
+      });
+      expect(getRes.statusCode).toBe(200);
+      const getBody = JSON.parse(getRes.body);
+      expect(getBody.success).toBe(true);
+      expect(getBody.data.id).toBe(appId);
+      expect(getBody.data.metodo).toBe('FERTIRRIEGO');
+      expect(getBody.data.lineas[0].nombreComercial).toBe('Bioestimulante Aminoácidos');
     });
   });
 });
