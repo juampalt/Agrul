@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { buildApp } from './infrastructure/http/app.js';
 import { InMemoryLotesRepository } from '../tests/mocks/in-memory-lotes.repository.js';
 import { InMemoryEventosRepository } from '../tests/mocks/in-memory-eventos.repository.js';

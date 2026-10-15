@@ -23,8 +23,8 @@ npm run dev
 ```
 
 Una vez iniciado:
-- **Dashboard Web & Grafo de Linaje:** [http://localhost:3000](http://localhost:3000)
-- **API Healthcheck:** [http://localhost:3000/api/v1/health](http://localhost:3000/api/v1/health)
+- **Dashboard Web & Grafo de Linaje:** [http://127.0.0.1:3001](http://127.0.0.1:3001)
+- **API Healthcheck:** [http://127.0.0.1:3001/api/v1/health](http://127.0.0.1:3001/api/v1/health)
 
 ---
 
