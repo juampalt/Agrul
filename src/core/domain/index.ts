@@ -1,6 +1,11 @@
 export * from './entities/lote.entity.js';
 export * from './entities/trace-event.entity.js';
 export * from './entities/lote-genealogia.entity.js';
+export * from './entities/aplicacion-agricola.entity.js';
+export * from './entities/recomendacion-tecnica.entity.js';
+export * from './entities/insumo-catalogo.entity.js';
+
+export * from './services/verificacion-carencia.service.js';
 
 export * from './value-objects/codigo-lote.vo.js';
 export * from './value-objects/tipo-evento.vo.js';

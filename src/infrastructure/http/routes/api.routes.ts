@@ -104,6 +104,10 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.post('/aplicaciones', (req, rep) => deps.aplicacionesController!.registrar(req, rep));
         v1.get('/aplicaciones', (req, rep) => deps.aplicacionesController!.listar(req, rep));
         v1.get('/aplicaciones/:id', (req, rep) => deps.aplicacionesController!.obtenerPorId(req, rep));
+
+        // Validación de Carencia y Reingreso por Lote (Módulo 4 — AGRUL-026 / RF-M4-09, RN-14)
+        v1.get('/lotes/:id/carencia', (req, rep) => deps.aplicacionesController!.verificarCarencia(req, rep));
+        v1.get('/aplicaciones/carencia/lote/:id', (req, rep) => deps.aplicacionesController!.verificarCarencia(req, rep));
       }
     },
     { prefix: '/api/v1' }

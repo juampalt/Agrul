@@ -57,6 +57,7 @@ import {
   ListarAplicacionesUseCase,
   ObtenerAplicacionPorIdUseCase,
 } from '../../application/use-cases/aplicaciones.use-cases.js';
+import { VerificarCarenciaLoteUseCase } from '../../application/use-cases/verificar-carencia.use-case.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -243,11 +244,17 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       options.aplicacionesRepo,
       options.insumosRepo
     );
+    const verificarCarenciaUseCase = new VerificarCarenciaLoteUseCase(
+      options.aplicacionesRepo,
+      options.insumosRepo,
+      options.lotesRepo
+    );
 
     aplicacionesController = new AplicacionesController(
       registrarAplicacionUseCase,
       listarAplicacionesUseCase,
-      obtenerAplicacionUseCase
+      obtenerAplicacionUseCase,
+      verificarCarenciaUseCase
     );
   }
 

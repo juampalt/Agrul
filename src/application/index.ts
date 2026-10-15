@@ -19,3 +19,4 @@ export * from './use-cases/catalogos-actividades.use-cases.js';
 export * from './use-cases/monitoreo.use-cases.js';
 export * from './use-cases/insumos-catalogo.use-cases.js';
 export * from './use-cases/aplicaciones.use-cases.js';
+export * from './use-cases/verificar-carencia.use-case.js';

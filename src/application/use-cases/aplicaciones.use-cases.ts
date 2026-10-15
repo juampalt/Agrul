@@ -102,6 +102,7 @@ export class RegistrarAplicacionUseCase {
         dosisPorPlanta: l.dosisPorPlanta ?? null,
         concentracion: l.concentracion ?? null,
       })),
+      recomendacionTecnica: input.recomendacionTecnica ?? null,
       fechaReferenciaHoy,
     });
 
@@ -144,6 +145,7 @@ export class RegistrarAplicacionUseCase {
       equipoAplicacion: raw.equipoAplicacion,
       condicionesClima: raw.condicionesClima ?? null,
       lineas: lineasDto,
+      recomendacionTecnica: raw.recomendacionTecnica ?? null,
       esMezcla: aplicacion.esMezcla(),
       creadoEn: raw.creadoEn,
       actualizadoEn: raw.actualizadoEn,
@@ -195,6 +197,7 @@ export class ListarAplicacionesUseCase {
         equipoAplicacion: raw.equipoAplicacion,
         condicionesClima: raw.condicionesClima ?? null,
         lineas: lineasDto,
+        recomendacionTecnica: raw.recomendacionTecnica ?? null,
         esMezcla: aplicacion.esMezcla(),
         creadoEn: raw.creadoEn,
         actualizadoEn: raw.actualizadoEn,
@@ -248,6 +251,7 @@ export class ObtenerAplicacionPorIdUseCase {
       equipoAplicacion: raw.equipoAplicacion,
       condicionesClima: raw.condicionesClima ?? null,
       lineas: lineasDto,
+      recomendacionTecnica: raw.recomendacionTecnica ?? null,
       esMezcla: aplicacion.esMezcla(),
       creadoEn: raw.creadoEn,
       actualizadoEn: raw.actualizadoEn,

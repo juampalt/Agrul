@@ -16,6 +16,15 @@ export const LineaInsumoSchema = z.object({
   concentracion: z.union([z.string().trim().max(100), z.number()]).optional().nullable(),
 }).strict();
 
+export const RecomendacionTecnicaSchema = z.object({
+  agronomoEmisor: z.string().trim().min(2, 'El nombre del agrónomo emisor debe tener al menos 2 caracteres (RF-M4-08)').max(200),
+  nroMatricula: z.string().trim().max(100).optional().nullable(),
+  documentoUrl: z.string().trim().max(500).optional().nullable(),
+  firmaDigital: z.string().trim().max(500).optional().nullable(),
+  fechaEmision: z.string().trim().optional().nullable(),
+  observaciones: z.string().trim().max(1000).optional().nullable(),
+}).strict();
+
 export const RegistrarAplicacionBodySchema = z.object({
   actividadId: z.string().uuid('El actividadId debe ser un UUID válido (RF-M4-03)'),
   loteId: z.string().uuid('El loteId debe ser un UUID válido (RF-M4-03 / RF-M4-05)'),
@@ -27,6 +36,7 @@ export const RegistrarAplicacionBodySchema = z.object({
   equipoAplicacion: z.string().trim().min(2, 'El equipo de aplicación utilizado es obligatorio (RF-M4-11)').max(200),
   condicionesClima: CondicionesClimaSchema.optional().nullable(),
   lineas: z.array(LineaInsumoSchema).min(1, 'La aplicación debe incluir al menos un insumo aplicado (RF-M4-06)'),
+  recomendacionTecnica: RecomendacionTecnicaSchema.optional().nullable(), // RF-M4-08
 }).strict();
 
 export const ListarAplicacionesQuerySchema = z.object({
@@ -40,4 +50,12 @@ export const ListarAplicacionesQuerySchema = z.object({
 
 export const AplicacionIdParamSchema = z.object({
   id: z.string().uuid('El ID de la aplicación debe ser un UUID válido'),
+}).strict();
+
+export const VerificarCarenciaParamsSchema = z.object({
+  id: z.string().uuid('El loteId debe ser un UUID válido'),
+}).strict();
+
+export const VerificarCarenciaQuerySchema = z.object({
+  fecha: z.string().trim().optional(),
 }).strict();

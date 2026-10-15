@@ -1,4 +1,5 @@
 import { DomainError, FechaFuturaInvalidaError } from '../errors/domain.error.js';
+import { RecomendacionTecnica, RecomendacionTecnicaProps } from './recomendacion-tecnica.entity.js';
 
 export class AplicacionInvalidaError extends DomainError {
   public readonly code = 'INVALID_APPLICATION';
@@ -47,6 +48,7 @@ export interface AplicacionAgricolaProps {
   equipoAplicacion: string; // RF-M4-11
   condicionesClima?: CondicionesClimaProps | null; // RF-M4-12
   lineas: AplicacionLineaInsumoProps[]; // RF-M4-06 (mezclas / caldos)
+  recomendacionTecnica?: RecomendacionTecnicaProps | null; // RF-M4-08
   creadoEn: string;
   actualizadoEn: string;
 }
@@ -71,6 +73,7 @@ export interface CrearAplicacionAgricolaParams {
     dosisPorPlanta?: number | null;
     concentracion?: string | number | null;
   }>;
+  recomendacionTecnica?: RecomendacionTecnicaProps | null; // RF-M4-08
   /** Permite inyectar la fecha de referencia hoy para pruebas temporales deterministas */
   fechaReferenciaHoy?: Date;
 }
@@ -183,6 +186,12 @@ export class AplicacionAgricola {
       };
     }
 
+    // Validar recomendación técnica opcional si se adjunta (RF-M4-08)
+    let recomendacionNormalizada: RecomendacionTecnicaProps | null = null;
+    if (params.recomendacionTecnica) {
+      recomendacionNormalizada = RecomendacionTecnica.crear(params.recomendacionTecnica).toJSON();
+    }
+
     const ahora = new Date().toISOString();
 
     return new AplicacionAgricola({
@@ -197,6 +206,7 @@ export class AplicacionAgricola {
       equipoAplicacion: params.equipoAplicacion.trim(),
       condicionesClima: climaNormalizado,
       lineas: lineasValidadas,
+      recomendacionTecnica: recomendacionNormalizada,
       creadoEn: ahora,
       actualizadoEn: ahora,
     });
@@ -207,6 +217,7 @@ export class AplicacionAgricola {
       ...props,
       lineas: props.lineas ? [...props.lineas] : [],
       condicionesClima: props.condicionesClima ? { ...props.condicionesClima } : null,
+      recomendacionTecnica: props.recomendacionTecnica ? { ...props.recomendacionTecnica } : null,
     });
   }
 
@@ -221,6 +232,9 @@ export class AplicacionAgricola {
   public get equipoAplicacion(): string { return this.props.equipoAplicacion; }
   public get condicionesClima(): CondicionesClimaProps | null | undefined { return this.props.condicionesClima; }
   public get lineas(): AplicacionLineaInsumoProps[] { return [...this.props.lineas]; }
+  public get recomendacionTecnica(): RecomendacionTecnicaProps | null | undefined {
+    return this.props.recomendacionTecnica ? { ...this.props.recomendacionTecnica } : null;
+  }
   public get creadoEn(): string { return this.props.creadoEn; }
   public get actualizadoEn(): string { return this.props.actualizadoEn; }
 
@@ -233,6 +247,7 @@ export class AplicacionAgricola {
       ...this.props,
       condicionesClima: this.props.condicionesClima ? { ...this.props.condicionesClima } : null,
       lineas: this.props.lineas.map(l => ({ ...l })),
+      recomendacionTecnica: this.props.recomendacionTecnica ? { ...this.props.recomendacionTecnica } : null,
     };
   }
 }

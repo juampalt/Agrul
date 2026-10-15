@@ -2207,7 +2207,225 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       expect(getBody.data.lineas[0].nombreComercial).toBe('Bioestimulante Aminoácidos');
     });
   });
+
+  describe('Motor de Validación de Carencia, Reingreso y Recomendaciones Técnicas (AGRUL-026 / RF-M4-08, RF-M4-09, RN-14)', () => {
+    let loteCarenciaId: string;
+    let cicloCarenciaId: string;
+    let actividadCarenciaId: string;
+    let insumoCarenciaId: string;
+
+    beforeEach(async () => {
+      // 1. Crear lote
+      const loteRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/lotes',
+        payload: {
+          codigoLote: 'LOT-2026-99001',
+          producto: 'Cereza Lapins',
+          variedad: 'Lapins Exportación',
+          cantidadInicial: 8000,
+          unidadMedida: 'KG',
+        },
+      });
+      loteCarenciaId = JSON.parse(loteRes.body).data.id;
+
+      // 2. Crear ciclo productivo abierto
+      cicloCarenciaId = crypto.randomUUID();
+      await ciclosRepo.guardar(
+        CicloProductivo.crear({
+          id: cicloCarenciaId,
+          codigoCiclo: 'CICLO-CAR-2026',
+          loteId: loteCarenciaId,
+          cultivo: 'Cereza',
+          variedad: 'Lapins',
+          estado: 'ABIERTO',
+          superficieCultivadaHa: 4.0,
+          fechaInicio: '2026-09-01',
+        })
+      );
+
+      // 3. Crear tipo de actividad y actividad agrícola
+      const tipoActRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/catalogos/tipos-actividad',
+        payload: {
+          nombre: 'Aplicación Fitosanitaria Carencia Test',
+          categoria: 'SANIDAD',
+          requiereInsumos: true,
+        },
+      });
+      const tipoId = JSON.parse(tipoActRes.body).data.id;
+
+      const actRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: tipoId,
+          loteId: loteCarenciaId,
+          cicloId: cicloCarenciaId,
+          fechaHecho: '2026-10-01',
+          superficieTrabajadaHa: 4.0,
+          usuarioCargaId: crypto.randomUUID(),
+        },
+      });
+      actividadCarenciaId = JSON.parse(actRes.body).data.id;
+
+      // 4. Crear insumo fitosanitario con 14 días de carencia
+      const insumoRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/insumos',
+        payload: {
+          nombreComercial: 'Fungicida Carencia 14D',
+          categoria: 'FITOSANITARIO',
+          unidadMedidaId: 'KG',
+          presentacion: 'Bolsa 5kg',
+          fichaFitosanitaria: {
+            principioActivo: 'Fenhexamid',
+            periodoCarenciaDias: 14,
+            periodoReingresoHoras: 24,
+            nroRegistroSenasa: 'SENASA-F-9876',
+            toxicologia: 'Clase IV - Verde',
+          },
+        },
+      });
+      insumoCarenciaId = JSON.parse(insumoRes.body).data.id;
+
+      // 5. Registrar aplicación base en el lote aplicada el 2026-10-01
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/aplicaciones',
+        payload: {
+          actividadId: actividadCarenciaId,
+          loteId: loteCarenciaId,
+          cicloId: cicloCarenciaId,
+          fecha: '2026-10-01',
+          metodo: 'FOLIAR',
+          motivo: 'Tratamiento fitosanitario base con carencia',
+          equipoAplicacion: 'Pulverizador de arrastre',
+          lineas: [
+            {
+              insumoId: insumoCarenciaId,
+              cantidadTotal: 3.5,
+              unidadMedidaId: 'KG',
+              dosisPorSuperficie: 0.875,
+            },
+          ],
+        },
+      });
+    });
+
+    it('POST /api/v1/aplicaciones debe registrar una aplicación con recomendación técnica profesional adjunta (RF-M4-08)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/aplicaciones',
+        payload: {
+          actividadId: actividadCarenciaId,
+          loteId: loteCarenciaId,
+          cicloId: cicloCarenciaId,
+          fecha: '2026-10-02',
+          metodo: 'FOLIAR',
+          motivo: 'Control de monilia previo a cosecha',
+          equipoAplicacion: 'Pulverizador de arrastre 2000L',
+          lineas: [
+            {
+              insumoId: insumoCarenciaId,
+              cantidadTotal: 3.5,
+              unidadMedidaId: 'KG',
+              dosisPorSuperficie: 0.875,
+            },
+          ],
+          recomendacionTecnica: {
+            agronomoEmisor: 'Ing. Agr. Florencia Gomez',
+            nroMatricula: 'MP-7741-CPIA',
+            documentoUrl: 'https://cdn.agrul.app/recetas/receta-fenhexamid-2026.pdf',
+            firmaDigital: 'sig-sha256-fgomez',
+            fechaEmision: '2026-09-30',
+            observaciones: 'Respetar período de carencia estricto de 14 días según SENASA.',
+          },
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.recomendacionTecnica).toBeDefined();
+      expect(body.data.recomendacionTecnica.agronomoEmisor).toBe('Ing. Agr. Florencia Gomez');
+      expect(body.data.recomendacionTecnica.nroMatricula).toBe('MP-7741-CPIA');
+      expect(body.data.recomendacionTecnica.documentoUrl).toContain('receta-fenhexamid-2026.pdf');
+    });
+
+    it('GET /api/v1/lotes/:id/carencia debe devolver 404 si el lote no existe', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/lotes/${crypto.randomUUID()}/carencia`,
+      });
+
+      expect(res.statusCode).toBe(404);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('ENTITY_NOT_FOUND');
+    });
+
+    it('GET /api/v1/lotes/:id/carencia debe emitir warning claro con producto, días restantes y fecha segura si fechaCosecha < fechaFinCarencia (RF-M4-09 / RN-14)', async () => {
+      // Aplicación realizada el 2026-10-01 con 14 días de carencia -> fechaFinCarencia: 2026-10-15
+      // Evaluar cosecha para el 2026-10-08 (restan 7 días)
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/lotes/${loteCarenciaId}/carencia?fecha=2026-10-08`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.loteId).toBe(loteCarenciaId);
+      expect(body.data.fechaEvaluacion).toBe('2026-10-08');
+      expect(body.data.aptoParaCosecha).toBe(false);
+      expect(body.data.fechaSeguraCosecha).toBe('2026-10-15');
+      expect(body.data.totalAlertasCarencia).toBe(1);
+
+      const alerta = body.data.alertasCarencia[0];
+      expect(alerta.nombreComercial).toBe('Fungicida Carencia 14D');
+      expect(alerta.principioActivo).toBe('Fenhexamid');
+      expect(alerta.periodoCarenciaDias).toBe(14);
+      expect(alerta.fechaFinCarencia).toBe('2026-10-15');
+      expect(alerta.diasRestantes).toBe(7);
+      expect(alerta.mensajeAdvertencia).toContain('ADVERTENCIA DE SEGURIDAD ALIMENTARIA');
+      expect(alerta.mensajeAdvertencia).toContain('restan 7 días de carencia');
+
+      expect(body.data.advertencias).toHaveLength(1);
+    });
+
+    it('GET /api/v1/lotes/:id/carencia debe indicar lote apto si la fecha es igual o posterior a la fecha segura (2026-10-15)', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/lotes/${loteCarenciaId}/carencia?fecha=2026-10-15`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.aptoParaCosecha).toBe(true);
+      expect(body.data.totalAlertasCarencia).toBe(0);
+      expect(body.data.alertasCarencia).toHaveLength(0);
+      expect(body.data.fechaSeguraCosecha).toBeNull();
+    });
+
+    it('GET /api/v1/aplicaciones/carencia/lote/:id debe funcionar como alias de verificación de carencia', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/aplicaciones/carencia/lote/${loteCarenciaId}?fecha=2026-10-05`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.aptoParaCosecha).toBe(false);
+      expect(body.data.fechaSeguraCosecha).toBe('2026-10-15');
+      expect(body.data.alertasCarencia[0].diasRestantes).toBe(10);
+    });
+  });
 });
+
 
 
 

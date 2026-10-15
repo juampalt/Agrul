@@ -322,4 +322,34 @@ describe('Casos de Uso: Aplicaciones Agrícolas (AGRUL-025)', () => {
     expect(porId.id).toBe(creada.id);
     expect(porId.lineas[0].nombreComercial).toBe('Captan 80 WG');
   });
+
+  it('debe registrar y recuperar aplicación con recomendación técnica adjunta (RF-M4-08)', async () => {
+    const creada = await registrarUseCase.execute(
+      {
+        actividadId,
+        loteId,
+        cicloId: cicloAbiertoId,
+        fecha: '2026-10-14',
+        metodo: 'FOLIAR',
+        motivo: 'Control fúngico bajo receta agronómica',
+        equipoAplicacion: 'Pulverizador Martignani 2000L',
+        lineas: [{ insumoId: insumoFitoId, cantidadTotal: 4, unidadMedidaId: 'KG' }],
+        recomendacionTecnica: {
+          agronomoEmisor: 'Ing. Agr. Roberto Silva',
+          nroMatricula: 'MP-1249-CPIA',
+          documentoUrl: 'https://storage.agrul.app/recetas/receta-2026-10-14.pdf',
+          observaciones: 'Respetar período de carencia de 14 días.',
+        },
+      },
+      hoyFijo,
+    );
+
+    expect(creada.recomendacionTecnica).toBeDefined();
+    expect(creada.recomendacionTecnica?.agronomoEmisor).toBe('Ing. Agr. Roberto Silva');
+    expect(creada.recomendacionTecnica?.nroMatricula).toBe('MP-1249-CPIA');
+    expect(creada.recomendacionTecnica?.documentoUrl).toBe('https://storage.agrul.app/recetas/receta-2026-10-14.pdf');
+
+    const porId = await obtenerPorIdUseCase.execute(creada.id);
+    expect(porId.recomendacionTecnica?.agronomoEmisor).toBe('Ing. Agr. Roberto Silva');
+  });
 });

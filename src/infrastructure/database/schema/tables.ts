@@ -292,6 +292,7 @@ export const aplicacionesAgricolasTable = pgTable('aplicaciones_agricolas', {
   motivo: text('motivo').notNull(),
   equipoAplicacion: varchar('equipo_aplicacion', { length: 200 }).notNull(),
   condicionesClima: jsonb('condiciones_clima'),
+  recomendacionTecnica: jsonb('recomendacion_tecnica'), // RF-M4-08
   creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [

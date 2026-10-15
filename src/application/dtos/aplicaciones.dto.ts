@@ -14,6 +14,15 @@ export interface CondicionesClimaDto {
   observaciones?: string | null;
 }
 
+export interface RecomendacionTecnicaDto {
+  agronomoEmisor: string;
+  nroMatricula?: string | null;
+  documentoUrl?: string | null;
+  firmaDigital?: string | null;
+  fechaEmision?: string | null;
+  observaciones?: string | null;
+}
+
 export interface RegistrarAplicacionInputDto {
   actividadId: string;
   loteId: string;
@@ -25,6 +34,7 @@ export interface RegistrarAplicacionInputDto {
   equipoAplicacion: string;
   condicionesClima?: CondicionesClimaDto | null;
   lineas: RegistrarAplicacionLineaInputDto[];
+  recomendacionTecnica?: RecomendacionTecnicaDto | null; // RF-M4-08
 }
 
 export interface AplicacionLineaOutputDto {
@@ -51,6 +61,7 @@ export interface AplicacionOutputDto {
   equipoAplicacion: string;
   condicionesClima?: CondicionesClimaDto | null;
   lineas: AplicacionLineaOutputDto[];
+  recomendacionTecnica?: RecomendacionTecnicaDto | null; // RF-M4-08
   esMezcla: boolean;
   creadoEn: string;
   actualizadoEn: string;
@@ -63,4 +74,48 @@ export interface ListarAplicacionesFiltrosDto {
   insumoId?: string;
   fechaDesde?: string;
   fechaHasta?: string;
+}
+
+export interface AlertaCarenciaDto {
+  aplicacionId: string;
+  fechaAplicacion: string;
+  insumoId: string;
+  nombreComercial: string;
+  principioActivo: string;
+  nroRegistroSenasa: string;
+  periodoCarenciaDias: number;
+  fechaFinCarencia: string;
+  diasRestantes: number;
+  fechaEvaluacion: string;
+  mensajeAdvertencia: string;
+}
+
+export interface AlertaReingresoDto {
+  aplicacionId: string;
+  fechaAplicacion: string;
+  insumoId: string;
+  nombreComercial: string;
+  periodoReingresoHoras: number;
+  fechaFinReingreso: string;
+  horasRestantes: number;
+  fechaEvaluacion: string;
+  mensajeAdvertencia: string;
+}
+
+export interface ResultadoVerificacionCarenciaDto {
+  loteId: string;
+  fechaEvaluacion: string;
+  aptoParaCosecha: boolean;
+  aptoParaReingreso: boolean;
+  fechaSeguraCosecha: string | null;
+  totalAplicacionesEvaluadas: number;
+  totalAlertasCarencia: number;
+  alertasCarencia: AlertaCarenciaDto[];
+  alertasReingreso: AlertaReingresoDto[];
+  advertencias: string[];
+}
+
+export interface VerificarCarenciaLoteInputDto {
+  loteId: string;
+  fecha?: string;
 }
