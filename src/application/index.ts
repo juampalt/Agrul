@@ -11,7 +11,9 @@ export * from './dtos/split-lote.dto.js';
 export * from './dtos/merge-lote.dto.js';
 export * from './dtos/actividades.dto.js';
 export * from './dtos/monitoreo.dto.js';
+export * from './dtos/insumos.dto.js';
 
 export * from './use-cases/actividades-agricolas.use-cases.js';
 export * from './use-cases/catalogos-actividades.use-cases.js';
 export * from './use-cases/monitoreo.use-cases.js';
+export * from './use-cases/insumos-catalogo.use-cases.js';

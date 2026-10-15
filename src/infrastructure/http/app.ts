@@ -30,8 +30,10 @@ import {
 import { ActividadesRepositoryPort } from '../../core/ports/actividades-repository.port.js';
 import { CiclosRepositoryPort } from '../../core/ports/ciclos-repository.port.js';
 import { ObservacionesMonitoreoRepositoryPort } from '../../core/ports/observaciones-monitoreo-repository.port.js';
+import { InsumosCatalogoRepository } from '../../core/ports/insumos-catalogo-repository.port.js';
 import { ActividadesController } from './controllers/actividades.controller.js';
 import { MonitoreoController } from './controllers/monitoreo.controller.js';
+import { InsumosController } from './controllers/insumos.controller.js';
 import {
   RegistrarActividadEjecutadaUseCase,
   ObtenerActividadPorIdUseCase,
@@ -43,6 +45,11 @@ import {
   ListarObservacionesMonitoreoUseCase,
   ObtenerObservacionMonitoreoPorIdUseCase,
 } from '../../application/use-cases/monitoreo.use-cases.js';
+import {
+  RegistrarInsumoCatalogoUseCase,
+  ListarInsumosCatalogoUseCase,
+  ObtenerInsumoPorIdUseCase,
+} from '../../application/use-cases/insumos-catalogo.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -56,6 +63,7 @@ export interface BuildAppOptions {
   actividadesRepo?: ActividadesRepositoryPort;
   ciclosRepo?: CiclosRepositoryPort;
   observacionesRepo?: ObservacionesMonitoreoRepositoryPort;
+  insumosRepo?: InsumosCatalogoRepository;
   logger?: boolean;
 }
 
@@ -197,6 +205,19 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     );
   }
 
+  let insumosController: InsumosController | undefined;
+  if (options.insumosRepo) {
+    const registrarInsumoUseCase = new RegistrarInsumoCatalogoUseCase(options.insumosRepo);
+    const listarInsumosUseCase = new ListarInsumosCatalogoUseCase(options.insumosRepo);
+    const obtenerInsumoUseCase = new ObtenerInsumoPorIdUseCase(options.insumosRepo);
+
+    insumosController = new InsumosController(
+      registrarInsumoUseCase,
+      listarInsumosUseCase,
+      obtenerInsumoUseCase
+    );
+  }
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -206,6 +227,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     catalogosController,
     actividadesController,
     monitoreoController,
+    insumosController,
   });
 
   return app;

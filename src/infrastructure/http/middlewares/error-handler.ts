@@ -2,6 +2,7 @@ import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
 import { DomainError, EntidadNoEncontradaError } from '../../../core/domain/errors/domain.error.js';
 import { CodigoLoteDuplicadoError } from '../../../application/use-cases/crear-lote.use-case.js';
+import { InsumoDuplicadoError } from '../../../application/use-cases/insumos-catalogo.use-cases.js';
 
 export function errorHandler(error: FastifyError | Error, request: FastifyRequest, reply: FastifyReply) {
   const timestamp = new Date().toISOString();
@@ -38,7 +39,7 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
   }
 
   // 3. Conflicto de unicidad (409 Conflict)
-  if (error instanceof CodigoLoteDuplicadoError) {
+  if (error instanceof CodigoLoteDuplicadoError || error instanceof InsumoDuplicadoError) {
     return reply.status(409).send({
       success: false,
       data: null,

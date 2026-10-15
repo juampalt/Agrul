@@ -3,7 +3,9 @@ import { buildApp } from './infrastructure/http/app.js';
 import { InMemoryLotesRepository } from '../tests/mocks/in-memory-lotes.repository.js';
 import { InMemoryEventosRepository } from '../tests/mocks/in-memory-eventos.repository.js';
 import { InMemoryGenealogiaRepository } from '../tests/mocks/in-memory-genealogia.repository.js';
+import { InMemoryInsumosCatalogoRepository } from '../tests/mocks/in-memory-insumos-catalogo.repository.js';
 import { Lote } from './core/domain/entities/lote.entity.js';
+import { InsumoCatalogo } from './core/domain/entities/insumo-catalogo.entity.js';
 
 async function bootstrap() {
   console.log('🌱 Inicializando Agrul Traceability Engine...');
@@ -12,6 +14,7 @@ async function bootstrap() {
   const lotesRepo = new InMemoryLotesRepository();
   const eventosRepo = new InMemoryEventosRepository(lotesRepo);
   const genealogiaRepo = new InMemoryGenealogiaRepository();
+  const insumosRepo = new InMemoryInsumosCatalogoRepository();
 
   // Semilla de prueba para demo
   const loteDemo = Lote.crear({
@@ -24,10 +27,27 @@ async function bootstrap() {
   });
   await lotesRepo.guardar(loteDemo);
 
+  const insumoDemo = InsumoCatalogo.crear({
+    id: crypto.randomUUID(),
+    nombreComercial: 'Captan 80 WG',
+    categoria: 'FITOSANITARIO',
+    unidadMedidaId: 'KG',
+    presentacion: 'Bolsa 5kg',
+    fichaFitosanitaria: {
+      principioActivo: 'Captan',
+      periodoCarenciaDias: 14,
+      periodoReingresoHoras: 24,
+      nroRegistroSenasa: 'SENASA-28941',
+      toxicologia: 'Clase III - Banda Azul',
+    },
+  });
+  await insumosRepo.guardar(insumoDemo);
+
   const app = buildApp({
     lotesRepo,
     eventosRepo,
     genealogiaRepo,
+    insumosRepo,
     logger: true,
   });
 

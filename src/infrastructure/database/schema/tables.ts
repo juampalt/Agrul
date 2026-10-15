@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, numeric, timestamp, jsonb, index, boolean, text } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, numeric, timestamp, jsonb, index, boolean, text, integer } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // TABLA FINCAS: Gestión de Fincas y Establecimientos Productivos
@@ -245,6 +245,36 @@ export const actividadManoObraTable = pgTable('actividad_mano_obra', {
 }, (table) => [
   index('idx_act_mo_actividad').on(table.actividadId),
   index('idx_act_mo_personal').on(table.personalCuadrillaId),
+]);
+
+// TABLA MAESTRA: Catálogo de Insumos (AGRUL-024 / RF-M4-01)
+export const insumosCatalogoTable = pgTable('insumos_catalogo', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  nombreComercial: varchar('nombre_comercial', { length: 200 }).notNull().unique(),
+  categoria: varchar('categoria', { length: 50 }).notNull(), // SEMILLA_PLANTIN | FERTILIZANTE | FITOSANITARIO | ENMIENDA | OTRO
+  unidadMedidaId: varchar('unidad_medida_id', { length: 30 }).notNull(),
+  presentacion: varchar('presentacion', { length: 150 }).notNull(),
+  activo: boolean('activo').default(true).notNull(),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_insumos_cat').on(table.categoria),
+  index('idx_insumos_nombre').on(table.nombreComercial),
+]);
+
+// TABLA DETALLE: Ficha Técnica Fitosanitaria de Insumo (AGRUL-024 / RF-M4-02 / RN-14)
+export const insumosFitosanitariosFichaTable = pgTable('insumos_fitosanitarios_ficha', {
+  insumoId: uuid('insumo_id').primaryKey().references(() => insumosCatalogoTable.id, { onDelete: 'cascade' }),
+  principioActivo: varchar('principio_activo', { length: 250 }).notNull(),
+  periodoCarenciaDias: integer('periodo_carencia_dias').notNull(),
+  periodoReingresoHoras: integer('periodo_reingreso_horas').notNull(),
+  nroRegistroSenasa: varchar('nro_registro_senasa', { length: 100 }).notNull(),
+  toxicologia: varchar('toxicologia', { length: 100 }),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_ficha_fito_principio').on(table.principioActivo),
+  index('idx_ficha_fito_senasa').on(table.nroRegistroSenasa),
 ]);
 
 

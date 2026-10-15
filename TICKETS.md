@@ -18,7 +18,7 @@
 | **Épica 7: Módulo 1 — Gestión de Fincas, Lotes y Suelos** | 3 | 1 | 0 | 2 |
 | **Épica 8: Módulo 2 — Gestión de Cultivos y Ciclos Productivos** | 3 | 0 | 0 | 3 |
 | **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 3 | 0 | 1 |
-| **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 0 | 0 | 4 |
+| **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 1 | 0 | 3 |
 | **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 0 | 0 | 4 |
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 0 | 0 | 3 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 0 | 0 | 3 |
@@ -26,7 +26,7 @@
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **17** | **0** | **33** |
+| **TOTAL GENERAL** | **50** | **18** | **0** | **32** |
 
 ---
 
@@ -486,22 +486,22 @@
 ## ÉPICA 10: MÓDULO 4 — INSUMOS Y APLICACIONES DE CAMPO
 
 ### `[AGRUL-024]` Catálogo de Insumos Fitosanitarios, Principios Activos y Carencias
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 4: Insumos y Aplicaciones
 - **Requisitos Funcionales:** RF-M4-01, RF-M4-02
 - **Reglas de Negocio:** RN-14
 - **Skills:** [domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
-- **Etiquetas:** `catalogo`, `fitosanitarios`, `carencia`, `senasa`, `ready-for-agent`
+- **Etiquetas:** `catalogo`, `fitosanitarios`, `carencia`, `senasa`, `status:done`
 - **Descripción:** Catálogo maestro de insumos categorizados (plantín/semilla, fertilizante, fitosanitario, enmienda, otro) con parámetros técnicos: principio activo, período de carencia (días), reingreso (horas) y registro SENASA.
 - **Tareas Técnicas:**
   1. Crear tabla insumos_catalogo (id, nombreComercial, categoria: SEMILLA_PLANTIN | FERTILIZANTE | FITOSANITARIO | ENMIENDA | OTRO, unidadMedidaId, presentacion).
   2. Crear tabla insumos_fitosanitarios_ficha (insumoId PK, principioActivo, periodoCarenciaDias, periodoReingresoHoras, nroRegistroSenasa, toxicologia).
   3. Implementar RN-14: valores de carencia y reingreso se cargan tal como figuran en el rótulo comercial, sin valores por defecto inventados por el sistema.
 - **Criterios de Aceptación:**
-  - [ ] RF-M4-01: Catálogo estructurado con unidad de medida base y presentación comercial.
-  - [ ] RF-M4-02 / RN-14: Registro estricto de principio activo, carencia en días y reingreso en horas.
-  - [ ] Validaciones Zod de tipos y rangos numéricos.
+  - [x] RF-M4-01: Catálogo estructurado con unidad de medida base y presentación comercial.
+  - [x] RF-M4-02 / RN-14: Registro estricto de principio activo, carencia en días y reingreso en horas.
+  - [x] Validaciones Zod de tipos y rangos numéricos.
 
 ### `[AGRUL-025]` Registro de Aplicaciones de Campo, Mezclas y Dosis Diferenciadas
 - **Estado:** `TODO` 📌

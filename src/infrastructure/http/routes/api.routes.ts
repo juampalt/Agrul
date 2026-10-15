@@ -6,6 +6,7 @@ import { FincasController } from '../controllers/fincas.controller.js';
 import { CatalogosController } from '../controllers/catalogos.controller.js';
 import { ActividadesController } from '../controllers/actividades.controller.js';
 import { MonitoreoController } from '../controllers/monitoreo.controller.js';
+import { InsumosController } from '../controllers/insumos.controller.js';
 
 export interface ApiRoutesDependencies {
   lotesController: LotesController;
@@ -15,6 +16,7 @@ export interface ApiRoutesDependencies {
   catalogosController?: CatalogosController;
   actividadesController?: ActividadesController;
   monitoreoController?: MonitoreoController;
+  insumosController?: InsumosController;
 }
 
 export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDependencies) {
@@ -86,6 +88,13 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.post('/monitoreo', (req, rep) => deps.monitoreoController!.registrar(req, rep));
         v1.get('/monitoreo', (req, rep) => deps.monitoreoController!.listar(req, rep));
         v1.get('/monitoreo/:id', (req, rep) => deps.monitoreoController!.obtenerPorId(req, rep));
+      }
+
+      // Catálogo de Insumos y Fichas Fitosanitarias (Módulo 4 — AGRUL-024 / RF-M4-01, RF-M4-02, RN-14)
+      if (deps.insumosController) {
+        v1.post('/insumos', (req, rep) => deps.insumosController!.registrar(req, rep));
+        v1.get('/insumos', (req, rep) => deps.insumosController!.listar(req, rep));
+        v1.get('/insumos/:id', (req, rep) => deps.insumosController!.obtenerPorId(req, rep));
       }
     },
     { prefix: '/api/v1' }

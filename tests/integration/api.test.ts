@@ -9,6 +9,7 @@ import { InMemoryCatalogosActividadesRepository } from '../mocks/in-memory-catal
 import { InMemoryActividadesRepository } from '../mocks/in-memory-actividades.repository.js';
 import { InMemoryCiclosRepository } from '../mocks/in-memory-ciclos.repository.js';
 import { InMemoryObservacionesMonitoreoRepository } from '../mocks/in-memory-observaciones-monitoreo.repository.js';
+import { InMemoryInsumosCatalogoRepository } from '../mocks/in-memory-insumos-catalogo.repository.js';
 import { CicloProductivo } from '../../src/core/domain/entities/ciclo-productivo.entity.js';
 import { TipoActividad } from '../../src/core/domain/entities/tipo-actividad.entity.js';
 
@@ -22,6 +23,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let actividadesRepo: InMemoryActividadesRepository;
   let ciclosRepo: InMemoryCiclosRepository;
   let observacionesRepo: InMemoryObservacionesMonitoreoRepository;
+  let insumosRepo: InMemoryInsumosCatalogoRepository;
 
   beforeEach(async () => {
     lotesRepo = new InMemoryLotesRepository();
@@ -32,6 +34,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     actividadesRepo = new InMemoryActividadesRepository();
     ciclosRepo = new InMemoryCiclosRepository();
     observacionesRepo = new InMemoryObservacionesMonitoreoRepository();
+    insumosRepo = new InMemoryInsumosCatalogoRepository();
 
     app = buildApp({
       lotesRepo,
@@ -42,6 +45,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       actividadesRepo,
       ciclosRepo,
       observacionesRepo,
+      insumosRepo,
       logger: false,
     });
     await app.ready();
@@ -1715,6 +1719,141 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       const body = JSON.parse(badRes.body);
       expect(body.success).toBe(false);
       expect(body.error.code).toBe('VALIDATION_ERROR');
+    });
+  });
+
+  describe('Catálogo de Insumos Fitosanitarios y Carencias (AGRUL-024 / RF-M4-01, RF-M4-02, RN-14)', () => {
+    it('POST /api/v1/insumos debe registrar un insumo fitosanitario con ficha técnica (201 Created)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/insumos',
+        payload: {
+          nombreComercial: 'Captan 80 WG',
+          categoria: 'FITOSANITARIO',
+          unidadMedidaId: 'KG',
+          presentacion: 'Bolsa 5kg',
+          fichaFitosanitaria: {
+            principioActivo: 'Captan',
+            periodoCarenciaDias: 14,
+            periodoReingresoHoras: 24,
+            nroRegistroSenasa: 'SENASA-28941',
+            toxicologia: 'Clase III - Cuidado (Banda Azul)',
+          },
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.id).toBeDefined();
+      expect(body.data.nombreComercial).toBe('Captan 80 WG');
+      expect(body.data.categoria).toBe('FITOSANITARIO');
+      expect(body.data.fichaFitosanitaria.principioActivo).toBe('Captan');
+      expect(body.data.fichaFitosanitaria.periodoCarenciaDias).toBe(14);
+      expect(body.data.fichaFitosanitaria.periodoReingresoHoras).toBe(24);
+      expect(body.data.fichaFitosanitaria.nroRegistroSenasa).toBe('SENASA-28941');
+    });
+
+    it('POST /api/v1/insumos debe fallar con 400 Bad Request si la categoría es FITOSANITARIO y falta la ficha técnica (RN-14)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/insumos',
+        payload: {
+          nombreComercial: 'Fungicida Sin Ficha',
+          categoria: 'FITOSANITARIO',
+          unidadMedidaId: 'LT',
+          presentacion: 'Bidón 1L',
+        },
+      });
+
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('POST /api/v1/insumos debe fallar con 409 Conflict si el nombre comercial ya existe', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/insumos',
+        payload: {
+          nombreComercial: 'Urea Perlada 46%',
+          categoria: 'FERTILIZANTE',
+          unidadMedidaId: 'KG',
+          presentacion: 'Bolsa 50kg',
+        },
+      });
+
+      const dupRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/insumos',
+        payload: {
+          nombreComercial: 'urea perlada 46%',
+          categoria: 'FERTILIZANTE',
+          unidadMedidaId: 'KG',
+          presentacion: 'Bolsa 25kg',
+        },
+      });
+
+      expect(dupRes.statusCode).toBe(409);
+      const body = JSON.parse(dupRes.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('INPUT_ALREADY_EXISTS');
+    });
+
+    it('GET /api/v1/insumos debe permitir listar y filtrar por categoría y estado', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/insumos',
+        payload: {
+          nombreComercial: 'Plantines Camarosa',
+          categoria: 'SEMILLA_PLANTIN',
+          unidadMedidaId: 'UNIDAD',
+          presentacion: 'Bandeja 128',
+        },
+      });
+
+      const listRes = await app.inject({
+        method: 'GET',
+        url: '/api/v1/insumos?categoria=SEMILLA_PLANTIN',
+      });
+
+      expect(listRes.statusCode).toBe(200);
+      const body = JSON.parse(listRes.body);
+      expect(body.success).toBe(true);
+      expect(Array.isArray(body.data)).toBe(true);
+      expect(body.data.every((i: { categoria: string }) => i.categoria === 'SEMILLA_PLANTIN')).toBe(true);
+    });
+
+    it('GET /api/v1/insumos/:id debe retornar el detalle del insumo o 404', async () => {
+      const createRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/insumos',
+        payload: {
+          nombreComercial: 'Ácido Fosfórico 85%',
+          categoria: 'FERTILIZANTE',
+          unidadMedidaId: 'LT',
+          presentacion: 'Bidón 35kg',
+        },
+      });
+      const id = JSON.parse(createRes.body).data.id;
+
+      const getRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/insumos/${id}`,
+      });
+
+      expect(getRes.statusCode).toBe(200);
+      const body = JSON.parse(getRes.body);
+      expect(body.success).toBe(true);
+      expect(body.data.id).toBe(id);
+      expect(body.data.nombreComercial).toBe('Ácido Fosfórico 85%');
+
+      const notFoundRes = await app.inject({
+        method: 'GET',
+        url: '/api/v1/insumos/00000000-0000-0000-0000-000000000000',
+      });
+      expect(notFoundRes.statusCode).toBe(404);
     });
   });
 });
