@@ -19,14 +19,14 @@
 | **Épica 8: Módulo 2 — Gestión de Cultivos y Ciclos Productivos** | 3 | 0 | 0 | 3 |
 | **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 3 | 0 | 1 |
 | **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 2 | 0 | 2 |
-| **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 1 | 0 | 3 |
+| **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 2 | 0 | 2 |
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 0 | 0 | 3 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 0 | 0 | 3 |
 | **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 0 | 0 | 3 |
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **20** | **0** | **30** |
+| **TOTAL GENERAL** | **50** | **21** | **0** | **29** |
 
 ---
 
@@ -579,13 +579,13 @@
   - [x] RN-09: Falla con HTTP 422 si la suma de comercializable + descarte no coincide con el total cosechado.
 
 ### `[AGRUL-029]` Asignación de Destinos, Saldo Comercializable y Despachos BPA
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 5: Cosecha y Destino
 - **Requisitos Funcionales:** RF-M5-07, RF-M5-08, RF-M5-09, RF-M5-10
 - **Reglas de Negocio:** RN-09
-- **Skills:** [domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
-- **Etiquetas:** `despachos`, `destinos`, `bpa`, `remito`, `ready-for-agent`
+- **Skills:** [.cursor/skills/domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [.cursor/skills/api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
+- **Etiquetas:** `despachos`, `destinos`, `bpa`, `remito`, `status:done`
 - **Descripción:** Distribución de la fruta comercializable a uno o múltiples destinos (industria, mercado fresco, venta directa), control de saldo disponible y registro de remitos conforme manual de Buenas Prácticas Agrícolas (BPA).
 - **Tareas Técnicas:**
   1. Crear catálogo de destinatarios (compradores, industrias empaque/procesado).
@@ -593,9 +593,9 @@
   3. Validar RN-09: la suma acumulada de envíos no puede superar la cantidad comercializable de la cosecha.
   4. Calcular saldo sin destino en tiempo real: saldo = comercializable - sum(enviados) (RF-M5-09).
 - **Criterios de Aceptación:**
-  - [ ] RF-M5-07 / RF-M5-09: Registro de envíos con actualización y visualización inmediata del saldo remanente.
-  - [ ] RF-M5-10: Datos de remito/guía, RENSPA y productor requeridos para cumplimiento de BPA.
-  - [ ] RN-09: Intento de despacho que exceda el saldo comercializable es rechazado con error 422.
+  - [x] RF-M5-07 / RF-M5-09: Registro de envíos con actualización y visualización inmediata del saldo remanente.
+  - [x] RF-M5-10: Datos de remito/guía, RENSPA y productor requeridos para cumplimiento de BPA.
+  - [x] RN-09: Intento de despacho que exceda el saldo comercializable es rechazado con error 422.
 
 ### `[AGRUL-030]` Alerta de Carencia en Cosecha, Corrección Auditada y Registro de Pérdidas
 - **Estado:** `TODO` 📌

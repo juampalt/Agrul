@@ -1054,7 +1054,7 @@
     "epic": "Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable",
     "epicId": "epic-11-modulo-5-cosecha",
     "title": "Asignación de Destinos, Saldo Comercializable y Despachos BPA",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Alta (P1)",
     "skills": [
       ".cursor/skills/domain-traceability.md",
@@ -1075,7 +1075,7 @@
       "destinos",
       "bpa",
       "remito",
-      "ready-for-agent"
+      "status:done"
     ],
     "description": "Distribución de la fruta comercializable a uno o múltiples destinos (industria, mercado fresco, venta directa), control de saldo disponible y registro de remitos conforme manual de Buenas Prácticas Agrícolas (BPA).",
     "tasks": [

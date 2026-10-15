@@ -345,3 +345,49 @@ export const cosechasTable = pgTable('cosechas', {
   index('idx_cosechas_codigo').on(table.codigoTrazabilidad),
   index('idx_cosechas_fecha').on(table.fecha),
 ]);
+
+// TABLA MAESTRA: Catálogo de Destinatarios (AGRUL-029 / RF-M5-08)
+export const destinatariosCatalogoTable = pgTable('destinatarios_catalogo', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  nombre: varchar('nombre', { length: 150 }).notNull(),
+  tipo: varchar('tipo', { length: 50 }).notNull(), // MERCADO_FRESCO | INDUSTRIA | EXPORTACION | VENTA_DIRECTA | EMPAQUE | OTRO
+  cuit: varchar('cuit', { length: 30 }),
+  direccion: varchar('direccion', { length: 250 }),
+  localidad: varchar('localidad', { length: 100 }),
+  provincia: varchar('provincia', { length: 100 }),
+  contacto: varchar('contacto', { length: 100 }),
+  telefono: varchar('telefono', { length: 50 }),
+  email: varchar('email', { length: 120 }),
+  activo: boolean('activo').default(true).notNull(),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_destinatarios_nombre').on(table.nombre),
+  index('idx_destinatarios_tipo').on(table.tipo),
+  index('idx_destinatarios_activo').on(table.activo),
+]);
+
+// TABLA TRANSACCIONAL: Despacho a Destino y Saldo Comercializable (AGRUL-029 / RF-M5-07, RF-M5-09, RF-M5-10, RN-09)
+export const despachosDestinoTable = pgTable('despacho_destino', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  cosechaId: uuid('cosecha_id').notNull().references(() => cosechasTable.id, { onDelete: 'restrict' }),
+  destinatarioId: uuid('destinatario_id').notNull().references(() => destinatariosCatalogoTable.id, { onDelete: 'restrict' }),
+  tipoDestino: varchar('tipo_destino', { length: 50 }).notNull(),
+  cantidadEnviadaKg: numeric('cantidad_enviada_kg', { precision: 14, scale: 4 }).notNull(),
+  fecha: varchar('fecha', { length: 30 }).notNull(),
+  nroGuiaRemito: varchar('nro_guia_remito', { length: 80 }).notNull(),
+  renspaFinca: varchar('renspa_finca', { length: 60 }).notNull(),
+  productor: varchar('productor', { length: 150 }).notNull(),
+  precinto: varchar('precinto', { length: 60 }),
+  chofer: varchar('chofer', { length: 120 }),
+  patenteCamion: varchar('patente_camion', { length: 30 }),
+  temperaturaTransporteC: numeric('temperatura_transporte_c', { precision: 5, scale: 2 }),
+  observaciones: text('observaciones'),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_despachos_cosecha').on(table.cosechaId),
+  index('idx_despachos_destinatario').on(table.destinatarioId),
+  index('idx_despachos_fecha').on(table.fecha),
+  index('idx_despachos_remito').on(table.nroGuiaRemito),
+]);
+

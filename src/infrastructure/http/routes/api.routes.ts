@@ -9,6 +9,7 @@ import { MonitoreoController } from '../controllers/monitoreo.controller.js';
 import { InsumosController } from '../controllers/insumos.controller.js';
 import { AplicacionesController } from '../controllers/aplicaciones.controller.js';
 import { CosechasController } from '../controllers/cosechas.controller.js';
+import { DespachosController } from '../controllers/despachos.controller.js';
 
 export interface ApiRoutesDependencies {
   lotesController: LotesController;
@@ -21,6 +22,7 @@ export interface ApiRoutesDependencies {
   insumosController?: InsumosController;
   aplicacionesController?: AplicacionesController;
   cosechasController?: CosechasController;
+  despachosController?: DespachosController;
 }
 
 export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDependencies) {
@@ -120,6 +122,22 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.post('/cosechas', (req, rep) => deps.cosechasController!.registrar(req, rep));
         v1.get('/cosechas', (req, rep) => deps.cosechasController!.listar(req, rep));
         v1.get('/cosechas/:id', (req, rep) => deps.cosechasController!.obtenerPorId(req, rep));
+      }
+
+      // Destinatarios y Despachos (Módulo 5 — AGRUL-029 / RF-M5-07 a RF-M5-10, RN-09)
+      if (deps.despachosController) {
+        v1.post('/destinatarios', (req, rep) => deps.despachosController!.crearDestinatario(req, rep));
+        v1.get('/destinatarios', (req, rep) => deps.despachosController!.listarDestinatarios(req, rep));
+        v1.get('/destinatarios/:id', (req, rep) => deps.despachosController!.obtenerDestinatarioPorId(req, rep));
+
+        v1.post('/despachos', (req, rep) => deps.despachosController!.registrarDespacho(req, rep));
+        v1.get('/despachos', (req, rep) => deps.despachosController!.listarDespachos(req, rep));
+        v1.get('/despachos/:id', (req, rep) => deps.despachosController!.obtenerDespachoPorId(req, rep));
+
+        // Despachos y Saldo por Cosecha (RF-M5-07 / RF-M5-09)
+        v1.post('/cosechas/:id/despachos', (req, rep) => deps.despachosController!.registrarDespacho(req, rep));
+        v1.get('/cosechas/:id/despachos', (req, rep) => deps.despachosController!.listarDespachosPorCosecha(req, rep));
+        v1.get('/cosechas/:id/saldo', (req, rep) => deps.despachosController!.consultarSaldo(req, rep));
       }
     },
     { prefix: '/api/v1' }

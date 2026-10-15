@@ -66,6 +66,18 @@ import {
   ListarCosechasUseCase,
   ObtenerCosechaPorIdUseCase,
 } from '../../application/use-cases/cosechas.use-cases.js';
+import { DestinatariosRepositoryPort } from '../../core/ports/destinatarios-repository.port.js';
+import { DespachosRepositoryPort } from '../../core/ports/despachos-repository.port.js';
+import { DespachosController } from './controllers/despachos.controller.js';
+import {
+  CrearDestinatarioUseCase,
+  ListarDestinatariosUseCase,
+  ObtenerDestinatarioPorIdUseCase,
+  RegistrarDespachoUseCase,
+  ConsultarSaldoCosechaUseCase,
+  ListarDespachosUseCase,
+  ObtenerDespachoPorIdUseCase,
+} from '../../application/use-cases/despachos.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -82,6 +94,8 @@ export interface BuildAppOptions {
   insumosRepo?: InsumosCatalogoRepository;
   aplicacionesRepo?: AplicacionesRepositoryPort;
   cosechasRepo?: CosechasRepositoryPort;
+  destinatariosRepo?: DestinatariosRepositoryPort;
+  despachosRepo?: DespachosRepositoryPort;
   logger?: boolean;
 }
 
@@ -299,6 +313,37 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     );
   }
 
+  let despachosController: DespachosController | undefined;
+  if (options.destinatariosRepo && options.despachosRepo && options.cosechasRepo) {
+    const crearDestinatarioUC = new CrearDestinatarioUseCase(options.destinatariosRepo);
+    const listarDestinatariosUC = new ListarDestinatariosUseCase(options.destinatariosRepo);
+    const obtenerDestinatarioUC = new ObtenerDestinatarioPorIdUseCase(options.destinatariosRepo);
+    const registrarDespachoUC = new RegistrarDespachoUseCase(
+      options.cosechasRepo,
+      options.destinatariosRepo,
+      options.despachosRepo,
+      options.lotesRepo,
+      options.eventosRepo
+    );
+    const consultarSaldoUC = new ConsultarSaldoCosechaUseCase(
+      options.cosechasRepo,
+      options.despachosRepo,
+      options.destinatariosRepo
+    );
+    const listarDespachosUC = new ListarDespachosUseCase(options.despachosRepo, options.destinatariosRepo);
+    const obtenerDespachoUC = new ObtenerDespachoPorIdUseCase(options.despachosRepo, options.destinatariosRepo);
+
+    despachosController = new DespachosController(
+      crearDestinatarioUC,
+      listarDestinatariosUC,
+      obtenerDestinatarioUC,
+      registrarDespachoUC,
+      consultarSaldoUC,
+      listarDespachosUC,
+      obtenerDespachoUC
+    );
+  }
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -311,6 +356,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     insumosController,
     aplicacionesController,
     cosechasController,
+    despachosController,
   });
 
   return app;

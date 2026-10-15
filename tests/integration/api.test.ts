@@ -12,6 +12,8 @@ import { InMemoryObservacionesMonitoreoRepository } from '../mocks/in-memory-obs
 import { InMemoryInsumosCatalogoRepository } from '../mocks/in-memory-insumos-catalogo.repository.js';
 import { InMemoryAplicacionesRepository } from '../mocks/in-memory-aplicaciones.repository.js';
 import { InMemoryCosechasRepository } from '../mocks/in-memory-cosechas.repository.js';
+import { InMemoryDestinatariosRepository } from '../mocks/in-memory-destinatarios.repository.js';
+import { InMemoryDespachosRepository } from '../mocks/in-memory-despachos.repository.js';
 import { CicloProductivo } from '../../src/core/domain/entities/ciclo-productivo.entity.js';
 import { TipoActividad } from '../../src/core/domain/entities/tipo-actividad.entity.js';
 
@@ -28,6 +30,8 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let insumosRepo: InMemoryInsumosCatalogoRepository;
   let aplicacionesRepo: InMemoryAplicacionesRepository;
   let cosechasRepo: InMemoryCosechasRepository;
+  let destinatariosRepo: InMemoryDestinatariosRepository;
+  let despachosRepo: InMemoryDespachosRepository;
 
   beforeEach(async () => {
     lotesRepo = new InMemoryLotesRepository();
@@ -41,6 +45,8 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     insumosRepo = new InMemoryInsumosCatalogoRepository();
     aplicacionesRepo = new InMemoryAplicacionesRepository();
     cosechasRepo = new InMemoryCosechasRepository();
+    destinatariosRepo = new InMemoryDestinatariosRepository();
+    despachosRepo = new InMemoryDespachosRepository();
 
     app = buildApp({
       lotesRepo,
@@ -54,6 +60,8 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       insumosRepo,
       aplicacionesRepo,
       cosechasRepo,
+      destinatariosRepo,
+      despachosRepo,
       logger: false,
     });
     await app.ready();
@@ -2901,6 +2909,305 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       const notFoundRes = await app.inject({
         method: 'GET',
         url: `/api/v1/cosechas/${crypto.randomUUID()}`,
+      });
+      expect(notFoundRes.statusCode).toBe(404);
+      expect(JSON.parse(notFoundRes.body).error.code).toBe('ENTITY_NOT_FOUND');
+    });
+  });
+
+  // ============================================================================
+  // AGRUL-029: Asignación de Destinos, Saldo Comercializable y Despachos BPA (Módulo 5)
+  // ============================================================================
+  describe('AGRUL-029: Asignación de Destinos, Saldo Comercializable y Despachos BPA', () => {
+    let loteId: string;
+    let cicloId: string;
+    let cosechaId: string;
+    let destinatarioEmpaqueId: string;
+    let destinatarioIndustriaId: string;
+
+    beforeEach(async () => {
+      // 1. Crear Lote
+      const loteRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/lotes',
+        payload: {
+          codigoLote: 'LOT-2026-00029',
+          producto: 'Pera Williams Export',
+          variedad: 'Williams',
+          cantidadInicial: 5000,
+          unidadMedida: 'KG',
+        },
+      });
+      loteId = JSON.parse(loteRes.body).data.id;
+
+      // 2. Crear Ciclo Productivo ABIERTO
+      cicloId = crypto.randomUUID();
+      const ciclo = CicloProductivo.crear({
+        id: cicloId,
+        codigoCiclo: 'CICLO-2026-PER-029',
+        loteId,
+        cultivo: 'Pera',
+        variedad: 'Williams',
+        estado: 'ABIERTO',
+        superficieCultivadaHa: 8.0,
+        fechaInicio: '2026-08-01',
+      });
+      await ciclosRepo.guardar(ciclo);
+
+      // 3. Crear Cosecha: 3000 kg total, 2500 kg comercializable, 500 kg descarte
+      const cosechaRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas',
+        payload: {
+          loteId,
+          cicloId,
+          fecha: '2026-09-20',
+          cantidadCosechadaKg: 3000,
+          cantidadComercializableKg: 2500,
+          cantidadDescarteKg: 500,
+          motivoDescarte: 'CALIBRE_DEFICITARIO_Y_GOLPE',
+        },
+      });
+      cosechaId = JSON.parse(cosechaRes.body).data.id;
+
+      // 4. Crear Destinatarios en el catálogo (RF-M5-08)
+      const dest1Res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/destinatarios',
+        payload: {
+          nombre: 'Empaque y Exportación Patagonia Frut S.A.',
+          tipo: 'EMPAQUE',
+          cuit: '30-71456789-3',
+          direccion: 'Parque Industrial Lote 12',
+          localidad: 'Villa Regina',
+          provincia: 'Río Negro',
+        },
+      });
+      destinatarioEmpaqueId = JSON.parse(dest1Res.body).data.id;
+
+      const dest2Res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/destinatarios',
+        payload: {
+          nombre: 'Industria Concentrados del Valle',
+          tipo: 'INDUSTRIA',
+          cuit: '30-65432198-1',
+          localidad: 'Cinco Saltos',
+          provincia: 'Río Negro',
+        },
+      });
+      destinatarioIndustriaId = JSON.parse(dest2Res.body).data.id;
+    });
+
+    it('POST /api/v1/destinatarios y GET /api/v1/destinatarios deben gestionar el catálogo de compradores (RF-M5-08)', async () => {
+      const listRes = await app.inject({
+        method: 'GET',
+        url: '/api/v1/destinatarios?activo=true',
+      });
+
+      expect(listRes.statusCode).toBe(200);
+      const body = JSON.parse(listRes.body);
+      expect(body.success).toBe(true);
+      expect(body.data).toHaveLength(2);
+
+      const empaque = body.data.find((d: any) => d.id === destinatarioEmpaqueId);
+      expect(empaque).toBeDefined();
+      expect(empaque.nombre).toBe('Empaque y Exportación Patagonia Frut S.A.');
+      expect(empaque.tipo).toBe('EMPAQUE');
+      expect(empaque.activo).toBe(true);
+    });
+
+    it('POST /api/v1/cosechas/:id/despachos debe registrar envío con actualización inmediata del saldo remanente (RF-M5-07 / RF-M5-09 / RF-M5-10)', async () => {
+      // Despacho de 1500 kg de los 2500 kg comercializables
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/v1/cosechas/${cosechaId}/despachos`,
+        payload: {
+          destinatarioId: destinatarioEmpaqueId,
+          tipoDestino: 'EMPAQUE',
+          cantidadEnviadaKg: 1500,
+          fecha: '2026-09-22',
+          nroGuiaRemito: 'REM-0002-00012345',
+          renspaFinca: '16.023.0.00142/00',
+          productor: 'Frutícola Patagónica S.R.L.',
+          precinto: 'PREC-ARG-9901',
+          chofer: 'Juan Carlos Pereyra',
+          patenteCamion: 'AD 123 CD',
+          temperaturaTransporteC: 3.5,
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.error).toBeNull();
+
+      // Datos del despacho
+      const despacho = body.data.despacho;
+      expect(despacho.id).toBeDefined();
+      expect(despacho.cosechaId).toBe(cosechaId);
+      expect(despacho.destinatarioId).toBe(destinatarioEmpaqueId);
+      expect(despacho.cantidadEnviadaKg).toBe(1500);
+      expect(despacho.nroGuiaRemito).toBe('REM-0002-00012345');
+      expect(despacho.renspaFinca).toBe('16.023.0.00142/00');
+      expect(despacho.productor).toBe('Frutícola Patagónica S.R.L.');
+
+      // Métricas de saldo calculadas en tiempo real (RF-M5-09)
+      const saldo = body.data.saldo;
+      expect(saldo.cosechaId).toBe(cosechaId);
+      expect(saldo.cantidadComercializableKg).toBe(2500);
+      expect(saldo.totalDespachadoKg).toBe(1500);
+      expect(saldo.saldoRemanenteKg).toBe(1000);
+      expect(saldo.porcentajeDespachado).toBe(60);
+    });
+
+    it('POST /api/v1/despachos debe permitir despachos sucesivos deduciendo acumulativamente el saldo (RF-M5-07 / RF-M5-09)', async () => {
+      // Envío 1: 1500 kg
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/despachos',
+        payload: {
+          cosechaId,
+          destinatarioId: destinatarioEmpaqueId,
+          tipoDestino: 'EMPAQUE',
+          cantidadEnviadaKg: 1500,
+          fecha: '2026-09-22',
+          nroGuiaRemito: 'REM-0002-00012346',
+          renspaFinca: '16.023.0.00142/00',
+          productor: 'Frutícola Patagónica S.R.L.',
+        },
+      });
+
+      // Envío 2: 1000 kg (agota el saldo comercializable de 2500 kg)
+      const res2 = await app.inject({
+        method: 'POST',
+        url: '/api/v1/despachos',
+        payload: {
+          cosechaId,
+          destinatarioId: destinatarioIndustriaId,
+          tipoDestino: 'INDUSTRIA',
+          cantidadEnviadaKg: 1000,
+          fecha: '2026-09-23',
+          nroGuiaRemito: 'REM-0002-00012347',
+          renspaFinca: '16.023.0.00142/00',
+          productor: 'Frutícola Patagónica S.R.L.',
+        },
+      });
+
+      expect(res2.statusCode).toBe(201);
+      const body2 = JSON.parse(res2.body);
+      expect(body2.data.saldo.totalDespachadoKg).toBe(2500);
+      expect(body2.data.saldo.saldoRemanenteKg).toBe(0);
+      expect(body2.data.saldo.porcentajeDespachado).toBe(100);
+      expect(body2.data.saldo.despachos).toHaveLength(2);
+    });
+
+    it('POST /api/v1/despachos debe rechazar con HTTP 422 si se intenta despachar más del saldo comercializable (RN-09)', async () => {
+      // Comercializable: 2500 kg. Intento de enviar 2600 kg.
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/despachos',
+        payload: {
+          cosechaId,
+          destinatarioId: destinatarioEmpaqueId,
+          tipoDestino: 'EMPAQUE',
+          cantidadEnviadaKg: 2600,
+          fecha: '2026-09-22',
+          nroGuiaRemito: 'REM-0002-00012348',
+          renspaFinca: '16.023.0.00142/00',
+          productor: 'Frutícola Patagónica S.R.L.',
+        },
+      });
+
+      expect(res.statusCode).toBe(422);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('SALDO_COMERCIALIZABLE_EXCEDIDO');
+      expect(body.error.message).toContain('Saldo comercializable insuficiente');
+    });
+
+    it('POST /api/v1/despachos debe rechazar con HTTP 400 si faltan datos requeridos por BPA (RF-M5-10)', async () => {
+      // Omisión de nroGuiaRemito y renspaFinca
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/despachos',
+        payload: {
+          cosechaId,
+          destinatarioId: destinatarioEmpaqueId,
+          tipoDestino: 'EMPAQUE',
+          cantidadEnviadaKg: 500,
+          fecha: '2026-09-22',
+          // nroGuiaRemito omitido
+          // renspaFinca omitido
+          productor: 'Frutícola Patagónica S.R.L.',
+        },
+      });
+
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('GET /api/v1/cosechas/:id/saldo debe reportar el balance en tiempo real (RF-M5-09)', async () => {
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/cosechas/${cosechaId}/despachos`,
+        payload: {
+          destinatarioId: destinatarioEmpaqueId,
+          tipoDestino: 'EMPAQUE',
+          cantidadEnviadaKg: 800,
+          fecha: '2026-09-22',
+          nroGuiaRemito: 'REM-0002-00012349',
+          renspaFinca: '16.023.0.00142/00',
+          productor: 'Frutícola Patagónica S.R.L.',
+        },
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/cosechas/${cosechaId}/saldo`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.cosechaId).toBe(cosechaId);
+      expect(body.data.cantidadComercializableKg).toBe(2500);
+      expect(body.data.totalDespachadoKg).toBe(800);
+      expect(body.data.saldoRemanenteKg).toBe(1700);
+      expect(body.data.porcentajeDespachado).toBe(32);
+      expect(body.data.despachos).toHaveLength(1);
+    });
+
+    it('GET /api/v1/despachos/:id debe retornar el detalle de un despacho o 404 si no existe', async () => {
+      const postRes = await app.inject({
+        method: 'POST',
+        url: `/api/v1/cosechas/${cosechaId}/despachos`,
+        payload: {
+          destinatarioId: destinatarioEmpaqueId,
+          tipoDestino: 'EXPORTACION',
+          cantidadEnviadaKg: 400,
+          fecha: '2026-09-22',
+          nroGuiaRemito: 'REM-0002-00012350',
+          renspaFinca: '16.023.0.00142/00',
+          productor: 'Frutícola Patagónica S.R.L.',
+        },
+      });
+      const despachoId = JSON.parse(postRes.body).data.despacho.id;
+
+      const getRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/despachos/${despachoId}`,
+      });
+      expect(getRes.statusCode).toBe(200);
+      const body = JSON.parse(getRes.body);
+      expect(body.data.id).toBe(despachoId);
+      expect(body.data.nroGuiaRemito).toBe('REM-0002-00012350');
+
+      const notFoundRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/despachos/${crypto.randomUUID()}`,
       });
       expect(notFoundRes.statusCode).toBe(404);
       expect(JSON.parse(notFoundRes.body).error.code).toBe('ENTITY_NOT_FOUND');

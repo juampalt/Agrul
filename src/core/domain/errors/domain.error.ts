@@ -82,3 +82,29 @@ export class CosechaInvalidaError extends DomainError {
   }
 }
 
+export class SaldoComercializableExcedidoError extends DomainError {
+  public readonly code = 'SALDO_COMERCIALIZABLE_EXCEDIDO';
+
+  constructor(disponible: number, solicitado: number) {
+    super(
+      `Saldo comercializable insuficiente (RN-09): Disponible ${disponible} kg, se intentó despachar ${solicitado} kg.`
+    );
+  }
+}
+
+export class DespachoInvalidoError extends DomainError {
+  public readonly code = 'DESPACHO_INVALIDO';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
+export class DestinatarioInvalidoError extends DomainError {
+  public readonly code = 'DESTINATARIO_INVALIDO';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
