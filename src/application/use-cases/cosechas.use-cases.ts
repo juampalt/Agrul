@@ -11,11 +11,17 @@ import { CosechasRepositoryPort } from '../../core/ports/cosechas-repository.por
 import { LotesRepositoryPort } from '../../core/ports/lotes-repository.port.js';
 import { CiclosRepositoryPort } from '../../core/ports/ciclos-repository.port.js';
 import { EventosRepositoryPort } from '../../core/ports/eventos-repository.port.js';
+import { AplicacionesRepositoryPort } from '../../core/ports/aplicaciones-repository.port.js';
+import { InsumosCatalogoRepository } from '../../core/ports/insumos-catalogo-repository.port.js';
+import { VerificarCarenciaLoteUseCase } from './verificar-carencia.use-case.js';
 import {
+  AnularCosechaInputDto,
   CosechaOutputDto,
   ListarCosechasFiltrosDto,
+  ModificarCosechaInputDto,
   RegistrarCosechaInputDto,
 } from '../dtos/cosechas.dto.js';
+import { ResultadoVerificacionCarenciaDto } from '../dtos/aplicaciones.dto.js';
 
 export class RegistrarCosechaUseCase {
   constructor(
@@ -23,6 +29,8 @@ export class RegistrarCosechaUseCase {
     private readonly lotesRepo: LotesRepositoryPort,
     private readonly ciclosRepo: CiclosRepositoryPort,
     private readonly eventosRepo?: EventosRepositoryPort,
+    private readonly aplicacionesRepo?: AplicacionesRepositoryPort,
+    private readonly insumosRepo?: InsumosCatalogoRepository,
   ) {}
 
   public async execute(
@@ -55,7 +63,24 @@ export class RegistrarCosechaUseCase {
       );
     }
 
-    // 5. Generar código de trazabilidad único algorítmico (RN-07 / RN-08 / RF-M5-03)
+    // 5. Verificación de Carencia Fitosanitaria (RF-M5-11 / RN-14) - No bloqueante
+    let alertaCarencia: ResultadoVerificacionCarenciaDto | null = null;
+    if (this.aplicacionesRepo && this.insumosRepo) {
+      const verificador = new VerificarCarenciaLoteUseCase(
+        this.aplicacionesRepo,
+        this.insumosRepo,
+        this.lotesRepo
+      );
+      const resultadoCarencia = await verificador.execute(
+        { loteId: input.loteId, fecha: input.fecha },
+        fechaReferenciaHoy
+      );
+      if (resultadoCarencia.totalAlertasCarencia > 0) {
+        alertaCarencia = resultadoCarencia;
+      }
+    }
+
+    // 6. Generar código de trazabilidad único algorítmico (RN-07 / RN-08 / RF-M5-03)
     const countPrevias = await this.cosechasRepo.contarPorLoteYFecha(lote.id, input.fecha);
     const secuencia = countPrevias + 1;
     const codigoTrazabilidad = CodigoTrazabilidadCosecha.generar(
@@ -64,7 +89,7 @@ export class RegistrarCosechaUseCase {
       secuencia
     );
 
-    // 6. Instanciar entidad Cosecha (valida invariantes RN-09, RF-M5-02, RN-04)
+    // 7. Instanciar entidad Cosecha (valida invariantes RN-09, RF-M5-02, RN-04)
     const cosecha = Cosecha.crear({
       id: crypto.randomUUID(),
       codigoTrazabilidad,
@@ -83,10 +108,10 @@ export class RegistrarCosechaUseCase {
       fechaReferenciaHoy,
     });
 
-    // 7. Persistir la cosecha
+    // 8. Persistir la cosecha
     await this.cosechasRepo.guardar(cosecha);
 
-    // 8. Actualizar agregado Lote y registrar Evento de Trazabilidad inmutable (RN-07 / RF-M5-04)
+    // 9. Actualizar agregado Lote y registrar Evento de Trazabilidad inmutable (RN-07 / RF-M5-04)
     if (cosecha.cantidadComercializableKg > 0) {
       lote.incrementarCantidad(cosecha.cantidadComercializableKg);
     }
@@ -109,6 +134,10 @@ export class RegistrarCosechaUseCase {
           cantidadComercializableKg: cosecha.cantidadComercializableKg,
           cantidadDescarteKg: cosecha.cantidadDescarteKg,
           motivoDescarte: cosecha.motivoDescarte,
+          alertaCarencia: alertaCarencia ? {
+            totalAlertasCarencia: alertaCarencia.totalAlertasCarencia,
+            advertencias: alertaCarencia.advertencias,
+          } : null,
         },
       });
 
@@ -117,10 +146,15 @@ export class RegistrarCosechaUseCase {
       await this.lotesRepo.guardar(lote);
     }
 
-    return this.mapToDto(cosecha, lote.codigoLote.value, ciclo.codigoCiclo);
+    return this.mapToDto(cosecha, lote.codigoLote.value, ciclo.codigoCiclo, alertaCarencia);
   }
 
-  private mapToDto(cosecha: Cosecha, codigoLote?: string, codigoCiclo?: string): CosechaOutputDto {
+  private mapToDto(
+    cosecha: Cosecha,
+    codigoLote?: string,
+    codigoCiclo?: string,
+    alertaCarencia?: ResultadoVerificacionCarenciaDto | null
+  ): CosechaOutputDto {
     const raw = cosecha.toJSON();
     return {
       id: raw.id,
@@ -141,6 +175,200 @@ export class RegistrarCosechaUseCase {
       cuadrillaId: raw.cuadrillaId,
       recipientes: raw.recipientes,
       superficieCosechadaHa: raw.superficieCosechadaHa,
+      estado: raw.estado,
+      motivoAnulacion: raw.motivoAnulacion,
+      usuarioAnulacionId: raw.usuarioAnulacionId,
+      anuladoEn: raw.anuladoEn,
+      historialModificaciones: raw.historialModificaciones,
+      alertaCarencia: alertaCarencia ?? null,
+      creadoEn: raw.creadoEn,
+      actualizadoEn: raw.actualizadoEn,
+    };
+  }
+}
+
+export class AnularCosechaUseCase {
+  constructor(
+    private readonly cosechasRepo: CosechasRepositoryPort,
+    private readonly lotesRepo: LotesRepositoryPort,
+    private readonly ciclosRepo: CiclosRepositoryPort,
+    private readonly eventosRepo?: EventosRepositoryPort,
+  ) {}
+
+  public async execute(
+    input: AnularCosechaInputDto,
+    fechaReferenciaHoy?: Date,
+  ): Promise<CosechaOutputDto> {
+    const cosecha = await this.cosechasRepo.buscarPorId(input.cosechaId);
+    if (!cosecha) {
+      throw new EntidadNoEncontradaError('Cosecha', input.cosechaId);
+    }
+
+    const lote = await this.lotesRepo.buscarPorId(cosecha.loteId);
+    if (!lote) {
+      throw new EntidadNoEncontradaError('Lote', cosecha.loteId);
+    }
+
+    const ciclo = await this.ciclosRepo.buscarPorId(cosecha.cicloId);
+
+    // 1. Anulación lógica en entidad Cosecha (RN-05, RN-06)
+    const fechaAnulacionIso = (fechaReferenciaHoy ?? new Date()).toISOString();
+    cosecha.anular(input.usuarioId, input.motivo, fechaAnulacionIso);
+
+    // 2. Persistir cosecha actualizada
+    await this.cosechasRepo.guardar(cosecha);
+
+    // 3. Compensación en balance de masa del Lote (RF-M5-12 / RN-06)
+    if (cosecha.cantidadComercializableKg > 0) {
+      lote.descontarCantidad(cosecha.cantidadComercializableKg);
+    }
+
+    // 4. Registro de evento inmutable compensatorio de anulación
+    if (this.eventosRepo) {
+      const eventoCompensacion = TraceEvent.crear({
+        id: crypto.randomUUID(),
+        loteId: lote.id,
+        actorId: input.usuarioId,
+        ubicacionId: lote.fincaId || crypto.randomUUID(),
+        tipoEvento: TipoEventoEnum.COMPENSACION_ANULACION,
+        timestampCapturaLocal: fechaAnulacionIso,
+        eventoReferenciadoId: cosecha.id,
+        payloadEspecifico: {
+          cosechaId: cosecha.id,
+          codigoTrazabilidad: cosecha.codigoTrazabilidad.value,
+          usuarioId: input.usuarioId,
+          motivo: input.motivo,
+          cantidadDescontadaKg: cosecha.cantidadComercializableKg,
+        },
+      });
+
+      await this.eventosRepo.guardarConTransaccion(eventoCompensacion, lote);
+    } else {
+      await this.lotesRepo.guardar(lote);
+    }
+
+    const raw = cosecha.toJSON();
+    return {
+      id: raw.id,
+      codigoTrazabilidad: raw.codigoTrazabilidad,
+      loteId: raw.loteId,
+      codigoLote: lote.codigoLote.value,
+      cicloId: raw.cicloId,
+      codigoCiclo: ciclo?.codigoCiclo,
+      fecha: raw.fecha,
+      cantidadCosechadaKg: raw.cantidadCosechadaKg,
+      cantidadComercializableKg: raw.cantidadComercializableKg,
+      cantidadDescarteKg: raw.cantidadDescarteKg,
+      porcentajeComercializable: cosecha.porcentajeComercializable,
+      porcentajeDescarte: cosecha.porcentajeDescarte,
+      motivoDescarte: raw.motivoDescarte,
+      observacionesCalidad: raw.observacionesCalidad,
+      responsableId: raw.responsableId,
+      cuadrillaId: raw.cuadrillaId,
+      recipientes: raw.recipientes,
+      superficieCosechadaHa: raw.superficieCosechadaHa,
+      estado: raw.estado,
+      motivoAnulacion: raw.motivoAnulacion,
+      usuarioAnulacionId: raw.usuarioAnulacionId,
+      anuladoEn: raw.anuladoEn,
+      historialModificaciones: raw.historialModificaciones,
+      creadoEn: raw.creadoEn,
+      actualizadoEn: raw.actualizadoEn,
+    };
+  }
+}
+
+export class ModificarCosechaUseCase {
+  constructor(
+    private readonly cosechasRepo: CosechasRepositoryPort,
+    private readonly lotesRepo: LotesRepositoryPort,
+    private readonly ciclosRepo: CiclosRepositoryPort,
+    private readonly eventosRepo?: EventosRepositoryPort,
+  ) {}
+
+  public async execute(
+    input: ModificarCosechaInputDto,
+    fechaReferenciaHoy?: Date,
+  ): Promise<CosechaOutputDto> {
+    const cosecha = await this.cosechasRepo.buscarPorId(input.cosechaId);
+    if (!cosecha) {
+      throw new EntidadNoEncontradaError('Cosecha', input.cosechaId);
+    }
+
+    const lote = await this.lotesRepo.buscarPorId(cosecha.loteId);
+    if (!lote) {
+      throw new EntidadNoEncontradaError('Lote', cosecha.loteId);
+    }
+
+    const ciclo = await this.ciclosRepo.buscarPorId(cosecha.cicloId);
+    const comercializableAnterior = cosecha.cantidadComercializableKg;
+
+    // 1. Modificación auditada en entidad (RN-05, RN-06)
+    cosecha.modificar(input.usuarioId, input.motivo, input);
+
+    // 2. Persistir cambios
+    await this.cosechasRepo.guardar(cosecha);
+
+    // 3. Ajuste de balance de masa del Lote
+    const deltaComercializable = Number((cosecha.cantidadComercializableKg - comercializableAnterior).toFixed(4));
+    if (deltaComercializable > 0) {
+      lote.incrementarCantidad(deltaComercializable);
+    } else if (deltaComercializable < 0) {
+      lote.descontarCantidad(Math.abs(deltaComercializable));
+    }
+
+    // 4. Registro de evento inmutable compensatorio de ajuste
+    const fechaAjusteIso = (fechaReferenciaHoy ?? new Date()).toISOString();
+    if (this.eventosRepo && deltaComercializable !== 0) {
+      const eventoAjuste = TraceEvent.crear({
+        id: crypto.randomUUID(),
+        loteId: lote.id,
+        actorId: input.usuarioId,
+        ubicacionId: lote.fincaId || crypto.randomUUID(),
+        tipoEvento: TipoEventoEnum.COMPENSACION_AJUSTE,
+        timestampCapturaLocal: fechaAjusteIso,
+        eventoReferenciadoId: cosecha.id,
+        payloadEspecifico: {
+          cosechaId: cosecha.id,
+          codigoTrazabilidad: cosecha.codigoTrazabilidad.value,
+          usuarioId: input.usuarioId,
+          motivo: input.motivo,
+          deltaComercializableKg: deltaComercializable,
+          comercializableAnteriorKg: comercializableAnterior,
+          comercializableNuevoKg: cosecha.cantidadComercializableKg,
+        },
+      });
+
+      await this.eventosRepo.guardarConTransaccion(eventoAjuste, lote);
+    } else {
+      await this.lotesRepo.guardar(lote);
+    }
+
+    const raw = cosecha.toJSON();
+    return {
+      id: raw.id,
+      codigoTrazabilidad: raw.codigoTrazabilidad,
+      loteId: raw.loteId,
+      codigoLote: lote.codigoLote.value,
+      cicloId: raw.cicloId,
+      codigoCiclo: ciclo?.codigoCiclo,
+      fecha: raw.fecha,
+      cantidadCosechadaKg: raw.cantidadCosechadaKg,
+      cantidadComercializableKg: raw.cantidadComercializableKg,
+      cantidadDescarteKg: raw.cantidadDescarteKg,
+      porcentajeComercializable: cosecha.porcentajeComercializable,
+      porcentajeDescarte: cosecha.porcentajeDescarte,
+      motivoDescarte: raw.motivoDescarte,
+      observacionesCalidad: raw.observacionesCalidad,
+      responsableId: raw.responsableId,
+      cuadrillaId: raw.cuadrillaId,
+      recipientes: raw.recipientes,
+      superficieCosechadaHa: raw.superficieCosechadaHa,
+      estado: raw.estado,
+      motivoAnulacion: raw.motivoAnulacion,
+      usuarioAnulacionId: raw.usuarioAnulacionId,
+      anuladoEn: raw.anuladoEn,
+      historialModificaciones: raw.historialModificaciones,
       creadoEn: raw.creadoEn,
       actualizadoEn: raw.actualizadoEn,
     };
@@ -191,6 +419,11 @@ export class ListarCosechasUseCase {
         cuadrillaId: raw.cuadrillaId,
         recipientes: raw.recipientes,
         superficieCosechadaHa: raw.superficieCosechadaHa,
+        estado: raw.estado,
+        motivoAnulacion: raw.motivoAnulacion,
+        usuarioAnulacionId: raw.usuarioAnulacionId,
+        anuladoEn: raw.anuladoEn,
+        historialModificaciones: raw.historialModificaciones,
         creadoEn: raw.creadoEn,
         actualizadoEn: raw.actualizadoEn,
       });
@@ -236,6 +469,11 @@ export class ObtenerCosechaPorIdUseCase {
       cuadrillaId: raw.cuadrillaId,
       recipientes: raw.recipientes,
       superficieCosechadaHa: raw.superficieCosechadaHa,
+      estado: raw.estado,
+      motivoAnulacion: raw.motivoAnulacion,
+      usuarioAnulacionId: raw.usuarioAnulacionId,
+      anuladoEn: raw.anuladoEn,
+      historialModificaciones: raw.historialModificaciones,
       creadoEn: raw.creadoEn,
       actualizadoEn: raw.actualizadoEn,
     };

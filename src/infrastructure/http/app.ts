@@ -65,6 +65,8 @@ import {
   RegistrarCosechaUseCase,
   ListarCosechasUseCase,
   ObtenerCosechaPorIdUseCase,
+  AnularCosechaUseCase,
+  ModificarCosechaUseCase,
 } from '../../application/use-cases/cosechas.use-cases.js';
 import { DestinatariosRepositoryPort } from '../../core/ports/destinatarios-repository.port.js';
 import { DespachosRepositoryPort } from '../../core/ports/despachos-repository.port.js';
@@ -78,6 +80,13 @@ import {
   ListarDespachosUseCase,
   ObtenerDespachoPorIdUseCase,
 } from '../../application/use-cases/despachos.use-cases.js';
+import { PerdidasCosechaRepositoryPort } from '../../core/ports/perdidas-cosecha-repository.port.js';
+import { PerdidasCosechaController } from './controllers/perdidas-cosecha.controller.js';
+import {
+  RegistrarPerdidaCosechaUseCase,
+  ListarPerdidasCosechaUseCase,
+  ObtenerPerdidaCosechaPorIdUseCase,
+} from '../../application/use-cases/perdidas-cosecha.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -96,6 +105,7 @@ export interface BuildAppOptions {
   cosechasRepo?: CosechasRepositoryPort;
   destinatariosRepo?: DestinatariosRepositoryPort;
   despachosRepo?: DespachosRepositoryPort;
+  perdidasRepo?: PerdidasCosechaRepositoryPort;
   logger?: boolean;
 }
 
@@ -293,7 +303,9 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       options.cosechasRepo,
       options.lotesRepo,
       options.ciclosRepo,
-      options.eventosRepo
+      options.eventosRepo,
+      options.aplicacionesRepo,
+      options.insumosRepo
     );
     const listarCosechasUseCase = new ListarCosechasUseCase(
       options.cosechasRepo,
@@ -305,11 +317,25 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       options.lotesRepo,
       options.ciclosRepo
     );
+    const anularCosechaUseCase = new AnularCosechaUseCase(
+      options.cosechasRepo,
+      options.lotesRepo,
+      options.ciclosRepo,
+      options.eventosRepo
+    );
+    const modificarCosechaUseCase = new ModificarCosechaUseCase(
+      options.cosechasRepo,
+      options.lotesRepo,
+      options.ciclosRepo,
+      options.eventosRepo
+    );
 
     cosechasController = new CosechasController(
       registrarCosechaUseCase,
       listarCosechasUseCase,
-      obtenerCosechaUseCase
+      obtenerCosechaUseCase,
+      anularCosechaUseCase,
+      modificarCosechaUseCase
     );
   }
 
@@ -344,6 +370,34 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     );
   }
 
+  let perdidasController: PerdidasCosechaController | undefined;
+  if (options.perdidasRepo) {
+    const registrarPerdidaUC = new RegistrarPerdidaCosechaUseCase(
+      options.perdidasRepo,
+      options.lotesRepo,
+      options.ciclosRepo,
+      options.cosechasRepo
+    );
+    const listarPerdidasUC = new ListarPerdidasCosechaUseCase(
+      options.perdidasRepo,
+      options.lotesRepo,
+      options.ciclosRepo,
+      options.cosechasRepo
+    );
+    const obtenerPerdidaUC = new ObtenerPerdidaCosechaPorIdUseCase(
+      options.perdidasRepo,
+      options.lotesRepo,
+      options.ciclosRepo,
+      options.cosechasRepo
+    );
+
+    perdidasController = new PerdidasCosechaController(
+      registrarPerdidaUC,
+      listarPerdidasUC,
+      obtenerPerdidaUC
+    );
+  }
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -357,6 +411,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     aplicacionesController,
     cosechasController,
     despachosController,
+    perdidasController,
   });
 
   return app;

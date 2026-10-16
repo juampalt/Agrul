@@ -14,8 +14,10 @@ import { InMemoryAplicacionesRepository } from '../mocks/in-memory-aplicaciones.
 import { InMemoryCosechasRepository } from '../mocks/in-memory-cosechas.repository.js';
 import { InMemoryDestinatariosRepository } from '../mocks/in-memory-destinatarios.repository.js';
 import { InMemoryDespachosRepository } from '../mocks/in-memory-despachos.repository.js';
+import { InMemoryPerdidasCosechaRepository } from '../mocks/in-memory-perdidas-cosecha.repository.js';
 import { CicloProductivo } from '../../src/core/domain/entities/ciclo-productivo.entity.js';
 import { TipoActividad } from '../../src/core/domain/entities/tipo-actividad.entity.js';
+import { Lote } from '../../src/core/domain/entities/lote.entity.js';
 
 describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let app: FastifyInstance;
@@ -32,6 +34,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let cosechasRepo: InMemoryCosechasRepository;
   let destinatariosRepo: InMemoryDestinatariosRepository;
   let despachosRepo: InMemoryDespachosRepository;
+  let perdidasRepo: InMemoryPerdidasCosechaRepository;
 
   beforeEach(async () => {
     lotesRepo = new InMemoryLotesRepository();
@@ -47,6 +50,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
     cosechasRepo = new InMemoryCosechasRepository();
     destinatariosRepo = new InMemoryDestinatariosRepository();
     despachosRepo = new InMemoryDespachosRepository();
+    perdidasRepo = new InMemoryPerdidasCosechaRepository();
 
     app = buildApp({
       lotesRepo,
@@ -62,6 +66,7 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       cosechasRepo,
       destinatariosRepo,
       despachosRepo,
+      perdidasRepo,
       logger: false,
     });
     await app.ready();
@@ -3213,7 +3218,288 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       expect(JSON.parse(notFoundRes.body).error.code).toBe('ENTITY_NOT_FOUND');
     });
   });
+
+  describe('AGRUL-030: Alerta de Carencia en Cosecha, Corrección Auditada y Registro de Pérdidas', () => {
+    let loteId: string;
+    let cicloId: string;
+    let cosechaId: string;
+    const testUserId = crypto.randomUUID();
+
+    beforeEach(async () => {
+      // 1. Crear Lote
+      const lote = Lote.crear({
+        id: crypto.randomUUID(),
+        codigoLote: 'LOT-2026-00030',
+        producto: 'Manzana Cripps Pink',
+        cantidadInicial: 0,
+        unidadMedida: 'KG',
+      });
+      await lotesRepo.guardar(lote);
+      loteId = lote.id;
+
+      // 2. Crear Ciclo Abierto
+      const ciclo = CicloProductivo.crear({
+        id: crypto.randomUUID(),
+        codigoCiclo: 'CICLO-2026-CRIPPS-01',
+        loteId,
+        cultivo: 'Manzana Cripps Pink',
+        superficieCultivadaHa: 8.0,
+        fechaInicio: '2026-08-01',
+      });
+      await ciclosRepo.guardar(ciclo);
+      cicloId = ciclo.id;
+    });
+
+    it('POST /api/v1/cosechas debe emitir alerta no bloqueante de carencia fitosanitaria vigente (RF-M5-11 / RN-14)', async () => {
+      // Registrar Insumo con carencia
+      const insumoRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/insumos',
+        payload: {
+          nombreComercial: 'Mancozeb 80 WP',
+          categoria: 'FITOSANITARIO',
+          unidadMedidaId: 'KG',
+          presentacion: 'Bolsa 1 kg',
+          fichaFitosanitaria: {
+            principioActivo: 'Mancozeb',
+            periodoCarenciaDias: 21,
+            periodoReingresoHoras: 48,
+            nroRegistroSenasa: 'SENASA-F-9988',
+          },
+        },
+      });
+      const insumoId = JSON.parse(insumoRes.body).data.id;
+
+      // Obtener Tipo Actividad
+      const tiposRes = await app.inject({
+        method: 'GET',
+        url: '/api/v1/catalogos/tipos-actividad',
+      });
+      const tipoActId = JSON.parse(tiposRes.body).data[0].id;
+
+      // Registrar Actividad
+      const actRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: tipoActId,
+          loteId,
+          cicloId,
+          fechaHecho: '2026-10-01',
+          usuarioCargaId: testUserId,
+        },
+      });
+      const actId = JSON.parse(actRes.body).data.id;
+
+      // Registrar Aplicación el 2026-10-01 (carencia de 21 días -> fin de carencia 2026-10-22)
+      const aplRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/aplicaciones',
+        payload: {
+          actividadId: actId,
+          loteId,
+          cicloId,
+          fecha: '2026-10-01',
+          metodo: 'FOLIAR',
+          motivo: 'Control preventivo de sarna del manzano',
+          equipoAplicacion: 'Pulverizadora de arrastre 2000L',
+          lineas: [
+            {
+              insumoId,
+              cantidadTotal: 10,
+              unidadMedidaId: 'KG',
+            },
+          ],
+        },
+      });
+      expect(aplRes.statusCode).toBe(201);
+
+      // Cosechar el 2026-10-10 (restan 12 días de carencia)
+      const cosechaRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas',
+        payload: {
+          loteId,
+          cicloId,
+          fecha: '2026-10-10',
+          cantidadCosechadaKg: 3000,
+          cantidadComercializableKg: 2700,
+          cantidadDescarteKg: 300,
+          motivoDescarte: 'MANCHAS_SOLAR',
+        },
+      });
+
+      // La cosecha no se bloquea (RF-M5-11)
+      expect(cosechaRes.statusCode).toBe(201);
+      const body = JSON.parse(cosechaRes.body);
+      expect(body.success).toBe(true);
+      expect(body.data.id).toBeDefined();
+      expect(body.data.cantidadComercializableKg).toBe(2700);
+
+      // Alerta de carencia emitida claramente
+      expect(body.data.alertaCarencia).not.toBeNull();
+      expect(body.data.alertaCarencia.aptoParaCosecha).toBe(false);
+      expect(body.data.alertaCarencia.totalAlertasCarencia).toBe(1);
+      expect(body.data.alertaCarencia.alertasCarencia[0].nombreComercial).toBe('Mancozeb 80 WP');
+      expect(body.data.alertaCarencia.advertencias[0]).toContain('ADVERTENCIA DE SEGURIDAD ALIMENTARIA');
+    });
+
+    it('POST /api/v1/cosechas/:id/anular debe realizar anulación lógica auditada y descontar balance de lote (RF-M5-12 / RN-05 / RN-06)', async () => {
+      // 1. Crear cosecha
+      const cRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas',
+        payload: {
+          loteId,
+          cicloId,
+          fecha: '2026-10-10',
+          cantidadCosechadaKg: 2000,
+          cantidadComercializableKg: 2000,
+          cantidadDescarteKg: 0,
+        },
+      });
+      cosechaId = JSON.parse(cRes.body).data.id;
+
+      // Verificar que el lote incrementó su stock
+      let lRes = await app.inject({ method: 'GET', url: `/api/v1/lotes/${loteId}` });
+      expect(JSON.parse(lRes.body).data.cantidadActual).toBe(2000);
+
+      // 2. Anular la cosecha
+      const anularRes = await app.inject({
+        method: 'POST',
+        url: `/api/v1/cosechas/${cosechaId}/anular`,
+        payload: {
+          usuarioId: testUserId,
+          motivo: 'Cosecha registrada por duplicado en el sistema',
+        },
+      });
+
+      expect(anularRes.statusCode).toBe(200);
+      const anulada = JSON.parse(anularRes.body).data;
+      expect(anulada.estado).toBe('ANULADA');
+      expect(anulada.motivoAnulacion).toBe('Cosecha registrada por duplicado en el sistema');
+      expect(anulada.usuarioAnulacionId).toBe(testUserId);
+      expect(anulada.anuladoEn).toBeDefined();
+
+      // 3. Balance del lote descontado a 0
+      lRes = await app.inject({ method: 'GET', url: `/api/v1/lotes/${loteId}` });
+      expect(JSON.parse(lRes.body).data.cantidadActual).toBe(0);
+
+      // 4. Intento de re-anulación arroja error 422 (COSECHA_INVALIDA)
+      const reanularRes = await app.inject({
+        method: 'POST',
+        url: `/api/v1/cosechas/${cosechaId}/anular`,
+        payload: {
+          usuarioId: testUserId,
+          motivo: 'Reintento inválido',
+        },
+      });
+      expect(reanularRes.statusCode).toBe(422);
+      expect(JSON.parse(reanularRes.body).error.code).toBe('COSECHA_INVALIDA');
+    });
+
+    it('PUT /api/v1/cosechas/:id debe modificar valores, auditar historial y ajustar balance de masa (RF-M5-12)', async () => {
+      // 1. Crear cosecha
+      const cRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas',
+        payload: {
+          loteId,
+          cicloId,
+          fecha: '2026-10-10',
+          cantidadCosechadaKg: 1000,
+          cantidadComercializableKg: 800,
+          cantidadDescarteKg: 200,
+          motivoDescarte: 'DESCARTE_INICIAL',
+        },
+      });
+      cosechaId = JSON.parse(cRes.body).data.id;
+
+      // 2. Modificar cosecha: ajuste de comercializable a 950 kg (+150 kg)
+      const putRes = await app.inject({
+        method: 'PUT',
+        url: `/api/v1/cosechas/${cosechaId}`,
+        payload: {
+          usuarioId: testUserId,
+          motivo: 'Re-pesaje en báscula calibrada oficial',
+          cantidadCosechadaKg: 1000,
+          cantidadComercializableKg: 950,
+          cantidadDescarteKg: 50,
+          motivoDescarte: 'DESCARTE_DEFINITIVO',
+          observacionesCalidad: 'Calidad superior verificada',
+        },
+      });
+
+      expect(putRes.statusCode).toBe(200);
+      const modif = JSON.parse(putRes.body).data;
+      expect(modif.cantidadComercializableKg).toBe(950);
+      expect(modif.cantidadDescarteKg).toBe(50);
+      expect(modif.historialModificaciones).toHaveLength(1);
+      expect(modif.historialModificaciones[0].motivo).toBe('Re-pesaje en báscula calibrada oficial');
+
+      // 3. Balance del lote ajustado a 950
+      const lRes = await app.inject({ method: 'GET', url: `/api/v1/lotes/${loteId}` });
+      expect(JSON.parse(lRes.body).data.cantidadActual).toBe(950);
+
+      // 4. Modificación con violación de desglose RN-09 falla con 422
+      const errorRes = await app.inject({
+        method: 'PUT',
+        url: `/api/v1/cosechas/${cosechaId}`,
+        payload: {
+          usuarioId: testUserId,
+          motivo: 'Ajuste inconsistente',
+          cantidadComercializableKg: 900, // 900 + 50 != 1000
+        },
+      });
+      expect(errorRes.statusCode).toBe(422);
+      expect(JSON.parse(errorRes.body).error.code).toBe('DESGLOSE_COSECHA_INVALIDO');
+    });
+
+    it('POST /api/v1/cosechas/perdidas debe registrar incidentes climáticos y pérdidas (RF-M5-14)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas/perdidas',
+        payload: {
+          loteId,
+          cicloId,
+          fecha: '2026-10-12',
+          tipo: 'GRANIZO',
+          cantidadEstimadaKg: 4500,
+          superficieAfectadaHa: 5.5,
+          descripcion: 'Granizo del tamaño de pelotas de golf destrozó follaje y frutos.',
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.id).toBeDefined();
+      expect(body.data.tipo).toBe('GRANIZO');
+      expect(body.data.cantidadEstimadaKg).toBe(4500);
+      expect(body.data.codigoLote).toBe('LOT-2026-00030');
+      expect(body.data.codigoCiclo).toBe('CICLO-2026-CRIPPS-01');
+
+      const perdidaId = body.data.id;
+
+      // GET /api/v1/perdidas/:id
+      const getRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/perdidas/${perdidaId}`,
+      });
+      expect(getRes.statusCode).toBe(200);
+      expect(JSON.parse(getRes.body).data.id).toBe(perdidaId);
+
+      // GET /api/v1/cosechas/perdidas?tipo=GRANIZO
+      const listRes = await app.inject({
+        method: 'GET',
+        url: '/api/v1/cosechas/perdidas?tipo=GRANIZO',
+      });
+      expect(listRes.statusCode).toBe(200);
+      expect(JSON.parse(listRes.body).data).toHaveLength(1);
+    });
+  });
 });
+
 
 
 

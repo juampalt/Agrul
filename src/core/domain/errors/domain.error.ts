@@ -108,3 +108,11 @@ export class DestinatarioInvalidoError extends DomainError {
   }
 }
 
+export class PerdidaCosechaInvalidaError extends DomainError {
+  public readonly code = 'PERDIDA_COSECHA_INVALIDA';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+

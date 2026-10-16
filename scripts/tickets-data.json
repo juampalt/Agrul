@@ -1095,7 +1095,7 @@
     "epic": "Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable",
     "epicId": "epic-11-modulo-5-cosecha",
     "title": "Alerta de Carencia en Cosecha, Corrección Auditada y Registro de Pérdidas",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Media (P2)",
     "skills": [
       ".cursor/skills/domain-traceability.md",
@@ -1117,7 +1117,7 @@
       "auditoria",
       "incidentes",
       "perdidas",
-      "ready-for-agent"
+      "status:done"
     ],
     "description": "Validación de carencia al momento de cosechar, circuito de corrección/anulación con motivo y auditoría sin borrado físico, y registro de pérdidas/incidentes climáticos en cosecha.",
     "tasks": [

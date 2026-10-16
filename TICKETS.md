@@ -19,14 +19,14 @@
 | **Épica 8: Módulo 2 — Gestión de Cultivos y Ciclos Productivos** | 3 | 0 | 0 | 3 |
 | **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 3 | 0 | 1 |
 | **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 2 | 0 | 2 |
-| **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 2 | 0 | 2 |
+| **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 3 | 0 | 1 |
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 0 | 0 | 3 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 0 | 0 | 3 |
 | **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 0 | 0 | 3 |
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **21** | **0** | **29** |
+| **TOTAL GENERAL** | **50** | **22** | **0** | **28** |
 
 ---
 
@@ -598,22 +598,22 @@
   - [x] RN-09: Intento de despacho que exceda el saldo comercializable es rechazado con error 422.
 
 ### `[AGRUL-030]` Alerta de Carencia en Cosecha, Corrección Auditada y Registro de Pérdidas
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Media (P2)
 - **Módulo:** Módulo 5: Cosecha y Destino
 - **Requisitos Funcionales:** RF-M5-11, RF-M5-12, RF-M5-14
 - **Reglas de Negocio:** RN-05, RN-06, RN-14
 - **Skills:** [domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
-- **Etiquetas:** `cosecha`, `auditoria`, `incidentes`, `perdidas`, `ready-for-agent`
+- **Etiquetas:** `cosecha`, `auditoria`, `incidentes`, `perdidas`, `status:done`
 - **Descripción:** Validación de carencia al momento de cosechar, circuito de corrección/anulación con motivo y auditoría sin borrado físico, y registro de pérdidas/incidentes climáticos en cosecha.
 - **Tareas Técnicas:**
   1. Integrar ServicioVerificacionCarencia en el endpoint de cosecha para emitir advertencia si hay carencia vigente (RF-M5-11).
   2. Implementar AnularCosechaUseCase y ModificarCosechaUseCase preservando histórico de cambios (RN-05, RN-06).
   3. Crear tabla perdida_cosecha (cosechaId/loteId, fecha, tipo: GRANIZO | HELADA | ROBO | OTROS, cantidadEstimadaKg, descripcion).
 - **Criterios de Aceptación:**
-  - [ ] RF-M5-11: Notificación clara si la fecha de cosecha viola un período de carencia.
-  - [ ] RF-M5-12: Corrección o anulación registra usuario, fecha anterior y motivo sin DELETE físico.
-  - [ ] RF-M5-14: Registro de incidentes con estimación de volumen afectado.
+  - [x] RF-M5-11: Notificación clara si la fecha de cosecha viola un período de carencia.
+  - [x] RF-M5-12: Corrección o anulación registra usuario, fecha anterior y motivo sin DELETE físico.
+  - [x] RF-M5-14: Registro de incidentes con estimación de volumen afectado.
 
 ### `[AGRUL-031]` Formulario Móvil Ultrarrápido de Cosecha para Operarios de Campo
 - **Estado:** `TODO` 📌

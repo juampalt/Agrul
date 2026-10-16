@@ -45,6 +45,9 @@ export class InMemoryCosechasRepository implements CosechasRepositoryPort {
     if (filtros?.fechaHasta) {
       result = result.filter(c => c.fecha <= filtros.fechaHasta!);
     }
+    if (filtros?.estado) {
+      result = result.filter(c => c.estado === filtros.estado!.toUpperCase());
+    }
 
     return result.map(c => Cosecha.reconstituir(c.toJSON()));
   }

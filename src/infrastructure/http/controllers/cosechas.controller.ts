@@ -3,11 +3,15 @@ import {
   RegistrarCosechaUseCase,
   ListarCosechasUseCase,
   ObtenerCosechaPorIdUseCase,
+  AnularCosechaUseCase,
+  ModificarCosechaUseCase,
 } from '../../../application/use-cases/cosechas.use-cases.js';
 import {
   RegistrarCosechaBodySchema,
   ListarCosechasQuerySchema,
   CosechaIdParamSchema,
+  AnularCosechaBodySchema,
+  ModificarCosechaBodySchema,
 } from '../schemas/cosechas.schema.js';
 
 export class CosechasController {
@@ -15,6 +19,8 @@ export class CosechasController {
     private readonly registrarCosechaUseCase: RegistrarCosechaUseCase,
     private readonly listarCosechasUseCase: ListarCosechasUseCase,
     private readonly obtenerCosechaUseCase: ObtenerCosechaPorIdUseCase,
+    private readonly anularCosechaUseCase?: AnularCosechaUseCase,
+    private readonly modificarCosechaUseCase?: ModificarCosechaUseCase,
   ) {}
 
   public async registrar(req: FastifyRequest, reply: FastifyReply) {
@@ -44,6 +50,57 @@ export class CosechasController {
   public async obtenerPorId(req: FastifyRequest, reply: FastifyReply) {
     const { id } = CosechaIdParamSchema.parse(req.params);
     const result = await this.obtenerCosechaUseCase.execute(id);
+
+    return reply.status(200).send({
+      success: true,
+      data: result,
+      error: null,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  public async anular(req: FastifyRequest, reply: FastifyReply) {
+    if (!this.anularCosechaUseCase) {
+      return reply.status(501).send({
+        success: false,
+        data: null,
+        error: { code: 'NOT_IMPLEMENTED', message: 'Caso de uso de anulación no configurado.' },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const { id } = CosechaIdParamSchema.parse(req.params);
+    const body = AnularCosechaBodySchema.parse(req.body);
+    const result = await this.anularCosechaUseCase.execute({
+      cosechaId: id,
+      usuarioId: body.usuarioId,
+      motivo: body.motivo,
+    });
+
+    return reply.status(200).send({
+      success: true,
+      data: result,
+      error: null,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  public async modificar(req: FastifyRequest, reply: FastifyReply) {
+    if (!this.modificarCosechaUseCase) {
+      return reply.status(501).send({
+        success: false,
+        data: null,
+        error: { code: 'NOT_IMPLEMENTED', message: 'Caso de uso de modificación no configurado.' },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const { id } = CosechaIdParamSchema.parse(req.params);
+    const body = ModificarCosechaBodySchema.parse(req.body);
+    const result = await this.modificarCosechaUseCase.execute({
+      cosechaId: id,
+      ...body,
+    });
 
     return reply.status(200).send({
       success: true,

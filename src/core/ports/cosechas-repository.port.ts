@@ -5,6 +5,7 @@ export interface ListarCosechasFiltros {
   cicloId?: string;
   fechaDesde?: string;
   fechaHasta?: string;
+  estado?: string;
 }
 
 export interface CosechasRepositoryPort {

@@ -10,6 +10,7 @@ import { InsumosController } from '../controllers/insumos.controller.js';
 import { AplicacionesController } from '../controllers/aplicaciones.controller.js';
 import { CosechasController } from '../controllers/cosechas.controller.js';
 import { DespachosController } from '../controllers/despachos.controller.js';
+import { PerdidasCosechaController } from '../controllers/perdidas-cosecha.controller.js';
 
 export interface ApiRoutesDependencies {
   lotesController: LotesController;
@@ -23,6 +24,7 @@ export interface ApiRoutesDependencies {
   aplicacionesController?: AplicacionesController;
   cosechasController?: CosechasController;
   despachosController?: DespachosController;
+  perdidasController?: PerdidasCosechaController;
 }
 
 export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDependencies) {
@@ -117,11 +119,14 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/ciclos/:id/insumos-acumulados', (req, rep) => deps.aplicacionesController!.calcularConsumoInsumosCiclo(req, rep));
       }
 
-      // Cosechas y Saldo Comercializable (Módulo 5 — AGRUL-028 / RF-M5-01 a RF-M5-06)
+      // Cosechas y Saldo Comercializable (Módulo 5 — AGRUL-028, AGRUL-030 / RF-M5-01 a RF-M5-06, RF-M5-12, RN-05, RN-06)
       if (deps.cosechasController) {
         v1.post('/cosechas', (req, rep) => deps.cosechasController!.registrar(req, rep));
         v1.get('/cosechas', (req, rep) => deps.cosechasController!.listar(req, rep));
         v1.get('/cosechas/:id', (req, rep) => deps.cosechasController!.obtenerPorId(req, rep));
+        v1.post('/cosechas/:id/anular', (req, rep) => deps.cosechasController!.anular(req, rep));
+        v1.put('/cosechas/:id', (req, rep) => deps.cosechasController!.modificar(req, rep));
+        v1.patch('/cosechas/:id', (req, rep) => deps.cosechasController!.modificar(req, rep));
       }
 
       // Destinatarios y Despachos (Módulo 5 — AGRUL-029 / RF-M5-07 a RF-M5-10, RN-09)
@@ -138,6 +143,19 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.post('/cosechas/:id/despachos', (req, rep) => deps.despachosController!.registrarDespacho(req, rep));
         v1.get('/cosechas/:id/despachos', (req, rep) => deps.despachosController!.listarDespachosPorCosecha(req, rep));
         v1.get('/cosechas/:id/saldo', (req, rep) => deps.despachosController!.consultarSaldo(req, rep));
+      }
+
+      // Registro de Pérdidas e Incidentes Climáticos (Módulo 5 — AGRUL-030 / RF-M5-14)
+      if (deps.perdidasController) {
+        v1.post('/perdidas', (req, rep) => deps.perdidasController!.registrar(req, rep));
+        v1.get('/perdidas', (req, rep) => deps.perdidasController!.listar(req, rep));
+        v1.get('/perdidas/:id', (req, rep) => deps.perdidasController!.obtenerPorId(req, rep));
+
+        // Alias canónicos bajo cosechas
+        v1.post('/cosechas/perdidas', (req, rep) => deps.perdidasController!.registrar(req, rep));
+        v1.get('/cosechas/perdidas', (req, rep) => deps.perdidasController!.listar(req, rep));
+        v1.post('/cosechas/:id/perdidas', (req, rep) => deps.perdidasController!.registrar(req, rep));
+        v1.get('/cosechas/:id/perdidas', (req, rep) => deps.perdidasController!.listar(req, rep));
       }
     },
     { prefix: '/api/v1' }

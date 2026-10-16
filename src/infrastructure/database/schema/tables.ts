@@ -337,6 +337,11 @@ export const cosechasTable = pgTable('cosechas', {
   cuadrillaId: uuid('cuadrilla_id'),
   recipientes: jsonb('recipientes'),
   superficieCosechadaHa: numeric('superficie_cosechada_ha', { precision: 10, scale: 2 }),
+  estado: varchar('estado', { length: 30 }).notNull().default('ACTIVA'), // ACTIVA | ANULADA
+  motivoAnulacion: text('motivo_anulacion'),
+  usuarioAnulacionId: uuid('usuario_anulacion_id'),
+  anuladoEn: timestamp('anulado_en', { withTimezone: true, mode: 'string' }),
+  historialModificaciones: jsonb('historial_modificaciones').notNull().default([]),
   creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
@@ -344,6 +349,7 @@ export const cosechasTable = pgTable('cosechas', {
   index('idx_cosechas_ciclo').on(table.cicloId),
   index('idx_cosechas_codigo').on(table.codigoTrazabilidad),
   index('idx_cosechas_fecha').on(table.fecha),
+  index('idx_cosechas_estado').on(table.estado),
 ]);
 
 // TABLA MAESTRA: Catálogo de Destinatarios (AGRUL-029 / RF-M5-08)
@@ -389,5 +395,27 @@ export const despachosDestinoTable = pgTable('despacho_destino', {
   index('idx_despachos_destinatario').on(table.destinatarioId),
   index('idx_despachos_fecha').on(table.fecha),
   index('idx_despachos_remito').on(table.nroGuiaRemito),
+]);
+
+// TABLA TRANSACCIONAL: Registro de Pérdidas e Incidentes Climáticos (AGRUL-030 / RF-M5-14)
+export const perdidasCosechaTable = pgTable('perdidas_cosecha', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  cosechaId: uuid('cosecha_id').references(() => cosechasTable.id, { onDelete: 'set null' }),
+  loteId: uuid('lote_id').notNull().references(() => lotesTable.id, { onDelete: 'restrict' }),
+  cicloId: uuid('ciclo_id').references(() => ciclosProductivosTable.id, { onDelete: 'restrict' }),
+  fecha: varchar('fecha', { length: 30 }).notNull(),
+  tipo: varchar('tipo', { length: 50 }).notNull(), // GRANIZO | HELADA | VIENTO | PLAGA | ENFERMEDAD | ROBO | OTRO
+  cantidadEstimadaKg: numeric('cantidad_estimada_kg', { precision: 14, scale: 4 }).notNull(),
+  superficieAfectadaHa: numeric('superficie_afectada_ha', { precision: 10, scale: 2 }),
+  descripcion: text('descripcion').notNull(),
+  responsableRegistroId: uuid('responsable_registro_id'),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_perdidas_cosecha').on(table.cosechaId),
+  index('idx_perdidas_lote').on(table.loteId),
+  index('idx_perdidas_ciclo').on(table.cicloId),
+  index('idx_perdidas_fecha').on(table.fecha),
+  index('idx_perdidas_tipo').on(table.tipo),
 ]);
 

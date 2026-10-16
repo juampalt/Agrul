@@ -7,7 +7,7 @@ import {
   FechaFuturaInvalidaError,
 } from '../../../src/core/domain/errors/domain.error.js';
 
-describe('Entidad de Dominio: Cosecha & CodigoTrazabilidadCosecha (AGRUL-028 / Módulo 5)', () => {
+describe('Entidad de Dominio: Cosecha & CodigoTrazabilidadCosecha (AGRUL-028 / AGRUL-030 / Módulo 5)', () => {
   const hoyRef = new Date('2026-10-15T12:00:00Z');
 
   describe('Value Object CodigoTrazabilidadCosecha (RN-07 / RN-08)', () => {
@@ -65,6 +65,9 @@ describe('Entidad de Dominio: Cosecha & CodigoTrazabilidadCosecha (AGRUL-028 / M
       expect(cosecha.porcentajeDescarte).toBe(15);
       expect(cosecha.motivoDescarte).toBe('CALIBRE_CHICO_Y_DANIO_MECANICO');
       expect(cosecha.codigoTrazabilidad.value).toBe('COS-L03-20260915-01');
+      expect(cosecha.estado).toBe('ACTIVA');
+      expect(cosecha.estaActiva()).toBe(true);
+      expect(cosecha.estaAnulada()).toBe(false);
     });
 
     it('debe fallar con DesgloseCosechaInvalidoError si comercializable + descarte !== total (RN-09)', () => {
@@ -177,6 +180,157 @@ describe('Entidad de Dominio: Cosecha & CodigoTrazabilidadCosecha (AGRUL-028 / M
       expect(reconstituida.cantidadComercializableKg).toBe(1100);
       expect(reconstituida.cantidadDescarteKg).toBe(100);
       expect(reconstituida.superficieCosechadaHa).toBe(2.0);
+      expect(reconstituida.estado).toBe('ACTIVA');
+    });
+  });
+
+  describe('Anulación Lógica Auditada (RF-M5-12 / RN-05 / RN-06)', () => {
+    const usuarioId = crypto.randomUUID();
+
+    it('debe anular lógicamente una cosecha registrando usuario, motivo y fecha sin borrado físico', () => {
+      const cosecha = Cosecha.crear({
+        id: crypto.randomUUID(),
+        codigoTrazabilidad: 'COS-L03-20260915-01',
+        loteId: crypto.randomUUID(),
+        cicloId: crypto.randomUUID(),
+        fecha: '2026-09-15',
+        cantidadCosechadaKg: 1000,
+        cantidadComercializableKg: 1000,
+        cantidadDescarteKg: 0,
+        fechaReferenciaHoy: hoyRef,
+      });
+
+      expect(cosecha.estaActiva()).toBe(true);
+
+      cosecha.anular(usuarioId, 'Error en báscula de pesaje inicial', '2026-10-15T15:00:00Z');
+
+      expect(cosecha.estado).toBe('ANULADA');
+      expect(cosecha.estaActiva()).toBe(false);
+      expect(cosecha.estaAnulada()).toBe(true);
+      expect(cosecha.motivoAnulacion).toBe('Error en báscula de pesaje inicial');
+      expect(cosecha.usuarioAnulacionId).toBe(usuarioId);
+      expect(cosecha.anuladoEn).toBe('2026-10-15T15:00:00Z');
+    });
+
+    it('debe rechazar re-anular una cosecha ya anulada', () => {
+      const cosecha = Cosecha.crear({
+        id: crypto.randomUUID(),
+        codigoTrazabilidad: 'COS-L03-20260915-01',
+        loteId: crypto.randomUUID(),
+        cicloId: crypto.randomUUID(),
+        fecha: '2026-09-15',
+        cantidadCosechadaKg: 500,
+        cantidadComercializableKg: 500,
+        cantidadDescarteKg: 0,
+        fechaReferenciaHoy: hoyRef,
+      });
+
+      cosecha.anular(usuarioId, 'Primera anulación');
+
+      expect(() => cosecha.anular(usuarioId, 'Segunda anulación')).toThrow(CosechaInvalidaError);
+    });
+
+    it('debe exigir motivo y usuarioId obligatorios para anular', () => {
+      const cosecha = Cosecha.crear({
+        id: crypto.randomUUID(),
+        codigoTrazabilidad: 'COS-L03-20260915-01',
+        loteId: crypto.randomUUID(),
+        cicloId: crypto.randomUUID(),
+        fecha: '2026-09-15',
+        cantidadCosechadaKg: 500,
+        cantidadComercializableKg: 500,
+        cantidadDescarteKg: 0,
+        fechaReferenciaHoy: hoyRef,
+      });
+
+      expect(() => cosecha.anular(usuarioId, '')).toThrow(CosechaInvalidaError);
+      expect(() => cosecha.anular('', 'Motivo válido')).toThrow(CosechaInvalidaError);
+    });
+  });
+
+  describe('Modificación Auditada (RF-M5-12 / RN-05 / RN-06)', () => {
+    const usuarioId = crypto.randomUUID();
+
+    it('debe modificar campos y registrar el historial de cambios con valores anteriores y nuevos', () => {
+      const cosecha = Cosecha.crear({
+        id: crypto.randomUUID(),
+        codigoTrazabilidad: 'COS-L03-20260915-01',
+        loteId: crypto.randomUUID(),
+        cicloId: crypto.randomUUID(),
+        fecha: '2026-09-15',
+        cantidadCosechadaKg: 1000,
+        cantidadComercializableKg: 850,
+        cantidadDescarteKg: 150,
+        motivoDescarte: 'CALIBRE',
+        fechaReferenciaHoy: hoyRef,
+      });
+
+      cosecha.modificar(usuarioId, 'Ajuste tras reclasificación secundaria de calidad', {
+        cantidadCosechadaKg: 1000,
+        cantidadComercializableKg: 900,
+        cantidadDescarteKg: 100,
+        motivoDescarte: 'CALIBRE_REVISADO',
+      });
+
+      expect(cosecha.cantidadComercializableKg).toBe(900);
+      expect(cosecha.cantidadDescarteKg).toBe(100);
+      expect(cosecha.motivoDescarte).toBe('CALIBRE_REVISADO');
+      expect(cosecha.historialModificaciones).toHaveLength(1);
+
+      const historial = cosecha.historialModificaciones[0];
+      expect(historial.usuarioId).toBe(usuarioId);
+      expect(historial.motivo).toBe('Ajuste tras reclasificación secundaria de calidad');
+      expect(historial.cambios).toEqual(
+        expect.arrayContaining([
+          { campo: 'cantidadComercializableKg', valorAnterior: 850, valorNuevo: 900 },
+          { campo: 'cantidadDescarteKg', valorAnterior: 150, valorNuevo: 100 },
+          { campo: 'motivoDescarte', valorAnterior: 'CALIBRE', valorNuevo: 'CALIBRE_REVISADO' },
+        ])
+      );
+    });
+
+    it('debe rechazar modificar una cosecha anulada', () => {
+      const cosecha = Cosecha.crear({
+        id: crypto.randomUUID(),
+        codigoTrazabilidad: 'COS-L03-20260915-01',
+        loteId: crypto.randomUUID(),
+        cicloId: crypto.randomUUID(),
+        fecha: '2026-09-15',
+        cantidadCosechadaKg: 500,
+        cantidadComercializableKg: 500,
+        cantidadDescarteKg: 0,
+        fechaReferenciaHoy: hoyRef,
+      });
+
+      cosecha.anular(usuarioId, 'Cosecha incorrecta');
+
+      expect(() =>
+        cosecha.modificar(usuarioId, 'Intento de modificar anulada', {
+          cantidadCosechadaKg: 600,
+          cantidadComercializableKg: 600,
+        })
+      ).toThrow(CosechaInvalidaError);
+    });
+
+    it('debe validar la invariante de desglose RN-09 en las modificaciones', () => {
+      const cosecha = Cosecha.crear({
+        id: crypto.randomUUID(),
+        codigoTrazabilidad: 'COS-L03-20260915-01',
+        loteId: crypto.randomUUID(),
+        cicloId: crypto.randomUUID(),
+        fecha: '2026-09-15',
+        cantidadCosechadaKg: 1000,
+        cantidadComercializableKg: 900,
+        cantidadDescarteKg: 100,
+        motivoDescarte: 'CALIBRE',
+        fechaReferenciaHoy: hoyRef,
+      });
+
+      expect(() =>
+        cosecha.modificar(usuarioId, 'Ajuste erróneo', {
+          cantidadComercializableKg: 950, // 950 + 100 = 1050 != 1000
+        })
+      ).toThrow(DesgloseCosechaInvalidoError);
     });
   });
 });
