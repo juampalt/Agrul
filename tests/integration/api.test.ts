@@ -3498,6 +3498,208 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       expect(JSON.parse(listRes.body).data).toHaveLength(1);
     });
   });
+
+  describe('AGRUL-031: Formulario Móvil Ultrarrápido de Cosecha para Operarios de Campo (RF-M5-13 / RNF-01 / RNF-15 / RN-01 / RN-09 / RN-14)', () => {
+    let loteId: string;
+    let cicloId: string;
+    const codigoLote = 'LOT-2026-00031';
+
+    beforeEach(async () => {
+      // 1. Crear Lote
+      const lote = Lote.crear({
+        id: crypto.randomUUID(),
+        codigoLote,
+        producto: 'Pera Williams',
+        cantidadInicial: 0,
+        unidadMedida: 'KG',
+      });
+      await lotesRepo.guardar(lote);
+      loteId = lote.id;
+
+      // 2. Crear Ciclo Abierto
+      const ciclo = CicloProductivo.crear({
+        id: crypto.randomUUID(),
+        codigoCiclo: 'CICLO-2026-PERA-01',
+        loteId,
+        cultivo: 'Pera Williams',
+        superficieCultivadaHa: 5.0,
+        fechaInicio: '2026-08-15',
+      });
+      await ciclosRepo.guardar(ciclo);
+      cicloId = ciclo.id;
+    });
+
+    it('POST /api/v1/cosechas/rapida debe registrar cosecha con los 4 campos mínimos y autocalcular descarte (RF-M5-13 / RNF-01 / RN-01 / RN-09)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas/rapida',
+        payload: {
+          loteId,
+          cantidadCosechadaKg: 1500,
+          cantidadComercializableKg: 1350,
+          fecha: '2026-10-15',
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.id).toBeDefined();
+      expect(body.data.codigoTrazabilidad).toMatch(/^COS-L\d+-\d{8}-\d{2}$/);
+      expect(body.data.cantidadCosechadaKg).toBe(1500);
+      expect(body.data.cantidadComercializableKg).toBe(1350);
+      expect(body.data.cantidadDescarteKg).toBe(150);
+      expect(body.data.motivoDescarte).toBe('DESCARTE_CAMPO');
+      expect(body.data.cicloId).toBe(cicloId);
+
+      // Verificar actualización del stock del lote
+      const loteRes = await app.inject({ method: 'GET', url: `/api/v1/lotes/${loteId}` });
+      expect(JSON.parse(loteRes.body).data.cantidadActual).toBe(1350);
+    });
+
+    it('POST /api/v1/cosechas/movil alias debe funcionar con código de lote escaneado vía QR y autocompletar fecha y ciclo', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas/movil',
+        payload: {
+          loteId: codigoLote, // Código alfanumérico escaneado por QR
+          cantidadCosechadaKg: 2000,
+          cantidadComercializableKg: 2000,
+          // fecha y cicloId omitidos
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.loteId).toBe(loteId);
+      expect(body.data.cicloId).toBe(cicloId);
+      expect(body.data.cantidadDescarteKg).toBe(0);
+      expect(body.data.fecha).toBeDefined();
+    });
+
+    it('POST /api/v1/cosechas/rapida debe rechazar con 422 si comercializable supera el total (RN-09)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas/rapida',
+        payload: {
+          loteId,
+          cantidadCosechadaKg: 1000,
+          cantidadComercializableKg: 1200,
+          fecha: '2026-10-15',
+        },
+      });
+
+      expect(res.statusCode).toBe(422);
+      const body = JSON.parse(res.body);
+      expect(body.error.code).toBe('DESGLOSE_COSECHA_INVALIDO');
+    });
+
+    it('POST /api/v1/cosechas/rapida debe rechazar con 422 si el lote no tiene ciclo abierto y no se especifica cicloId (RN-03)', async () => {
+      // Crear lote sin ciclos
+      const loteVacio = Lote.crear({
+        id: crypto.randomUUID(),
+        codigoLote: 'LOT-2026-00099',
+        producto: 'Ciruela Dagen',
+        cantidadInicial: 0,
+        unidadMedida: 'KG',
+      });
+      await lotesRepo.guardar(loteVacio);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas/rapida',
+        payload: {
+          loteId: loteVacio.id,
+          cantidadCosechadaKg: 500,
+          cantidadComercializableKg: 500,
+          fecha: '2026-10-15',
+        },
+      });
+
+      expect(res.statusCode).toBe(422);
+      const body = JSON.parse(res.body);
+      expect(body.error.code).toBe('CICLO_NO_ABIERTO');
+    });
+
+    it('POST /api/v1/cosechas/rapida debe detectar carencia fitosanitaria vigente e incluir advertencias en meta (RF-M5-11 / RN-14)', async () => {
+      // 1. Insumo con carencia 25 días
+      const insumoRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/insumos',
+        payload: {
+          nombreComercial: 'Fungicida Cobre Ultra',
+          categoria: 'FITOSANITARIO',
+          unidadMedidaId: 'KG',
+          presentacion: 'Bolsa 5 kg',
+          fichaFitosanitaria: {
+            principioActivo: 'Oxicloruro de Cobre',
+            periodoCarenciaDias: 25,
+            periodoReingresoHoras: 24,
+            nroRegistroSenasa: 'SENASA-F-1122',
+          },
+        },
+      });
+      const insumoId = JSON.parse(insumoRes.body).data.id;
+
+      // 2. Tipo Actividad
+      const tiposRes = await app.inject({ method: 'GET', url: '/api/v1/catalogos/tipos-actividad' });
+      const tipoActId = JSON.parse(tiposRes.body).data[0].id;
+
+      // 3. Actividad
+      const actRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/actividades',
+        payload: {
+          tipoActividadId: tipoActId,
+          loteId,
+          cicloId,
+          fechaHecho: '2026-10-01',
+          usuarioCargaId: crypto.randomUUID(),
+        },
+      });
+      const actId = JSON.parse(actRes.body).data.id;
+
+      // 4. Aplicación el 2026-10-01
+      const aplRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/aplicaciones',
+        payload: {
+          actividadId: actId,
+          loteId,
+          cicloId,
+          fecha: '2026-10-01',
+          metodo: 'FOLIAR',
+          motivo: 'Tratamiento fitosanitario',
+          equipoAplicacion: 'Pulverizadora Turbina 1500L',
+          lineas: [{ insumoId, cantidadTotal: 5, unidadMedidaId: 'KG' }],
+        },
+      });
+      expect(aplRes.statusCode).toBe(201);
+
+      // 5. Cosechar el 2026-10-10 (aún en carencia)
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas/rapida',
+        payload: {
+          loteId,
+          cantidadCosechadaKg: 1000,
+          cantidadComercializableKg: 900,
+          fecha: '2026-10-10',
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.meta).toBeDefined();
+      expect(body.meta.advertencias).toBeDefined();
+      expect(body.meta.advertencias.length).toBeGreaterThan(0);
+      expect(body.meta.advertencias[0]).toContain('ADVERTENCIA DE SEGURIDAD ALIMENTARIA');
+      expect(body.data.alertaCarencia).toBeDefined();
+      expect(body.data.alertaCarencia.aptoParaCosecha).toBe(false);
+    });
+  });
 });
 
 

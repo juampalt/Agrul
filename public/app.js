@@ -80,6 +80,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnAbrirHtmlCartel = document.getElementById('btn-abrir-html-cartel');
   const btnImprimirCartel = document.getElementById('btn-imprimir-cartel');
 
+  // Cosecha Rápida en Campo (AGRUL-031 / RF-M5-13 / RNF-01 / RNF-15)
+  const btnCosechaRapida = document.getElementById('btn-cosecha-rapida');
+  const modalCosechaRapida = document.getElementById('modal-cosecha-rapida');
+  const dialogCosechaRapida = document.getElementById('dialog-cosecha-rapida');
+  const btnToggleContrasteSolar = document.getElementById('btn-toggle-contraste-solar');
+  const formCosechaRapida = document.getElementById('form-cosecha-rapida');
+  const rapidaLoteId = document.getElementById('rapida-lote-id');
+  const rapidaLoteInfo = document.getElementById('rapida-lote-info');
+  const rapidaCicloDetectado = document.getElementById('rapida-ciclo-detectado');
+  const btnRapidaEscanearQr = document.getElementById('btn-rapida-escanear-qr');
+  const rapidaFecha = document.getElementById('rapida-fecha');
+  const btnRapidaHoy = document.getElementById('btn-rapida-hoy');
+  const rapidaTotalKg = document.getElementById('rapida-total-kg');
+  const rapidaComercialKg = document.getElementById('rapida-comercial-kg');
+  const btnRapidaTodoComercial = document.getElementById('btn-rapida-todo-comercial');
+  const rapidaCalcComercial = document.getElementById('rapida-calc-comercial');
+  const rapidaCalcDescarte = document.getElementById('rapida-calc-descarte');
+  const rapidaCarenciaWarning = document.getElementById('rapida-carencia-warning');
+  const rapidaCarenciaText = document.getElementById('rapida-carencia-text');
+  const rapidaMotivoDescarte = document.getElementById('rapida-motivo-descarte');
+  const rapidaRecipienteTipo = document.getElementById('rapida-recipiente-tipo');
+  const rapidaRecipienteCant = document.getElementById('rapida-recipiente-cant');
+  const rapidaObservaciones = document.getElementById('rapida-observaciones');
+  const rapidaSupHa = document.getElementById('rapida-sup-ha');
+  const btnSubmitCosechaRapida = document.getElementById('btn-submit-cosecha-rapida');
+
   // Toast Container
   const toastContainer = document.getElementById('toast-container');
 
@@ -251,6 +277,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <button class="btn-action action-cartel" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Ver e imprimir Cartel de Cabecera de Lote (RF-M1-11)">
                 📋 Cartel
               </button>
+              <button class="btn-action action-harvest" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Cosecha ultrarrápida en campo (RF-M5-13)">
+                🌾 Cosechar
+              </button>
             </div>
           </td>
         </tr>
@@ -285,6 +314,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.action-cartel').forEach(btn => {
       btn.addEventListener('click', () => {
         abrirModalCartelCabecera(btn.dataset.id, btn.dataset.codigo);
+      });
+    });
+
+    document.querySelectorAll('.action-harvest').forEach(btn => {
+      btn.addEventListener('click', () => {
+        abrirModalCosechaRapida(btn.dataset.id);
       });
     });
   }
@@ -1230,6 +1265,255 @@ document.addEventListener('DOMContentLoaded', () => {
           showToast(`Error al consultar el lote ${codigo}.`, 'error');
         });
     }
+  }
+
+  // ==========================================================================
+  // COSECHA MÓVIL ULTRARRÁPIDA EN CAMPO (AGRUL-031 / RF-M5-13 / RNF-01 / RNF-15)
+  // ==========================================================================
+
+  function abrirModalCosechaRapida(preselectedLoteId = null) {
+    if (!formCosechaRapida) return;
+    formCosechaRapida.reset();
+
+    // Fecha actual autocompletada por defecto (RN-01 / RF-M5-13)
+    if (rapidaFecha) {
+      rapidaFecha.value = new Date().toISOString().split('T')[0];
+    }
+
+    // Poblar selector de lotes
+    if (rapidaLoteId) {
+      rapidaLoteId.innerHTML = '<option value="">Seleccione lote a cosechar...</option>';
+      allLotes.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l.id;
+        opt.textContent = `${l.codigoLote} — ${l.producto} (${l.estadoActual})`;
+        if (preselectedLoteId && l.id === preselectedLoteId) {
+          opt.selected = true;
+        }
+        rapidaLoteId.appendChild(opt);
+      });
+    }
+
+    if (rapidaLoteInfo) {
+      rapidaLoteInfo.style.display = preselectedLoteId ? 'inline-flex' : 'none';
+    }
+
+    recalcularBalanceEnVivo();
+    verificarCarenciaRapida();
+
+    if (modalCosechaRapida) {
+      openModal(modalCosechaRapida);
+    }
+  }
+
+  // Recálculo en vivo de Descarte y Balances (RN-09)
+  function recalcularBalanceEnVivo() {
+    if (!rapidaTotalKg || !rapidaComercialKg) return;
+    const total = parseFloat(rapidaTotalKg.value) || 0;
+    const comercial = parseFloat(rapidaComercialKg.value) || 0;
+    const descarte = Math.max(0, Number((total - comercial).toFixed(2)));
+
+    const pctComercial = total > 0 ? ((comercial / total) * 100).toFixed(1) : '0.0';
+    const pctDescarte = total > 0 ? ((descarte / total) * 100).toFixed(1) : '0.0';
+
+    if (rapidaCalcComercial) {
+      rapidaCalcComercial.textContent = `${comercial.toFixed(1)} kg (${pctComercial}%)`;
+      if (comercial > total && total > 0) {
+        rapidaCalcComercial.style.color = '#ef4444';
+      } else {
+        rapidaCalcComercial.style.color = '';
+      }
+    }
+
+    if (rapidaCalcDescarte) {
+      if (comercial > total && total > 0) {
+        rapidaCalcDescarte.textContent = '¡Excede Total!';
+        rapidaCalcDescarte.style.color = '#ef4444';
+      } else {
+        rapidaCalcDescarte.textContent = `${descarte.toFixed(1)} kg (${pctDescarte}%)`;
+        rapidaCalcDescarte.style.color = '';
+      }
+    }
+  }
+
+  // Verificación de carencia no bloqueante en tiempo real (RF-M5-11 / RN-14)
+  async function verificarCarenciaRapida() {
+    if (!rapidaLoteId || !rapidaFecha || !rapidaCarenciaWarning) return;
+    const loteId = rapidaLoteId.value;
+    const fecha = rapidaFecha.value;
+
+    if (!loteId || !fecha) {
+      rapidaCarenciaWarning.style.display = 'none';
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/v1/lotes/${loteId}/carencia?fecha=${encodeURIComponent(fecha)}`);
+      const json = await res.json();
+      if (json.success && json.data && json.data.totalAlertasCarencia > 0) {
+        if (rapidaCarenciaText) {
+          rapidaCarenciaText.textContent = `⚠️ Advertencia de Carencia Fitosanitaria: ${json.data.totalAlertasCarencia} aplicación(es) activa(s) en este lote. La cosecha no está bloqueada, pero quedará asentada en trazabilidad.`;
+        }
+        rapidaCarenciaWarning.style.display = 'flex';
+      } else {
+        rapidaCarenciaWarning.style.display = 'none';
+      }
+    } catch (_) {
+      rapidaCarenciaWarning.style.display = 'none';
+    }
+  }
+
+  // Event Listeners de Cosecha Rápida
+  if (btnCosechaRapida) {
+    btnCosechaRapida.addEventListener('click', () => {
+      abrirModalCosechaRapida();
+    });
+  }
+
+  if (btnToggleContrasteSolar) {
+    btnToggleContrasteSolar.addEventListener('click', () => {
+      if (dialogCosechaRapida) {
+        dialogCosechaRapida.classList.toggle('solar-high-contrast');
+        const isActive = dialogCosechaRapida.classList.contains('solar-high-contrast');
+        btnToggleContrasteSolar.textContent = isActive ? '🌙 Modo Normal' : '☀️ Modo Sol';
+        showToast(isActive ? 'Modo Alto Contraste Solar Activado' : 'Modo Estándar Restaurado', 'success');
+      }
+    });
+  }
+
+  if (btnRapidaHoy && rapidaFecha) {
+    btnRapidaHoy.addEventListener('click', () => {
+      rapidaFecha.value = new Date().toISOString().split('T')[0];
+      verificarCarenciaRapida();
+    });
+  }
+
+  if (btnRapidaTodoComercial && rapidaTotalKg && rapidaComercialKg) {
+    btnRapidaTodoComercial.addEventListener('click', () => {
+      rapidaComercialKg.value = rapidaTotalKg.value;
+      recalcularBalanceEnVivo();
+    });
+  }
+
+  if (rapidaTotalKg) {
+    rapidaTotalKg.addEventListener('input', recalcularBalanceEnVivo);
+  }
+
+  if (rapidaComercialKg) {
+    rapidaComercialKg.addEventListener('input', recalcularBalanceEnVivo);
+  }
+
+  if (rapidaLoteId) {
+    rapidaLoteId.addEventListener('change', () => {
+      if (rapidaLoteInfo) {
+        rapidaLoteInfo.style.display = rapidaLoteId.value ? 'inline-flex' : 'none';
+      }
+      verificarCarenciaRapida();
+    });
+  }
+
+  if (rapidaFecha) {
+    rapidaFecha.addEventListener('change', verificarCarenciaRapida);
+  }
+
+  if (btnRapidaEscanearQr) {
+    btnRapidaEscanearQr.addEventListener('click', () => {
+      closeModal(modalCosechaRapida);
+      btnAbrirEscaner?.click();
+    });
+  }
+
+  // Envío del Formulario Móvil Ultrarrápido (< 15s)
+  if (formCosechaRapida) {
+    formCosechaRapida.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const loteId = rapidaLoteId?.value;
+      const totalKg = parseFloat(rapidaTotalKg?.value || '0');
+      const comercialKg = parseFloat(rapidaComercialKg?.value || '0');
+      const fecha = rapidaFecha?.value || new Date().toISOString().split('T')[0];
+
+      if (!loteId) {
+        showToast('Seleccione un lote a cosechar.', 'error');
+        rapidaLoteId?.focus();
+        return;
+      }
+
+      if (isNaN(totalKg) || totalKg <= 0) {
+        showToast('El total cosechado debe ser mayor a 0 kg.', 'error');
+        rapidaTotalKg?.focus();
+        return;
+      }
+
+      if (isNaN(comercialKg) || comercialKg < 0) {
+        showToast('La cantidad comercializable no puede ser negativa.', 'error');
+        rapidaComercialKg?.focus();
+        return;
+      }
+
+      if (comercialKg > totalKg) {
+        showToast('La cantidad comercializable no puede superar el total cosechado (RN-09).', 'error');
+        rapidaComercialKg?.focus();
+        return;
+      }
+
+      const payload = {
+        loteId,
+        cantidadCosechadaKg: totalKg,
+        cantidadComercializableKg: comercialKg,
+        fecha,
+      };
+
+      if (rapidaMotivoDescarte && rapidaMotivoDescarte.value) {
+        payload.motivoDescarte = rapidaMotivoDescarte.value;
+      }
+      if (rapidaObservaciones && rapidaObservaciones.value.trim()) {
+        payload.observacionesCalidad = rapidaObservaciones.value.trim();
+      }
+      if (rapidaSupHa && parseFloat(rapidaSupHa.value) > 0) {
+        payload.superficieCosechadaHa = parseFloat(rapidaSupHa.value);
+      }
+      if (rapidaRecipienteCant && parseInt(rapidaRecipienteCant.value, 10) > 0) {
+        payload.recipientes = [{
+          tipo: rapidaRecipienteTipo?.value || 'CAJON',
+          cantidad: parseInt(rapidaRecipienteCant.value, 10),
+        }];
+      }
+
+      if (btnSubmitCosechaRapida) {
+        btnSubmitCosechaRapida.disabled = true;
+        btnSubmitCosechaRapida.innerHTML = '<span class="spinner"></span> Registrando Cosecha...';
+      }
+
+      try {
+        const response = await fetch('/api/v1/cosechas/rapida', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const json = await response.json();
+
+        if (json.success && json.data) {
+          showToast(`🌾 Cosecha registrada: ${json.data.codigoTrazabilidad} (+${json.data.cantidadComercializableKg} kg)`, 'success');
+          if (json.meta && json.meta.advertenciaCarencia) {
+            showToast('⚠️ Advertencia: Cosecha asentada pero violó período de carencia fitosanitaria.', 'error');
+          }
+          closeModal(modalCosechaRapida);
+          await cargarLotes();
+        } else {
+          const msg = json.error?.message || 'Error al procesar la cosecha.';
+          showToast(`Error: ${msg}`, 'error');
+        }
+      } catch (err) {
+        showToast(`Error de conexión: ${err.message}`, 'error');
+      } finally {
+        if (btnSubmitCosechaRapida) {
+          btnSubmitCosechaRapida.disabled = false;
+          btnSubmitCosechaRapida.innerHTML = '<span class="btn-icon-large">💾</span> <span class="btn-text-large">REGISTRAR COSECHA INMEDIATA</span>';
+        }
+      }
+    });
   }
 
   // Carga inicial

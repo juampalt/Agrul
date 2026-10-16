@@ -119,9 +119,11 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/ciclos/:id/insumos-acumulados', (req, rep) => deps.aplicacionesController!.calcularConsumoInsumosCiclo(req, rep));
       }
 
-      // Cosechas y Saldo Comercializable (Módulo 5 — AGRUL-028, AGRUL-030 / RF-M5-01 a RF-M5-06, RF-M5-12, RN-05, RN-06)
+      // Cosechas y Saldo Comercializable (Módulo 5 — AGRUL-028, AGRUL-030, AGRUL-031 / RF-M5-01 a RF-M5-06, RF-M5-11 a RF-M5-14, RN-01, RN-05, RN-06, RN-09, RN-14)
       if (deps.cosechasController) {
         v1.post('/cosechas', (req, rep) => deps.cosechasController!.registrar(req, rep));
+        v1.post('/cosechas/rapida', (req, rep) => deps.cosechasController!.registrarRapida(req, rep));
+        v1.post('/cosechas/movil', (req, rep) => deps.cosechasController!.registrarRapida(req, rep));
         v1.get('/cosechas', (req, rep) => deps.cosechasController!.listar(req, rep));
         v1.get('/cosechas/:id', (req, rep) => deps.cosechasController!.obtenerPorId(req, rep));
         v1.post('/cosechas/:id/anular', (req, rep) => deps.cosechasController!.anular(req, rep));

@@ -1136,7 +1136,7 @@
     "epic": "Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable",
     "epicId": "epic-11-modulo-5-cosecha",
     "title": "Formulario Móvil Ultrarrápido de Cosecha para Operarios de Campo",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Alta (P1)",
     "skills": [
       ".cursor/skills/api-contracts.md"

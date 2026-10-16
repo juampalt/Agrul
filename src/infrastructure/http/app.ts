@@ -63,6 +63,7 @@ import { CosechasRepositoryPort } from '../../core/ports/cosechas-repository.por
 import { CosechasController } from './controllers/cosechas.controller.js';
 import {
   RegistrarCosechaUseCase,
+  RegistrarCosechaRapidaUseCase,
   ListarCosechasUseCase,
   ObtenerCosechaPorIdUseCase,
   AnularCosechaUseCase,
@@ -329,13 +330,22 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       options.ciclosRepo,
       options.eventosRepo
     );
+    const registrarCosechaRapidaUseCase = new RegistrarCosechaRapidaUseCase(
+      options.cosechasRepo,
+      options.lotesRepo,
+      options.ciclosRepo,
+      options.eventosRepo,
+      options.aplicacionesRepo,
+      options.insumosRepo
+    );
 
     cosechasController = new CosechasController(
       registrarCosechaUseCase,
       listarCosechasUseCase,
       obtenerCosechaUseCase,
       anularCosechaUseCase,
-      modificarCosechaUseCase
+      modificarCosechaUseCase,
+      registrarCosechaRapidaUseCase
     );
   }
 

@@ -20,6 +20,21 @@ export const RegistrarCosechaBodySchema = z.object({
   superficieCosechadaHa: z.number().positive('La superficie cosechada debe ser un valor positivo').optional().nullable(),
 }).strict();
 
+export const RegistrarCosechaRapidaBodySchema = z.object({
+  loteId: z.string().trim().min(1, 'El identificador o código de lote es obligatorio (RF-M5-13)'),
+  cantidadCosechadaKg: z.number().positive('La cantidad total cosechada debe ser mayor a cero (RF-M5-13)'),
+  cantidadComercializableKg: z.number().min(0, 'La cantidad comercializable no puede ser negativa (RF-M5-13)'),
+  fecha: z.string().trim().optional(),
+  cicloId: z.string().uuid('El cicloId debe ser un UUID válido').optional(),
+  cantidadDescarteKg: z.number().min(0).optional(),
+  motivoDescarte: z.string().trim().max(200).optional().nullable(),
+  observacionesCalidad: z.string().trim().max(1000).optional().nullable(),
+  responsableId: z.string().uuid('El responsableId debe ser un UUID válido').optional().nullable(),
+  cuadrillaId: z.string().uuid('El cuadrillaId debe ser un UUID válido').optional().nullable(),
+  recipientes: z.array(RecipienteSchema).optional().nullable(),
+  superficieCosechadaHa: z.number().positive('La superficie cosechada debe ser un valor positivo').optional().nullable(),
+}).strict();
+
 export const ListarCosechasQuerySchema = z.object({
   loteId: z.string().uuid().optional(),
   cicloId: z.string().uuid().optional(),

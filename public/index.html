@@ -25,6 +25,9 @@
         <div class="connection-badge">
           <span class="status-dot"></span> API v1 Online
         </div>
+        <button id="btn-cosecha-rapida" class="btn btn-warning-mobile" title="Cosecha ultrarrápida para operarios de campo (RF-M5-13)">
+          <span class="btn-icon">⚡</span> Cosecha Rápida (Campo)
+        </button>
         <button id="btn-abrir-escaner" class="btn btn-secondary">
           <span class="btn-icon">📷</span> Escanear QR
         </button>
@@ -601,6 +604,163 @@
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" data-close="modal-qr-scanner">Cerrar Escáner</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Cosecha Móvil Ultrarrápida para Operarios de Campo (AGRUL-031 / RF-M5-13 / RN-01 / RNF-01 / RNF-15) -->
+  <div class="modal-backdrop" id="modal-cosecha-rapida" aria-hidden="true">
+    <div class="modal-dialog glass modal-mobile-harvest" id="dialog-cosecha-rapida">
+      <div class="modal-header">
+        <div class="header-title-wrap">
+          <div class="tag-mobile-ultra">⚡ MODO CAMPO &bull; &lt; 15 SEGUNDOS</div>
+          <h2>Cosecha Rápida en Smartphone</h2>
+          <p class="subtitle">Solo 4 campos obligatorios &bull; Botones táctiles &gt; 48px y alto contraste (RNF-15)</p>
+        </div>
+        <div class="header-right-tools">
+          <button type="button" id="btn-toggle-contraste-solar" class="btn-contrast-solar" title="Alternar modo de alto contraste para sol directo">
+            ☀️ Modo Sol
+          </button>
+          <button class="close-btn" data-close="modal-cosecha-rapida">&times;</button>
+        </div>
+      </div>
+
+      <form id="form-cosecha-rapida" novalidate>
+        <!-- Campo 1: Selector de Lote + Botón Rápido QR -->
+        <div class="form-group campo-destacado">
+          <label for="rapida-lote-id" class="label-large">
+            <span class="label-number">1</span> LOTE A COSECHAR *
+          </label>
+          <div class="lote-selector-row">
+            <select id="rapida-lote-id" class="input-touch-xl" required aria-label="Lote a cosechar">
+              <option value="">Seleccione lote...</option>
+            </select>
+            <button type="button" id="btn-rapida-escanear-qr" class="btn-touch-action" title="Escanear QR de Lote con la cámara">
+              📷 QR
+            </button>
+          </div>
+          <div class="lote-activo-badge" id="rapida-lote-info" style="display: none;">
+            <span class="badge-dot-live"></span>
+            <span id="rapida-ciclo-detectado">Ciclo activo autodetectado</span>
+          </div>
+        </div>
+
+        <!-- Campo 2: Fecha de Cosecha (Autocompletada hoy) -->
+        <div class="form-group campo-destacado">
+          <label for="rapida-fecha" class="label-large">
+            <span class="label-number">2</span> FECHA DE COSECHA *
+          </label>
+          <div class="fecha-quick-row">
+            <input type="date" id="rapida-fecha" class="input-touch-xl" required aria-label="Fecha de cosecha">
+            <button type="button" id="btn-rapida-hoy" class="btn-touch-today" title="Fijar fecha de hoy">
+              📅 Hoy
+            </button>
+          </div>
+        </div>
+
+        <!-- Campos 3 y 4: Grid de Cantidades Principales (Total vs Comercializable) -->
+        <div class="cantidades-touch-grid">
+          <!-- Campo 3: Total Cosechado -->
+          <div class="form-group campo-destacado">
+            <label for="rapida-total-kg" class="label-large">
+              <span class="label-number">3</span> TOTAL COSECHADO (KG) *
+            </label>
+            <div class="input-unit-wrap">
+              <input type="number" id="rapida-total-kg" class="input-touch-xl input-number-big" min="0.1" step="0.1" inputmode="decimal" required placeholder="0.0" aria-label="Total cosechado en kg">
+              <span class="unit-tag">KG</span>
+            </div>
+          </div>
+
+          <!-- Campo 4: Cantidad Comercializable -->
+          <div class="form-group campo-destacado">
+            <label for="rapida-comercial-kg" class="label-large">
+              <span class="label-number">4</span> COMERCIALIZABLE (KG) *
+            </label>
+            <div class="input-unit-wrap">
+              <input type="number" id="rapida-comercial-kg" class="input-touch-xl input-number-big input-comercial-glow" min="0" step="0.1" inputmode="decimal" required placeholder="0.0" aria-label="Cantidad comercializable en kg">
+              <span class="unit-tag">KG</span>
+            </div>
+            <button type="button" id="btn-rapida-todo-comercial" class="btn-quick-fill" title="Fijar 100% como comercializable (sin descarte)">
+              ✨ 100% Comercializable (Sin Descarte)
+            </button>
+          </div>
+        </div>
+
+        <!-- Calculadora en Vivo de Descarte (RN-09) -->
+        <div class="live-balance-card" id="rapida-live-balance">
+          <div class="balance-item">
+            <span class="balance-title">COMERCIALIZABLE:</span>
+            <span class="balance-val green" id="rapida-calc-comercial">0.0 kg (0%)</span>
+          </div>
+          <div class="balance-separator">/</div>
+          <div class="balance-item">
+            <span class="balance-title">DESCARTE CALCULADO:</span>
+            <span class="balance-val amber" id="rapida-calc-descarte">0.0 kg (0%)</span>
+          </div>
+        </div>
+
+        <!-- Alerta de Carencia en Vivo (si aplica) -->
+        <div class="carencia-live-warning" id="rapida-carencia-warning" style="display: none;">
+          <span class="warning-icon">⚠️</span>
+          <div class="warning-text" id="rapida-carencia-text">
+            Advertencia: Carencia fitosanitaria vigente detectada en este lote.
+          </div>
+        </div>
+
+        <!-- Campos Adicionales Plegados (RNF-01: Por defecto colapsados para carga en <15s) -->
+        <details class="campos-plegados-accordion" id="rapida-detalles-plegados">
+          <summary class="toggle-plegado-btn">
+            <span class="toggle-icon">🔽</span>
+            <span>Campos Adicionales Opcionales (Cuadrilla, Recipientes, Motivo Descarte)</span>
+          </summary>
+          <div class="plegado-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="rapida-motivo-descarte">Motivo de Descarte (si hubo)</label>
+                <select id="rapida-motivo-descarte" class="input-touch">
+                  <option value="DESCARTE_CAMPO">Descarte estándar de campo</option>
+                  <option value="DEFECTO_CALIBRE">Calibre insuficiente / pequeño</option>
+                  <option value="DEFECTO_COLOR">Falta de color / madurez desuniforme</option>
+                  <option value="DANIO_CLIMATICO">Daño por granizo / sol / viento</option>
+                  <option value="DANIO_PLAGA">Picadura de plaga / hongo</option>
+                  <option value="SOBREMADURO">Sobremaduro / herido</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="rapida-recipiente-tipo">Tipo y Cantidad de Recipiente</label>
+                <div class="recipiente-fast-row">
+                  <select id="rapida-recipiente-tipo" class="input-touch">
+                    <option value="CAJON">Cajones</option>
+                    <option value="BIN">Bines</option>
+                    <option value="BANDEJA">Bandejas</option>
+                  </select>
+                  <input type="number" id="rapida-recipiente-cant" class="input-touch" min="1" step="1" placeholder="Cant.">
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="rapida-observaciones">Observaciones de Calidad / Cuadrilla</label>
+                <input type="text" id="rapida-observaciones" class="input-touch" placeholder="Ej: Cuadrilla Norte, fruta seca y firme">
+              </div>
+              <div class="form-group">
+                <label for="rapida-sup-ha">Superficie Cosechada (ha)</label>
+                <input type="number" id="rapida-sup-ha" class="input-touch" min="0.01" step="0.01" placeholder="Ej: 1.2">
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Botón de Guardado Ultrarrápido de Campo (> 48px, alto contraste) -->
+        <div class="modal-actions-mobile">
+          <button type="submit" class="btn-submit-cosecha-ultra" id="btn-submit-cosecha-rapida">
+            <span class="btn-icon-large">💾</span>
+            <span class="btn-text-large">REGISTRAR COSECHA INMEDIATA</span>
+          </button>
+          <button type="button" class="btn-cancel-mobile" data-close="modal-cosecha-rapida">
+            Cancelar
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 

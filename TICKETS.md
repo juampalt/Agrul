@@ -19,14 +19,14 @@
 | **Épica 8: Módulo 2 — Gestión de Cultivos y Ciclos Productivos** | 3 | 0 | 0 | 3 |
 | **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 3 | 0 | 1 |
 | **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 2 | 0 | 2 |
-| **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 3 | 0 | 1 |
+| **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 4 | 0 | 0 |
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 0 | 0 | 3 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 0 | 0 | 3 |
 | **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 0 | 0 | 3 |
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **22** | **0** | **28** |
+| **TOTAL GENERAL** | **50** | **23** | **0** | **27** |
 
 ---
 
@@ -616,21 +616,21 @@
   - [x] RF-M5-14: Registro de incidentes con estimación de volumen afectado.
 
 ### `[AGRUL-031]` Formulario Móvil Ultrarrápido de Cosecha para Operarios de Campo
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 5: Cosecha y Destino
 - **Requisitos Funcionales:** RF-M5-13
 - **Reglas de Negocio:** RN-01
 - **Skills:** [api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
-- **Etiquetas:** `mobile`, `usabilidad`, `campo`, `rnf-01`, `ready-for-agent`
+- **Etiquetas:** `mobile`, `usabilidad`, `campo`, `rnf-01`, `status:done`
 - **Descripción:** Interfaz y endpoint simplificado para carga en smartphone con guantes y bajo el sol (RNF-15): sólo 4 campos obligatorios (lote, cantidad total, comercializable y fecha) y resto plegado (RNF-01).
 - **Tareas Técnicas:**
   1. Diseñar formulario móvil minimalista con botones táctiles grandes (>48px) y alto contraste (RNF-15).
   2. Limitar inputs obligatorios a 4 campos: Lote, Total Cosechado, Comercializable y Fecha (RNF-01).
   3. Autocompletar ciclo activo y fecha actual.
 - **Criterios de Aceptación:**
-  - [ ] RF-M5-13 / RNF-01: Carga completable en menos de 15 segundos en campo con 4 campos obligatorios.
-  - [ ] RNF-15: Interfaz legible a plena luz solar y amigable con dispositivos desde 360px de ancho.
+  - [x] RF-M5-13 / RNF-01: Carga completable en menos de 15 segundos en campo con 4 campos obligatorios.
+  - [x] RNF-15: Interfaz legible a plena luz solar y amigable con dispositivos desde 360px de ancho.
 
 ---
 

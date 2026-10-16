@@ -21,6 +21,21 @@ export interface RegistrarCosechaInputDto {
   superficieCosechadaHa?: number | null;
 }
 
+export interface RegistrarCosechaRapidaInputDto {
+  loteId: string; // UUID o código de lote (ej: LOT-2026-00001)
+  cantidadCosechadaKg: number; // Obligatorio 1/4 (RF-M5-13)
+  cantidadComercializableKg: number; // Obligatorio 2/4 (RF-M5-13)
+  fecha?: string; // Obligatorio 3/4 (autocompleta hoy YYYY-MM-DD si se omite)
+  cicloId?: string; // Autocompleta ciclo activo del lote si se omite (RF-M5-13)
+  cantidadDescarteKg?: number; // Autocalculado como (cosechada - comercializable) si se omite
+  motivoDescarte?: string | null;
+  observacionesCalidad?: string | null;
+  responsableId?: string | null;
+  cuadrillaId?: string | null;
+  recipientes?: RecipienteCosechaDto[] | null;
+  superficieCosechadaHa?: number | null;
+}
+
 export interface CambioHistorialCosechaDto {
   campo: string;
   valorAnterior: any;

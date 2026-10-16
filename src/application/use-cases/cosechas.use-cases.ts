@@ -20,6 +20,7 @@ import {
   ListarCosechasFiltrosDto,
   ModificarCosechaInputDto,
   RegistrarCosechaInputDto,
+  RegistrarCosechaRapidaInputDto,
 } from '../dtos/cosechas.dto.js';
 import { ResultadoVerificacionCarenciaDto } from '../dtos/aplicaciones.dto.js';
 
@@ -479,3 +480,94 @@ export class ObtenerCosechaPorIdUseCase {
     };
   }
 }
+
+/**
+ * Caso de Uso: RegistrarCosechaRapidaUseCase (AGRUL-031 / RF-M5-13 / RN-01 / RNF-01 / RNF-15)
+ * Carga ultrarrápida de cosecha en campo para smartphone con guantes y bajo el sol:
+ * Requiere únicamente 4 campos (Lote, Total, Comercializable y Fecha opcional/autocompletada).
+ * Autocompleta ciclo activo, deduce descarte (RN-09) y emite advertencia de carencia (RN-14).
+ */
+export class RegistrarCosechaRapidaUseCase {
+  constructor(
+    private readonly cosechasRepo: CosechasRepositoryPort,
+    private readonly lotesRepo: LotesRepositoryPort,
+    private readonly ciclosRepo: CiclosRepositoryPort,
+    private readonly eventosRepo?: EventosRepositoryPort,
+    private readonly aplicacionesRepo?: AplicacionesRepositoryPort,
+    private readonly insumosRepo?: InsumosCatalogoRepository,
+  ) {}
+
+  public async execute(
+    input: RegistrarCosechaRapidaInputDto,
+    fechaReferenciaHoy?: Date,
+  ): Promise<CosechaOutputDto> {
+    // 1. Resolver Lote por ID o por Código de Lote (flexibilidad para operarios de campo / lectores QR)
+    let lote = await this.lotesRepo.buscarPorId(input.loteId);
+    if (!lote) {
+      lote = await this.lotesRepo.buscarPorCodigo(input.loteId);
+    }
+    if (!lote) {
+      throw new EntidadNoEncontradaError('Lote', input.loteId);
+    }
+
+    // 2. Autocompletar Fecha actual si se omite (RN-01 / RF-M5-13)
+    const fecha = input.fecha && input.fecha.trim().length > 0
+      ? input.fecha.trim()
+      : (fechaReferenciaHoy || new Date()).toISOString().split('T')[0];
+
+    // 3. Autocompletar Ciclo Productivo activo si se omite (RF-M5-13)
+    let cicloId = input.cicloId;
+    if (!cicloId) {
+      const cicloActivo = await this.ciclosRepo.buscarCicloAbiertoPorLote(lote.id);
+      if (!cicloActivo) {
+        throw new CicloNoAbiertoError(
+          `El lote '${lote.codigoLote.value}' no posee ningún ciclo productivo ABIERTO. Inicie un ciclo antes de registrar cosechas (RN-03 / RF-M5-13).`
+        );
+      }
+      cicloId = cicloActivo.id;
+    }
+
+    // 4. Calcular cantidad de descarte automáticamente si se omite (RN-09)
+    let cantidadDescarteKg = input.cantidadDescarteKg;
+    if (cantidadDescarteKg === undefined || cantidadDescarteKg === null) {
+      cantidadDescarteKg = Math.max(
+        0,
+        Number((input.cantidadCosechadaKg - input.cantidadComercializableKg).toFixed(4))
+      );
+    }
+
+    let motivoDescarte = input.motivoDescarte;
+    if (cantidadDescarteKg > 0 && (!motivoDescarte || motivoDescarte.trim().length === 0)) {
+      motivoDescarte = 'DESCARTE_CAMPO';
+    }
+
+    // 5. Delegar en el caso de uso central RegistrarCosechaUseCase
+    const registrarCosecha = new RegistrarCosechaUseCase(
+      this.cosechasRepo,
+      this.lotesRepo,
+      this.ciclosRepo,
+      this.eventosRepo,
+      this.aplicacionesRepo,
+      this.insumosRepo,
+    );
+
+    return registrarCosecha.execute(
+      {
+        loteId: lote.id,
+        cicloId,
+        fecha,
+        cantidadCosechadaKg: input.cantidadCosechadaKg,
+        cantidadComercializableKg: input.cantidadComercializableKg,
+        cantidadDescarteKg,
+        motivoDescarte: motivoDescarte ?? null,
+        observacionesCalidad: input.observacionesCalidad ?? null,
+        responsableId: input.responsableId ?? null,
+        cuadrillaId: input.cuadrillaId ?? null,
+        recipientes: input.recipientes ?? null,
+        superficieCosechadaHa: input.superficieCosechadaHa ?? null,
+      },
+      fechaReferenciaHoy,
+    );
+  }
+}
+
