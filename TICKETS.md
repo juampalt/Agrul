@@ -18,15 +18,15 @@
 | **Épica 7: Módulo 1 — Gestión de Fincas, Lotes y Suelos** | 3 | 1 | 0 | 2 |
 | **Épica 8: Módulo 2 — Gestión de Cultivos y Ciclos Productivos** | 3 | 0 | 0 | 3 |
 | **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 3 | 0 | 1 |
-| **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 2 | 0 | 2 |
+| **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 4 | 0 | 0 |
 | **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 4 | 0 | 0 |
-| **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 0 | 0 | 3 |
+| **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 1 | 0 | 2 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 0 | 0 | 3 |
 | **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 0 | 0 | 3 |
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **23** | **0** | **27** |
+| **TOTAL GENERAL** | **50** | **26** | **0** | **24** |
 
 ---
 
@@ -637,13 +637,13 @@
 ## ÉPICA 12: MÓDULO 6 — MOTOR DE TRAZABILIDAD E INFORMES OFICIALES
 
 ### `[AGRUL-032]` Motor de Búsqueda y Recorrido Cronológico Integral de Cosecha
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 6: Trazabilidad
 - **Requisitos Funcionales:** RF-M6-01, RF-M6-02, RF-M6-03, RF-M6-04, RF-M6-05, RF-M6-06, RF-M6-07
 - **Reglas de Negocio:** RN-04, RN-07, RN-08
 - **Skills:** [domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
-- **Etiquetas:** `trazabilidad`, `motor`, `query`, `recorrido`, `ready-for-agent`
+- **Etiquetas:** `trazabilidad`, `motor`, `query`, `recorrido`, `status:done`
 - **Descripción:** Reconstrucción cronológica ascendente completa a partir de un código de cosecha o lote: origen de plantines, ciclo, labores culturales, fitosanitarios aplicados con lote de fábrica y carencia, clima y destinos finales.
 - **Tareas Técnicas:**
   1. Crear ObtenerRecorridoTrazabilidadUseCase: consulta cosecha por ID o código de trazabilidad.
@@ -651,9 +651,10 @@
   3. Identificar y resaltar explícitamente lagunas de información (datos faltantes: sin responsable, sin partida de origen) sin inventar valores (RF-M6-06).
   4. Incorporar resumen meteorológico del ciclo (RF-M6-07).
 - **Criterios de Aceptación:**
-  - [ ] RF-M6-01 / RF-M6-02: Búsqueda ágil y reconstrucción cronológica completa de la historia de la fruta.
-  - [ ] RF-M6-04 / RF-M6-05: Detalle de partida origen y lotes de insumos utilizados.
-  - [ ] RF-M6-06: Flag explícito en el árbol resaltando datos faltantes para auditoría de calidad.
+  - [x] RF-M6-01 / RF-M6-02: Búsqueda ágil y reconstrucción cronológica completa de la historia de la fruta.
+  - [x] RF-M6-04 / RF-M6-05: Detalle de partida origen y lotes de insumos utilizados.
+  - [x] RF-M6-06: Flag explícito en el árbol resaltando datos faltantes para auditoría de calidad.
+
 
 ### `[AGRUL-033]` Emisión de Informes de Trazabilidad en PDF y Exportación CSV/Excel
 - **Estado:** `TODO` 📌

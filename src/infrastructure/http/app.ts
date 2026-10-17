@@ -88,7 +88,10 @@ import {
   ListarPerdidasCosechaUseCase,
   ObtenerPerdidaCosechaPorIdUseCase,
 } from '../../application/use-cases/perdidas-cosecha.use-cases.js';
+import { TrazabilidadController } from './controllers/trazabilidad.controller.js';
+import { ObtenerRecorridoTrazabilidadUseCase } from '../../application/use-cases/recorrido-trazabilidad.use-case.js';
 import { readFileSync, existsSync } from 'node:fs';
+
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -408,6 +411,22 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     );
   }
 
+  let trazabilidadController: TrazabilidadController | undefined;
+  if (options.cosechasRepo) {
+    const obtenerRecorridoUC = new ObtenerRecorridoTrazabilidadUseCase({
+      cosechasRepo: options.cosechasRepo,
+      lotesRepo: options.lotesRepo,
+      ciclosRepo: options.ciclosRepo,
+      actividadesRepo: options.actividadesRepo,
+      aplicacionesRepo: options.aplicacionesRepo,
+      despachosRepo: options.despachosRepo,
+      destinatariosRepo: options.destinatariosRepo,
+      fincasRepo: options.fincasRepo,
+      insumosRepo: options.insumosRepo,
+    });
+    trazabilidadController = new TrazabilidadController(obtenerRecorridoUC);
+  }
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -422,8 +441,10 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     cosechasController,
     despachosController,
     perdidasController,
+    trazabilidadController,
   });
 
   return app;
+
 }
 

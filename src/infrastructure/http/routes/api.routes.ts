@@ -11,6 +11,7 @@ import { AplicacionesController } from '../controllers/aplicaciones.controller.j
 import { CosechasController } from '../controllers/cosechas.controller.js';
 import { DespachosController } from '../controllers/despachos.controller.js';
 import { PerdidasCosechaController } from '../controllers/perdidas-cosecha.controller.js';
+import { TrazabilidadController } from '../controllers/trazabilidad.controller.js';
 
 export interface ApiRoutesDependencies {
   lotesController: LotesController;
@@ -25,7 +26,9 @@ export interface ApiRoutesDependencies {
   cosechasController?: CosechasController;
   despachosController?: DespachosController;
   perdidasController?: PerdidasCosechaController;
+  trazabilidadController?: TrazabilidadController;
 }
+
 
 export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDependencies) {
   fastify.register(
@@ -159,7 +162,15 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.post('/cosechas/:id/perdidas', (req, rep) => deps.perdidasController!.registrar(req, rep));
         v1.get('/cosechas/:id/perdidas', (req, rep) => deps.perdidasController!.listar(req, rep));
       }
+
+      // Motor de Recorrido de Trazabilidad Integral (Módulo 6 — AGRUL-032 / RF-M6-01 a RF-M6-07)
+      if (deps.trazabilidadController) {
+        v1.get('/trazabilidad/recorrido/:identificador', (req, rep) => deps.trazabilidadController!.obtenerRecorrido(req, rep));
+        v1.get('/trazabilidad/cosechas/:identificador/recorrido', (req, rep) => deps.trazabilidadController!.obtenerRecorrido(req, rep));
+        v1.get('/cosechas/:identificador/recorrido', (req, rep) => deps.trazabilidadController!.obtenerRecorrido(req, rep));
+      }
     },
     { prefix: '/api/v1' }
   );
 }
+

@@ -3700,7 +3700,128 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       expect(body.data.alertaCarencia.aptoParaCosecha).toBe(false);
     });
   });
+
+  describe('Módulo 6: Motor de Trazabilidad e Informes Oficiales (AGRUL-032)', () => {
+    it('GET /api/v1/trazabilidad/recorrido/:identificador debe devolver la historia cronológica completa, balance y lagunas', async () => {
+      // 1. Crear lote
+      const loteRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/lotes',
+        payload: {
+          codigoLote: 'LOT-2026-TRAZA1',
+          producto: 'Frutilla Fortuna',
+          variedad: 'Día Neutro',
+          cantidadInicial: 3000,
+          unidadMedida: 'KG',
+        },
+      });
+      const lote = JSON.parse(loteRes.body).data;
+
+      // 1.b Crear ciclo abierto en el lote
+      const ciclo = CicloProductivo.crear({
+        id: crypto.randomUUID(),
+        codigoCiclo: 'CIC-2026-TRAZA1',
+        loteId: lote.id,
+        cultivo: 'Frutilla',
+        variedad: 'Día Neutro',
+        superficieCultivadaHa: 2.5,
+        fechaInicio: '2026-08-01',
+      });
+      await ciclosRepo.guardar(ciclo);
+
+      // 2. Registrar cosecha
+      const cosechaRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas/rapida',
+        payload: {
+          loteId: lote.id,
+          cantidadCosechadaKg: 1500,
+          cantidadComercializableKg: 1400,
+          fecha: '2026-09-20',
+        },
+      });
+      expect(cosechaRes.statusCode).toBe(201);
+      const cosecha = JSON.parse(cosechaRes.body).data;
+
+      // 3. Crear destinatario y despachar
+      const destRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/destinatarios',
+        payload: {
+          nombre: 'Mercado Central de Tucumán',
+          tipo: 'MERCADO_FRESCO',
+        },
+      });
+      const dest = JSON.parse(destRes.body).data;
+
+      const despRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/despachos',
+        payload: {
+          cosechaId: cosecha.id,
+          destinatarioId: dest.id,
+          tipoDestino: 'MERCADO_FRESCO',
+          cantidadEnviadaKg: 800,
+          fecha: '2026-09-21',
+          nroGuiaRemito: 'REM-2026-000912',
+          renspaFinca: '23.001.0.00999/00',
+          productor: 'Finca El Trébol',
+        },
+      });
+      expect(despRes.statusCode).toBe(201);
+
+      // 4. Consultar recorrido por ID de cosecha
+      const recorridoRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/trazabilidad/recorrido/${cosecha.id}`,
+      });
+
+      expect(recorridoRes.statusCode).toBe(200);
+      const body = JSON.parse(recorridoRes.body);
+      expect(body.success).toBe(true);
+      expect(body.data.cosecha.id).toBe(cosecha.id);
+      expect(body.data.lote.codigoLote).toBe('LOT-2026-TRAZA1');
+      expect(body.data.balanceMasa).toEqual({
+        totalCosechadoKg: 1500,
+        comercializableKg: 1400,
+        descarteKg: 100,
+        despachadoKg: 800,
+        saldoRemanenteKg: 600,
+      });
+      expect(body.data.timeline.length).toBeGreaterThanOrEqual(2);
+      expect(body.data.auditoriaCalidad).toBeDefined();
+
+      // 5. Consultar recorrido por código de trazabilidad único (COS-L...)
+      const porCodigoRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/trazabilidad/cosechas/${cosecha.codigoTrazabilidad}/recorrido`,
+      });
+      expect(porCodigoRes.statusCode).toBe(200);
+      const porCodigoBody = JSON.parse(porCodigoRes.body);
+      expect(porCodigoBody.data.cosecha.codigoTrazabilidad).toBe(cosecha.codigoTrazabilidad);
+
+      // 6. Consultar alias bajo /cosechas/:id/recorrido
+      const aliasRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/cosechas/${cosecha.id}/recorrido`,
+      });
+      expect(aliasRes.statusCode).toBe(200);
+    });
+
+    it('GET /api/v1/trazabilidad/recorrido/:identificador inexistente debe responder 404 Not Found', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/trazabilidad/recorrido/00000000-0000-0000-0000-000000000000',
+      });
+
+      expect(res.statusCode).toBe(404);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('ENTITY_NOT_FOUND');
+    });
+  });
 });
+
 
 
 

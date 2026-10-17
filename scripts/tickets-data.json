@@ -1171,7 +1171,7 @@
     "epic": "Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales",
     "epicId": "epic-12-modulo-6-trazabilidad",
     "title": "Motor de Búsqueda y Recorrido Cronológico Integral de Cosecha",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Alta (P1)",
     "skills": [
       ".cursor/skills/domain-traceability.md",
@@ -1197,7 +1197,7 @@
       "motor",
       "query",
       "recorrido",
-      "ready-for-agent"
+      "status:done"
     ],
     "description": "Reconstrucción cronológica ascendente completa a partir de un código de cosecha o lote: origen de plantines, ciclo, labores culturales, fitosanitarios aplicados con lote de fábrica y carencia, clima y destinos finales.",
     "tasks": [

@@ -20,3 +20,12 @@ export * from './use-cases/monitoreo.use-cases.js';
 export * from './use-cases/insumos-catalogo.use-cases.js';
 export * from './use-cases/aplicaciones.use-cases.js';
 export * from './use-cases/verificar-carencia.use-case.js';
+export * from './use-cases/cosechas.use-cases.js';
+export * from './use-cases/despachos.use-cases.js';
+export * from './use-cases/perdidas-cosecha.use-cases.js';
+export * from './use-cases/recorrido-trazabilidad.use-case.js';
+export * from './dtos/cosechas.dto.js';
+export * from './dtos/despachos.dto.js';
+export * from './dtos/perdidas-cosecha.dto.js';
+export * from './dtos/recorrido-trazabilidad.dto.js';
+
