@@ -2,10 +2,10 @@
 id: AGRUL-035
 title: "AGRUL-035: Cálculo de Rendimiento por Hectárea, Descarte y Métricas de Producción"
 epic: "Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas"
-status: ready-for-agent
+status: done
 priority: "Alta (P1)"
 module: "Módulo 7: Indicadores"
-labels: ["indicadores", "analytics", "rendimiento", "ready-for-agent"]
+labels: ["indicadores", "analytics", "rendimiento", "status:done"]
 ---
 
 # AGRUL-035 — Cálculo de Rendimiento por Hectárea, Descarte y Métricas de Producción
@@ -13,7 +13,7 @@ labels: ["indicadores", "analytics", "rendimiento", "ready-for-agent"]
 - **Épica:** Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas
 - **Módulo:** Módulo 7: Indicadores
 - **Prioridad:** Alta (P1)
-- **Status:** ready-for-agent
+- **Status:** done
 - **Requisitos Funcionales:** RF-M7-01, RF-M7-02, RF-M7-07, RF-M7-08, RF-M7-09
 - **Reglas de Negocio:** RN-09
 - **Skills:** .cursor/skills/domain-traceability.md, .cursor/skills/database-events.md
@@ -28,8 +28,9 @@ Cálculos analíticos automáticos: producción total cosechada y comercializabl
 4. Calcular prendimiento y reposición de plantas = (plantasVivas / plantasPlantadas) * 100 (RF-M7-09).
 
 ## Criterios de Aceptación
-- [ ] RF-M7-01 / RF-M7-02: Rendimiento kg/ha exacto por lote y ciclo.
-- [ ] RF-M7-07: Porcentaje de descarte calculado por cosecha y consolidado por ciclo.
-- [ ] RF-M7-08 / RF-M7-09: Métricas agregadas disponibles vía API REST.
+- [x] RF-M7-01 / RF-M7-02: Rendimiento kg/ha exacto por lote y ciclo.
+- [x] RF-M7-07: Porcentaje de descarte calculado por cosecha y consolidado por ciclo.
+- [x] RF-M7-08 / RF-M7-09: Métricas agregadas disponibles vía API REST.
 
 ## Comments
+Implementado exitosamente con tests unitarios y de integración completos, endpoints REST `/api/v1/indicadores/*` y dashboard web con modal interactivo.

@@ -30,4 +30,5 @@ export * from './dtos/despachos.dto.js';
 export * from './dtos/perdidas-cosecha.dto.js';
 export * from './dtos/recorrido-trazabilidad.dto.js';
 export * from './dtos/consulta-inversa-insumo.dto.js';
-
+export * from './use-cases/calcular-metricas-produccion.use-case.js';
+export * from './dtos/indicadores-produccion.dto.js';

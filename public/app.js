@@ -1906,6 +1906,234 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ==========================================================================
+  // Módulo 7: Indicadores de Producción, Rendimiento y Descarte (AGRUL-035)
+  // ==========================================================================
+  const btnIndicadoresProduccion = document.getElementById('btn-indicadores-produccion');
+  const modalIndicadoresProduccion = document.getElementById('modal-indicadores-produccion');
+  const indFiltroFinca = document.getElementById('ind-filtro-finca');
+  const indFiltroCultivo = document.getElementById('ind-filtro-cultivo');
+  const indFiltroVariedad = document.getElementById('ind-filtro-variedad');
+  const indFiltroEstado = document.getElementById('ind-filtro-estado');
+  const indFiltroDesde = document.getElementById('ind-filtro-desde');
+  const indFiltroHasta = document.getElementById('ind-filtro-hasta');
+  const btnIndAplicarFiltros = document.getElementById('btn-ind-aplicar-filtros');
+  const btnIndLimpiarFiltros = document.getElementById('btn-ind-limpiar-filtros');
+
+  const indKpiRendBruto = document.getElementById('ind-kpi-rend-bruto');
+  const indKpiRendNeto = document.getElementById('ind-kpi-rend-neto');
+  const indKpiDescarte = document.getElementById('ind-kpi-descarte');
+  const indKpiPrendimiento = document.getElementById('ind-kpi-prendimiento');
+
+  const indTotCosechado = document.getElementById('ind-tot-cosechado');
+  const indTotComercial = document.getElementById('ind-tot-comercial');
+  const indTotDescarte = document.getElementById('ind-tot-descarte');
+  const indTotSuperficie = document.getElementById('ind-tot-superficie');
+  const indTotCiclos = document.getElementById('ind-tot-ciclos');
+
+  const indTbodyCiclos = document.getElementById('ind-tbody-ciclos');
+  const indTbodyLotes = document.getElementById('ind-tbody-lotes');
+  const indTbodyCultivos = document.getElementById('ind-tbody-cultivos');
+
+  async function poblarFiltroFincasIndicadores() {
+    if (!indFiltroFinca) return;
+    try {
+      const res = await fetch('/api/v1/fincas');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        indFiltroFinca.innerHTML = '<option value="">Todas las fincas</option>' +
+          json.data.map(f => `<option value="${f.id}">${f.nombre}</option>`).join('');
+      }
+    } catch {
+      // Ignorar si fincas no está activo
+    }
+  }
+
+  async function cargarIndicadoresProduccion() {
+    if (!modalIndicadoresProduccion) return;
+
+    const params = new URLSearchParams();
+    if (indFiltroFinca && indFiltroFinca.value) params.set('fincaId', indFiltroFinca.value);
+    if (indFiltroCultivo && indFiltroCultivo.value.trim()) params.set('cultivo', indFiltroCultivo.value.trim());
+    if (indFiltroVariedad && indFiltroVariedad.value.trim()) params.set('variedad', indFiltroVariedad.value.trim());
+    if (indFiltroEstado && indFiltroEstado.value) params.set('estadoCiclo', indFiltroEstado.value);
+    if (indFiltroDesde && indFiltroDesde.value) params.set('desde', indFiltroDesde.value);
+    if (indFiltroHasta && indFiltroHasta.value) params.set('hasta', indFiltroHasta.value);
+
+    try {
+      showToast('Calculando rendimientos y métricas...', 'info');
+      const res = await fetch(`/api/v1/indicadores/produccion?${params.toString()}`);
+      const json = await res.json();
+
+      if (!json.success || !json.data) {
+        throw new Error(json.error?.message || 'Error al obtener indicadores de producción');
+      }
+
+      renderizarIndicadoresProduccion(json.data);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  function renderizarIndicadoresProduccion(data) {
+    const { resumenGlobal, desglosePorCiclo, desglosePorLote, desglosePorCultivo } = data;
+
+    // 1. KPIs
+    if (indKpiRendBruto) {
+      indKpiRendBruto.textContent = `${resumenGlobal.rendimientoPromedioKgHa.toLocaleString('es-AR')} kg/ha`;
+    }
+    if (indKpiRendNeto) {
+      indKpiRendNeto.textContent = `${resumenGlobal.rendimientoComercializableKgHa.toLocaleString('es-AR')} kg/ha`;
+    }
+    if (indKpiDescarte) {
+      indKpiDescarte.textContent = `${resumenGlobal.porcentajeDescarteGlobal.toFixed(2)} %`;
+    }
+    if (indKpiPrendimiento) {
+      indKpiPrendimiento.textContent = resumenGlobal.tasaPrendimientoPromedioPorcentaje !== null
+        ? `${resumenGlobal.tasaPrendimientoPromedioPorcentaje.toFixed(1)} %`
+        : 'N/D';
+    }
+
+    // 2. Totales Strip
+    if (indTotCosechado) indTotCosechado.textContent = `${resumenGlobal.totalKilosCosechados.toLocaleString('es-AR')} kg`;
+    if (indTotComercial) indTotComercial.textContent = `${resumenGlobal.totalKilosComercializables.toLocaleString('es-AR')} kg`;
+    if (indTotDescarte) indTotDescarte.textContent = `${resumenGlobal.totalKilosDescarte.toLocaleString('es-AR')} kg`;
+    if (indTotSuperficie) indTotSuperficie.textContent = `${resumenGlobal.superficieTotalHa.toFixed(2)} ha`;
+    if (indTotCiclos) indTotCiclos.textContent = `${resumenGlobal.totalCiclos} / ${resumenGlobal.totalCosechas}`;
+
+    // 3. Tab Ciclos
+    if (indTbodyCiclos) {
+      if (!desglosePorCiclo || desglosePorCiclo.length === 0) {
+        indTbodyCiclos.innerHTML = `<tr><td colspan="11" class="text-center" style="padding: 24px; color: var(--text-dim);">No se encontraron ciclos productivos para los filtros seleccionados.</td></tr>`;
+      } else {
+        indTbodyCiclos.innerHTML = desglosePorCiclo.map(c => {
+          let badgeDescarte = 'badge-descarte-ok';
+          if (c.porcentajeDescarte > 15) badgeDescarte = 'badge-descarte-critico';
+          else if (c.porcentajeDescarte > 5) badgeDescarte = 'badge-descarte-alerta';
+
+          const prendTexto = c.prendimientoPlantas?.tasaPrendimientoPorcentaje !== null
+            ? `<span class="badge-prendimiento">${c.prendimientoPlantas.tasaPrendimientoPorcentaje}% (${c.prendimientoPlantas.plantasVivas || 0}/${c.prendimientoPlantas.plantasPlantadas || 0})</span>`
+            : '<span style="color: var(--text-dim); font-size: 11px;">N/D</span>';
+
+          const laboresTexto = c.labores
+            ? `${c.labores.conteoPorEstado['REALIZADA'] || 0} / ${c.labores.conteoPorEstado['PLANIFICADA'] || 0} (${c.labores.totalLabores || 0})`
+            : '-';
+
+          return `
+            <tr>
+              <td><code>${c.codigoCiclo}</code></td>
+              <td>${c.codigoLote}</td>
+              <td>${c.cultivo} ${c.variedad ? `(${c.variedad})` : ''}</td>
+              <td>${c.superficieCultivadaHa.toFixed(2)} ha</td>
+              <td><strong>${c.totalKilosCosechados.toLocaleString('es-AR')} kg</strong></td>
+              <td>${c.totalKilosComercializables.toLocaleString('es-AR')} kg</td>
+              <td><span class="${badgeDescarte}">${c.porcentajeDescarte}%</span></td>
+              <td><strong>${c.rendimientoBrutoKgHa.toLocaleString('es-AR')} kg/ha</strong></td>
+              <td style="color: var(--accent-emerald);"><strong>${c.rendimientoComercializableKgHa.toLocaleString('es-AR')} kg/ha</strong></td>
+              <td>${prendTexto}</td>
+              <td style="font-size: 11px;">${laboresTexto}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    // 4. Tab Lotes
+    if (indTbodyLotes) {
+      if (!desglosePorLote || desglosePorLote.length === 0) {
+        indTbodyLotes.innerHTML = `<tr><td colspan="10" class="text-center" style="padding: 24px; color: var(--text-dim);">No se encontraron lotes para los filtros seleccionados.</td></tr>`;
+      } else {
+        indTbodyLotes.innerHTML = desglosePorLote.map(l => {
+          let badgeDescarte = 'badge-descarte-ok';
+          if (l.porcentajeDescarte > 15) badgeDescarte = 'badge-descarte-critico';
+          else if (l.porcentajeDescarte > 5) badgeDescarte = 'badge-descarte-alerta';
+
+          return `
+            <tr>
+              <td><code>${l.codigoLote}</code></td>
+              <td>${l.fincaNombre || l.fincaId || '-'}</td>
+              <td>${l.producto} ${l.variedad ? `(${l.variedad})` : ''}</td>
+              <td>${l.superficieHa ? l.superficieHa.toFixed(2) + ' ha' : '-'}</td>
+              <td>${l.totalCiclos}</td>
+              <td><strong>${l.totalKilosCosechados.toLocaleString('es-AR')} kg</strong></td>
+              <td>${l.totalKilosComercializables.toLocaleString('es-AR')} kg</td>
+              <td><span class="${badgeDescarte}">${l.porcentajeDescarte}%</span></td>
+              <td><strong>${l.rendimientoBrutoKgHa.toLocaleString('es-AR')} kg/ha</strong></td>
+              <td style="color: var(--accent-emerald);"><strong>${l.rendimientoComercializableKgHa.toLocaleString('es-AR')} kg/ha</strong></td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    // 5. Tab Cultivos
+    if (indTbodyCultivos) {
+      if (!desglosePorCultivo || desglosePorCultivo.length === 0) {
+        indTbodyCultivos.innerHTML = `<tr><td colspan="8" class="text-center" style="padding: 24px; color: var(--text-dim);">No se encontraron cultivos registrados.</td></tr>`;
+      } else {
+        indTbodyCultivos.innerHTML = desglosePorCultivo.map(cu => `
+          <tr>
+            <td><strong>${cu.cultivo}</strong></td>
+            <td>${cu.superficieTotalHa.toFixed(2)} ha</td>
+            <td>${cu.totalLotes} / ${cu.totalCiclos}</td>
+            <td><strong>${cu.totalKilosCosechados.toLocaleString('es-AR')} kg</strong></td>
+            <td>${cu.totalKilosComercializables.toLocaleString('es-AR')} kg</td>
+            <td><span class="badge-descarte-ok">${cu.porcentajeDescarte}%</span></td>
+            <td><strong>${cu.rendimientoPromedioKgHa.toLocaleString('es-AR')} kg/ha</strong></td>
+            <td style="color: var(--accent-emerald);"><strong>${cu.rendimientoComercializableKgHa.toLocaleString('es-AR')} kg/ha</strong></td>
+          </tr>
+        `).join('');
+      }
+    }
+  }
+
+  // Bindings botones indicadores
+  if (btnIndicadoresProduccion) {
+    btnIndicadoresProduccion.addEventListener('click', () => {
+      openModal(modalIndicadoresProduccion);
+      poblarFiltroFincasIndicadores();
+      cargarIndicadoresProduccion();
+    });
+  }
+
+  if (btnIndAplicarFiltros) {
+    btnIndAplicarFiltros.addEventListener('click', () => {
+      cargarIndicadoresProduccion();
+    });
+  }
+
+  if (btnIndLimpiarFiltros) {
+    btnIndLimpiarFiltros.addEventListener('click', () => {
+      if (indFiltroFinca) indFiltroFinca.value = '';
+      if (indFiltroCultivo) indFiltroCultivo.value = '';
+      if (indFiltroVariedad) indFiltroVariedad.value = '';
+      if (indFiltroEstado) indFiltroEstado.value = '';
+      if (indFiltroDesde) indFiltroDesde.value = '';
+      if (indFiltroHasta) indFiltroHasta.value = '';
+      cargarIndicadoresProduccion();
+    });
+  }
+
+  // Navegación entre pestañas de indicadores
+  const indTabBtns = document.querySelectorAll('.ind-tab-btn');
+  indTabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-ind-tab');
+      indTabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      document.querySelectorAll('.ind-tab-content').forEach(content => {
+        if (content.id === targetId) {
+          content.style.display = 'block';
+          content.classList.add('active');
+        } else {
+          content.style.display = 'none';
+          content.classList.remove('active');
+        }
+      });
+    });
+  });
+
   // Carga inicial
   cargarLotes();
   cargarFincas();

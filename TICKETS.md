@@ -697,13 +697,13 @@
 ## ÉPICA 13: MÓDULO 7 — INDICADORES, RENDIMIENTOS Y MÉTRICAS PRODUCTIVAS
 
 ### `[AGRUL-035]` Cálculo de Rendimiento por Hectárea, Descarte y Métricas de Producción
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 7: Indicadores
 - **Requisitos Funcionales:** RF-M7-01, RF-M7-02, RF-M7-07, RF-M7-08, RF-M7-09
 - **Reglas de Negocio:** RN-09
 - **Skills:** [domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
-- **Etiquetas:** `indicadores`, `analytics`, `rendimiento`, `ready-for-agent`
+- **Etiquetas:** `indicadores`, `analytics`, `rendimiento`, `status:done`
 - **Descripción:** Cálculos analíticos automáticos: producción total cosechada y comercializable por finca/lote/cultivo/ciclo, rendimiento en kg/ha, % de descarte, conteo de labores y tasa de prendimiento de plantines.
 - **Tareas Técnicas:**
   1. Crear servicio de cálculo de rendimiento = totalKgCosechados / superficieHa.
@@ -711,9 +711,9 @@
   3. Contabilizar actividades por categoría en cada ciclo (preparación, riego, fertilización, etc.).
   4. Calcular prendimiento y reposición de plantas = (plantasVivas / plantasPlantadas) * 100 (RF-M7-09).
 - **Criterios de Aceptación:**
-  - [ ] RF-M7-01 / RF-M7-02: Rendimiento kg/ha exacto por lote y ciclo.
-  - [ ] RF-M7-07: Porcentaje de descarte calculado por cosecha y consolidado por ciclo.
-  - [ ] RF-M7-08 / RF-M7-09: Métricas agregadas disponibles vía API REST.
+  - [x] RF-M7-01 / RF-M7-02: Rendimiento kg/ha exacto por lote y ciclo.
+  - [x] RF-M7-07: Porcentaje de descarte calculado por cosecha y consolidado por ciclo.
+  - [x] RF-M7-08 / RF-M7-09: Métricas agregadas disponibles vía API REST.
 
 ### `[AGRUL-036]` Comparador de Campañas, Evolución Histórica y Relación Insumo-Producto
 - **Estado:** `TODO` 📌

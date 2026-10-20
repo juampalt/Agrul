@@ -31,6 +31,9 @@
         <button id="btn-recall-insumo" class="btn btn-recall-header" title="Consulta Inversa de Trazabilidad para Retiro Preventivo de Insumos (Recall - RF-M6-12)">
           <span class="btn-icon">🚨</span> Recall Insumos
         </button>
+        <button id="btn-indicadores-produccion" class="btn btn-indicators-header" title="Métricas de Producción, Rendimiento por Hectárea y Descarte (AGRUL-035)">
+          <span class="btn-icon">📊</span> Rendimientos
+        </button>
         <button id="btn-abrir-escaner" class="btn btn-secondary">
           <span class="btn-icon">📷</span> Escanear QR
         </button>
@@ -1063,6 +1066,208 @@
 
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" data-close="modal-recall-insumo">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Métricas de Producción, Rendimiento y Descarte (AGRUL-035 / RF-M7-01 a 09) -->
+  <div id="modal-indicadores-produccion" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-ind-titulo">
+    <div class="modal-dialog modal-xxl modal-ind-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge ind-badge">📊</div>
+          <div>
+            <h2 id="modal-ind-titulo">Métricas de Producción y Rendimientos</h2>
+            <p class="modal-subtitle">Rendimiento por Hectárea (Bruto/Neto), Descarte (RN-09), Labores y Prendimiento (Módulo 7)</p>
+          </div>
+        </div>
+        <button class="modal-close" data-close="modal-indicadores-produccion" aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <div class="modal-body ind-modal-body">
+        <!-- Barra de Filtros de Rendimiento -->
+        <div class="ind-filters-bar glass">
+          <div class="ind-filters-grid">
+            <div class="form-group">
+              <label for="ind-filtro-finca">Finca</label>
+              <select id="ind-filtro-finca" class="form-control">
+                <option value="">Todas las fincas</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="ind-filtro-cultivo">Cultivo</label>
+              <input type="text" id="ind-filtro-cultivo" class="form-control" placeholder="Ej: Vid, Cereza...">
+            </div>
+            <div class="form-group">
+              <label for="ind-filtro-variedad">Variedad</label>
+              <input type="text" id="ind-filtro-variedad" class="form-control" placeholder="Ej: Malbec, Lapins...">
+            </div>
+            <div class="form-group">
+              <label for="ind-filtro-estado">Estado Ciclo</label>
+              <select id="ind-filtro-estado" class="form-control">
+                <option value="">Todos los estados</option>
+                <option value="EN_CURSO">En Curso / Abierto</option>
+                <option value="FINALIZADO">Finalizado / Cerrado</option>
+                <option value="PLANIFICADO">Planificado</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="ind-filtro-desde">Cosecha Desde</label>
+              <input type="date" id="ind-filtro-desde" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="ind-filtro-hasta">Cosecha Hasta</label>
+              <input type="date" id="ind-filtro-hasta" class="form-control">
+            </div>
+          </div>
+          <div class="ind-filters-actions">
+            <button type="button" id="btn-ind-aplicar-filtros" class="btn btn-primary btn-sm">
+              <span class="btn-icon">⚡</span> Calcular Métricas
+            </button>
+            <button type="button" id="btn-ind-limpiar-filtros" class="btn btn-secondary btn-sm">
+              Limpiar Filtros
+            </button>
+          </div>
+        </div>
+
+        <!-- KPIs Principales -->
+        <div class="ind-kpi-grid">
+          <div class="ind-kpi-card glass emerald">
+            <div class="ind-kpi-icon">🌾</div>
+            <div class="ind-kpi-content">
+              <span class="ind-kpi-label">Rendimiento Promedio Bruto</span>
+              <span class="ind-kpi-value" id="ind-kpi-rend-bruto">0 kg/ha</span>
+              <span class="ind-kpi-subtext" id="ind-kpi-rend-bruto-sub">Total cosechado / superficie</span>
+            </div>
+          </div>
+          <div class="ind-kpi-card glass blue">
+            <div class="ind-kpi-icon">💎</div>
+            <div class="ind-kpi-content">
+              <span class="ind-kpi-label">Rendimiento Comercializable</span>
+              <span class="ind-kpi-value" id="ind-kpi-rend-neto">0 kg/ha</span>
+              <span class="ind-kpi-subtext" id="ind-kpi-rend-neto-sub">Apto para despacho / empaque</span>
+            </div>
+          </div>
+          <div class="ind-kpi-card glass amber">
+            <div class="ind-kpi-icon">⚠️</div>
+            <div class="ind-kpi-content">
+              <span class="ind-kpi-label">Porcentaje de Descarte</span>
+              <span class="ind-kpi-value" id="ind-kpi-descarte">0 %</span>
+              <span class="ind-kpi-subtext" id="ind-kpi-descarte-sub">Descarte s/ total cosechado (RN-09)</span>
+            </div>
+          </div>
+          <div class="ind-kpi-card glass purple">
+            <div class="ind-kpi-icon">🌱</div>
+            <div class="ind-kpi-content">
+              <span class="ind-kpi-label">Supervivencia / Prendimiento</span>
+              <span class="ind-kpi-value" id="ind-kpi-prendimiento">0 %</span>
+              <span class="ind-kpi-subtext" id="ind-kpi-prendimiento-sub">Plantas vivas / plantadas (RF-M7-09)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra Resumen de Totales -->
+        <div class="ind-totals-strip glass">
+          <div class="ind-total-pill">
+            <span class="pill-label">Total Cosechado:</span>
+            <strong id="ind-tot-cosechado">0 kg</strong>
+          </div>
+          <div class="ind-total-pill">
+            <span class="pill-label">Comercializable:</span>
+            <strong id="ind-tot-comercial" style="color: var(--accent-emerald);">0 kg</strong>
+          </div>
+          <div class="ind-total-pill">
+            <span class="pill-label">Descarte:</span>
+            <strong id="ind-tot-descarte" style="color: var(--accent-amber);">0 kg</strong>
+          </div>
+          <div class="ind-total-pill">
+            <span class="pill-label">Superficie Total:</span>
+            <strong id="ind-tot-superficie">0 ha</strong>
+          </div>
+          <div class="ind-total-pill">
+            <span class="pill-label">Ciclos / Cosechas:</span>
+            <strong id="ind-tot-ciclos">0 / 0</strong>
+          </div>
+        </div>
+
+        <!-- Pestañas de Navegación -->
+        <div class="ind-tabs-nav">
+          <button class="ind-tab-btn active" data-ind-tab="tab-ind-ciclos">Rendimiento por Ciclo</button>
+          <button class="ind-tab-btn" data-ind-tab="tab-ind-lotes">Consolidado por Lote</button>
+          <button class="ind-tab-btn" data-ind-tab="tab-ind-cultivos">Rendimiento por Cultivo</button>
+        </div>
+
+        <!-- TAB 1: Ciclos Productivos -->
+        <div id="tab-ind-ciclos" class="ind-tab-content active">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Código Ciclo</th>
+                  <th>Lote</th>
+                  <th>Cultivo / Variedad</th>
+                  <th>Superficie</th>
+                  <th>Total Cosechado</th>
+                  <th>Comercializable</th>
+                  <th>Descarte (%)</th>
+                  <th>Rend. Bruto</th>
+                  <th>Rend. Neto</th>
+                  <th>Prendimiento</th>
+                  <th>Labores (Realiz / Planif)</th>
+                </tr>
+              </thead>
+              <tbody id="ind-tbody-ciclos"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 2: Lotes -->
+        <div id="tab-ind-lotes" class="ind-tab-content" style="display: none;">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Código Lote</th>
+                  <th>Finca</th>
+                  <th>Producto / Variedad</th>
+                  <th>Superficie</th>
+                  <th>Ciclos</th>
+                  <th>Total Cosechado</th>
+                  <th>Comercializable</th>
+                  <th>Descarte (%)</th>
+                  <th>Rendimiento Bruto</th>
+                  <th>Rendimiento Neto</th>
+                </tr>
+              </thead>
+              <tbody id="ind-tbody-lotes"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: Cultivos -->
+        <div id="tab-ind-cultivos" class="ind-tab-content" style="display: none;">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Cultivo</th>
+                  <th>Superficie Total</th>
+                  <th>Lotes / Ciclos</th>
+                  <th>Total Cosechado</th>
+                  <th>Comercializable</th>
+                  <th>Descarte (%)</th>
+                  <th>Rendimiento Bruto Prom.</th>
+                  <th>Rendimiento Comercial Prom.</th>
+                </tr>
+              </thead>
+              <tbody id="ind-tbody-cultivos"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close="modal-indicadores-produccion">Cerrar</button>
       </div>
     </div>
   </div>

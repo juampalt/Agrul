@@ -1293,7 +1293,7 @@
     "epic": "Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas",
     "epicId": "epic-13-modulo-7-indicadores",
     "title": "Cálculo de Rendimiento por Hectárea, Descarte y Métricas de Producción",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Alta (P1)",
     "skills": [
       ".cursor/skills/domain-traceability.md",

@@ -38,6 +38,25 @@ export class InMemoryCiclosRepository implements CiclosRepositoryPort {
     return null;
   }
 
+  public async listar(filtros?: { loteId?: string; cultivo?: string; variedad?: string; estado?: any }): Promise<CicloProductivo[]> {
+    let result = Array.from(this.ciclos.values());
+
+    if (filtros?.loteId) {
+      result = result.filter(c => c.loteId === filtros.loteId);
+    }
+    if (filtros?.cultivo) {
+      result = result.filter(c => c.cultivo.toLowerCase() === filtros.cultivo!.toLowerCase());
+    }
+    if (filtros?.variedad) {
+      result = result.filter(c => c.variedad?.toLowerCase() === filtros.variedad!.toLowerCase());
+    }
+    if (filtros?.estado) {
+      result = result.filter(c => c.estado === filtros.estado);
+    }
+
+    return result.map(c => CicloProductivo.reconstituir(c.toJSON()));
+  }
+
   public async siguienteCodigo(): Promise<string> {
     this.contador += 1;
     const anio = new Date().getFullYear();

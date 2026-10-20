@@ -12,6 +12,7 @@ import { CosechasController } from '../controllers/cosechas.controller.js';
 import { DespachosController } from '../controllers/despachos.controller.js';
 import { PerdidasCosechaController } from '../controllers/perdidas-cosecha.controller.js';
 import { TrazabilidadController } from '../controllers/trazabilidad.controller.js';
+import { IndicadoresController } from '../controllers/indicadores.controller.js';
 
 export interface ApiRoutesDependencies {
   lotesController: LotesController;
@@ -27,6 +28,7 @@ export interface ApiRoutesDependencies {
   despachosController?: DespachosController;
   perdidasController?: PerdidasCosechaController;
   trazabilidadController?: TrazabilidadController;
+  indicadoresController?: IndicadoresController;
 }
 
 
@@ -191,6 +193,15 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/trazabilidad/consulta-inversa', (req, rep) => deps.trazabilidadController!.consultaInversa(req, rep));
         v1.get('/trazabilidad/recall-insumo', (req, rep) => deps.trazabilidadController!.consultaInversa(req, rep));
         v1.get('/insumos/consulta-inversa', (req, rep) => deps.trazabilidadController!.consultaInversa(req, rep));
+      }
+
+      // Rendimiento, Descarte y Métricas de Producción (Módulo 7 — AGRUL-035 / RF-M7-01, RF-M7-02, RF-M7-07, RF-M7-08, RF-M7-09, RN-09)
+      if (deps.indicadoresController) {
+        v1.get('/indicadores/produccion', (req, rep) => deps.indicadoresController!.obtenerMetricasProduccion(req, rep));
+        v1.get('/indicadores/ciclo/:cicloId', (req, rep) => deps.indicadoresController!.obtenerIndicadoresCiclo(req, rep));
+        v1.get('/ciclos/:cicloId/indicadores', (req, rep) => deps.indicadoresController!.obtenerIndicadoresCiclo(req, rep));
+        v1.get('/indicadores/lote/:loteId', (req, rep) => deps.indicadoresController!.obtenerIndicadoresLote(req, rep));
+        v1.get('/lotes/:loteId/indicadores', (req, rep) => deps.indicadoresController!.obtenerIndicadoresLote(req, rep));
       }
     },
     { prefix: '/api/v1' }

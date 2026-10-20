@@ -95,6 +95,8 @@ import { ListarInformesTrazabilidadLogUseCase } from '../../application/use-case
 import { ConsultaInversaInsumoUseCase } from '../../application/use-cases/consulta-inversa-insumo.use-case.js';
 import { InformesTrazabilidadRepositoryPort } from '../../core/ports/informes-trazabilidad-repository.port.js';
 import { InMemoryInformesTrazabilidadRepository } from '../../../tests/mocks/in-memory-informes-trazabilidad.repository.js';
+import { IndicadoresController } from './controllers/indicadores.controller.js';
+import { CalcularMetricasProduccionUseCase } from '../../application/use-cases/calcular-metricas-produccion.use-case.js';
 import { readFileSync, existsSync } from 'node:fs';
 
 import { resolve } from 'node:path';
@@ -459,6 +461,18 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     );
   }
 
+  let indicadoresController: IndicadoresController | undefined;
+  if (options.ciclosRepo && options.cosechasRepo) {
+    const calcularMetricasUC = new CalcularMetricasProduccionUseCase({
+      lotesRepo: options.lotesRepo,
+      ciclosRepo: options.ciclosRepo,
+      cosechasRepo: options.cosechasRepo,
+      actividadesRepo: options.actividadesRepo,
+      catalogosRepo: options.catalogosRepo,
+    });
+    indicadoresController = new IndicadoresController(calcularMetricasUC);
+  }
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -474,6 +488,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     despachosController,
     perdidasController,
     trazabilidadController,
+    indicadoresController,
   });
 
   return app;

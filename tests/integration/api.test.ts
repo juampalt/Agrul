@@ -23,6 +23,7 @@ import { AplicacionAgricola } from '../../src/core/domain/entities/aplicacion-ag
 import { Cosecha } from '../../src/core/domain/entities/cosecha.entity.js';
 import { Destinatario } from '../../src/core/domain/entities/destinatario.entity.js';
 import { DespachoDestino } from '../../src/core/domain/entities/despacho-destino.entity.js';
+import { CodigoTrazabilidadCosecha } from '../../src/core/domain/value-objects/codigo-trazabilidad-cosecha.vo.js';
 
 describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let app: FastifyInstance;
@@ -4158,6 +4159,165 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/v1/trazabilidad/consulta-inversa?insumoId=00000000-0000-0000-0000-000000000999',
+      });
+
+      expect(res.statusCode).toBe(404);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('ENTITY_NOT_FOUND');
+    });
+  });
+
+  describe('Módulo 7: Indicadores de Producción, Rendimiento y Descarte (AGRUL-035 / RF-M7-01, RF-M7-02, RF-M7-07, RF-M7-08, RF-M7-09, RN-09)', () => {
+    let loteIndicador: Lote;
+    let cicloIndicador: CicloProductivo;
+
+    beforeEach(async () => {
+      loteIndicador = Lote.crear({
+        id: 'lote-ind-01',
+        codigoLote: 'LOT-2026-00099',
+        fincaId: 'finca-indicadores-01',
+        superficieHa: 5.0,
+        producto: 'Uva',
+        variedad: 'Chardonnay',
+        cantidadInicial: 0,
+        unidadMedida: 'KG',
+      });
+      await lotesRepo.guardar(loteIndicador);
+
+      cicloIndicador = CicloProductivo.crear({
+        id: 'ciclo-ind-01',
+        codigoCiclo: 'CICLO-2026-CHARD-01',
+        loteId: loteIndicador.id,
+        cultivo: 'Vid',
+        variedad: 'Chardonnay',
+        superficieCultivadaHa: 5.0,
+        fechaInicio: '2025-09-01',
+        plantasPlantadas: 5000,
+        plantasVivas: 4800,
+        plantasRepuestas: 100,
+      });
+      await ciclosRepo.guardar(cicloIndicador);
+
+      // Cosecha 1: 20,000 kg total, 18,000 comercial, 2,000 descarte (10%)
+      const cosecha1 = Cosecha.crear({
+        id: 'cos-ind-01',
+        codigoTrazabilidad: CodigoTrazabilidadCosecha.generar('LOT-2026-00099', '2026-03-15', 1),
+        loteId: loteIndicador.id,
+        cicloId: cicloIndicador.id,
+        fecha: '2026-03-15',
+        cantidadCosechadaKg: 20000,
+        cantidadComercializableKg: 18000,
+        cantidadDescarteKg: 2000,
+        motivoDescarte: 'DESCARTE_TAMANO',
+        superficieCosechadaHa: 5.0,
+      });
+      await cosechasRepo.guardar(cosecha1);
+    });
+
+    it('GET /api/v1/indicadores/produccion debe retornar 200 con resumen global, desglose por ciclo, lote y cultivo', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/indicadores/produccion?cultivo=Vid',
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.resumenGlobal).toBeDefined();
+      expect(body.data.resumenGlobal.totalKilosCosechados).toBe(20000);
+      expect(body.data.resumenGlobal.totalKilosComercializables).toBe(18000);
+      expect(body.data.resumenGlobal.totalKilosDescarte).toBe(2000);
+      expect(body.data.resumenGlobal.porcentajeDescarteGlobal).toBe(10);
+      // 20000 kg / 5 ha = 4000 kg/ha
+      expect(body.data.resumenGlobal.rendimientoPromedioKgHa).toBe(4000);
+      // 18000 kg / 5 ha = 3600 kg/ha
+      expect(body.data.resumenGlobal.rendimientoComercializableKgHa).toBe(3600);
+
+      // Desglose por ciclo
+      expect(body.data.desglosePorCiclo).toHaveLength(1);
+      const c = body.data.desglosePorCiclo[0];
+      expect(c.cicloId).toBe(cicloIndicador.id);
+      expect(c.rendimientoBrutoKgHa).toBe(4000);
+      expect(c.rendimientoComercializableKgHa).toBe(3600);
+      expect(c.prendimientoPlantas.tasaPrendimientoPorcentaje).toBe(96); // 4800 / 5000 * 100
+
+      // Desglose por lote
+      expect(body.data.desglosePorLote).toHaveLength(1);
+      const l = body.data.desglosePorLote[0];
+      expect(l.loteId).toBe(loteIndicador.id);
+      expect(l.rendimientoBrutoKgHa).toBe(4000);
+
+      // Desglose por cultivo
+      expect(body.data.desglosePorCultivo).toHaveLength(1);
+      expect(body.data.desglosePorCultivo[0].cultivo).toBe('Vid');
+    });
+
+    it('GET /api/v1/indicadores/ciclo/:cicloId y su alias deben responder 200 con el detalle del ciclo', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/indicadores/ciclo/${cicloIndicador.id}`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.ciclo.id).toBe(cicloIndicador.id);
+      expect(body.data.metricasProduccion.totalKilosCosechados).toBe(20000);
+      expect(body.data.metricasProduccion.porcentajeDescarte).toBe(10);
+      expect(body.data.cosechas).toHaveLength(1);
+      expect(body.data.cosechas[0].porcentajeDescarte).toBe(10);
+
+      // Probar alias /ciclos/:cicloId/indicadores
+      const resAlias = await app.inject({
+        method: 'GET',
+        url: `/api/v1/ciclos/${cicloIndicador.id}/indicadores`,
+      });
+      expect(resAlias.statusCode).toBe(200);
+      const bodyAlias = JSON.parse(resAlias.body);
+      expect(bodyAlias.data.ciclo.id).toBe(cicloIndicador.id);
+    });
+
+    it('GET /api/v1/indicadores/ciclo/:cicloId con id inexistente debe responder 404', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/indicadores/ciclo/00000000-0000-0000-0000-000000000999',
+      });
+
+      expect(res.statusCode).toBe(404);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('ENTITY_NOT_FOUND');
+    });
+
+    it('GET /api/v1/indicadores/lote/:loteId y su alias deben responder 200 con el consolidado del lote', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/indicadores/lote/${loteIndicador.id}`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.lote.id).toBe(loteIndicador.id);
+      expect(body.data.metricasConsolidadas.totalKilosCosechados).toBe(20000);
+      expect(body.data.metricasConsolidadas.rendimientoBrutoKgHa).toBe(4000);
+      expect(body.data.ciclos).toHaveLength(1);
+
+      // Probar alias /lotes/:loteId/indicadores
+      const resAlias = await app.inject({
+        method: 'GET',
+        url: `/api/v1/lotes/${loteIndicador.id}/indicadores`,
+      });
+      expect(resAlias.statusCode).toBe(200);
+      const bodyAlias = JSON.parse(resAlias.body);
+      expect(bodyAlias.data.lote.id).toBe(loteIndicador.id);
+    });
+
+    it('GET /api/v1/indicadores/lote/:loteId con id inexistente debe responder 404', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/indicadores/lote/00000000-0000-0000-0000-000000000999',
       });
 
       expect(res.statusCode).toBe(404);
