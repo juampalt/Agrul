@@ -143,6 +143,25 @@ import {
   ListarEquivalenciasPorInsumoUseCase,
   ConvertirUnidadInsumoUseCase,
 } from '../../application/use-cases/insumo-equivalencias.use-cases.js';
+import { DepositosRepositoryPort } from '../../core/ports/depositos-repository.port.js';
+import { IngresosCompraRepositoryPort } from '../../core/ports/ingresos-compra-repository.port.js';
+import { StockInicialRepositoryPort } from '../../core/ports/stock-inicial-repository.port.js';
+import { InMemoryDepositosRepository } from '../../../tests/mocks/in-memory-depositos.repository.js';
+import { InMemoryIngresosCompraRepository } from '../../../tests/mocks/in-memory-ingresos-compra.repository.js';
+import { InMemoryStockInicialRepository } from '../../../tests/mocks/in-memory-stock-inicial.repository.js';
+import { DepositosController } from './controllers/depositos.controller.js';
+import { ComprasStockController } from './controllers/compras-stock.controller.js';
+import {
+  CrearDepositoUseCase,
+  ListarDepositosUseCase,
+  ObtenerDepositoPorIdUseCase,
+} from '../../application/use-cases/depositos.use-cases.js';
+import {
+  RegistrarIngresoCompraUseCase,
+  CargarStockInicialUseCase,
+  ListarIngresosCompraUseCase,
+  ListarStockInicialUseCase,
+} from '../../application/use-cases/compras-stock.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 
 import { resolve } from 'node:path';
@@ -169,6 +188,9 @@ export interface BuildAppOptions {
   auditoriaRepo?: AuditoriaSeguridadRepositoryPort;
   proveedoresRepo?: ProveedoresRepositoryPort;
   insumoEquivalenciasRepo?: InsumoEquivalenciasRepositoryPort;
+  depositosRepo?: DepositosRepositoryPort;
+  ingresosCompraRepo?: IngresosCompraRepositoryPort;
+  stockInicialRepo?: StockInicialRepositoryPort;
   logger?: boolean;
 }
 
@@ -623,6 +645,43 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     convertirUnidadUC
   );
 
+  // Módulo 9: Depósitos de Almacenamiento y Segregación BPA (AGRUL-042 / RF-M9-19)
+  const depositosRepo = options.depositosRepo ?? new InMemoryDepositosRepository();
+  const crearDepositoUC = new CrearDepositoUseCase(depositosRepo, options.fincasRepo);
+  const listarDepositosUC = new ListarDepositosUseCase(depositosRepo);
+  const obtenerDepositoPorIdUC = new ObtenerDepositoPorIdUseCase(depositosRepo);
+
+  const depositosController = new DepositosController(
+    crearDepositoUC,
+    listarDepositosUC,
+    obtenerDepositoPorIdUC
+  );
+
+  // Módulo 9: Ingresos por Compra y Saldo Inicial (AGRUL-042 / RF-M9-03, RF-M9-05)
+  const ingresosCompraRepo = options.ingresosCompraRepo ?? new InMemoryIngresosCompraRepository();
+  const stockInicialRepo = options.stockInicialRepo ?? new InMemoryStockInicialRepository();
+
+  const registrarIngresoCompraUC = new RegistrarIngresoCompraUseCase(
+    ingresosCompraRepo,
+    insumosCatalogoRepo,
+    proveedoresRepo,
+    depositosRepo
+  );
+  const cargarStockInicialUC = new CargarStockInicialUseCase(
+    stockInicialRepo,
+    insumosCatalogoRepo,
+    depositosRepo
+  );
+  const listarIngresosCompraUC = new ListarIngresosCompraUseCase(ingresosCompraRepo);
+  const listarStockInicialUC = new ListarStockInicialUseCase(stockInicialRepo);
+
+  const comprasStockController = new ComprasStockController(
+    registrarIngresoCompraUC,
+    cargarStockInicialUC,
+    listarIngresosCompraUC,
+    listarStockInicialUC
+  );
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -645,6 +704,8 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     auditoriaController,
     proveedoresController,
     insumoEquivalenciasController,
+    depositosController,
+    comprasStockController,
   });
 
   return app;

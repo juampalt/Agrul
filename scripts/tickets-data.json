@@ -1562,7 +1562,7 @@
     "epic": "Épica 15: Módulo 9 — Inventario de Insumos y Stock",
     "epicId": "epic-15-modulo-9-stock",
     "title": "Gestión de Ingresos por Compra y Segregación de Depósitos BPA",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Alta (P1)",
     "skills": [
       ".cursor/skills/database-events.md",

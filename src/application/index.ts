@@ -44,3 +44,7 @@ export * from './use-cases/proveedores.use-cases.js';
 export * from './dtos/proveedores.dto.js';
 export * from './use-cases/insumo-equivalencias.use-cases.js';
 export * from './dtos/insumo-equivalencias.dto.js';
+export * from './use-cases/depositos.use-cases.js';
+export * from './dtos/depositos.dto.js';
+export * from './use-cases/compras-stock.use-cases.js';
+export * from './dtos/compras-stock.dto.js';

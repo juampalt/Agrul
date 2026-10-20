@@ -7,6 +7,9 @@ export * from './entities/insumo-catalogo.entity.js';
 export * from './entities/informe-trazabilidad-log.entity.js';
 export * from './entities/proveedor.entity.js';
 export * from './entities/insumo-unidad-equivalencia.entity.js';
+export * from './entities/deposito-almacenamiento.entity.js';
+export * from './entities/ingreso-compra-insumo.entity.js';
+export * from './entities/stock-inicial-insumo.entity.js';
 
 export * from './services/verificacion-carencia.service.js';
 export * from './services/conversor-unidades.service.js';

@@ -553,5 +553,67 @@ export const insumoUnidadesEquivalenciaRelations = relations(insumoUnidadesEquiv
   }),
 }));
 
+// TABLA MAESTRA: Depósitos de Almacenamiento y Segregación Física BPA (RF-M9-19)
+export const depositoAlmacenamientoTable = pgTable('deposito_almacenamiento', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  fincaId: uuid('finca_id').notNull().references(() => fincasTable.id, { onDelete: 'cascade' }),
+  nombre: varchar('nombre', { length: 150 }).notNull(),
+  tipoPermitido: varchar('tipo_permiso', { length: 50 }).notNull(), // FITOSANITARIOS | FERTILIZANTES | INSUMOS_GENERALES | ZONA_VENCIDOS
+  ubicacionFisica: varchar('ubicacion_fisica', { length: 255 }),
+  capacidadMaxima: numeric('capacidad_maxima', { precision: 14, scale: 4 }),
+  activo: boolean('activo').default(true).notNull(),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_deposito_finca').on(table.fincaId),
+  index('idx_deposito_tipo').on(table.tipoPermitido),
+  index('idx_deposito_activo').on(table.activo),
+]);
+
+// TABLA TRANSACCIONAL: Ingresos por Compra de Insumos (RF-M9-03 / RN-10)
+export const ingresosCompraInsumosTable = pgTable('ingresos_compra_insumos', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  insumoId: uuid('insumo_id').notNull().references(() => insumosCatalogoTable.id, { onDelete: 'restrict' }),
+  proveedorId: uuid('proveedor_id').notNull().references(() => proveedoresTable.id, { onDelete: 'restrict' }),
+  depositoId: uuid('deposito_id').notNull().references(() => depositoAlmacenamientoTable.id, { onDelete: 'restrict' }),
+  cantidad: numeric('cantidad', { precision: 14, scale: 4 }).notNull(),
+  unidadMedida: varchar('unidad_medida', { length: 50 }).notNull(),
+  loteFabricacion: varchar('lote_fabricacion', { length: 100 }).notNull(),
+  fechaVencimiento: varchar('fecha_vencimiento', { length: 30 }).notNull(),
+  nroFacturaRemito: varchar('nro_factura_remito', { length: 100 }).notNull(),
+  fechaIngreso: varchar('fecha_ingreso', { length: 30 }).notNull(),
+  precioUnitarioCompra: numeric('precio_unitario_compra', { precision: 14, scale: 4 }),
+  comprobanteAdjuntoUrl: varchar('comprobante_adjunto_url', { length: 255 }),
+  observaciones: text('observaciones'),
+  usuarioCargaId: uuid('usuario_carga_id'),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_ingreso_insumo').on(table.insumoId),
+  index('idx_ingreso_proveedor').on(table.proveedorId),
+  index('idx_ingreso_deposito').on(table.depositoId),
+  index('idx_ingreso_lote_fab').on(table.loteFabricacion),
+  index('idx_ingreso_fecha').on(table.fechaIngreso),
+]);
+
+// TABLA TRANSACCIONAL: Carga de Saldo Inicial de Insumos (RF-M9-05 / RN-10)
+export const stockInicialInsumosTable = pgTable('stock_inicial_insumos', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  insumoId: uuid('insumo_id').notNull().references(() => insumosCatalogoTable.id, { onDelete: 'restrict' }),
+  depositoId: uuid('deposito_id').notNull().references(() => depositoAlmacenamientoTable.id, { onDelete: 'restrict' }),
+  cantidad: numeric('cantidad', { precision: 14, scale: 4 }).notNull(),
+  unidadMedida: varchar('unidad_medida', { length: 50 }).notNull(),
+  loteFabricacion: varchar('lote_fabricacion', { length: 100 }).notNull().default('STOCK-INICIAL'),
+  fechaVencimiento: varchar('fecha_vencimiento', { length: 30 }),
+  motivo: text('motivo').notNull(),
+  usuarioCargaId: uuid('usuario_carga_id').notNull(),
+  fecha: varchar('fecha', { length: 30 }).notNull(),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_stock_inicial_insumo').on(table.insumoId),
+  index('idx_stock_inicial_deposito').on(table.depositoId),
+  index('idx_stock_inicial_usuario').on(table.usuarioCargaId),
+]);
+
 
 

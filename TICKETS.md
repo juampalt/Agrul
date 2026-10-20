@@ -23,10 +23,10 @@
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 3 | 0 | 0 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 3 | 0 | 0 |
 | **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 2 | 0 | 1 |
-| **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 1 | 0 | 4 |
+| **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 2 | 0 | 3 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **34** | **0** | **16** |
+| **TOTAL GENERAL** | **50** | **35** | **0** | **15** |
 
 ---
 
@@ -830,22 +830,22 @@
   - [x] RN-12 / RF-M9-14: Prohibida la conversión automática litros a kg salvo que exista densidad registrada para ese insumo.
 
 ### `[AGRUL-042]` Gestión de Ingresos por Compra y Segregación de Depósitos BPA
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 9: Stock de Insumos
 - **Requisitos Funcionales:** RF-M9-03, RF-M9-05, RF-M9-19
 - **Reglas de Negocio:** RN-10
 - **Skills:** [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md), [api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
-- **Etiquetas:** `compras`, `stock-inicial`, `depositos`, `bpa`, `ready-for-agent`
+- **Etiquetas:** `compras`, `stock-inicial`, `depositos`, `bpa`, `status:done`
 - **Descripción:** Registro de compras con comprobantes, lote de fabricación, vencimiento y ubicación en depósito físico (separando fertilizantes de fitosanitarios y vencidos conforme manual BPA), y carga de saldo inicial.
 - **Tareas Técnicas:**
   1. Crear tabla deposito_almacenamiento (id, fincaId, nombre, tipoPermitido: FITOSANITARIOS | FERTILIZANTES | INSUMOS_GENERALES | ZONA_VENCIDOS).
   2. Crear caso de uso RegistrarIngresoCompra (insumoId, proveedorId, cantidad, loteFabricacion, fechaVencimiento, depositoId, nroFacturaRemito, comprobanteAdjunto).
   3. Crear caso de uso CargarStockInicial (RF-M9-05) que crea el movimiento inicial de implantación del sistema.
 - **Criterios de Aceptación:**
-  - [ ] RF-M9-03: Ingreso registra proveedor, lote de fabricación y vencimiento.
-  - [ ] RF-M9-19: Validación de depósito evitando almacenar fitosanitarios junto a fertilizantes conforme BPA.
-  - [ ] RF-M9-05: Carga de saldo inicial genera movimiento auditado.
+  - [x] RF-M9-03: Ingreso registra proveedor, lote de fabricación y vencimiento.
+  - [x] RF-M9-19: Validación de depósito evitando almacenar fitosanitarios junto a fertilizantes conforme BPA.
+  - [x] RF-M9-05: Carga de saldo inicial genera movimiento auditado.
 
 ### `[AGRUL-043]` Libro Mayor de Movimientos de Stock, Idempotencia y Atomicidad ACID
 - **Estado:** `TODO` 📌

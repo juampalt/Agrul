@@ -19,6 +19,8 @@ import { AuthController } from '../controllers/auth.controller.js';
 import { AuditoriaController } from '../controllers/auditoria.controller.js';
 import { ProveedoresController } from '../controllers/proveedores.controller.js';
 import { InsumoEquivalenciasController } from '../controllers/insumo-equivalencias.controller.js';
+import { DepositosController } from '../controllers/depositos.controller.js';
+import { ComprasStockController } from '../controllers/compras-stock.controller.js';
 import {
   verificarAutenticacion,
   verificarAutenticacionOpcional,
@@ -49,6 +51,8 @@ export interface ApiRoutesDependencies {
   auditoriaController?: AuditoriaController;
   proveedoresController?: ProveedoresController;
   insumoEquivalenciasController?: InsumoEquivalenciasController;
+  depositosController?: DepositosController;
+  comprasStockController?: ComprasStockController;
 }
 
 
@@ -284,6 +288,21 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.post('/insumos/:id/convertir-unidad', (req, rep) => deps.insumoEquivalenciasController!.convertirUnidad(req, rep));
         v1.post('/insumos/:id/convertir', (req, rep) => deps.insumoEquivalenciasController!.convertirUnidad(req, rep));
         v1.post('/insumos/conversiones/convertir', (req, rep) => deps.insumoEquivalenciasController!.convertirUnidad(req, rep));
+      }
+
+      // Depósitos de Almacenamiento y Segregación Física BPA (Módulo 9 — AGRUL-042 / RF-M9-19)
+      if (deps.depositosController) {
+        v1.post('/depositos', (req, rep) => deps.depositosController!.crear(req, rep));
+        v1.get('/depositos', (req, rep) => deps.depositosController!.listar(req, rep));
+        v1.get('/depositos/:id', (req, rep) => deps.depositosController!.obtenerPorId(req, rep));
+      }
+
+      // Ingresos por Compra y Saldo Inicial de Insumos (Módulo 9 — AGRUL-042 / RF-M9-03, RF-M9-05)
+      if (deps.comprasStockController) {
+        v1.post('/stock/ingresos-compra', (req, rep) => deps.comprasStockController!.registrarIngreso(req, rep));
+        v1.get('/stock/ingresos-compra', (req, rep) => deps.comprasStockController!.listarIngresos(req, rep));
+        v1.post('/stock/saldo-inicial', (req, rep) => deps.comprasStockController!.cargarStockInicial(req, rep));
+        v1.get('/stock/saldo-inicial', (req, rep) => deps.comprasStockController!.listarStockInicial(req, rep));
       }
     },
     { prefix: '/api/v1' }

@@ -27,27 +27,31 @@ export class InMemoryInformesTrazabilidadRepository implements InformesTrazabili
   }
 
   public async listar(filtros?: FiltrosListarInformesLog): Promise<InformeTrazabilidadLog[]> {
-    let result = Array.from(this.items.values());
+    const list = Array.from(this.items.values());
+    let result = list.map((item, index) => ({ item, index }));
 
     if (filtros?.cosechaId) {
-      result = result.filter(i => i.cosechaId === filtros.cosechaId);
+      result = result.filter(r => r.item.cosechaId === filtros.cosechaId);
     }
     if (filtros?.loteId) {
-      result = result.filter(i => i.loteId === filtros.loteId);
+      result = result.filter(r => r.item.loteId === filtros.loteId);
     }
     if (filtros?.codigoTrazabilidad) {
-      result = result.filter(i => i.codigoTrazabilidad === filtros.codigoTrazabilidad);
+      result = result.filter(r => r.item.codigoTrazabilidad === filtros.codigoTrazabilidad);
     }
     if (filtros?.usuarioEmisor) {
-      result = result.filter(i => i.usuarioEmisor.toLowerCase().includes(filtros.usuarioEmisor!.toLowerCase()));
+      result = result.filter(r => r.item.usuarioEmisor.toLowerCase().includes(filtros.usuarioEmisor!.toLowerCase()));
     }
     if (filtros?.tipoFormato) {
-      result = result.filter(i => i.tipoFormato === filtros.tipoFormato);
+      result = result.filter(r => r.item.tipoFormato === filtros.tipoFormato);
     }
 
-    // Ordenar descendente por emitidoEn
-    result.sort((a, b) => b.emitidoEn.localeCompare(a.emitidoEn));
+    // Ordenar descendente por emitidoEn y desempatar por inserción más reciente
+    result.sort((a, b) => {
+      const cmp = b.item.emitidoEn.localeCompare(a.item.emitidoEn);
+      return cmp !== 0 ? cmp : b.index - a.index;
+    });
 
-    return result.map(i => InformeTrazabilidadLog.crear(i.toJSON()));
+    return result.map(r => InformeTrazabilidadLog.crear(r.item.toJSON()));
   }
 }

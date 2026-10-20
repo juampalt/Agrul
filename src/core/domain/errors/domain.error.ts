@@ -228,4 +228,37 @@ export class InsumoEquivalenciaInvalidaError extends DomainError {
   }
 }
 
+export class DepositoInvalidoError extends DomainError {
+  public readonly code = 'DEPOSITO_INVALIDO';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
+export class DepositoIncompatibleBpaError extends DomainError {
+  public readonly code = 'DEPOSITO_INCOMPATIBLE_BPA';
+
+  constructor(mensaje: string = 'Violación de Buenas Prácticas Agrícolas (BPA): Prohibido almacenar fitosanitarios junto con fertilizantes o en depósitos incompatibles (RF-M9-19).') {
+    super(mensaje);
+  }
+}
+
+export class IngresoCompraInvalidoError extends DomainError {
+  public readonly code = 'INGRESO_COMPRA_INVALIDO';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
+export class StockInicialInvalidoError extends DomainError {
+  public readonly code = 'STOCK_INICIAL_INVALIDO';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
+
 
