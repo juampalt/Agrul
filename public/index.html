@@ -28,6 +28,9 @@
         <button id="btn-cosecha-rapida" class="btn btn-warning-mobile" title="Cosecha ultrarrápida para operarios de campo (RF-M5-13)">
           <span class="btn-icon">⚡</span> Cosecha Rápida (Campo)
         </button>
+        <button id="btn-recall-insumo" class="btn btn-recall-header" title="Consulta Inversa de Trazabilidad para Retiro Preventivo de Insumos (Recall - RF-M6-12)">
+          <span class="btn-icon">🚨</span> Recall Insumos
+        </button>
         <button id="btn-abrir-escaner" class="btn btn-secondary">
           <span class="btn-icon">📷</span> Escanear QR
         </button>
@@ -860,6 +863,207 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Consulta Inversa para Retiro Preventivo de Insumos / Recall (AGRUL-034 / RF-M6-12) -->
+  <div class="modal-backdrop" id="modal-recall-insumo" aria-hidden="true">
+    <div class="modal-dialog glass modal-recall-dialog">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title-with-badge">
+            <h2>Consulta Inversa & Retiro Preventivo (Recall) <span class="badge-recall-tag">RF-M6-12</span></h2>
+          </div>
+          <p class="subtitle">Rastreo multidimensional aguas abajo (Insumo ➔ Lotes & Linaje ➔ Cosechas ➔ Despachos ➔ Clientes)</p>
+        </div>
+        <button class="close-btn" data-close="modal-recall-insumo">&times;</button>
+      </div>
+
+      <div class="recall-query-section glass">
+        <form id="form-consulta-inversa" novalidate>
+          <div class="query-fields-grid">
+            <div class="form-group">
+              <label for="recall-select-insumo">Insumo Catálogo Maestro</label>
+              <select id="recall-select-insumo" class="input-touch">
+                <option value="">-- Seleccionar insumo registrado --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="recall-input-insumo-id">O Ingresar ID de Insumo (UUID)</label>
+              <input type="text" id="recall-input-insumo-id" class="input-touch" placeholder="UUID del insumo...">
+            </div>
+            <div class="form-group">
+              <label for="recall-input-numero-lote">N° de Lote / Partida de Fabricante</label>
+              <input type="text" id="recall-input-numero-lote" class="input-touch" placeholder="Ej: BATCH-2026-X45">
+            </div>
+          </div>
+          <div class="recall-query-actions">
+            <button type="submit" id="btn-submit-recall" class="btn btn-danger-recall">
+              <span class="btn-icon">🚨</span> Iniciar Rastreo Inverso de Recall
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Estado de Carga -->
+      <div id="recall-loading" class="recall-state-box" style="display: none;">
+        <span class="spinner"></span> Rastreando aplicaciones, linaje N:M, cosechas y despachos comerciales...
+      </div>
+
+      <!-- Contenedor de Resultados del Recall -->
+      <div id="recall-results-wrap" class="recall-results-wrap" style="display: none;">
+        <!-- Banner de Nivel de Riesgo Sanitario -->
+        <div id="recall-risk-banner" class="recall-risk-banner">
+          <div class="risk-badge-area">
+            <span class="risk-label">NIVEL DE RIESGO SANITARIO:</span>
+            <span id="recall-risk-badge" class="risk-badge-pill">-</span>
+          </div>
+          <div class="risk-meta-area">
+            <span id="recall-insumo-title" class="risk-insumo-title">-</span>
+            <span id="recall-insumo-active" class="risk-insumo-sub">-</span>
+          </div>
+        </div>
+
+        <!-- KPIs de Impacto Sanitario -->
+        <div class="recall-kpi-grid">
+          <div class="recall-kpi-card">
+            <span class="recall-kpi-title">Cosecha Afectada</span>
+            <span class="recall-kpi-val" id="recall-kpi-cosechado">0 kg</span>
+            <span class="recall-kpi-sub">Total cosechado comprometido</span>
+          </div>
+          <div class="recall-kpi-card alert-red">
+            <span class="recall-kpi-title">En Mercado (Despachado)</span>
+            <span class="recall-kpi-val highlight-red" id="recall-kpi-mercado">0 kg</span>
+            <span class="recall-kpi-sub">Reclamo y retiro urgente a clientes</span>
+          </div>
+          <div class="recall-kpi-card alert-amber">
+            <span class="recall-kpi-title">En Stock (Finca / Empaque)</span>
+            <span class="recall-kpi-val highlight-amber" id="recall-kpi-stock">0 kg</span>
+            <span class="recall-kpi-sub">Bloqueo físico inmediato</span>
+          </div>
+          <div class="recall-kpi-card">
+            <span class="recall-kpi-title">Destinatarios Afectados</span>
+            <span class="recall-kpi-val" id="recall-kpi-destinatarios">0</span>
+            <span class="recall-kpi-sub">Compradores que recibieron fruta</span>
+          </div>
+        </div>
+
+        <!-- SECCIÓN PRIORITARIA: Destinatarios y Clientes para Notificación Inmediata -->
+        <div class="recall-section-block glass">
+          <div class="recall-section-header">
+            <div class="section-title-wrap">
+              <span class="section-icon">📞</span>
+              <h3>Destinatarios y Clientes para Notificación Inmediata de Retiro</h3>
+            </div>
+            <button type="button" id="btn-copiar-contactos-recall" class="btn btn-secondary btn-sm" title="Copiar lista de contactos al portapapeles">
+              📋 Copiar Contactos
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table recall-table">
+              <thead>
+                <tr>
+                  <th>Destinatario / Cliente</th>
+                  <th>Tipo Destino</th>
+                  <th>Contacto & Teléfono</th>
+                  <th>Email</th>
+                  <th>Remitos Afectados</th>
+                  <th>Kilos Recibidos</th>
+                </tr>
+              </thead>
+              <tbody id="recall-tbody-destinatarios"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: Lotes Agrícolas y Descendientes Afectados -->
+        <div class="recall-section-block glass">
+          <div class="recall-section-header">
+            <div class="section-title-wrap">
+              <span class="section-icon">🌾</span>
+              <h3>Lotes Agrícolas Comprometidos (Directos y Linaje N:M)</h3>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table recall-table">
+              <thead>
+                <tr>
+                  <th>Código Lote</th>
+                  <th>Producto / Variedad</th>
+                  <th>Finca</th>
+                  <th>Superficie</th>
+                  <th>Origen de Afectación</th>
+                  <th>Saldo Actual</th>
+                </tr>
+              </thead>
+              <tbody id="recall-tbody-lotes"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: Cosechas Comprometidas -->
+        <div class="recall-section-block glass">
+          <div class="recall-section-header">
+            <div class="section-title-wrap">
+              <span class="section-icon">🧺</span>
+              <h3>Partidas de Cosecha Comprometidas</h3>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table recall-table">
+              <thead>
+                <tr>
+                  <th>Código Trazabilidad</th>
+                  <th>Lote</th>
+                  <th>Fecha Cosecha</th>
+                  <th>Días desde Aplicación</th>
+                  <th>Violación Carencia</th>
+                  <th>Cosechado Comercializable</th>
+                  <th>Saldo en Stock</th>
+                </tr>
+              </thead>
+              <tbody id="recall-tbody-cosechas"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: Despachos y Guías de Remito -->
+        <div class="recall-section-block glass">
+          <div class="recall-section-header">
+            <div class="section-title-wrap">
+              <span class="section-icon">🚚</span>
+              <h3>Despachos y Guías de Remito Emitidas</h3>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table recall-table">
+              <thead>
+                <tr>
+                  <th>N° Guía Remito</th>
+                  <th>Fecha</th>
+                  <th>Destinatario</th>
+                  <th>Cantidad (kg)</th>
+                  <th>Transporte (Chofer / Camión)</th>
+                </tr>
+              </thead>
+              <tbody id="recall-tbody-despachos"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: Protocolo Oficial Sugerido -->
+        <div class="recall-protocol-box glass">
+          <div class="protocol-header">
+            <span class="protocol-icon">📋</span>
+            <h4>Protocolo Sanitario de Retiro Preventivo Sugerido (SENASA / GlobalGAP)</h4>
+          </div>
+          <ol class="protocol-list" id="recall-protocol-list"></ol>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close="modal-recall-insumo">Cerrar</button>
+      </div>
     </div>
   </div>
 

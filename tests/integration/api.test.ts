@@ -18,6 +18,11 @@ import { InMemoryPerdidasCosechaRepository } from '../mocks/in-memory-perdidas-c
 import { CicloProductivo } from '../../src/core/domain/entities/ciclo-productivo.entity.js';
 import { TipoActividad } from '../../src/core/domain/entities/tipo-actividad.entity.js';
 import { Lote } from '../../src/core/domain/entities/lote.entity.js';
+import { InsumoCatalogo } from '../../src/core/domain/entities/insumo-catalogo.entity.js';
+import { AplicacionAgricola } from '../../src/core/domain/entities/aplicacion-agricola.entity.js';
+import { Cosecha } from '../../src/core/domain/entities/cosecha.entity.js';
+import { Destinatario } from '../../src/core/domain/entities/destinatario.entity.js';
+import { DespachoDestino } from '../../src/core/domain/entities/despacho-destino.entity.js';
 
 describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let app: FastifyInstance;
@@ -3969,6 +3974,196 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       expect(logsBody.data.length).toBeGreaterThanOrEqual(2);
       expect(logsBody.data.some((l: any) => l.tipoFormato === 'PDF')).toBe(true);
       expect(logsBody.data.some((l: any) => l.tipoFormato === 'CSV')).toBe(true);
+    });
+  });
+
+  describe('Módulo 6: Consulta Inversa de Trazabilidad para Retiro Preventivo de Insumos / Recall (AGRUL-034 - RF-M6-12)', () => {
+    let insumoTest: InsumoCatalogo;
+    let loteTestId: string;
+    let cicloTestId: string;
+    let cosechaTestId: string;
+    let destinatarioTestId: string;
+
+    beforeEach(async () => {
+      // 1. Guardar Insumo en catálogo
+      insumoTest = InsumoCatalogo.crear({
+        id: '00000000-0000-0000-0000-000000000555',
+        nombreComercial: 'Fungicida Recall Test',
+        categoria: 'FITOSANITARIO',
+        unidadMedidaId: 'L',
+        presentacion: 'Bidón 10 L',
+        fichaFitosanitaria: {
+          principioActivo: 'Captan',
+          periodoCarenciaDias: 14,
+          periodoReingresoHoras: 24,
+          nroRegistroSenasa: 'SENASA-RECALL-99',
+          toxicologia: 'Clase II - Amarilla',
+        },
+      });
+      await insumosRepo.guardar(insumoTest);
+
+      // 2. Crear Lote
+      const loteRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/lotes',
+        payload: {
+          codigoLote: 'LOT-2026-REC01',
+          producto: 'Frutilla',
+          variedad: 'San Andreas',
+          cantidadInicial: 5000,
+          unidadMedida: 'KG',
+        },
+      });
+      const loteData = JSON.parse(loteRes.body).data;
+      loteTestId = loteData.id;
+
+      // 3. Crear Ciclo
+      const ciclo = CicloProductivo.crear({
+        id: crypto.randomUUID(),
+        codigoCiclo: 'CIC-2026-REC-01',
+        loteId: loteTestId,
+        cultivo: 'Frutilla',
+        variedad: 'San Andreas',
+        superficieCultivadaHa: 5,
+        fechaInicio: '2026-08-01',
+      });
+      await ciclosRepo.guardar(ciclo);
+      cicloTestId = ciclo.id;
+
+      // 4. Registrar Aplicación con insumo y número de lote de fabricante
+      await aplicacionesRepo.guardar(
+        AplicacionAgricola.crear({
+          id: crypto.randomUUID(),
+          actividadId: crypto.randomUUID(),
+          loteId: loteTestId,
+          cicloId: cicloTestId,
+          fecha: '2026-09-01',
+          metodo: 'FOLIAR',
+          motivo: 'Control fúngico preventivo',
+          equipoAplicacion: 'Pulverizadora',
+          lineas: [
+            {
+              insumoId: insumoTest.id,
+              cantidadTotal: 10,
+              unidadMedidaId: 'L',
+              numeroLote: 'LOTE-FAB-RECALL-01',
+              loteInsumoId: 'INV-LOT-01',
+            },
+          ],
+        })
+      );
+
+      // 5. Registrar Cosecha
+      const cos = Cosecha.crear({
+        id: crypto.randomUUID(),
+        codigoTrazabilidad: 'COS-L1-20260905-01',
+        loteId: loteTestId,
+        cicloId: cicloTestId,
+        fecha: '2026-09-05',
+        cantidadCosechadaKg: 2000,
+        cantidadComercializableKg: 1800,
+        cantidadDescarteKg: 200,
+        motivoDescarte: 'Descarte por calibre menor',
+      });
+      await cosechasRepo.guardar(cos);
+      cosechaTestId = cos.id;
+
+      // 6. Registrar Destinatario
+      const dest = Destinatario.crear({
+        id: crypto.randomUUID(),
+        nombre: 'Supermercados del Norte S.A.',
+        tipo: 'MERCADO_FRESCO',
+        cuit: '30-71123456-9',
+        contacto: 'Mariano López',
+        telefono: '+5493815551234',
+        email: 'logistica@supernorte.com.ar',
+        localidad: 'San Miguel de Tucumán',
+        provincia: 'Tucumán',
+      });
+      await destinatariosRepo.guardar(dest);
+      destinatarioTestId = dest.id;
+
+      // 7. Registrar Despacho
+      await despachosRepo.guardar(
+        DespachoDestino.crear({
+          id: crypto.randomUUID(),
+          cosechaId: cosechaTestId,
+          destinatarioId: destinatarioTestId,
+          tipoDestino: 'MERCADO_FRESCO',
+          cantidadEnviadaKg: 1000,
+          fecha: '2026-09-06',
+          nroGuiaRemito: 'REM-001-000999',
+          renspaFinca: '23.001.0.00123/00',
+          productor: 'Agrul Agrícola',
+          chofer: 'Carlos Méndez',
+          patenteCamion: 'AF999ZZ',
+        })
+      );
+    });
+
+    it('GET /api/v1/trazabilidad/consulta-inversa con insumoId debe responder 200 con trazabilidad inversa completa', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/trazabilidad/consulta-inversa?insumoId=${insumoTest.id}`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.insumo.id).toBe(insumoTest.id);
+      expect(body.data.insumo.nombreComercial).toBe('Fungicida Recall Test');
+      expect(body.data.aplicaciones).toHaveLength(1);
+      expect(body.data.lotes).toHaveLength(1);
+      expect(body.data.cosechas).toHaveLength(1);
+      expect(body.data.despachos).toHaveLength(1);
+      expect(body.data.destinatariosParaNotificar).toHaveLength(1);
+
+      const cliente = body.data.destinatariosParaNotificar[0];
+      expect(cliente.nombre).toBe('Supermercados del Norte S.A.');
+      expect(cliente.telefono).toBe('+5493815551234');
+      expect(cliente.remitosAfectados).toContain('REM-001-000999');
+
+      expect(body.data.metricas.totalKilosCosechadosAfectados).toBe(1800);
+      expect(body.data.metricas.totalKilosEnMercadoDespachados).toBe(1000);
+      expect(body.data.metricas.totalKilosEnStockPendientes).toBe(800);
+      expect(body.data.metricas.nivelRiesgoSanitario).toBe('CRITICO');
+      expect(body.data.protocoloRetiroSugerido.length).toBeGreaterThan(0);
+    });
+
+    it('GET /api/v1/trazabilidad/recall-insumo con numeroLote debe responder 200 mediante alias', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/trazabilidad/recall-insumo?numeroLote=LOTE-FAB-RECALL-01',
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.insumo.id).toBe(insumoTest.id);
+      expect(body.data.despachos[0].nroGuiaRemito).toBe('REM-001-000999');
+    });
+
+    it('GET /api/v1/trazabilidad/consulta-inversa sin parámetros debe responder 400 Bad Request', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/trazabilidad/consulta-inversa',
+      });
+
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+    });
+
+    it('GET /api/v1/trazabilidad/consulta-inversa con insumo inexistente debe responder 404 Not Found', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/trazabilidad/consulta-inversa?insumoId=00000000-0000-0000-0000-000000000999',
+      });
+
+      expect(res.statusCode).toBe(404);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('ENTITY_NOT_FOUND');
     });
   });
 });

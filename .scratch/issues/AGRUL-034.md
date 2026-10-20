@@ -2,10 +2,10 @@
 id: AGRUL-034
 title: "AGRUL-034: Consulta Inversa de Trazabilidad para Retiro Preventivo de Insumos (Recall)"
 epic: "Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales"
-status: ready-for-agent
+status: done
 priority: "Alta (P1)"
 module: "Módulo 6: Trazabilidad"
-labels: ["recall", "seguridad-alimentaria", "consulta-inversa", "ready-for-agent"]
+labels: ["recall", "seguridad-alimentaria", "consulta-inversa", "status:done"]
 ---
 
 # AGRUL-034 — Consulta Inversa de Trazabilidad para Retiro Preventivo de Insumos (Recall)
@@ -13,7 +13,7 @@ labels: ["recall", "seguridad-alimentaria", "consulta-inversa", "ready-for-agent
 - **Épica:** Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales
 - **Módulo:** Módulo 6: Trazabilidad
 - **Prioridad:** Alta (P1)
-- **Status:** ready-for-agent
+- **Status:** done
 - **Requisitos Funcionales:** RF-M6-12
 - **Skills:** .cursor/skills/domain-traceability.md
 
@@ -26,7 +26,5 @@ Mecanismo de rastreo descendente inverso: dado un lote de insumo (ej. lote de fe
 3. Listar despachos y compradores que recibieron dicha producción para activar protocolo de retiro inmediato.
 
 ## Criterios de Aceptación
-- [ ] RF-M6-12: Mapeo exacto de insumo -> aplicaciones -> cosechas -> destinos en una sola consulta.
-- [ ] Fundamental para contingencias sanitarias y certificaciones internacionales.
-
-## Comments
+- [x] RF-M6-12: Mapeo exacto de insumo -> aplicaciones -> cosechas -> destinos en una sola consulta.
+- [x] Fundamental para contingencias sanitarias y certificaciones internacionales.

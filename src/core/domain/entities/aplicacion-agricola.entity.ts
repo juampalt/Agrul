@@ -34,6 +34,8 @@ export interface AplicacionLineaInsumoProps {
   dosisPorSuperficie?: number | null; // ej. l/ha, kg/ha (RF-M4-04)
   dosisPorPlanta?: number | null;     // ej. ml/planta (RF-M4-04)
   concentracion?: string | null;      // ej. "200 cc/100L" o "0.2%" (RF-M4-04)
+  numeroLote?: string | null;         // Lote de insumo comercial del fabricante (RF-M4-04 / RF-M6-12)
+  loteInsumoId?: string | null;       // ID de lote de inventario / insumo
 }
 
 export interface AplicacionAgricolaProps {
@@ -72,6 +74,8 @@ export interface CrearAplicacionAgricolaParams {
     dosisPorSuperficie?: number | null;
     dosisPorPlanta?: number | null;
     concentracion?: string | number | null;
+    numeroLote?: string | null;
+    loteInsumoId?: string | null;
   }>;
   recomendacionTecnica?: RecomendacionTecnicaProps | null; // RF-M4-08
   /** Permite inyectar la fecha de referencia hoy para pruebas temporales deterministas */
@@ -165,6 +169,8 @@ export class AplicacionAgricola {
         dosisPorSuperficie,
         dosisPorPlanta,
         concentracion,
+        numeroLote: linea.numeroLote ? linea.numeroLote.trim() : null,
+        loteInsumoId: linea.loteInsumoId ? linea.loteInsumoId.trim() : null,
       };
     });
 

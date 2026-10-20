@@ -20,13 +20,13 @@
 | **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 3 | 0 | 1 |
 | **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 4 | 0 | 0 |
 | **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 4 | 0 | 0 |
-| **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 2 | 0 | 1 |
+| **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 3 | 0 | 0 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 0 | 0 | 3 |
 | **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 0 | 0 | 3 |
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **27** | **0** | **23** |
+| **TOTAL GENERAL** | **50** | **28** | **0** | **22** |
 
 ---
 
@@ -677,20 +677,20 @@
   - [x] RF-M6-13: Bitácora inmutable de emisión de informes completada.
 
 ### `[AGRUL-034]` Consulta Inversa de Trazabilidad para Retiro Preventivo de Insumos (Recall)
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 6: Trazabilidad
 - **Requisitos Funcionales:** RF-M6-12
 - **Skills:** [domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md)
-- **Etiquetas:** `recall`, `seguridad-alimentaria`, `consulta-inversa`, `ready-for-agent`
+- **Etiquetas:** `recall`, `seguridad-alimentaria`, `consulta-inversa`, `status:done`
 - **Descripción:** Mecanismo de rastreo descendente inverso: dado un lote de insumo (ej. lote de fertilizante o pesticida contaminado), identificar al instante todos los lotes de campo, ciclos y cosechas que lo recibieron.
 - **Tareas Técnicas:**
   1. Implementar ConsultaInversaInsumoUseCase: recibe loteInsumoId o insumoId.
   2. Recorrer aplicaciones que utilizaron dicho lote de insumo y listar lotes productivos y cosechas derivadas.
   3. Listar despachos y compradores que recibieron dicha producción para activar protocolo de retiro inmediato.
 - **Criterios de Aceptación:**
-  - [ ] RF-M6-12: Mapeo exacto de insumo -> aplicaciones -> cosechas -> destinos en una sola consulta.
-  - [ ] Fundamental para contingencias sanitarias y certificaciones internacionales.
+  - [x] RF-M6-12: Mapeo exacto de insumo -> aplicaciones -> cosechas -> destinos en una sola consulta.
+  - [x] Fundamental para contingencias sanitarias y certificaciones internacionales.
 
 ---
 

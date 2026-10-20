@@ -5,6 +5,8 @@ export interface ListarAplicacionesFiltros {
   cicloId?: string;
   actividadId?: string;
   insumoId?: string;
+  loteInsumoId?: string;
+  numeroLote?: string;
   fechaDesde?: string;
   fechaHasta?: string;
 }

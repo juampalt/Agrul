@@ -5,6 +5,8 @@ export interface RegistrarAplicacionLineaInputDto {
   dosisPorSuperficie?: number | null;
   dosisPorPlanta?: number | null;
   concentracion?: string | number | null;
+  numeroLote?: string | null;
+  loteInsumoId?: string | null;
 }
 
 export interface CondicionesClimaDto {
@@ -47,6 +49,8 @@ export interface AplicacionLineaOutputDto {
   dosisPorSuperficie?: number | null;
   dosisPorPlanta?: number | null;
   concentracion?: string | null;
+  numeroLote?: string | null;
+  loteInsumoId?: string | null;
 }
 
 export interface AplicacionOutputDto {

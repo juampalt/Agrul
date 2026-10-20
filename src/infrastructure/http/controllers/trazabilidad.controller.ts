@@ -2,7 +2,9 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import { ObtenerRecorridoTrazabilidadUseCase } from '../../../application/use-cases/recorrido-trazabilidad.use-case.js';
 import { EmitirInformeTrazabilidadUseCase } from '../../../application/use-cases/emitir-informe-trazabilidad.use-case.js';
 import { ListarInformesTrazabilidadLogUseCase } from '../../../application/use-cases/listar-informes-trazabilidad-log.use-case.js';
+import { ConsultaInversaInsumoUseCase } from '../../../application/use-cases/consulta-inversa-insumo.use-case.js';
 import { RecorridoTrazabilidadParamSchema } from '../schemas/recorrido-trazabilidad.schema.js';
+import { ConsultaInversaQuerySchema } from '../schemas/consulta-inversa.schema.js';
 import {
   EmitirInformeParamSchema,
   EmitirInformeQuerySchema,
@@ -13,7 +15,8 @@ export class TrazabilidadController {
   constructor(
     private readonly obtenerRecorridoUseCase: ObtenerRecorridoTrazabilidadUseCase,
     private readonly emitirInformeUseCase?: EmitirInformeTrazabilidadUseCase,
-    private readonly listarLogsUseCase?: ListarInformesTrazabilidadLogUseCase
+    private readonly listarLogsUseCase?: ListarInformesTrazabilidadLogUseCase,
+    private readonly consultaInversaUseCase?: ConsultaInversaInsumoUseCase
   ) {}
 
   public async obtenerRecorrido(req: FastifyRequest, reply: FastifyReply) {
@@ -158,6 +161,27 @@ export class TrazabilidadController {
     return reply.status(200).send({
       success: true,
       data: logs,
+      error: null,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  public async consultaInversa(req: FastifyRequest, reply: FastifyReply) {
+    if (!this.consultaInversaUseCase) {
+      return reply.status(501).send({
+        success: false,
+        data: null,
+        error: { code: 'NOT_IMPLEMENTED', message: 'Servicio de consulta inversa no configurado.' },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const query = ConsultaInversaQuerySchema.parse(req.query);
+    const resultado = await this.consultaInversaUseCase.execute(query);
+
+    return reply.status(200).send({
+      success: true,
+      data: resultado,
       error: null,
       timestamp: new Date().toISOString(),
     });

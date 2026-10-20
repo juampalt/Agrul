@@ -1261,7 +1261,7 @@
     "epic": "Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales",
     "epicId": "epic-12-modulo-6-trazabilidad",
     "title": "Consulta Inversa de Trazabilidad para Retiro Preventivo de Insumos (Recall)",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Alta (P1)",
     "skills": [
       ".cursor/skills/domain-traceability.md"
@@ -1275,7 +1275,7 @@
       "recall",
       "seguridad-alimentaria",
       "consulta-inversa",
-      "ready-for-agent"
+      "status:done"
     ],
     "description": "Mecanismo de rastreo descendente inverso: dado un lote de insumo (ej. lote de fertilizante o pesticida contaminado), identificar al instante todos los lotes de campo, ciclos y cosechas que lo recibieron.",
     "tasks": [

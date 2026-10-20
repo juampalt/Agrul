@@ -31,6 +31,12 @@ export class InMemoryAplicacionesRepository implements AplicacionesRepositoryPor
     if (filtros?.insumoId) {
       result = result.filter(a => a.lineas.some(l => l.insumoId === filtros.insumoId));
     }
+    if (filtros?.loteInsumoId) {
+      result = result.filter(a => a.lineas.some(l => l.loteInsumoId === filtros.loteInsumoId));
+    }
+    if (filtros?.numeroLote) {
+      result = result.filter(a => a.lineas.some(l => l.numeroLote === filtros.numeroLote));
+    }
     if (filtros?.fechaDesde) {
       result = result.filter(a => a.fecha >= filtros.fechaDesde!);
     }

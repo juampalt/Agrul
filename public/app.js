@@ -1677,6 +1677,235 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ==========================================================================
+  // AGRUL-034: Consulta Inversa y Retiro Preventivo de Insumos (Recall - RF-M6-12)
+  // ==========================================================================
+  const btnRecallInsumo = document.getElementById('btn-recall-insumo');
+  const modalRecallInsumo = document.getElementById('modal-recall-insumo');
+  const formConsultaInversa = document.getElementById('form-consulta-inversa');
+  const recallSelectInsumo = document.getElementById('recall-select-insumo');
+  const recallInputInsumoId = document.getElementById('recall-input-insumo-id');
+  const recallInputNumeroLote = document.getElementById('recall-input-numero-lote');
+  const recallLoading = document.getElementById('recall-loading');
+  const recallResultsWrap = document.getElementById('recall-results-wrap');
+  const recallRiskBadge = document.getElementById('recall-risk-badge');
+  const recallInsumoTitle = document.getElementById('recall-insumo-title');
+  const recallInsumoActive = document.getElementById('recall-insumo-active');
+  const recallKpiCosechado = document.getElementById('recall-kpi-cosechado');
+  const recallKpiMercado = document.getElementById('recall-kpi-mercado');
+  const recallKpiStock = document.getElementById('recall-kpi-stock');
+  const recallKpiDestinatarios = document.getElementById('recall-kpi-destinatarios');
+  const recallTbodyDestinatarios = document.getElementById('recall-tbody-destinatarios');
+  const recallTbodyLotes = document.getElementById('recall-tbody-lotes');
+  const recallTbodyCosechas = document.getElementById('recall-tbody-cosechas');
+  const recallTbodyDespachos = document.getElementById('recall-tbody-despachos');
+  const recallProtocolList = document.getElementById('recall-protocol-list');
+  const btnCopiarContactosRecall = document.getElementById('btn-copiar-contactos-recall');
+
+  let ultimoRecallData = null;
+
+  async function cargarInsumosParaRecall() {
+    if (!recallSelectInsumo) return;
+    try {
+      const res = await fetch('/api/v1/insumos');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        recallSelectInsumo.innerHTML = '<option value="">-- Seleccionar insumo registrado --</option>' +
+          json.data.map(i => `<option value="${i.id}">${i.nombreComercial} (${i.categoria} - ${i.principioActivo || 'N/A'})</option>`).join('');
+      }
+    } catch {
+      // silencioso si no hay insumos cargados
+    }
+  }
+
+  if (recallSelectInsumo) {
+    recallSelectInsumo.addEventListener('change', () => {
+      if (recallSelectInsumo.value) {
+        recallInputInsumoId.value = recallSelectInsumo.value;
+      }
+    });
+  }
+
+  if (btnRecallInsumo && modalRecallInsumo) {
+    btnRecallInsumo.addEventListener('click', () => {
+      openModal(modalRecallInsumo);
+      cargarInsumosParaRecall();
+    });
+  }
+
+  if (formConsultaInversa) {
+    formConsultaInversa.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const insumoId = (recallInputInsumoId?.value || recallSelectInsumo?.value || '').trim();
+      const numeroLote = (recallInputNumeroLote?.value || '').trim();
+
+      if (!insumoId && !numeroLote) {
+        showToast('Debe ingresar un ID de Insumo o un Número de Lote de Fabricante.', 'error');
+        return;
+      }
+
+      if (recallLoading) recallLoading.style.display = 'block';
+      if (recallResultsWrap) recallResultsWrap.style.display = 'none';
+
+      try {
+        const queryParams = new URLSearchParams();
+        if (insumoId) queryParams.set('insumoId', insumoId);
+        if (numeroLote) queryParams.set('numeroLote', numeroLote);
+
+        const res = await fetch(`/api/v1/trazabilidad/consulta-inversa?${queryParams.toString()}`);
+        const json = await res.json();
+
+        if (!json.success) {
+          throw new Error(json.error?.message || 'Error al ejecutar la consulta inversa de recall');
+        }
+
+        renderizarResultadosRecall(json.data);
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        if (recallLoading) recallLoading.style.display = 'none';
+      }
+    });
+  }
+
+  function renderizarResultadosRecall(data) {
+    ultimoRecallData = data;
+    if (!recallResultsWrap) return;
+
+    // 1. Nivel de Riesgo
+    const riesgo = data.metricas.nivelRiesgoSanitario || 'MODERADO';
+    recallRiskBadge.textContent = riesgo;
+    recallRiskBadge.className = `risk-badge-pill ${riesgo.toLowerCase()}`;
+
+    // 2. Info Insumo
+    recallInsumoTitle.textContent = `${data.insumo.nombreComercial} (${data.insumo.tipoInsumo})`;
+    const carenciaInfo = data.insumo.periodoCarenciaDias ? ` | Carencia: ${data.insumo.periodoCarenciaDias} días` : '';
+    const senasaInfo = data.insumo.numeroRegistroSenasa ? ` | SENASA: ${data.insumo.numeroRegistroSenasa}` : '';
+    recallInsumoActive.textContent = `Principio Activo: ${data.insumo.principioActivo || 'N/A'}${senasaInfo}${carenciaInfo}`;
+
+    // 3. KPIs
+    recallKpiCosechado.textContent = `${data.metricas.totalKilosCosechadosAfectados.toLocaleString('es-AR')} kg`;
+    recallKpiMercado.textContent = `${data.metricas.totalKilosEnMercadoDespachados.toLocaleString('es-AR')} kg`;
+    recallKpiStock.textContent = `${data.metricas.totalKilosEnStockPendientes.toLocaleString('es-AR')} kg`;
+    recallKpiDestinatarios.textContent = data.metricas.totalDestinatariosParaNotificar;
+
+    // 4. Clientes y Destinatarios
+    if (recallTbodyDestinatarios) {
+      if (!data.destinatariosParaNotificar || data.destinatariosParaNotificar.length === 0) {
+        recallTbodyDestinatarios.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center" style="color: var(--text-dim); padding: 18px;">
+              No se detectaron envíos comerciales ni clientes receptores para esta fruta. Todo el stock permanece en finca.
+            </td>
+          </tr>`;
+      } else {
+        recallTbodyDestinatarios.innerHTML = data.destinatariosParaNotificar.map(d => `
+          <tr>
+            <td><strong>${d.nombre}</strong><br><small style="color:var(--text-dim)">CUIT: ${d.cuit || '-'}</small></td>
+            <td><span class="status-tag">${d.tipo}</span></td>
+            <td>${d.contacto || '-'}<br><a href="tel:${d.telefono || ''}" style="color:var(--accent-blue);font-weight:600;">${d.telefono || '-'}</a></td>
+            <td><a href="mailto:${d.email || ''}" style="color:var(--text-muted);">${d.email || '-'}</a></td>
+            <td>${d.remitosAfectados.map(r => `<code style="font-size:11px;color:#f87171;">${r}</code>`).join(' ')}</td>
+            <td><strong style="color:#f87171;">${d.totalKilosRecibidos.toLocaleString('es-AR')} kg</strong></td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    // 5. Lotes Afectados
+    if (recallTbodyLotes) {
+      recallTbodyLotes.innerHTML = data.lotes.map(l => {
+        const origenBadge = l.esDescendienteLinaje 
+          ? `<span class="badge-linaje-hijo">Descendiente N:M (Padre: ${l.lotePadreOrigenCodigo || '-'})</span>` 
+          : `<span class="status-tag">Lote de Aplicación Directa</span>`;
+        return `
+          <tr>
+            <td><span class="batch-code">${l.codigoLote}</span></td>
+            <td>${l.producto} ${l.variedad ? `(${l.variedad})` : ''}</td>
+            <td>${l.fincaNombre || '-'}</td>
+            <td>${l.superficieHa ? `${l.superficieHa} ha` : '-'}</td>
+            <td>${origenBadge}</td>
+            <td>${Number(l.cantidadActual).toLocaleString('es-AR')} ${l.unidadMedida}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 6. Cosechas Afectadas
+    if (recallTbodyCosechas) {
+      if (!data.cosechas || data.cosechas.length === 0) {
+        recallTbodyCosechas.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center" style="color: var(--text-dim); padding: 18px;">
+              No se han registrado cosechas en los lotes con posterioridad a la aplicación.
+            </td>
+          </tr>`;
+      } else {
+        recallTbodyCosechas.innerHTML = data.cosechas.map(c => {
+          const carenciaBadge = c.alertaViolacionCarencia
+            ? `<span class="badge-carencia-alert">⚠️ VIOLA CARENCIA (${c.diasDesdeAplicacion} días)</span>`
+            : `<span class="badge-carencia-ok">Cumplida (${c.diasDesdeAplicacion} días)</span>`;
+          return `
+            <tr>
+              <td><code>${c.codigoTrazabilidad}</code></td>
+              <td>${c.codigoLote}</td>
+              <td>${c.fechaCosecha.split('T')[0]}</td>
+              <td>${c.diasDesdeAplicacion} días</td>
+              <td>${carenciaBadge}</td>
+              <td><strong>${c.cantidadComercializableKg.toLocaleString('es-AR')} kg</strong></td>
+              <td>${c.saldoDisponibleKg.toLocaleString('es-AR')} kg</td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    // 7. Despachos
+    if (recallTbodyDespachos) {
+      if (!data.despachos || data.despachos.length === 0) {
+        recallTbodyDespachos.innerHTML = `
+          <tr>
+            <td colspan="5" class="text-center" style="color: var(--text-dim); padding: 18px;">
+              No se han emitido guías de remito de fruta comprometida.
+            </td>
+          </tr>`;
+      } else {
+        recallTbodyDespachos.innerHTML = data.despachos.map(d => `
+          <tr>
+            <td><code style="color:#f87171;font-weight:600;">${d.nroGuiaRemito}</code></td>
+            <td>${d.fecha.split('T')[0]}</td>
+            <td>${d.destinatarioNombre}</td>
+            <td><strong>${d.cantidadEnviadaKg.toLocaleString('es-AR')} kg</strong></td>
+            <td>${d.chofer || '-'} ${d.patenteCamion ? `[${d.patenteCamion}]` : ''}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    // 8. Protocolo
+    if (recallProtocolList) {
+      recallProtocolList.innerHTML = (data.protocoloRetiroSugerido || []).map(p => `<li>${p}</li>`).join('');
+    }
+
+    recallResultsWrap.style.display = 'flex';
+  }
+
+  if (btnCopiarContactosRecall) {
+    btnCopiarContactosRecall.addEventListener('click', () => {
+      if (!ultimoRecallData || !ultimoRecallData.destinatariosParaNotificar || ultimoRecallData.destinatariosParaNotificar.length === 0) {
+        showToast('No hay destinatarios en el informe de recall actual.', 'error');
+        return;
+      }
+      const lineas = ultimoRecallData.destinatariosParaNotificar.map(d => 
+        `• ${d.nombre} | Contacto: ${d.contacto || 'N/A'} | Tel: ${d.telefono || 'N/A'} | Email: ${d.email || 'N/A'} | Remitos: ${d.remitosAfectados.join(', ')} | Kilos: ${d.totalKilosRecibidos} kg`
+      );
+      const texto = `ALERTA DE RECALL SANITARIO AGRUL\nInsumo: ${ultimoRecallData.insumo.nombreComercial}\n\nDestinatarios para Notificación Inmediata:\n${lineas.join('\n')}`;
+      navigator.clipboard.writeText(texto)
+        .then(() => showToast('Lista de contactos copiada al portapapeles'))
+        .catch(() => showToast('No se pudo copiar al portapapeles', 'error'));
+    });
+  }
+
   // Carga inicial
   cargarLotes();
   cargarFincas();

@@ -185,6 +185,12 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
 
         // Bitácora inmutable de emisión de informes (RF-M6-13)
         v1.get('/trazabilidad/informes/logs', (req, rep) => deps.trazabilidadController!.listarLogs(req, rep));
+        v1.get('/trazabilidad/informes-log', (req, rep) => deps.trazabilidadController!.listarLogs(req, rep));
+
+        // Consulta Inversa de Insumos para Retiro Preventivo / Recall (RF-M6-12 — AGRUL-034)
+        v1.get('/trazabilidad/consulta-inversa', (req, rep) => deps.trazabilidadController!.consultaInversa(req, rep));
+        v1.get('/trazabilidad/recall-insumo', (req, rep) => deps.trazabilidadController!.consultaInversa(req, rep));
+        v1.get('/insumos/consulta-inversa', (req, rep) => deps.trazabilidadController!.consultaInversa(req, rep));
       }
     },
     { prefix: '/api/v1' }

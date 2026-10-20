@@ -130,6 +130,8 @@ export class RegistrarAplicacionUseCase {
         dosisPorSuperficie: l.dosisPorSuperficie ?? null,
         dosisPorPlanta: l.dosisPorPlanta ?? null,
         concentracion: l.concentracion ?? null,
+        numeroLote: l.numeroLote ?? null,
+        loteInsumoId: l.loteInsumoId ?? null,
       };
     });
 
@@ -182,6 +184,8 @@ export class ListarAplicacionesUseCase {
           dosisPorSuperficie: l.dosisPorSuperficie ?? null,
           dosisPorPlanta: l.dosisPorPlanta ?? null,
           concentracion: l.concentracion ?? null,
+          numeroLote: l.numeroLote ?? null,
+          loteInsumoId: l.loteInsumoId ?? null,
         };
       });
 
@@ -236,6 +240,8 @@ export class ObtenerAplicacionPorIdUseCase {
         dosisPorSuperficie: l.dosisPorSuperficie ?? null,
         dosisPorPlanta: l.dosisPorPlanta ?? null,
         concentracion: l.concentracion ?? null,
+        numeroLote: l.numeroLote ?? null,
+        loteInsumoId: l.loteInsumoId ?? null,
       };
     });
 
