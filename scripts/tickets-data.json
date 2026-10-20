@@ -1373,7 +1373,7 @@
     "epic": "Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas",
     "epicId": "epic-13-modulo-7-indicadores",
     "title": "Pantalla de Inicio con Resumen Operativo y Gráficos Chart.js",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Media (P2)",
     "skills": [
       ".cursor/skills/architecture.md",
@@ -1390,7 +1390,7 @@
       "dashboard",
       "chartjs",
       "kpi",
-      "ready-for-agent"
+      "status:done"
     ],
     "description": "Panel de control principal con KPIs clave (lotes en producción, producción acumulada, alertas de stock bajo y actividades vencidas), visualizaciones con Chart.js y módulo opcional de costos.",
     "tasks": [

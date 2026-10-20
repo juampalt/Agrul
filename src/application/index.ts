@@ -34,3 +34,5 @@ export * from './use-cases/calcular-metricas-produccion.use-case.js';
 export * from './dtos/indicadores-produccion.dto.js';
 export * from './use-cases/comparar-campanas.use-case.js';
 export * from './dtos/comparador-campanas.dto.js';
+export * from './use-cases/obtener-dashboard-resumen.use-case.js';
+export * from './dtos/dashboard-resumen.dto.js';

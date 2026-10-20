@@ -24,6 +24,7 @@ import { Cosecha } from '../../src/core/domain/entities/cosecha.entity.js';
 import { Destinatario } from '../../src/core/domain/entities/destinatario.entity.js';
 import { DespachoDestino } from '../../src/core/domain/entities/despacho-destino.entity.js';
 import { CodigoTrazabilidadCosecha } from '../../src/core/domain/value-objects/codigo-trazabilidad-cosecha.vo.js';
+import { ActividadAgricola } from '../../src/core/domain/entities/actividad-agricola.entity.js';
 
 describe('API Integration Tests (Fastify HTTP Surface)', () => {
   let app: FastifyInstance;
@@ -4509,6 +4510,193 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       });
       expect(aliasRes.statusCode).toBe(200);
       expect(JSON.parse(aliasRes.body).data.cicloId).toBe(cicloComp2.id);
+    });
+  });
+
+  describe('GET /api/v1/dashboard/resumen y alias /api/v1/dashboard (AGRUL-037)', () => {
+    it('debe responder 200 con estructura de KPIs, gráficos y costos vacíos cuando no hay datos', async () => {
+      const inicio = Date.now();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/dashboard/resumen',
+      });
+      const duracion = Date.now() - inicio;
+
+      expect(res.statusCode).toBe(200);
+      expect(duracion).toBeLessThan(2000); // RNF-03 (<2s)
+
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data).toBeDefined();
+      expect(body.data.kpis).toBeDefined();
+      expect(body.data.kpis.lotesEnProduccion.totalLotes).toBe(0);
+      expect(body.data.kpis.produccionAcumulada.totalKilosCosechados).toBe(0);
+      expect(body.data.kpis.alertasStockInsumos.insumosStockCritico).toBe(0);
+      expect(body.data.kpis.alertasStockInsumos.alertas).toEqual([]);
+      expect(body.data.kpis.actividadesVencidasOPendientes.vencidas).toBe(0);
+      expect(body.data.kpis.actividadesVencidasOPendientes.items).toEqual([]);
+      expect(body.data.graficos.evolucionCosecha.labels).toBeDefined();
+      expect(body.data.graficos.consumoInsumosPorCategoria.categorias).toBeDefined();
+      expect(body.data.graficos.rendimientoPorCultivo.cultivos).toEqual([]);
+      expect(body.data.costosPorLote).toEqual([]);
+      expect(body.timestamp).toBeDefined();
+    });
+
+    it('debe calcular los 4 KPIs clave, gráficos Chart.js y estructura de costos por lote con datos completos', async () => {
+      // 1. Lote
+      const lote = Lote.crear({
+        id: 'lote-dash-01',
+        codigoLote: 'LOT-2025-001',
+        fincaId: 'finca-01',
+        producto: 'CEREZA',
+        variedad: 'Bing',
+        cantidadInicial: 0,
+        unidadMedida: 'KG',
+        superficieHa: 5.5,
+      });
+      await lotesRepo.guardar(lote);
+
+      // 2. Ciclo productivo abierto
+      const ciclo = CicloProductivo.crear({
+        id: 'ciclo-dash-01',
+        codigoCiclo: 'CIC-2025-01',
+        loteId: lote.id,
+        cultivo: 'CEREZA',
+        variedad: 'Bing',
+        temporada: '2025/2026',
+        superficieCultivadaHa: 5.5,
+        fechaInicio: '2025-08-01',
+        estado: 'ABIERTO',
+      });
+      await ciclosRepo.guardar(ciclo);
+
+      // 3. Insumo con stock crítico
+      const insumo = InsumoCatalogo.crear({
+        id: 'insumo-dash-01',
+        nombreComercial: 'Urea Granulada 46%',
+        categoria: 'FERTILIZANTE',
+        unidadMedidaId: 'KG',
+        presentacion: 'Bolsa 50kg',
+      });
+      await insumosRepo.guardar(insumo);
+
+      // 4. Actividad vencida (planificada para 2025-08-10)
+      const actVencida = ActividadAgricola.registrar({
+        id: 'act-dash-01',
+        codigoActividad: 'ACT-DASH-01',
+        loteId: lote.id,
+        cicloId: ciclo.id,
+        tipoActividadId: 'PODA_INVIERNO',
+        fechaHecho: '2025-08-10',
+        usuarioCargaId: 'user-01',
+        superficieTrabajadaHa: 5.5,
+        estado: 'PLANIFICADA',
+        manoDeObra: [
+          { personalCuadrillaId: 'p-1', cantidadPersonas: 2, horasTrabajadas: 16, jornales: 2 },
+        ],
+        maquinarias: [
+          { maquinariaId: 'm-1', horasUso: 5 },
+        ],
+      });
+      await actividadesRepo.guardar(actVencida);
+
+      // 5. Cosecha
+      const cosecha = Cosecha.crear({
+        id: 'cos-dash-01',
+        codigoTrazabilidad: CodigoTrazabilidadCosecha.crear('COS-L01-20251120-001'),
+        cicloId: ciclo.id,
+        loteId: lote.id,
+        fecha: '2025-11-20',
+        cantidadCosechadaKg: 10000,
+        cantidadComercializableKg: 8500,
+        cantidadDescarteKg: 1500,
+        motivoDescarte: 'DESCARTE_CLIMATICO',
+      });
+      await cosechasRepo.guardar(cosecha);
+
+      // 6. Aplicación con insumos (470 kg consumidos de base 500 => stock 30 <= min 100 * 0.4 => CRITICO)
+      const appAgricola = AplicacionAgricola.crear({
+        id: 'app-dash-01',
+        actividadId: actVencida.id,
+        loteId: lote.id,
+        cicloId: ciclo.id,
+        fecha: '2025-09-01',
+        metodo: 'FERTIRRIEGO',
+        motivo: 'Abonado base',
+        equipoAplicacion: 'Tanque Riego',
+        lineas: [{
+          insumoId: insumo.id,
+          cantidadTotal: 470,
+          unidadMedidaId: 'KG',
+        }],
+      });
+      await aplicacionesRepo.guardar(appAgricola);
+
+      // Inyectar llamada
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/dashboard/resumen',
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      const data = body.data;
+
+      // KPI 1: Lotes en producción
+      expect(data.kpis.lotesEnProduccion.totalLotes).toBe(1);
+      expect(data.kpis.lotesEnProduccion.lotesActivos).toBe(1);
+      expect(data.kpis.lotesEnProduccion.ciclosEnCurso).toBe(1);
+      expect(data.kpis.lotesEnProduccion.superficieTotalHa).toBe(5.5);
+      expect(data.kpis.lotesEnProduccion.superficieEnProduccionHa).toBe(5.5);
+
+      // KPI 2: Producción acumulada
+      expect(data.kpis.produccionAcumulada.totalKilosCosechados).toBe(10000);
+      expect(data.kpis.produccionAcumulada.totalKilosComercializables).toBe(8500);
+      expect(data.kpis.produccionAcumulada.totalKilosDescarte).toBe(1500);
+      expect(data.kpis.produccionAcumulada.porcentajeDescarte).toBe(15);
+
+      // KPI 3: Alertas de Stock
+      expect(data.kpis.alertasStockInsumos.insumosStockCritico).toBe(1);
+      expect(data.kpis.alertasStockInsumos.alertas).toHaveLength(1);
+      expect(data.kpis.alertasStockInsumos.alertas[0].nivelAlerta).toBe('CRITICO');
+      expect(data.kpis.alertasStockInsumos.alertas[0].stockActual).toBe(30);
+      expect(data.kpis.alertasStockInsumos.alertas[0].stockMinimo).toBe(100);
+
+      // KPI 4: Actividades pendientes/vencidas
+      expect(data.kpis.actividadesVencidasOPendientes.vencidas).toBe(1);
+      expect(data.kpis.actividadesVencidasOPendientes.items[0].diasRetraso).toBeGreaterThan(0);
+
+      // Gráficos Chart.js
+      expect(data.graficos.evolucionCosecha.labels).toContain('2025-11');
+      expect(data.graficos.evolucionCosecha.datasets.kilosBrutos).toBeDefined();
+
+      expect(data.graficos.consumoInsumosPorCategoria.categorias).toContain('FERTILIZANTE');
+      expect(data.graficos.consumoInsumosPorCategoria.volumenTotal).toContain(470);
+
+      expect(data.graficos.rendimientoPorCultivo.cultivos).toContain('CEREZA');
+      expect(data.graficos.rendimientoPorCultivo.rendimientoBrutoKgHa[0]).toBeCloseTo(1818.18, 1);
+
+      // Costos por lote
+      expect(data.costosPorLote).toHaveLength(1);
+      const cLote = data.costosPorLote[0];
+      expect(cLote.loteId).toBe(lote.id);
+      expect(cLote.costoInsumos).toBeGreaterThan(0);
+      expect(cLote.costoManoObra).toBe(50000); // 2 jornales * 25.000
+      expect(cLote.costoMaquinaria).toBe(90000); // 5 horas * 18.000
+      expect(cLote.costoTotalEstimado).toBeGreaterThan(0);
+      expect(cLote.costoPorHectarea).toBeGreaterThan(0);
+      expect(cLote.costoPorKiloCosechado).toBeGreaterThan(0);
+
+
+      // Test alias y filtros
+      const aliasRes = await app.inject({
+        method: 'GET',
+        url: '/api/v1/dashboard?fincaId=finca-01&temporada=2025/2026',
+      });
+      expect(aliasRes.statusCode).toBe(200);
+      const aliasBody = JSON.parse(aliasRes.body);
+      expect(aliasBody.data.kpis.lotesEnProduccion.totalLotes).toBe(1);
     });
   });
 });

@@ -21,12 +21,12 @@
 | **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 4 | 0 | 0 |
 | **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 4 | 0 | 0 |
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 3 | 0 | 0 |
-| **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 0 | 0 | 3 |
+| **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 3 | 0 | 0 |
 | **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 0 | 0 | 3 |
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **28** | **0** | **22** |
+| **TOTAL GENERAL** | **50** | **31** | **0** | **19** |
 
 ---
 
@@ -733,12 +733,12 @@
   - [x] RF-M7-05 / RF-M7-06: Relación insumo-producto, intensidad y deltas porcentuales.
 
 ### `[AGRUL-037]` Pantalla de Inicio con Resumen Operativo y Gráficos Chart.js
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Media (P2)
 - **Módulo:** Módulo 7: Indicadores
 - **Requisitos Funcionales:** RF-M7-12, RF-M7-13, RF-M7-14
 - **Skills:** [architecture.md](file:///c:/AGRUL/.cursor/skills/architecture.md), [api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
-- **Etiquetas:** `dashboard`, `chartjs`, `kpi`, `ready-for-agent`
+- **Etiquetas:** `dashboard`, `chartjs`, `kpi`, `status:done`
 - **Descripción:** Panel de control principal con KPIs clave (lotes en producción, producción acumulada, alertas de stock bajo y actividades vencidas), visualizaciones con Chart.js y módulo opcional de costos.
 - **Tareas Técnicas:**
   1. Crear endpoint GET /api/v1/dashboard/resumen que agregue los 4 KPIs en una sola llamada rápida (<2s, RNF-03).
@@ -746,8 +746,10 @@
   3. Exportación de tablas y gráficos a PDF y CSV.
   4. Estructura opcional para cómputo de costos por lote (insumos + mano de obra + horas tractor, RF-M7-14).
 - **Criterios de Aceptación:**
-  - [ ] RF-M7-12: Tablero ejecutivo con los 4 indicadores esenciales visibles al ingresar.
-  - [ ] RF-M7-13: Gráficos interactivos responsive compatibles con exportación.
+  - [x] RF-M7-12: Tablero ejecutivo con los 4 indicadores esenciales visibles al ingresar.
+  - [x] RF-M7-13: Gráficos interactivos responsive compatibles con exportación.
+  - [x] RF-M7-14: Desglose analítico de estructura de costos por lote (insumos + mano de obra + maquinaria/tractor, costo/ha y costo/kg cosechado).
+  - [x] RNF-03: Tiempos de respuesta < 2s para el dashboard consolidado.
 
 ---
 

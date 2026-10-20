@@ -98,6 +98,8 @@ import { InMemoryInformesTrazabilidadRepository } from '../../../tests/mocks/in-
 import { IndicadoresController } from './controllers/indicadores.controller.js';
 import { CalcularMetricasProduccionUseCase } from '../../application/use-cases/calcular-metricas-produccion.use-case.js';
 import { CompararCampanasUseCase } from '../../application/use-cases/comparar-campanas.use-case.js';
+import { DashboardController } from './controllers/dashboard.controller.js';
+import { ObtenerDashboardResumenUseCase } from '../../application/use-cases/obtener-dashboard-resumen.use-case.js';
 import { readFileSync, existsSync } from 'node:fs';
 
 import { resolve } from 'node:path';
@@ -488,6 +490,27 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     indicadoresController = new IndicadoresController(calcularMetricasUC, compararCampanasUC);
   }
 
+  let dashboardController: DashboardController | undefined;
+  if (
+    options.ciclosRepo &&
+    options.cosechasRepo &&
+    options.insumosRepo &&
+    options.aplicacionesRepo &&
+    options.actividadesRepo
+  ) {
+    const obtenerDashboardResumenUC = new ObtenerDashboardResumenUseCase({
+      lotesRepo: options.lotesRepo,
+      ciclosRepo: options.ciclosRepo,
+      cosechasRepo: options.cosechasRepo,
+      insumosRepo: options.insumosRepo,
+      aplicacionesRepo: options.aplicacionesRepo,
+      actividadesRepo: options.actividadesRepo,
+      fincasRepo: options.fincasRepo,
+      catalogosActividadesRepo: options.catalogosRepo,
+    });
+    dashboardController = new DashboardController(obtenerDashboardResumenUC);
+  }
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -504,6 +527,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     perdidasController,
     trazabilidadController,
     indicadoresController,
+    dashboardController,
   });
 
   return app;

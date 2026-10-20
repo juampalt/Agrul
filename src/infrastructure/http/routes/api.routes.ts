@@ -13,6 +13,7 @@ import { DespachosController } from '../controllers/despachos.controller.js';
 import { PerdidasCosechaController } from '../controllers/perdidas-cosecha.controller.js';
 import { TrazabilidadController } from '../controllers/trazabilidad.controller.js';
 import { IndicadoresController } from '../controllers/indicadores.controller.js';
+import { DashboardController } from '../controllers/dashboard.controller.js';
 
 export interface ApiRoutesDependencies {
   lotesController: LotesController;
@@ -29,6 +30,7 @@ export interface ApiRoutesDependencies {
   perdidasController?: PerdidasCosechaController;
   trazabilidadController?: TrazabilidadController;
   indicadoresController?: IndicadoresController;
+  dashboardController?: DashboardController;
 }
 
 
@@ -214,6 +216,12 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/indicadores/relacion-insumo-producto', (req, rep) => deps.indicadoresController!.obtenerEficienciaInsumos(req, rep));
         v1.get('/indicadores/relacion-insumo-producto/:cicloId', (req, rep) => deps.indicadoresController!.obtenerEficienciaInsumos(req, rep));
         v1.get('/ciclos/:cicloId/eficiencia-insumos', (req, rep) => deps.indicadoresController!.obtenerEficienciaInsumos(req, rep));
+      }
+
+      // Dashboard Operativo y Tablero Ejecutivo (AGRUL-037 / RF-M7-12, RF-M7-13, RF-M7-14)
+      if (deps.dashboardController) {
+        v1.get('/dashboard/resumen', (req, rep) => deps.dashboardController!.obtenerResumen(req, rep));
+        v1.get('/dashboard', (req, rep) => deps.dashboardController!.obtenerResumen(req, rep));
       }
     },
     { prefix: '/api/v1' }

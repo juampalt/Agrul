@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="app-container">
@@ -25,6 +26,9 @@
         <div class="connection-badge">
           <span class="status-dot"></span> API v1 Online
         </div>
+        <button id="btn-toggle-dashboard" class="btn btn-tablero-header" title="Tablero Ejecutivo de Inicio con Resumen Operativo y Gráficos (AGRUL-037)">
+          <span class="btn-icon">📈</span> Tablero Ejecutivo
+        </button>
         <button id="btn-cosecha-rapida" class="btn btn-warning-mobile" title="Cosecha ultrarrápida para operarios de campo (RF-M5-13)">
           <span class="btn-icon">⚡</span> Cosecha Rápida (Campo)
         </button>
@@ -42,6 +46,256 @@
         </button>
       </div>
     </header>
+
+    <!-- TABLERO EJECUTIVO DE INICIO (AGRUL-037 / RF-M7-12 / RF-M7-13 / RF-M7-14) -->
+    <section id="dashboard-ejecutivo" class="dashboard-ejecutivo glass">
+      <!-- Barra Superior del Tablero -->
+      <div class="dash-header">
+        <div class="dash-title-group">
+          <div class="dash-badge-icon">📈</div>
+          <div>
+            <h2>Tablero Ejecutivo de Inicio &bull; Resumen Operativo</h2>
+            <p class="dash-subtitle">Monitoreo integral en tiempo real: lotes en producción, cosechas acumuladas, stock de insumos, labores urgentes y estructura de costos</p>
+          </div>
+        </div>
+        <div class="dash-header-actions">
+          <button id="btn-dash-exportar-csv" class="btn btn-secondary btn-sm" title="Exportar resumen del tablero a archivo CSV (RF-M7-13)">
+            <span class="btn-icon">📄</span> Exportar CSV
+          </button>
+          <button id="btn-dash-exportar-pdf" class="btn btn-secondary btn-sm" title="Exportar reporte ejecutivo a PDF o imprimir (RF-M7-13)">
+            <span class="btn-icon">🖨️</span> Exportar PDF / Imprimir
+          </button>
+          <button id="btn-dash-refrescar" class="btn btn-primary btn-sm" title="Actualizar datos del tablero">
+            <span class="btn-icon">🔄</span> Actualizar
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros del Tablero -->
+      <div class="dash-filters-bar glass">
+        <div class="dash-filter-item">
+          <label for="dash-filtro-finca">Finca:</label>
+          <select id="dash-filtro-finca" class="form-control form-control-sm">
+            <option value="">Todas las Fincas</option>
+          </select>
+        </div>
+        <div class="dash-filter-item">
+          <label for="dash-filtro-temporada">Temporada:</label>
+          <input type="text" id="dash-filtro-temporada" class="form-control form-control-sm" placeholder="Ej: 2025/2026">
+        </div>
+        <div class="dash-filter-item">
+          <label for="dash-filtro-desde">Desde:</label>
+          <input type="date" id="dash-filtro-desde" class="form-control form-control-sm">
+        </div>
+        <div class="dash-filter-item">
+          <label for="dash-filtro-hasta">Hasta:</label>
+          <input type="date" id="dash-filtro-hasta" class="form-control form-control-sm">
+        </div>
+        <div class="dash-filter-buttons">
+          <button id="btn-dash-aplicar-filtros" class="btn btn-secondary btn-sm">Filtrar</button>
+          <button id="btn-dash-limpiar-filtros" class="btn btn-link btn-sm">Limpiar</button>
+        </div>
+      </div>
+
+      <!-- Los 4 KPIs Clave del Tablero Ejecutivo (RF-M7-12) -->
+      <div class="dash-kpi-grid">
+        <!-- KPI 1: Lotes en Producción -->
+        <div class="dash-kpi-card glass emerald" id="card-kpi-lotes">
+          <div class="dash-kpi-card-header">
+            <div class="dash-kpi-icon">🌾</div>
+            <span class="dash-kpi-tag">RF-M7-12.1</span>
+          </div>
+          <span class="dash-kpi-label">Lotes en Producción</span>
+          <div class="dash-kpi-val" id="dash-kpi-lotes-prod-val">0</div>
+          <div class="dash-kpi-meta">
+            <div class="meta-row"><span>Superficie en Prod.:</span> <strong id="dash-kpi-sup-prod">0 ha</strong></div>
+            <div class="meta-row"><span>Superficie Total:</span> <strong id="dash-kpi-sup-total">0 ha</strong></div>
+            <div class="meta-row"><span>Ciclos en Curso:</span> <strong id="dash-kpi-ciclos-curso">0</strong></div>
+            <div class="meta-row"><span>Lotes Activos / Totales:</span> <strong id="dash-kpi-lotes-activos-totales">0 / 0</strong></div>
+          </div>
+        </div>
+
+        <!-- KPI 2: Producción Acumulada -->
+        <div class="dash-kpi-card glass blue" id="card-kpi-produccion">
+          <div class="dash-kpi-card-header">
+            <div class="dash-kpi-icon">⚖️</div>
+            <span class="dash-kpi-tag">RF-M7-12.2</span>
+          </div>
+          <span class="dash-kpi-label">Producción Acumulada</span>
+          <div class="dash-kpi-val" id="dash-kpi-kilos-totales">0 kg</div>
+          <div class="dash-kpi-meta">
+            <div class="meta-row"><span>Comercializable:</span> <strong id="dash-kpi-kilos-comercializables" style="color: #34d399;">0 kg</strong></div>
+            <div class="meta-row"><span>Descarte:</span> <strong id="dash-kpi-kilos-descarte" style="color: #fbbf24;">0 kg</strong></div>
+            <div class="meta-row"><span>% Descarte:</span> <span id="dash-kpi-porcentaje-descarte" class="dash-pill-descarte">0.0%</span></div>
+            <div class="meta-row"><span>Cosechas Activas:</span> <strong id="dash-kpi-total-cosechas">0</strong></div>
+          </div>
+        </div>
+
+        <!-- KPI 3: Alertas de Stock de Insumos -->
+        <div class="dash-kpi-card glass amber" id="card-kpi-stock">
+          <div class="dash-kpi-card-header">
+            <div class="dash-kpi-icon">🚨</div>
+            <span class="dash-kpi-tag">RF-M7-12.3</span>
+          </div>
+          <span class="dash-kpi-label">Alertas de Stock</span>
+          <div class="dash-kpi-val" id="dash-kpi-alertas-total">0</div>
+          <div class="dash-kpi-meta">
+            <div class="meta-row"><span>Stock Crítico (≤40% mín):</span> <span id="dash-kpi-stock-critico" class="dash-pill-critico">0</span></div>
+            <div class="meta-row"><span>Stock Bajo (≤mínimo):</span> <span id="dash-kpi-stock-bajo" class="dash-pill-bajo">0</span></div>
+            <div class="meta-row"><span>Insumos Monitoreados:</span> <strong id="dash-kpi-insumos-monitoreados">0</strong></div>
+            <button type="button" class="dash-subpanel-toggle-btn" id="btn-toggle-subpanel-stock">Ver Insumos en Alerta ↓</button>
+          </div>
+        </div>
+
+        <!-- KPI 4: Labores Vencidas y Pendientes -->
+        <div class="dash-kpi-card glass purple" id="card-kpi-actividades">
+          <div class="dash-kpi-card-header">
+            <div class="dash-kpi-icon">📅</div>
+            <span class="dash-kpi-tag">RF-M7-12.4</span>
+          </div>
+          <span class="dash-kpi-label">Labores Urgentes</span>
+          <div class="dash-kpi-val" id="dash-kpi-act-vencidas">0</div>
+          <div class="dash-kpi-meta">
+            <div class="meta-row"><span>Vencidas (con retraso):</span> <span id="dash-kpi-act-vencidas-pill" class="dash-pill-critico">0</span></div>
+            <div class="meta-row"><span>Próximas a vencer (7d):</span> <span id="dash-kpi-act-proximas" class="dash-pill-proxima">0</span></div>
+            <div class="meta-row"><span>Planificadas Totales:</span> <strong id="dash-kpi-act-planificadas">0</strong></div>
+            <button type="button" class="dash-subpanel-toggle-btn" id="btn-toggle-subpanel-actividades">Ver Labores Urgentes ↓</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficos Interactivos Chart.js (RF-M7-13) -->
+      <div class="dash-charts-section">
+        <div class="dash-section-title">
+          <h3>📊 Análisis Visual y Gráficos Interactivos (Chart.js)</h3>
+          <span class="dash-section-hint">Haga clic en las leyendas de los gráficos para filtrar series</span>
+        </div>
+        <div class="dash-charts-grid">
+          <!-- Gráfico 1: Evolución Temporal Mensual de Cosecha -->
+          <div class="dash-chart-card glass">
+            <div class="dash-chart-card-header">
+              <h4>Evolución Mensual de Cosecha (kg)</h4>
+              <span class="dash-chart-badge">Bruto &bull; Neto &bull; Descarte</span>
+            </div>
+            <div class="dash-chart-wrapper">
+              <canvas id="chart-evolucion-cosecha"></canvas>
+            </div>
+          </div>
+
+          <!-- Gráfico 2: Distribución de Consumo de Insumos -->
+          <div class="dash-chart-card glass">
+            <div class="dash-chart-card-header">
+              <h4>Consumo de Insumos por Categoría</h4>
+              <span class="dash-chart-badge">Distribución Porcentual</span>
+            </div>
+            <div class="dash-chart-wrapper">
+              <canvas id="chart-consumo-insumos"></canvas>
+            </div>
+          </div>
+
+          <!-- Gráfico 3: Rendimiento Promedio por Cultivo -->
+          <div class="dash-chart-card glass">
+            <div class="dash-chart-card-header">
+              <h4>Rendimiento por Cultivo (kg/ha)</h4>
+              <span class="dash-chart-badge">Bruto vs Comercial</span>
+            </div>
+            <div class="dash-chart-wrapper">
+              <canvas id="chart-rendimiento-cultivo"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paneles Detallados Desplegables -->
+      <div class="dash-subpanels-container">
+        <!-- Subpanel: Alertas de Stock de Insumos -->
+        <div class="dash-subpanel glass" id="subpanel-stock-insumos" style="display: none;">
+          <div class="dash-subpanel-header">
+            <h4>🚨 Monitor Detallado de Stock y Puntos de Reposición</h4>
+            <button type="button" class="btn-close-subpanel" data-close-subpanel="subpanel-stock-insumos">&times;</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Insumo</th>
+                  <th>Categoría</th>
+                  <th>Stock Actual</th>
+                  <th>Punto Reposición (Mín)</th>
+                  <th>Consumo Acumulado</th>
+                  <th>Nivel de Alerta</th>
+                </tr>
+              </thead>
+              <tbody id="dash-tbody-stock">
+                <tr><td colspan="6" class="text-center">Cargando estado de inventario...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Subpanel: Labores Vencidas y Próximas a Vencer -->
+        <div class="dash-subpanel glass" id="subpanel-actividades-urgentes" style="display: none;">
+          <div class="dash-subpanel-header">
+            <h4>📅 Labores Planificadas Vencidas o Próximas a Vencer (7 días)</h4>
+            <button type="button" class="btn-close-subpanel" data-close-subpanel="subpanel-actividades-urgentes">&times;</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Lote</th>
+                  <th>Labor Agrícola</th>
+                  <th>Fecha Planificada</th>
+                  <th>Días de Retraso</th>
+                  <th>Urgencia</th>
+                </tr>
+              </thead>
+              <tbody id="dash-tbody-actividades">
+                <tr><td colspan="6" class="text-center">Cargando labores urgentes...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Subpanel: Estructura de Costos por Lote (RF-M7-14) -->
+        <div class="dash-subpanel glass" id="subpanel-costos-lote">
+          <div class="dash-subpanel-header">
+            <div>
+              <h4>💰 Estructura de Costos Operativos por Lote (RF-M7-14)</h4>
+              <p class="dash-subpanel-sub">Cómputo analítico: Insumos aplicados + Mano de obra (jornales) + Maquinaria (horas tractor)</p>
+            </div>
+            <button type="button" id="btn-toggle-tabla-costos" class="btn btn-secondary btn-sm">Ocultar / Mostrar</button>
+          </div>
+          <div class="dash-costos-resumen-strip">
+            <div class="costo-res-pill"><span>Costo Total Explotación:</span> <strong id="dash-costo-total-global">$0</strong></div>
+            <div class="costo-res-pill"><span>Costo Promedio / ha:</span> <strong id="dash-costo-promedio-ha" style="color: #38bdf8;">$0 / ha</strong></div>
+            <div class="costo-res-pill"><span>Costo Promedio / kg Cosechado:</span> <strong id="dash-costo-promedio-kg" style="color: #34d399;">$0 / kg</strong></div>
+          </div>
+          <div class="table-responsive" id="dash-costos-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Lote</th>
+                  <th>Cultivo</th>
+                  <th>Superficie</th>
+                  <th>Cosechado</th>
+                  <th>Insumos</th>
+                  <th>Mano de Obra</th>
+                  <th>Maquinaria</th>
+                  <th>Costo Total</th>
+                  <th>Costo / ha</th>
+                  <th>Costo / kg</th>
+                </tr>
+              </thead>
+              <tbody id="dash-tbody-costos">
+                <tr><td colspan="10" class="text-center">Calculando estructura de costos...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Contadores / KPIs de Producción -->
     <section class="kpi-grid">

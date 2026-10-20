@@ -184,6 +184,11 @@ document.addEventListener('DOMContentLoaded', () => {
           filtroFinca.innerHTML = '<option value="">Todas las Fincas</option>' +
             allFincas.map(f => `<option value="${f.id}">${f.nombre} (${f.ubicacion.provincia})</option>`).join('');
         }
+        const dashFincaSelect = document.getElementById('dash-filtro-finca');
+        if (dashFincaSelect) {
+          dashFincaSelect.innerHTML = '<option value="">Todas las Fincas</option>' +
+            allFincas.map(f => `<option value="${f.id}">${f.nombre} (${f.ubicacion?.provincia || ''})</option>`).join('');
+        }
         if (nuevoFincaId) {
           nuevoFincaId.innerHTML = '<option value="">Sin finca asignada</option>' +
             allFincas.map(f => `<option value="${f.id}">${f.nombre} (${f.superficieTotalHa} ha)</option>`).join('');
@@ -2429,7 +2434,603 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // ==========================================================================
+  // AGRUL-037: TABLERO EJECUTIVO DE INICIO & GRÁFICOS CHART.JS
+  // ==========================================================================
+  let chartEvolucionCosecha = null;
+  let chartConsumoInsumos = null;
+  let chartRendimientoCultivo = null;
+  let ultimoDashboardData = null;
+
+  const dashboardEjecutivo = document.getElementById('dashboard-ejecutivo');
+  const btnToggleDashboard = document.getElementById('btn-toggle-dashboard');
+
+  const dashFiltroFinca = document.getElementById('dash-filtro-finca');
+  const dashFiltroTemporada = document.getElementById('dash-filtro-temporada');
+  const dashFiltroDesde = document.getElementById('dash-filtro-desde');
+  const dashFiltroHasta = document.getElementById('dash-filtro-hasta');
+
+  const btnDashAplicarFiltros = document.getElementById('btn-dash-aplicar-filtros');
+  const btnDashLimpiarFiltros = document.getElementById('btn-dash-limpiar-filtros');
+  const btnDashRefrescar = document.getElementById('btn-dash-refrescar');
+  const btnDashExportarCsv = document.getElementById('btn-dash-exportar-csv');
+  const btnDashExportarPdf = document.getElementById('btn-dash-exportar-pdf');
+
+  // KPIs
+  const dashKpiLotesProdVal = document.getElementById('dash-kpi-lotes-prod-val');
+  const dashKpiSupProd = document.getElementById('dash-kpi-sup-prod');
+  const dashKpiSupTotal = document.getElementById('dash-kpi-sup-total');
+  const dashKpiCiclosCurso = document.getElementById('dash-kpi-ciclos-curso');
+  const dashKpiLotesActivosTotales = document.getElementById('dash-kpi-lotes-activos-totales');
+
+  const dashKpiKilosTotales = document.getElementById('dash-kpi-kilos-totales');
+  const dashKpiKilosComercializables = document.getElementById('dash-kpi-kilos-comercializables');
+  const dashKpiKilosDescarte = document.getElementById('dash-kpi-kilos-descarte');
+  const dashKpiPorcentajeDescarte = document.getElementById('dash-kpi-porcentaje-descarte');
+  const dashKpiTotalCosechas = document.getElementById('dash-kpi-total-cosechas');
+
+  const dashKpiAlertasTotal = document.getElementById('dash-kpi-alertas-total');
+  const dashKpiStockCritico = document.getElementById('dash-kpi-stock-critico');
+  const dashKpiStockBajo = document.getElementById('dash-kpi-stock-bajo');
+  const dashKpiInsumosMonitoreados = document.getElementById('dash-kpi-insumos-monitoreados');
+  const btnToggleSubpanelStock = document.getElementById('btn-toggle-subpanel-stock');
+  const subpanelStockInsumos = document.getElementById('subpanel-stock-insumos');
+  const dashTbodyStock = document.getElementById('dash-tbody-stock');
+
+  const dashKpiActVencidas = document.getElementById('dash-kpi-act-vencidas');
+  const dashKpiActVencidasPill = document.getElementById('dash-kpi-act-vencidas-pill');
+  const dashKpiActProximas = document.getElementById('dash-kpi-act-proximas');
+  const dashKpiActPlanificadas = document.getElementById('dash-kpi-act-planificadas');
+  const btnToggleSubpanelActividades = document.getElementById('btn-toggle-subpanel-actividades');
+  const subpanelActividadesUrgentes = document.getElementById('subpanel-actividades-urgentes');
+  const dashTbodyActividades = document.getElementById('dash-tbody-actividades');
+
+  // Subpanel Costos
+  const subpanelCostosLote = document.getElementById('subpanel-costos-lote');
+  const btnToggleTablaCostos = document.getElementById('btn-toggle-tabla-costos');
+  const dashCostosTableWrap = document.getElementById('dash-costos-table-wrap');
+  const dashTbodyCostos = document.getElementById('dash-tbody-costos');
+  const dashCostoTotalGlobal = document.getElementById('dash-costo-total-global');
+  const dashCostoPromedioHa = document.getElementById('dash-costo-promedio-ha');
+  const dashCostoPromedioKg = document.getElementById('dash-costo-promedio-kg');
+
+  async function cargarDashboardResumen() {
+    try {
+      const params = new URLSearchParams();
+      if (dashFiltroFinca?.value) params.append('fincaId', dashFiltroFinca.value);
+      if (dashFiltroTemporada?.value.trim()) params.append('temporada', dashFiltroTemporada.value.trim());
+      if (dashFiltroDesde?.value) params.append('desde', dashFiltroDesde.value);
+      if (dashFiltroHasta?.value) params.append('hasta', dashFiltroHasta.value);
+
+      const qs = params.toString() ? `?${params.toString()}` : '';
+      const res = await fetch(`/api/v1/dashboard/resumen${qs}`);
+      const json = await res.json();
+
+      if (!json.success || !json.data) {
+        throw new Error(json.error?.message || 'Error al obtener resumen del tablero');
+      }
+
+      ultimoDashboardData = json.data;
+      const { kpis, graficos, costosPorLote } = json.data;
+
+      // 1. KPI: Lotes en Producción
+      if (dashKpiLotesProdVal) dashKpiLotesProdVal.textContent = kpis.lotesEnProduccion.ciclosEnCurso;
+      if (dashKpiSupProd) dashKpiSupProd.textContent = `${kpis.lotesEnProduccion.superficieEnProduccionHa} ha`;
+      if (dashKpiSupTotal) dashKpiSupTotal.textContent = `${kpis.lotesEnProduccion.superficieTotalHa} ha`;
+      if (dashKpiCiclosCurso) dashKpiCiclosCurso.textContent = kpis.lotesEnProduccion.ciclosEnCurso;
+      if (dashKpiLotesActivosTotales) {
+        dashKpiLotesActivosTotales.textContent = `${kpis.lotesEnProduccion.lotesActivos} / ${kpis.lotesEnProduccion.totalLotes}`;
+      }
+
+      // 2. KPI: Producción Acumulada
+      if (dashKpiKilosTotales) dashKpiKilosTotales.textContent = `${Number(kpis.produccionAcumulada.totalKilosCosechados).toLocaleString('es-AR')} kg`;
+      if (dashKpiKilosComercializables) dashKpiKilosComercializables.textContent = `${Number(kpis.produccionAcumulada.totalKilosComercializables).toLocaleString('es-AR')} kg`;
+      if (dashKpiKilosDescarte) dashKpiKilosDescarte.textContent = `${Number(kpis.produccionAcumulada.totalKilosDescarte).toLocaleString('es-AR')} kg`;
+      if (dashKpiPorcentajeDescarte) {
+        dashKpiPorcentajeDescarte.textContent = `${kpis.produccionAcumulada.porcentajeDescarte}%`;
+        if (kpis.produccionAcumulada.porcentajeDescarte > 15) {
+          dashKpiPorcentajeDescarte.className = 'dash-pill-critico';
+        } else if (kpis.produccionAcumulada.porcentajeDescarte > 8) {
+          dashKpiPorcentajeDescarte.className = 'dash-pill-descarte';
+        } else {
+          dashKpiPorcentajeDescarte.className = 'dash-pill-bajo';
+        }
+      }
+      if (dashKpiTotalCosechas) dashKpiTotalCosechas.textContent = kpis.produccionAcumulada.totalCosechas;
+
+      // 3. KPI: Alertas de Stock
+      const stockCriticos = kpis.alertasStockInsumos.insumosStockCritico;
+      const stockBajos = kpis.alertasStockInsumos.insumosStockBajo;
+      const totalAlertas = stockCriticos + stockBajos;
+
+      if (dashKpiAlertasTotal) dashKpiAlertasTotal.textContent = totalAlertas;
+      if (dashKpiStockCritico) dashKpiStockCritico.textContent = stockCriticos;
+      if (dashKpiStockBajo) dashKpiStockBajo.textContent = stockBajos;
+      if (dashKpiInsumosMonitoreados) dashKpiInsumosMonitoreados.textContent = kpis.alertasStockInsumos.totalInsumosMonitoreados;
+
+      // 4. KPI: Labores Urgentes
+      const actVencidas = kpis.actividadesVencidasOPendientes.vencidas;
+      const actProximas = kpis.actividadesVencidasOPendientes.proximasAVencer7Dias;
+
+      if (dashKpiActVencidas) dashKpiActVencidas.textContent = actVencidas;
+      if (dashKpiActVencidasPill) dashKpiActVencidasPill.textContent = actVencidas;
+      if (dashKpiActProximas) dashKpiActProximas.textContent = actProximas;
+      if (dashKpiActPlanificadas) dashKpiActPlanificadas.textContent = kpis.actividadesVencidasOPendientes.pendientesPlanificadas;
+
+      // Renderizar Gráficos Chart.js
+      renderizarGraficosDashboard(graficos);
+
+      // Renderizar Tablas de Detalle
+      renderizarTablaStock(kpis.alertasStockInsumos.alertas);
+      renderizarTablaActividades(kpis.actividadesVencidasOPendientes.items);
+      renderizarTablaCostos(costosPorLote);
+
+    } catch (err) {
+      console.error('Error al cargar dashboard ejecutivo:', err);
+      showToast(`Error al cargar tablero ejecutivo: ${err.message}`, 'error');
+    }
+  }
+
+  function renderizarGraficosDashboard(graficos) {
+    if (typeof Chart === 'undefined') {
+      console.warn('Chart.js no está cargado. Las visualizaciones gráficas requieren conexión a CDN.');
+      return;
+    }
+
+    // Chart 1: Evolución Mensual de Cosecha
+    const ctxEvolucion = document.getElementById('chart-evolucion-cosecha');
+    if (ctxEvolucion) {
+      if (chartEvolucionCosecha) chartEvolucionCosecha.destroy();
+      const labels = graficos.evolucionCosecha.labels.length > 0 ? graficos.evolucionCosecha.labels : ['Sin datos'];
+      chartEvolucionCosecha = new Chart(ctxEvolucion, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Kilos Brutos',
+              data: graficos.evolucionCosecha.datasets.kilosBrutos,
+              backgroundColor: 'rgba(56, 189, 248, 0.75)',
+              borderColor: '#38bdf8',
+              borderWidth: 1,
+              borderRadius: 4,
+            },
+            {
+              label: 'Comercializable',
+              data: graficos.evolucionCosecha.datasets.kilosComercializables,
+              backgroundColor: 'rgba(16, 185, 129, 0.75)',
+              borderColor: '#10b981',
+              borderWidth: 1,
+              borderRadius: 4,
+            },
+            {
+              label: 'Descarte',
+              data: graficos.evolucionCosecha.datasets.kilosDescarte,
+              backgroundColor: 'rgba(245, 158, 11, 0.75)',
+              borderColor: '#f59e0b',
+              borderWidth: 1,
+              borderRadius: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#cbd5e1', font: { family: 'Outfit, sans-serif', size: 11 } },
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.raw).toLocaleString('es-AR')} kg`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.06)' },
+              ticks: { color: '#94a3b8', font: { size: 10 } },
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.06)' },
+              ticks: { color: '#94a3b8', font: { size: 10 } },
+            },
+          },
+        },
+      });
+    }
+
+    // Chart 2: Distribución de Consumo de Insumos (Dona)
+    const ctxConsumo = document.getElementById('chart-consumo-insumos');
+    if (ctxConsumo) {
+      if (chartConsumoInsumos) chartConsumoInsumos.destroy();
+      const categorias = graficos.consumoInsumosPorCategoria.categorias || [];
+      const dataVol = graficos.consumoInsumosPorCategoria.volumenTotal || [];
+      const porcentajes = graficos.consumoInsumosPorCategoria.porcentajes || [];
+      const tieneDatos = dataVol.some(v => v > 0);
+
+      chartConsumoInsumos = new Chart(ctxConsumo, {
+        type: 'doughnut',
+        data: {
+          labels: tieneDatos ? categorias : ['Sin consumo'],
+          datasets: [{
+            data: tieneDatos ? dataVol : [1],
+            backgroundColor: tieneDatos
+              ? ['#10b981', '#38bdf8', '#f59e0b', '#a855f7', '#ec4899', '#64748b']
+              : ['rgba(255, 255, 255, 0.1)'],
+            borderColor: 'rgba(15, 23, 42, 0.9)',
+            borderWidth: 2,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#cbd5e1', font: { family: 'Outfit, sans-serif', size: 11 } },
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  if (!tieneDatos) return 'Sin consumo registrado';
+                  const pct = porcentajes[ctx.dataIndex] !== undefined ? `${porcentajes[ctx.dataIndex]}%` : '';
+                  return `${ctx.label}: ${Number(ctx.raw).toLocaleString('es-AR')} unidades (${pct})`;
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    // Chart 3: Rendimiento por Cultivo (kg/ha)
+    const ctxRendimiento = document.getElementById('chart-rendimiento-cultivo');
+    if (ctxRendimiento) {
+      if (chartRendimientoCultivo) chartRendimientoCultivo.destroy();
+      const cultivos = graficos.rendimientoPorCultivo.cultivos || [];
+      const rendBruto = graficos.rendimientoPorCultivo.rendimientoBrutoKgHa || [];
+      const rendComercial = graficos.rendimientoPorCultivo.rendimientoComercialKgHa || [];
+
+      chartRendimientoCultivo = new Chart(ctxRendimiento, {
+        type: 'bar',
+        data: {
+          labels: cultivos.length > 0 ? cultivos : ['Sin datos'],
+          datasets: [
+            {
+              label: 'Rendimiento Bruto (kg/ha)',
+              data: rendBruto.length > 0 ? rendBruto : [0],
+              backgroundColor: 'rgba(56, 189, 248, 0.75)',
+              borderColor: '#0284c7',
+              borderWidth: 1,
+              borderRadius: 4,
+            },
+            {
+              label: 'Rendimiento Comercial (kg/ha)',
+              data: rendComercial.length > 0 ? rendComercial : [0],
+              backgroundColor: 'rgba(16, 185, 129, 0.85)',
+              borderColor: '#059669',
+              borderWidth: 1,
+              borderRadius: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#cbd5e1', font: { family: 'Outfit, sans-serif', size: 11 } },
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.raw).toLocaleString('es-AR')} kg/ha`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.06)' },
+              ticks: { color: '#94a3b8', font: { size: 10 } },
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.06)' },
+              ticks: { color: '#94a3b8', font: { size: 10 } },
+            },
+          },
+        },
+      });
+    }
+  }
+
+  function renderizarTablaStock(alertas) {
+    if (!dashTbodyStock) return;
+    if (!alertas || alertas.length === 0) {
+      dashTbodyStock.innerHTML = '<tr><td colspan="6" class="text-center" style="padding: 16px; color: var(--text-muted);">Todos los insumos se encuentran en niveles normales de stock.</td></tr>';
+      return;
+    }
+
+    dashTbodyStock.innerHTML = alertas.map(item => {
+      let badgeHtml = '<span class="dash-pill-bajo">NORMAL</span>';
+      if (item.nivelAlerta === 'CRITICO') {
+        badgeHtml = '<span class="dash-pill-critico">🚨 CRÍTICO</span>';
+      } else if (item.nivelAlerta === 'BAJO') {
+        badgeHtml = '<span class="dash-pill-bajo">⚠️ BAJO</span>';
+      }
+
+      return `
+        <tr>
+          <td><strong>${item.nombreComercial}</strong></td>
+          <td><span class="badge-categoria">${item.categoria}</span></td>
+          <td><strong style="color: ${item.nivelAlerta === 'CRITICO' ? '#f87171' : item.nivelAlerta === 'BAJO' ? '#fbbf24' : '#e2e8f0'};">${Number(item.stockActual).toLocaleString('es-AR')} ${item.unidadMedida}</strong></td>
+          <td>${Number(item.stockMinimo).toLocaleString('es-AR')} ${item.unidadMedida}</td>
+          <td>${Number(item.consumoAcumulado).toLocaleString('es-AR')} ${item.unidadMedida}</td>
+          <td>${badgeHtml}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  function renderizarTablaActividades(items) {
+    if (!dashTbodyActividades) return;
+    if (!items || items.length === 0) {
+      dashTbodyActividades.innerHTML = '<tr><td colspan="6" class="text-center" style="padding: 16px; color: var(--text-muted);">No hay labores vencidas ni próximas a vencer en los próximos 7 días.</td></tr>';
+      return;
+    }
+
+    dashTbodyActividades.innerHTML = items.map(act => {
+      let urgenciaBadge = '<span class="dash-pill-bajo">PLANIFICADA</span>';
+      if (act.urgencia === 'VENCIDA') {
+        urgenciaBadge = `<span class="dash-pill-critico">⚠️ VENCIDA (+${act.diasRetraso}d)</span>`;
+      } else if (act.urgencia === 'PROXIMA_A_VENCER') {
+        urgenciaBadge = `<span class="dash-pill-proxima">⏳ PRÓXIMA (en ${Math.abs(act.diasRetraso)}d)</span>`;
+      }
+
+      return `
+        <tr>
+          <td><code>${act.codigoActividad}</code></td>
+          <td><strong>${act.codigoLote}</strong></td>
+          <td>${act.tipoActividadNombre || act.tipoActividadId}</td>
+          <td>${act.fechaPlanificada}</td>
+          <td><strong style="color: ${act.diasRetraso > 0 ? '#f87171' : '#38bdf8'};">${act.diasRetraso > 0 ? `+${act.diasRetraso} días` : `${act.diasRetraso} días`}</strong></td>
+          <td>${urgenciaBadge}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  function renderizarTablaCostos(costos) {
+    if (!dashTbodyCostos) return;
+    if (!costos || costos.length === 0) {
+      dashTbodyCostos.innerHTML = '<tr><td colspan="10" class="text-center" style="padding: 16px; color: var(--text-muted);">No hay actividades con costos operacionales computados aún.</td></tr>';
+      if (dashCostoTotalGlobal) dashCostoTotalGlobal.textContent = '$0';
+      if (dashCostoPromedioHa) dashCostoPromedioHa.textContent = '$0 / ha';
+      if (dashCostoPromedioKg) dashCostoPromedioKg.textContent = '$0 / kg';
+      return;
+    }
+
+    let sumaTotal = 0;
+    let sumaSuperficie = 0;
+    let sumaKilos = 0;
+
+    dashTbodyCostos.innerHTML = costos.map(c => {
+      sumaTotal += c.costoTotalEstimado || 0;
+      sumaSuperficie += c.superficieHa || 0;
+      sumaKilos += c.kilosCosechados || 0;
+
+      return `
+        <tr>
+          <td><strong>${c.codigoLote}</strong></td>
+          <td><span class="crop-tag">${c.cultivo}</span></td>
+          <td>${c.superficieHa} ha</td>
+          <td>${Number(c.kilosCosechados).toLocaleString('es-AR')} kg</td>
+          <td>$${Number(c.costoInsumos).toLocaleString('es-AR')}</td>
+          <td>$${Number(c.costoManoObra).toLocaleString('es-AR')}</td>
+          <td>$${Number(c.costoMaquinaria).toLocaleString('es-AR')}</td>
+          <td><strong style="color: #38bdf8;">$${Number(c.costoTotalEstimado).toLocaleString('es-AR')}</strong></td>
+          <td><strong style="color: #34d399;">$${Number(c.costoPorHectarea).toLocaleString('es-AR', { maximumFractionDigits: 2 })} / ha</strong></td>
+          <td><strong style="color: #fbbf24;">$${Number(c.costoPorKiloCosechado).toLocaleString('es-AR', { maximumFractionDigits: 3 })} / kg</strong></td>
+        </tr>`;
+    }).join('');
+
+    const promHa = sumaSuperficie > 0 ? Math.round((sumaTotal / sumaSuperficie) * 100) / 100 : 0;
+    const promKg = sumaKilos > 0 ? Math.round((sumaTotal / sumaKilos) * 1000) / 1000 : 0;
+
+    if (dashCostoTotalGlobal) dashCostoTotalGlobal.textContent = `$${Number(sumaTotal).toLocaleString('es-AR')}`;
+    if (dashCostoPromedioHa) dashCostoPromedioHa.textContent = `$${Number(promHa).toLocaleString('es-AR')} / ha`;
+    if (dashCostoPromedioKg) dashCostoPromedioKg.textContent = `$${Number(promKg).toLocaleString('es-AR')} / kg`;
+  }
+
+  function exportarDashboardCSV() {
+    if (!ultimoDashboardData) {
+      showToast('No hay datos cargados en el tablero para exportar', 'warning');
+      return;
+    }
+
+    const { kpis, graficos, costosPorLote } = ultimoDashboardData;
+    const fecha = new Date().toISOString().slice(0, 10);
+    const lineas = [];
+
+    lineas.push('================================================================');
+    lineas.push(`AGRUL - TABLERO EJECUTIVO Y RESUMEN OPERATIVO`);
+    lineas.push(`Fecha de Emisión: ${new Date().toLocaleString('es-AR')}`);
+    lineas.push('================================================================');
+    lineas.push('');
+
+    // 1. KPIs
+    lineas.push('1. RESUMEN DE LOS 4 KPIS CLAVE');
+    lineas.push('Indicador;Valor;Unidad;Detalle');
+    lineas.push(`Lotes en Producción;${kpis.lotesEnProduccion.ciclosEnCurso};lotes;Superficie en prod: ${kpis.lotesEnProduccion.superficieEnProduccionHa} ha (Total: ${kpis.lotesEnProduccion.superficieTotalHa} ha)`);
+    lineas.push(`Lotes Activos / Totales;${kpis.lotesEnProduccion.lotesActivos} de ${kpis.lotesEnProduccion.totalLotes};lotes;Registrados en la plataforma`);
+    lineas.push(`Producción Total Acumulada;${kpis.produccionAcumulada.totalKilosCosechados};kg;Comercializable: ${kpis.produccionAcumulada.totalKilosComercializables} kg`);
+    lineas.push(`Descarte Acumulado;${kpis.produccionAcumulada.totalKilosDescarte};kg;Porcentaje de descarte: ${kpis.produccionAcumulada.porcentajeDescarte}%`);
+    lineas.push(`Alertas de Stock;${kpis.alertasStockInsumos.insumosStockCritico + kpis.alertasStockInsumos.insumosStockBajo};insumos;Críticos: ${kpis.alertasStockInsumos.insumosStockCritico} | Bajos: ${kpis.alertasStockInsumos.insumosStockBajo}`);
+    lineas.push(`Labores Urgentes;${kpis.actividadesVencidasOPendientes.vencidas};labores;Vencidas: ${kpis.actividadesVencidasOPendientes.vencidas} | Próximas 7d: ${kpis.actividadesVencidasOPendientes.proximasAVencer7Dias}`);
+    lineas.push('');
+
+    // 2. Evolución mensual
+    lineas.push('2. EVOLUCION MENSUAL DE COSECHA');
+    lineas.push('Mes;Kilos Brutos (kg);Kilos Comercializables (kg);Descarte (kg)');
+    const meses = graficos.evolucionCosecha.labels || [];
+    for (let i = 0; i < meses.length; i++) {
+      const mes = meses[i];
+      const brutos = graficos.evolucionCosecha.datasets.kilosBrutos[i] || 0;
+      const com = graficos.evolucionCosecha.datasets.kilosComercializables[i] || 0;
+      const desc = graficos.evolucionCosecha.datasets.kilosDescarte[i] || 0;
+      lineas.push(`${mes};${brutos};${com};${desc}`);
+    }
+    lineas.push('');
+
+    // 3. Consumo de insumos
+    lineas.push('3. CONSUMO DE INSUMOS POR CATEGORIA');
+    lineas.push('Categoría;Volumen Total (unidades);Porcentaje (%)');
+    const cat = graficos.consumoInsumosPorCategoria.categorias || [];
+    for (let i = 0; i < cat.length; i++) {
+      const c = cat[i];
+      const vol = graficos.consumoInsumosPorCategoria.volumenTotal[i] || 0;
+      const pct = graficos.consumoInsumosPorCategoria.porcentajes[i] || 0;
+      lineas.push(`${c};${vol};${pct}%`);
+    }
+    lineas.push('');
+
+    // 4. Rendimiento por cultivo
+    lineas.push('4. RENDIMIENTO POR CULTIVO');
+    lineas.push('Cultivo;Rendimiento Bruto (kg/ha);Rendimiento Comercial (kg/ha)');
+    const cult = graficos.rendimientoPorCultivo.cultivos || [];
+    for (let i = 0; i < cult.length; i++) {
+      const c = cult[i];
+      const rb = graficos.rendimientoPorCultivo.rendimientoBrutoKgHa[i] || 0;
+      const rc = graficos.rendimientoPorCultivo.rendimientoComercialKgHa[i] || 0;
+      lineas.push(`${c};${rb};${rc}`);
+    }
+    lineas.push('');
+
+    // 5. Costos por Lote (RF-M7-14)
+    lineas.push('5. ESTRUCTURA DE COSTOS OPERATIVOS POR LOTE');
+    lineas.push('Código Lote;Cultivo;Superficie (ha);Cosechado (kg);Costo Insumos ($);Costo Mano de Obra ($);Costo Maquinaria ($);Costo Total ($);Costo/ha ($/ha);Costo/kg ($/kg)');
+    for (const c of costosPorLote || []) {
+      lineas.push(`${c.codigoLote};${c.cultivo};${c.superficieHa};${c.kilosCosechados};${c.costoInsumos};${c.costoManoObra};${c.costoMaquinaria};${c.costoTotalEstimado};${c.costoPorHectarea};${c.costoPorKiloCosechado}`);
+    }
+    lineas.push('');
+
+    // 6. Alertas de Stock
+    lineas.push('6. ALERTAS DE STOCK DE INSUMOS');
+    lineas.push('Insumo;Categoría;Stock Actual;Stock Mínimo;Consumo Acumulado;Nivel Alerta');
+    for (const a of kpis.alertasStockInsumos.alertas || []) {
+      lineas.push(`${a.nombreComercial};${a.categoria};${a.stockActual} ${a.unidadMedida};${a.stockMinimo} ${a.unidadMedida};${a.consumoAcumulado} ${a.unidadMedida};${a.nivelAlerta}`);
+    }
+    lineas.push('');
+
+    // 7. Labores Urgentes
+    lineas.push('7. LABORES PENDIENTES Y VENCIDAS');
+    lineas.push('Código Actividad;Código Lote;Labor;Fecha Planificada;Días Retraso;Urgencia');
+    for (const act of kpis.actividadesVencidasOPendientes.items || []) {
+      lineas.push(`${act.codigoActividad};${act.codigoLote};${act.tipoActividadNombre || act.tipoActividadId};${act.fechaPlanificada};${act.diasRetraso};${act.urgencia}`);
+    }
+
+    const csvContent = '\uFEFF' + lineas.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `dashboard-resumen-agrul-${fecha}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast('Resumen del tablero exportado a CSV exitosamente', 'success');
+  }
+
+  function exportarDashboardPDF() {
+    // Abrir subpaneles para que salgan completos en la impresión
+    if (subpanelStockInsumos) subpanelStockInsumos.style.display = 'block';
+    if (subpanelActividadesUrgentes) subpanelActividadesUrgentes.style.display = 'block';
+    if (dashCostosTableWrap) dashCostosTableWrap.style.display = 'block';
+
+    window.print();
+  }
+
+  // Listeners del Tablero Ejecutivo
+  if (btnToggleDashboard) {
+    btnToggleDashboard.addEventListener('click', () => {
+      if (dashboardEjecutivo) {
+        dashboardEjecutivo.scrollIntoView({ behavior: 'smooth' });
+        cargarDashboardResumen();
+      }
+    });
+  }
+
+  if (btnDashRefrescar) {
+    btnDashRefrescar.addEventListener('click', () => {
+      cargarDashboardResumen();
+      showToast('Tablero ejecutivo actualizado', 'info');
+    });
+  }
+
+  if (btnDashAplicarFiltros) {
+    btnDashAplicarFiltros.addEventListener('click', () => {
+      cargarDashboardResumen();
+    });
+  }
+
+  if (btnDashLimpiarFiltros) {
+    btnDashLimpiarFiltros.addEventListener('click', () => {
+      if (dashFiltroFinca) dashFiltroFinca.value = '';
+      if (dashFiltroTemporada) dashFiltroTemporada.value = '';
+      if (dashFiltroDesde) dashFiltroDesde.value = '';
+      if (dashFiltroHasta) dashFiltroHasta.value = '';
+      cargarDashboardResumen();
+    });
+  }
+
+  if (btnDashExportarCsv) {
+    btnDashExportarCsv.addEventListener('click', exportarDashboardCSV);
+  }
+
+  if (btnDashExportarPdf) {
+    btnDashExportarPdf.addEventListener('click', exportarDashboardPDF);
+  }
+
+  if (btnToggleSubpanelStock) {
+    btnToggleSubpanelStock.addEventListener('click', () => {
+      if (subpanelStockInsumos) {
+        subpanelStockInsumos.style.display = subpanelStockInsumos.style.display === 'none' ? 'block' : 'none';
+        if (subpanelStockInsumos.style.display === 'block') {
+          subpanelStockInsumos.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    });
+  }
+
+  if (btnToggleSubpanelActividades) {
+    btnToggleSubpanelActividades.addEventListener('click', () => {
+      if (subpanelActividadesUrgentes) {
+        subpanelActividadesUrgentes.style.display = subpanelActividadesUrgentes.style.display === 'none' ? 'block' : 'none';
+        if (subpanelActividadesUrgentes.style.display === 'block') {
+          subpanelActividadesUrgentes.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    });
+  }
+
+  if (btnToggleTablaCostos) {
+    btnToggleTablaCostos.addEventListener('click', () => {
+      if (dashCostosTableWrap) {
+        dashCostosTableWrap.style.display = dashCostosTableWrap.style.display === 'none' ? 'block' : 'none';
+      }
+    });
+  }
+
+  document.querySelectorAll('[data-close-subpanel]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-close-subpanel');
+      const target = document.getElementById(targetId);
+      if (target) target.style.display = 'none';
+    });
+  });
+
   // Carga inicial
   cargarLotes();
   cargarFincas();
+  cargarDashboardResumen();
 });
