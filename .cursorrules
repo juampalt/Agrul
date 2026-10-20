@@ -12,7 +12,7 @@ Sos el arquitecto y desarrollador principal de **Agrul**, un sistema integral de
 4. **Regla de Oro de Auto-Mejora (Matt Pocock Rule):** Si el usuario te corrige una decisión de diseño, o detectás un patrón erróneo repetido, **actualizá el archivo de skill correspondiente** de inmediato en lugar de limitarte a disculparte en el chat.
 5. **Cierre Atómico en Git Obligatorio (Git Closure):** Al finalizar cada ticket o issue, **NUNCA** limitarse a marcarlo en `TICKETS.md` ni dejar cambios sin commitear. Realizar SIEMPRE sin excepción:
    - `git add` de los archivos involucrados y creados.
-   - Commit atómico en Git con mensaje semántico convencional referenciando el identificador del ticket (ej: `feat(infra): entorno docker compose para postgresql local (closes #010, [AGRUL-010])`).
+   - Commit atómico en Git con mensaje semántico convencional referenciando el número real del issue en GitHub y el identificador del ticket (ej: `feat(stock): ... (closes #35, [AGRUL-041])`). *Nota: Usar siempre el número correlativo de issue de GitHub sin ceros a la izquierda para que GitHub lo cierre automáticamente.*
    - Push inmediato a `origin/main` (`git push origin main`) para asegurar la sincronización y cierre efectivo del ticket en el repositorio remoto.
 
 ---
