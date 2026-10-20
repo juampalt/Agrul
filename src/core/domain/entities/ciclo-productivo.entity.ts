@@ -6,6 +6,7 @@ export interface CicloProductivoProps {
   loteId: string;
   cultivo: string;
   variedad?: string | null;
+  temporada?: string | null;
   estado: EstadoCiclo;
   superficieCultivadaHa: number;
   fechaInicio: string;
@@ -23,6 +24,7 @@ export interface CrearCicloProductivoParams {
   loteId: string;
   cultivo: string;
   variedad?: string | null;
+  temporada?: string | null;
   estado?: EstadoCiclo;
   superficieCultivadaHa: number;
   fechaInicio: string;
@@ -63,6 +65,7 @@ export class CicloProductivo {
       loteId: params.loteId,
       cultivo: params.cultivo.trim(),
       variedad: params.variedad?.trim() ?? null,
+      temporada: params.temporada?.trim() ?? null,
       estado: params.estado ?? 'ABIERTO',
       superficieCultivadaHa: params.superficieCultivadaHa,
       fechaInicio: params.fechaInicio,
@@ -84,6 +87,12 @@ export class CicloProductivo {
   public get loteId(): string { return this.props.loteId; }
   public get cultivo(): string { return this.props.cultivo; }
   public get variedad(): string | null | undefined { return this.props.variedad; }
+  public get temporada(): string {
+    if (this.props.temporada && this.props.temporada.trim().length > 0) {
+      return this.props.temporada.trim();
+    }
+    return this.props.fechaInicio ? this.props.fechaInicio.slice(0, 4) : new Date().getFullYear().toString();
+  }
   public get estado(): EstadoCiclo { return this.props.estado; }
   public get superficieCultivadaHa(): number { return this.props.superficieCultivadaHa; }
   public get fechaInicio(): string { return this.props.fechaInicio; }
@@ -96,6 +105,14 @@ export class CicloProductivo {
 
   public estaAbierto(): boolean {
     return this.props.estado === 'ABIERTO';
+  }
+
+  public esProvisional(): boolean {
+    return this.props.estado !== 'CERRADO';
+  }
+
+  public esCerrado(): boolean {
+    return this.props.estado === 'CERRADO';
   }
 
   public cerrar(fechaFin: string): void {

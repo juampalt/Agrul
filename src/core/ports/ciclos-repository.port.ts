@@ -5,6 +5,7 @@ export interface ListarCiclosFiltros {
   cultivo?: string;
   variedad?: string;
   estado?: EstadoCiclo;
+  temporada?: string;
 }
 
 export interface CiclosRepositoryPort {

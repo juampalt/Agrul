@@ -32,3 +32,5 @@ export * from './dtos/recorrido-trazabilidad.dto.js';
 export * from './dtos/consulta-inversa-insumo.dto.js';
 export * from './use-cases/calcular-metricas-produccion.use-case.js';
 export * from './dtos/indicadores-produccion.dto.js';
+export * from './use-cases/comparar-campanas.use-case.js';
+export * from './dtos/comparador-campanas.dto.js';

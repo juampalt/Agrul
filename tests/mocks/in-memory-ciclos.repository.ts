@@ -38,7 +38,7 @@ export class InMemoryCiclosRepository implements CiclosRepositoryPort {
     return null;
   }
 
-  public async listar(filtros?: { loteId?: string; cultivo?: string; variedad?: string; estado?: any }): Promise<CicloProductivo[]> {
+  public async listar(filtros?: { loteId?: string; cultivo?: string; variedad?: string; estado?: any; temporada?: string }): Promise<CicloProductivo[]> {
     let result = Array.from(this.ciclos.values());
 
     if (filtros?.loteId) {
@@ -52,6 +52,9 @@ export class InMemoryCiclosRepository implements CiclosRepositoryPort {
     }
     if (filtros?.estado) {
       result = result.filter(c => c.estado === filtros.estado);
+    }
+    if (filtros?.temporada) {
+      result = result.filter(c => c.temporada.toLowerCase() === filtros.temporada!.toLowerCase());
     }
 
     return result.map(c => CicloProductivo.reconstituir(c.toJSON()));

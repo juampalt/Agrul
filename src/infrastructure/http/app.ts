@@ -97,6 +97,7 @@ import { InformesTrazabilidadRepositoryPort } from '../../core/ports/informes-tr
 import { InMemoryInformesTrazabilidadRepository } from '../../../tests/mocks/in-memory-informes-trazabilidad.repository.js';
 import { IndicadoresController } from './controllers/indicadores.controller.js';
 import { CalcularMetricasProduccionUseCase } from '../../application/use-cases/calcular-metricas-produccion.use-case.js';
+import { CompararCampanasUseCase } from '../../application/use-cases/comparar-campanas.use-case.js';
 import { readFileSync, existsSync } from 'node:fs';
 
 import { resolve } from 'node:path';
@@ -469,8 +470,22 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       cosechasRepo: options.cosechasRepo,
       actividadesRepo: options.actividadesRepo,
       catalogosRepo: options.catalogosRepo,
+      fincasRepo: options.fincasRepo,
     });
-    indicadoresController = new IndicadoresController(calcularMetricasUC);
+
+    let compararCampanasUC: CompararCampanasUseCase | undefined;
+    if (options.aplicacionesRepo && options.insumosRepo) {
+      compararCampanasUC = new CompararCampanasUseCase({
+        ciclosRepo: options.ciclosRepo,
+        lotesRepo: options.lotesRepo,
+        cosechasRepo: options.cosechasRepo,
+        aplicacionesRepo: options.aplicacionesRepo,
+        insumosRepo: options.insumosRepo,
+        fincasRepo: options.fincasRepo,
+      });
+    }
+
+    indicadoresController = new IndicadoresController(calcularMetricasUC, compararCampanasUC);
   }
 
   // Registro de Rutas

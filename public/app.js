@@ -2087,11 +2087,296 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ==========================================================================
+  // AGRUL-036: Comparador de Campañas, Evolución Histórica y Relación Insumo-Producto
+  // ==========================================================================
+  const compFiltroModo = document.getElementById('comp-filtro-modo');
+  const compFiltroLote = document.getElementById('comp-filtro-lote');
+  const compFiltroTemporada = document.getElementById('comp-filtro-temporada');
+  const compFiltroFinca = document.getElementById('comp-filtro-finca');
+  const compFiltroCultivo = document.getElementById('comp-filtro-cultivo');
+  const btnCompEjecutar = document.getElementById('btn-comp-ejecutar');
+
+  const compResCiclos = document.getElementById('comp-res-ciclos');
+  const compResRendBruto = document.getElementById('comp-res-rend-bruto');
+  const compResRendComercial = document.getElementById('comp-res-rend-comercial');
+  const compResDescarte = document.getElementById('comp-res-descarte');
+  const compResEficiencia = document.getElementById('comp-res-eficiencia');
+  const compResTendencia = document.getElementById('comp-res-tendencia');
+  const compTbodyItems = document.getElementById('comp-tbody-items');
+
+  const modalEficienciaInsumos = document.getElementById('modal-eficiencia-insumos');
+  const modalEfiSubtitulo = document.getElementById('modal-efi-subtitulo');
+  const efiKpiGlobal = document.getElementById('efi-kpi-global');
+  const efiKpiCosecha = document.getElementById('efi-kpi-cosecha');
+  const efiKpiCosechaSub = document.getElementById('efi-kpi-cosecha-sub');
+  const efiKpiInsumos = document.getElementById('efi-kpi-insumos');
+  const efiKpiInsumosSub = document.getElementById('efi-kpi-insumos-sub');
+  const efiKpiIntensidad = document.getElementById('efi-kpi-intensidad');
+  const efiKpiIntensidadTon = document.getElementById('efi-kpi-intensidad-ton');
+  const efiTbodyInsumos = document.getElementById('efi-tbody-insumos');
+
+  function poblarSelectoresComparador() {
+    if (compFiltroLote && Array.isArray(allLotes)) {
+      const selected = compFiltroLote.value;
+      compFiltroLote.innerHTML = '<option value="">Todos los lotes...</option>' +
+        allLotes.map(l => `<option value="${l.id}">${l.codigoLote?.value || l.id} (${l.producto || 'Cultivo'})</option>`).join('');
+      if (selected) compFiltroLote.value = selected;
+    }
+
+    if (compFiltroFinca && indFiltroFinca) {
+      compFiltroFinca.innerHTML = indFiltroFinca.innerHTML;
+    }
+  }
+
+  async function cargarComparadorCampanas() {
+    if (!compTbodyItems) return;
+
+    const modo = compFiltroModo?.value || 'INTERCAMPANA_LOTE';
+    const loteId = compFiltroLote?.value || '';
+    const temporada = compFiltroTemporada?.value?.trim() || '';
+    const fincaId = compFiltroFinca?.value || '';
+    const cultivo = compFiltroCultivo?.value?.trim() || '';
+
+    const params = new URLSearchParams();
+    params.set('modo', modo);
+    if (loteId) params.set('loteId', loteId);
+    if (temporada) params.set('temporada', temporada);
+    if (fincaId) params.set('fincaId', fincaId);
+    if (cultivo) params.set('cultivo', cultivo);
+
+    try {
+      showToast('Calculando comparativa de campañas y eficiencia...', 'info');
+      compTbodyItems.innerHTML = `
+        <tr>
+          <td colspan="11" class="text-center loading-indicator" style="padding: 24px;">
+            <span class="spinner"></span> Analizando evolución histórica y eficiencia de insumos...
+          </td>
+        </tr>`;
+
+      const res = await fetch(`/api/v1/indicadores/comparador?${params.toString()}`);
+      const json = await res.json();
+
+      if (!json.success || !json.data) {
+        throw new Error(json.error?.message || 'Error al comparar campañas');
+      }
+
+      renderizarComparadorCampanas(json.data);
+    } catch (err) {
+      showToast(err.message, 'error');
+      compTbodyItems.innerHTML = `
+        <tr>
+          <td colspan="11" class="text-center" style="padding: 24px; color: var(--accent-rose);">
+            ${err.message}
+          </td>
+        </tr>`;
+    }
+  }
+
+  function renderizarComparadorCampanas(data) {
+    const { resumen, items, modo } = data;
+
+    // Resumen KPIs
+    if (compResCiclos) compResCiclos.textContent = resumen.totalCiclosComparados;
+    if (compResRendBruto) compResRendBruto.textContent = `${resumen.promedioRendimientoBrutoKgHa.toLocaleString('es-AR')} kg/ha`;
+    if (compResRendComercial) compResRendComercial.textContent = `${resumen.promedioRendimientoComercialKgHa.toLocaleString('es-AR')} kg/ha`;
+    if (compResDescarte) compResDescarte.textContent = `${resumen.promedioPorcentajeDescarte.toFixed(2)} %`;
+    if (compResEficiencia) compResEficiencia.textContent = `${resumen.promedioEficienciaGlobalKgPorUnidad.toLocaleString('es-AR')} kg/ud`;
+
+    if (compResTendencia) {
+      compResTendencia.className = 'comp-tendencia-badge';
+      let textoTendencia = '-';
+      switch (resumen.tendenciaRendimiento) {
+        case 'ASCENDENTE':
+          textoTendencia = '📈 Creciente';
+          compResTendencia.classList.add('tendencia-ascendente');
+          break;
+        case 'DESCENDENTE':
+          textoTendencia = '📉 Decreciente';
+          compResTendencia.classList.add('tendencia-descendente');
+          break;
+        case 'ESTABLE':
+          textoTendencia = '➡️ Estable';
+          compResTendencia.classList.add('tendencia-estable');
+          break;
+        case 'VARIABLE':
+        default:
+          textoTendencia = '🔀 Heterogénea';
+          compResTendencia.classList.add('tendencia-variable');
+          break;
+      }
+      compResTendencia.textContent = textoTendencia;
+    }
+
+    // Tabla Items
+    if (!items || items.length === 0) {
+      compTbodyItems.innerHTML = `
+        <tr>
+          <td colspan="11" class="text-center" style="padding: 28px; color: var(--text-dim);">
+            No se encontraron ciclos o campañas registradas para el criterio de comparación seleccionado.
+          </td>
+        </tr>`;
+      return;
+    }
+
+    compTbodyItems.innerHTML = items.map((item, idx) => {
+      // Posición o ranking
+      let posHtml = '';
+      if (modo === 'INTERLOTE_CAMPANA') {
+        const rankClass = idx === 0 ? 'top-1' : idx === 1 ? 'top-2' : idx === 2 ? 'top-3' : '';
+        posHtml = `<span class="badge-ranking-pos ${rankClass}">${idx + 1}</span>`;
+      } else {
+        posHtml = `<span style="color: var(--text-dim); font-size: 11px;">#${idx + 1}</span>`;
+      }
+
+      // Estado ciclo provisional vs definitivo
+      const estadoBadge = item.esProvisional
+        ? `<span class="badge-ciclo-estado badge-provisional" title="${item.advertenciaEstadoParcial || 'Métricas provisionales: ciclo en curso'}">⏳ PROVISIONAL</span>`
+        : `<span class="badge-ciclo-estado badge-definitivo">🔒 DEFINITIVO</span>`;
+
+      // Formato Deltas
+      const renderDelta = (delta, unidad = '%', invertido = false) => {
+        if (delta === null || delta === undefined) return '<span style="color: var(--text-dim); font-size: 11px;">-</span>';
+        const esPos = delta > 0;
+        const esNeg = delta < 0;
+        const sign = esPos ? '+' : '';
+        const cssClass = invertido
+          ? (esPos ? 'delta-neg' : esNeg ? 'delta-pos' : 'delta-neutral')
+          : (esPos ? 'delta-pos' : esNeg ? 'delta-neg' : 'delta-neutral');
+        const icon = esPos ? '▲' : esNeg ? '▼' : '•';
+        return `<span class="delta-tag ${cssClass}">${icon} ${sign}${delta}${unidad}</span>`;
+      };
+
+      // Deltas según modo
+      let deltaBrutoHtml = '';
+      let deltaNetoHtml = '';
+      let deltaDescarteHtml = '';
+      let deltaEficienciaHtml = '';
+
+      if (modo === 'INTERCAMPANA_LOTE') {
+        deltaBrutoHtml = renderDelta(item.deltas?.deltaRendimientoBrutoPorcentaje);
+        deltaNetoHtml = renderDelta(item.deltas?.deltaRendimientoComercialPorcentaje);
+        deltaDescarteHtml = renderDelta(item.deltas?.deltaDescartePuntosPorcentuales, ' pp', true);
+        deltaEficienciaHtml = renderDelta(item.deltas?.deltaEficienciaInsumosPorcentaje);
+      } else {
+        deltaBrutoHtml = renderDelta(item.deltas?.variacionVsMediaCampanaRendimientoPorcentaje, '% vs media');
+        deltaNetoHtml = renderDelta(item.deltas?.variacionVsMediaCampanaRendimientoPorcentaje, '% vs media');
+        deltaDescarteHtml = renderDelta(item.deltas?.variacionVsMediaCampanaDescartePuntos, ' pp vs media', true);
+        deltaEficienciaHtml = renderDelta(item.deltas?.deltaEficienciaInsumosPorcentaje);
+      }
+
+      return `
+        <tr>
+          <td>${posHtml}</td>
+          <td>
+            <strong>${item.temporada}</strong><br>
+            <code>${item.codigoCiclo}</code><br>
+            ${estadoBadge}
+          </td>
+          <td>
+            <strong>${item.codigoLote || item.nombreLote}</strong><br>
+            <span style="font-size: 11px; color: var(--text-dim);">${item.fincaNombre || item.nombreFinca || '-'}</span>
+          </td>
+          <td>
+            ${item.cultivo} ${item.variedad ? `<span style="color: var(--text-dim);">(${item.variedad})</span>` : ''}
+          </td>
+          <td>${item.superficieHectareas.toFixed(2)} ha</td>
+          <td><strong>${item.kilosBrutos.toLocaleString('es-AR')} kg</strong></td>
+          <td>
+            <strong>${item.rendimientoBrutoKgHa.toLocaleString('es-AR')} kg/ha</strong><br>
+            ${deltaBrutoHtml}
+          </td>
+          <td>
+            <strong style="color: var(--accent-emerald);">${item.rendimientoComercialKgHa.toLocaleString('es-AR')} kg/ha</strong><br>
+            ${deltaNetoHtml}
+          </td>
+          <td>
+            <span class="badge-descarte-ok">${item.porcentajeDescarte}%</span><br>
+            ${deltaDescarteHtml}
+          </td>
+          <td>
+            <strong>${item.eficienciaInsumos.eficienciaGlobalKgPorUnidad.toLocaleString('es-AR')}</strong> kg/ud<br>
+            ${deltaEficienciaHtml}
+          </td>
+          <td>
+            <button type="button" class="btn-view-inputs" data-ciclo-id="${item.cicloId}">
+              🧪 Insumos
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Listener para los botones de ver insumos
+    compTbodyItems.querySelectorAll('.btn-view-inputs').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cicloId = btn.getAttribute('data-ciclo-id');
+        abrirModalEficienciaInsumos(cicloId);
+      });
+    });
+  }
+
+  async function abrirModalEficienciaInsumos(cicloId) {
+    if (!modalEficienciaInsumos) return;
+
+    try {
+      showToast('Cargando desglose de eficiencia insumo-producto...', 'info');
+      const res = await fetch(`/api/v1/indicadores/eficiencia-insumos?cicloId=${cicloId}`);
+      const json = await res.json();
+
+      if (!json.success || !json.data) {
+        throw new Error(json.error?.message || 'Error al obtener eficiencia de insumos');
+      }
+
+      const d = json.data;
+      const efi = d.eficiencia;
+
+      if (modalEfiSubtitulo) {
+        modalEfiSubtitulo.innerHTML = `Ciclo: <code>${d.codigoCiclo}</code> • Temporada: <strong>${d.temporada}</strong> • Cultivo: <strong>${d.cultivo}</strong> ${d.esProvisional ? '• <span class="badge-ciclo-estado badge-provisional">⏳ PROVISIONAL</span>' : '• <span class="badge-ciclo-estado badge-definitivo">🔒 DEFINITIVO</span>'}`;
+      }
+
+      if (efiKpiGlobal) efiKpiGlobal.textContent = `${efi.eficienciaGlobalKgPorUnidad.toLocaleString('es-AR')} kg/ud`;
+      if (efiKpiCosecha) efiKpiCosecha.textContent = `${d.kilosCosechados.toLocaleString('es-AR')} kg`;
+      if (efiKpiCosechaSub) efiKpiCosechaSub.textContent = `${d.superficieHectareas} ha cultivadas`;
+      if (efiKpiInsumos) efiKpiInsumos.textContent = `${efi.totalVolumenInsumos.toLocaleString('es-AR')}`;
+      if (efiKpiInsumosSub) efiKpiInsumosSub.textContent = `${efi.totalFertilizantesKg.toLocaleString('es-AR')} kg fertilizante + ${efi.totalFitosanitariosLitros.toLocaleString('es-AR')} L fitosanitarios`;
+      if (efiKpiIntensidad) efiKpiIntensidad.textContent = `${efi.intensidadAplicacionUnidadesPorHa.toLocaleString('es-AR')} ud/ha`;
+      if (efiKpiIntensidadTon) efiKpiIntensidadTon.textContent = `${efi.intensidadAplicacionUnidadesPorTonelada.toLocaleString('es-AR')} ud/tn cosechada`;
+
+      if (efiTbodyInsumos) {
+        if (!efi.desglosePorInsumo || efi.desglosePorInsumo.length === 0) {
+          efiTbodyInsumos.innerHTML = `
+            <tr>
+              <td colspan="6" class="text-center" style="padding: 24px; color: var(--text-dim);">
+                No se registraron aplicaciones de insumos en este ciclo productivo.
+              </td>
+            </tr>`;
+        } else {
+          efiTbodyInsumos.innerHTML = efi.desglosePorInsumo.map(i => `
+            <tr>
+              <td><strong>${i.nombreComercial}</strong></td>
+              <td><span style="font-size: 11px; color: var(--text-dim);">${i.categoria} (${i.tipo})</span></td>
+              <td><strong>${i.cantidadTotalAplicada.toLocaleString('es-AR')} ${i.unidadMedida}</strong></td>
+              <td>${i.dosisPorHectarea.toLocaleString('es-AR')} ${i.unidadMedida}/ha</td>
+              <td style="color: var(--accent-emerald);"><strong>${i.eficienciaKgPorUnidad.toLocaleString('es-AR')}</strong> kg cosecha / ${i.unidadMedida}</td>
+              <td>${i.dosisPorToneladaCosechada.toLocaleString('es-AR')} ${i.unidadMedida}/tn</td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      openModal(modalEficienciaInsumos);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
   // Bindings botones indicadores
   if (btnIndicadoresProduccion) {
     btnIndicadoresProduccion.addEventListener('click', () => {
       openModal(modalIndicadoresProduccion);
       poblarFiltroFincasIndicadores();
+      poblarSelectoresComparador();
       cargarIndicadoresProduccion();
     });
   }
@@ -2114,6 +2399,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (btnCompEjecutar) {
+    btnCompEjecutar.addEventListener('click', () => {
+      cargarComparadorCampanas();
+    });
+  }
+
   // Navegación entre pestañas de indicadores
   const indTabBtns = document.querySelectorAll('.ind-tab-btn');
   indTabBtns.forEach(btn => {
@@ -2126,6 +2417,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (content.id === targetId) {
           content.style.display = 'block';
           content.classList.add('active');
+          if (targetId === 'tab-ind-comparador') {
+            poblarSelectoresComparador();
+            cargarComparadorCampanas();
+          }
         } else {
           content.style.display = 'none';
           content.classList.remove('active');

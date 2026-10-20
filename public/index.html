@@ -1195,6 +1195,7 @@
           <button class="ind-tab-btn active" data-ind-tab="tab-ind-ciclos">Rendimiento por Ciclo</button>
           <button class="ind-tab-btn" data-ind-tab="tab-ind-lotes">Consolidado por Lote</button>
           <button class="ind-tab-btn" data-ind-tab="tab-ind-cultivos">Rendimiento por Cultivo</button>
+          <button class="ind-tab-btn" data-ind-tab="tab-ind-comparador">⚖️ Comparador & Eficiencia</button>
         </div>
 
         <!-- TAB 1: Ciclos Productivos -->
@@ -1264,10 +1265,179 @@
             </table>
           </div>
         </div>
+
+        <!-- TAB 4: Comparador de Campañas y Eficiencia Agronómica (AGRUL-036 / RF-M7-03..06, 10, 11) -->
+        <div id="tab-ind-comparador" class="ind-tab-content" style="display: none;">
+          <!-- Barra de Control del Comparador -->
+          <div class="comp-control-bar glass">
+            <div class="comp-controls-grid">
+              <div class="form-group">
+                <label for="comp-filtro-modo">Modo de Comparación</label>
+                <select id="comp-filtro-modo" class="form-control">
+                  <option value="INTERCAMPANA_LOTE">Intercampaña: Evolución de un Lote en el Tiempo</option>
+                  <option value="INTERLOTE_CAMPANA">Interlote: Comparativa entre Lotes en una Temporada</option>
+                  <option value="PERSONALIZADA">Personalizada: Filtro Libre Multi-Campañas</option>
+                </select>
+              </div>
+              <div class="form-group" id="grp-comp-lote">
+                <label for="comp-filtro-lote">Lote</label>
+                <select id="comp-filtro-lote" class="form-control">
+                  <option value="">Todos los lotes...</option>
+                </select>
+              </div>
+              <div class="form-group" id="grp-comp-temporada">
+                <label for="comp-filtro-temporada">Temporada / Campaña</label>
+                <input type="text" id="comp-filtro-temporada" class="form-control" placeholder="Ej: 2025, 2024-2025...">
+              </div>
+              <div class="form-group">
+                <label for="comp-filtro-finca">Finca</label>
+                <select id="comp-filtro-finca" class="form-control">
+                  <option value="">Todas las fincas</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="comp-filtro-cultivo">Cultivo</label>
+                <input type="text" id="comp-filtro-cultivo" class="form-control" placeholder="Ej: Vid, Nogal...">
+              </div>
+            </div>
+            <div class="comp-actions">
+              <button type="button" id="btn-comp-ejecutar" class="btn btn-primary btn-sm">
+                <span class="btn-icon">⚡</span> Ejecutar Comparativa
+              </button>
+            </div>
+          </div>
+
+          <!-- Resumen de Comparativa -->
+          <div class="comp-summary-strip glass" id="comp-summary-box">
+            <div class="comp-stat-pill">
+              <span class="pill-label">Ciclos Comparados:</span>
+              <strong id="comp-res-ciclos">0</strong>
+            </div>
+            <div class="comp-stat-pill">
+              <span class="pill-label">Rend. Bruto Medio:</span>
+              <strong id="comp-res-rend-bruto" style="color: #38bdf8;">0 kg/ha</strong>
+            </div>
+            <div class="comp-stat-pill">
+              <span class="pill-label">Rend. Comercial Medio:</span>
+              <strong id="comp-res-rend-comercial" style="color: var(--accent-emerald);">0 kg/ha</strong>
+            </div>
+            <div class="comp-stat-pill">
+              <span class="pill-label">Descarte Promedio:</span>
+              <strong id="comp-res-descarte" style="color: var(--accent-amber);">0 %</strong>
+            </div>
+            <div class="comp-stat-pill">
+              <span class="pill-label">Eficiencia Insumos:</span>
+              <strong id="comp-res-eficiencia" style="color: #c084fc;">0 kg/ud</strong>
+            </div>
+            <div class="comp-stat-pill">
+              <span class="pill-label">Tendencia:</span>
+              <span id="comp-res-tendencia" class="comp-tendencia-badge">-</span>
+            </div>
+          </div>
+
+          <!-- Tabla Comparativa con Deltas -->
+          <div class="table-responsive">
+            <table class="data-table comp-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">#</th>
+                  <th>Campaña / Ciclo</th>
+                  <th>Lote / Finca</th>
+                  <th>Cultivo / Variedad</th>
+                  <th>Superficie</th>
+                  <th>Cosecha Total</th>
+                  <th>Rend. Bruto & Delta</th>
+                  <th>Rend. Comercial & Delta</th>
+                  <th>Descarte (%) & Delta</th>
+                  <th>Eficiencia Insumos</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="comp-tbody-items">
+                <tr><td colspan="11" class="text-center" style="padding: 24px; color: var(--text-dim);">Seleccione un modo y presione "Ejecutar Comparativa" para analizar la evolución histórica o interlote.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" data-close="modal-indicadores-produccion">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Detalle de Relación Insumo-Producto y Eficiencia Agronómica (AGRUL-036 / RF-M7-05) -->
+  <div id="modal-eficiencia-insumos" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-efi-titulo">
+    <div class="modal-dialog modal-xl modal-ind-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge ind-badge" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">🧪</div>
+          <div>
+            <h2 id="modal-efi-titulo">Relación Insumo-Producto y Eficiencia Agronómica</h2>
+            <p class="modal-subtitle" id="modal-efi-subtitulo">Desglose de fertilizantes, fitosanitarios y rendimiento por unidad aplicada</p>
+          </div>
+        </div>
+        <button class="modal-close" data-close="modal-eficiencia-insumos" aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <div class="modal-body ind-modal-body">
+        <!-- Tarjetas KPI de Eficiencia -->
+        <div class="ind-kpi-grid">
+          <div class="ind-kpi-card glass emerald">
+            <div class="ind-kpi-icon">⚖️</div>
+            <div class="ind-kpi-content">
+              <span class="ind-kpi-label">Eficiencia Agronómica Global</span>
+              <span class="ind-kpi-value" id="efi-kpi-global">0 kg/ud</span>
+              <span class="ind-kpi-subtext">kg cosecha / unidad insumos</span>
+            </div>
+          </div>
+          <div class="ind-kpi-card glass blue">
+            <div class="ind-kpi-icon">🌾</div>
+            <div class="ind-kpi-content">
+              <span class="ind-kpi-label">Total Cosechado</span>
+              <span class="ind-kpi-value" id="efi-kpi-cosecha">0 kg</span>
+              <span class="ind-kpi-subtext" id="efi-kpi-cosecha-sub">0 ha cultivadas</span>
+            </div>
+          </div>
+          <div class="ind-kpi-card glass purple">
+            <div class="ind-kpi-icon">🧪</div>
+            <div class="ind-kpi-content">
+              <span class="ind-kpi-label">Total Insumos Aplicados</span>
+              <span class="ind-kpi-value" id="efi-kpi-insumos">0</span>
+              <span class="ind-kpi-subtext" id="efi-kpi-insumos-sub">kg fertilizantes + L fitosanitarios</span>
+            </div>
+          </div>
+          <div class="ind-kpi-card glass amber">
+            <div class="ind-kpi-icon">📐</div>
+            <div class="ind-kpi-content">
+              <span class="ind-kpi-label">Intensidad de Aplicación</span>
+              <span class="ind-kpi-value" id="efi-kpi-intensidad">0 ud/ha</span>
+              <span class="ind-kpi-subtext" id="efi-kpi-intensidad-ton">0 ud/ton cosechada</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla Desglose por Insumo -->
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Insumo</th>
+                <th>Categoría / Tipo</th>
+                <th>Total Aplicado</th>
+                <th>Dosis por Hectárea</th>
+                <th>Eficiencia Agronómica (kg/ud)</th>
+                <th>Intensidad por Tonelada</th>
+              </tr>
+            </thead>
+            <tbody id="efi-tbody-insumos"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close="modal-eficiencia-insumos">Cerrar</button>
       </div>
     </div>
   </div>

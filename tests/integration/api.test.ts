@@ -4326,6 +4326,191 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       expect(body.error.code).toBe('ENTITY_NOT_FOUND');
     });
   });
+
+  describe('AGRUL-036: Comparador de Campañas, Evolución Histórica y Relación Insumo-Producto (RF-M7-03 a RF-M7-11)', () => {
+    let loteComp1: Lote;
+    let loteComp2: Lote;
+    let cicloComp1: CicloProductivo;
+    let cicloComp2: CicloProductivo;
+    let insumoFert: InsumoCatalogo;
+
+    beforeEach(async () => {
+      loteComp1 = Lote.crear({
+        id: 'lote-comp-01',
+        codigoLote: 'LOT-2025-COMP01',
+        fincaId: null,
+        superficieHa: 2.0,
+        producto: 'Uva',
+        variedad: 'Syrah',
+        cantidadInicial: 0,
+        unidadMedida: 'KG',
+      });
+      await lotesRepo.guardar(loteComp1);
+
+      loteComp2 = Lote.crear({
+        id: 'lote-comp-02',
+        codigoLote: 'LOT-2025-COMP02',
+        fincaId: null,
+        superficieHa: 2.0,
+        producto: 'Uva',
+        variedad: 'Syrah',
+        cantidadInicial: 0,
+        unidadMedida: 'KG',
+      });
+      await lotesRepo.guardar(loteComp2);
+
+      // Insumo
+      insumoFert = InsumoCatalogo.crear({
+        id: 'ins-comp-fert',
+        nombreComercial: 'Nitrato de Calcio Comp',
+        categoria: 'FERTILIZANTE',
+        unidadMedidaId: 'KG',
+        presentacion: 'Bolsa 25kg',
+      });
+      await insumosRepo.guardar(insumoFert);
+
+      // Ciclo 1: 2024/2025 (Cerrado)
+      cicloComp1 = CicloProductivo.crear({
+        id: 'ciclo-comp-01',
+        codigoCiclo: 'CICLO-2024-SYRAH',
+        loteId: loteComp1.id,
+        cultivo: 'Vid',
+        variedad: 'Syrah',
+        superficieCultivadaHa: 2.0,
+        fechaInicio: '2024-09-01',
+        temporada: '2024/2025',
+      });
+      cicloComp1.cerrar('2025-03-30');
+      await ciclosRepo.guardar(cicloComp1);
+
+      const cosComp1 = Cosecha.crear({
+        id: 'cos-comp-01',
+        codigoTrazabilidad: CodigoTrazabilidadCosecha.generar(loteComp1.codigoLote.value, '2025-03-10', 1),
+        loteId: loteComp1.id,
+        cicloId: cicloComp1.id,
+        fecha: '2025-03-10',
+        cantidadCosechadaKg: 10000,
+        cantidadComercializableKg: 9000,
+        cantidadDescarteKg: 1000,
+        motivoDescarte: 'DESCARTE_TAMANO',
+      });
+      await cosechasRepo.guardar(cosComp1);
+
+      // Ciclo 2: 2025/2026 (En curso / provisional)
+      cicloComp2 = CicloProductivo.crear({
+        id: 'ciclo-comp-02',
+        codigoCiclo: 'CICLO-2025-SYRAH',
+        loteId: loteComp1.id,
+        cultivo: 'Vid',
+        variedad: 'Syrah',
+        superficieCultivadaHa: 2.0,
+        fechaInicio: '2025-09-01',
+        temporada: '2025/2026',
+      });
+      await ciclosRepo.guardar(cicloComp2);
+
+      const cosComp2 = Cosecha.crear({
+        id: 'cos-comp-02',
+        codigoTrazabilidad: CodigoTrazabilidadCosecha.generar(loteComp1.codigoLote.value, '2026-03-15', 1),
+        loteId: loteComp1.id,
+        cicloId: cicloComp2.id,
+        fecha: '2026-03-15',
+        cantidadCosechadaKg: 12000,
+        cantidadComercializableKg: 11000,
+        cantidadDescarteKg: 1000,
+        motivoDescarte: 'DESCARTE_TAMANO',
+      });
+      await cosechasRepo.guardar(cosComp2);
+
+      // Aplicación en Ciclo 2
+      const appComp = AplicacionAgricola.crear({
+        id: 'app-comp-01',
+        actividadId: 'act-comp-01',
+        loteId: loteComp1.id,
+        cicloId: cicloComp2.id,
+        fecha: '2025-11-01',
+        metodo: 'FERTIRRIEGO',
+        motivo: 'Nutrición en cuaje',
+        equipoAplicacion: 'Equipo Fertirriego',
+        lineas: [{
+          insumoId: insumoFert.id,
+          cantidadTotal: 300,
+          unidadMedidaId: 'KG',
+        }],
+      });
+      await aplicacionesRepo.guardar(appComp);
+    });
+
+    it('GET /api/v1/indicadores/comparador con loteId debe realizar comparativa intercampaña con deltas y advertencia provisional', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/indicadores/comparador?loteId=${loteComp1.id}`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.modo).toBe('INTERCAMPANA_LOTE');
+      expect(body.data.items).toHaveLength(2);
+
+      // Campaña 1 (Cerrada)
+      const item1 = body.data.items[0];
+      expect(item1.cicloId).toBe(cicloComp1.id);
+      expect(item1.esProvisional).toBe(false);
+      expect(item1.advertenciaEstadoParcial).toBeNull();
+      expect(item1.rendimientoBrutoKgHa).toBe(5000); // 10000 / 2 ha
+
+      // Campaña 2 (En curso)
+      const item2 = body.data.items[1];
+      expect(item2.cicloId).toBe(cicloComp2.id);
+      expect(item2.esProvisional).toBe(true);
+      expect(item2.advertenciaEstadoParcial).toContain('Métricas provisionales');
+      expect(item2.rendimientoBrutoKgHa).toBe(6000); // 12000 / 2 ha
+      // Delta: (6000 - 5000) / 5000 = +20%
+      expect(item2.deltas.deltaRendimientoBrutoPorcentaje).toBe(20);
+
+      // Resumen
+      expect(body.data.resumen.mejorRendimientoCicloId).toBe(cicloComp2.id);
+      expect(body.data.resumen.tendenciaRendimiento).toBe('ASCENDENTE');
+    });
+
+    it('GET /api/v1/indicadores/comparativa (alias) debe retornar la misma comparativa', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/indicadores/comparativa?loteId=${loteComp1.id}`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.items).toHaveLength(2);
+    });
+
+    it('GET /api/v1/indicadores/eficiencia-insumos/:cicloId y alias deben retornar métricas de insumo-producto', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/indicadores/eficiencia-insumos/${cicloComp2.id}`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.cicloId).toBe(cicloComp2.id);
+      expect(body.data.kilosCosechados).toBe(12000);
+      // 12000 kg / 300 kg fertilizante = 40 kg/kg
+      expect(body.data.eficiencia.eficienciaFertilizanteKgPorKg).toBe(40);
+      expect(body.data.eficiencia.desglosePorInsumo).toHaveLength(1);
+      expect(body.data.eficiencia.desglosePorInsumo[0].insumoId).toBe(insumoFert.id);
+
+      // Probar alias /indicadores/relacion-insumo-producto/:cicloId
+      const aliasRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/indicadores/relacion-insumo-producto/${cicloComp2.id}`,
+      });
+      expect(aliasRes.statusCode).toBe(200);
+      expect(JSON.parse(aliasRes.body).data.cicloId).toBe(cicloComp2.id);
+    });
+  });
 });
 
 

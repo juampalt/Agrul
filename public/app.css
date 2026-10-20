@@ -3113,4 +3113,188 @@ input:focus, select:focus {
   color: #c084fc;
 }
 
+/* ==========================================================================
+   AGRUL-036: Comparador de Campañas, Evolución Histórica y Relación Insumo-Producto
+   ========================================================================== */
+
+.comp-control-bar {
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.comp-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.comp-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.comp-summary-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6));
+  margin-bottom: 14px;
+}
+
+.comp-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.comp-stat-pill .pill-label {
+  color: var(--text-dim);
+}
+
+.comp-tendencia-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.comp-tendencia-badge.tendencia-ascendente {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.comp-tendencia-badge.tendencia-descendente {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.comp-tendencia-badge.tendencia-estable {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.comp-tendencia-badge.tendencia-variable {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+/* Deltas y Variaciones (RF-M7-06) */
+.delta-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+.delta-tag.delta-pos {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.delta-tag.delta-neg {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.delta-tag.delta-neutral {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-dim);
+}
+
+/* Distinción Ciclo Cerrado vs En Curso (RF-M7-11) */
+.badge-ciclo-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+.badge-ciclo-estado.badge-provisional {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  cursor: help;
+}
+
+.badge-ciclo-estado.badge-definitivo {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.badge-ranking-pos {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+
+.badge-ranking-pos.top-1 {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #0f172a;
+}
+
+.badge-ranking-pos.top-2 {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+  color: #0f172a;
+}
+
+.badge-ranking-pos.top-3 {
+  background: linear-gradient(135deg, #b45309, #78350f);
+  color: #fef3c7;
+}
+
+.btn-view-inputs {
+  padding: 3px 8px;
+  font-size: 11px;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  color: #c084fc;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-view-inputs:hover {
+  background: rgba(168, 85, 247, 0.3);
+  border-color: #c084fc;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+
 

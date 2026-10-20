@@ -1334,7 +1334,7 @@
     "epic": "Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas",
     "epicId": "epic-13-modulo-7-indicadores",
     "title": "Comparador de Campañas, Evolución Histórica y Relación Insumo-Producto",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Media (P2)",
     "skills": [
       ".cursor/skills/domain-traceability.md",
@@ -1354,7 +1354,7 @@
       "comparador",
       "campañas",
       "analytics",
-      "ready-for-agent"
+      "status:done"
     ],
     "description": "Comparación entre campañas del mismo lote o entre lotes de la misma campaña, correlación entre insumos aplicados y producción obtenida, distinguiendo ciclos cerrados de ciclos en curso.",
     "tasks": [
@@ -1364,7 +1364,8 @@
     ],
     "acceptanceCriteria": [
       "RF-M7-03 / RF-M7-04: Comparación tabular y gráfica de rendimientos intercampaña.",
-      "RF-M7-11: Indicador explícito de estado parcial en ciclos en curso."
+      "RF-M7-11: Indicador explícito de estado parcial en ciclos en curso.",
+      "RF-M7-05 / RF-M7-06: Relación insumo-producto, intensidad y deltas porcentuales."
     ]
   },
   {

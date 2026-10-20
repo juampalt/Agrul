@@ -202,6 +202,18 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/ciclos/:cicloId/indicadores', (req, rep) => deps.indicadoresController!.obtenerIndicadoresCiclo(req, rep));
         v1.get('/indicadores/lote/:loteId', (req, rep) => deps.indicadoresController!.obtenerIndicadoresLote(req, rep));
         v1.get('/lotes/:loteId/indicadores', (req, rep) => deps.indicadoresController!.obtenerIndicadoresLote(req, rep));
+
+        // Comparador de Campañas, Evolución Histórica y Relación Insumo-Producto (AGRUL-036 / RF-M7-03, RF-M7-04, RF-M7-05, RF-M7-06, RF-M7-10, RF-M7-11)
+        v1.get('/indicadores/comparador', (req, rep) => deps.indicadoresController!.compararCampanas(req, rep));
+        v1.get('/indicadores/comparativa', (req, rep) => deps.indicadoresController!.compararCampanas(req, rep));
+        v1.get('/indicadores/campanas', (req, rep) => deps.indicadoresController!.compararCampanas(req, rep));
+
+        // Relación Insumo-Producto y Eficiencia Agronómica
+        v1.get('/indicadores/eficiencia-insumos', (req, rep) => deps.indicadoresController!.obtenerEficienciaInsumos(req, rep));
+        v1.get('/indicadores/eficiencia-insumos/:cicloId', (req, rep) => deps.indicadoresController!.obtenerEficienciaInsumos(req, rep));
+        v1.get('/indicadores/relacion-insumo-producto', (req, rep) => deps.indicadoresController!.obtenerEficienciaInsumos(req, rep));
+        v1.get('/indicadores/relacion-insumo-producto/:cicloId', (req, rep) => deps.indicadoresController!.obtenerEficienciaInsumos(req, rep));
+        v1.get('/ciclos/:cicloId/eficiencia-insumos', (req, rep) => deps.indicadoresController!.obtenerEficienciaInsumos(req, rep));
       }
     },
     { prefix: '/api/v1' }
