@@ -12,4 +12,5 @@ export * from './informes-trazabilidad-repository.port.js';
 export * from './usuarios-repository.port.js';
 export * from './usuario-fincas-repository.port.js';
 export * from './auditoria-seguridad-repository.port.js';
-
+export * from './proveedores-repository.port.js';
+export * from './insumo-equivalencias-repository.port.js';

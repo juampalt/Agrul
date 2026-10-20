@@ -125,6 +125,24 @@ import {
   ConsultarAuditoriaSeguridadUseCase,
   ObtenerAuditoriaPorIdUseCase,
 } from '../../application/use-cases/auditoria.use-cases.js';
+import { ProveedoresRepositoryPort } from '../../core/ports/proveedores-repository.port.js';
+import { InsumoEquivalenciasRepositoryPort } from '../../core/ports/insumo-equivalencias-repository.port.js';
+import { InMemoryProveedoresRepository } from '../../../tests/mocks/in-memory-proveedores.repository.js';
+import { InMemoryInsumoEquivalenciasRepository } from '../../../tests/mocks/in-memory-insumo-equivalencias.repository.js';
+import { InMemoryInsumosCatalogoRepository } from '../../../tests/mocks/in-memory-insumos-catalogo.repository.js';
+import { ProveedoresController } from './controllers/proveedores.controller.js';
+import { InsumoEquivalenciasController } from './controllers/insumo-equivalencias.controller.js';
+import {
+  RegistrarProveedorUseCase,
+  ListarProveedoresUseCase,
+  ObtenerProveedorPorIdUseCase,
+  ActualizarProveedorUseCase,
+} from '../../application/use-cases/proveedores.use-cases.js';
+import {
+  RegistrarInsumoEquivalenciaUseCase,
+  ListarEquivalenciasPorInsumoUseCase,
+  ConvertirUnidadInsumoUseCase,
+} from '../../application/use-cases/insumo-equivalencias.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 
 import { resolve } from 'node:path';
@@ -149,6 +167,8 @@ export interface BuildAppOptions {
   usuariosRepo?: UsuariosRepositoryPort;
   usuarioFincasRepo?: UsuarioFincasRepositoryPort;
   auditoriaRepo?: AuditoriaSeguridadRepositoryPort;
+  proveedoresRepo?: ProveedoresRepositoryPort;
+  insumoEquivalenciasRepo?: InsumoEquivalenciasRepositoryPort;
   logger?: boolean;
 }
 
@@ -576,6 +596,33 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     obtenerAuditoriaPorIdUC
   );
 
+  // Módulo 9: Inventario de Insumos y Stock (AGRUL-041)
+  const proveedoresRepo = options.proveedoresRepo ?? new InMemoryProveedoresRepository();
+  const registrarProveedorUC = new RegistrarProveedorUseCase(proveedoresRepo);
+  const listarProveedoresUC = new ListarProveedoresUseCase(proveedoresRepo);
+  const obtenerProveedorPorIdUC = new ObtenerProveedorPorIdUseCase(proveedoresRepo);
+  const actualizarProveedorUC = new ActualizarProveedorUseCase(proveedoresRepo);
+
+  const proveedoresController = new ProveedoresController(
+    registrarProveedorUC,
+    listarProveedoresUC,
+    obtenerProveedorPorIdUC,
+    actualizarProveedorUC
+  );
+
+  const insumoEquivalenciasRepo = options.insumoEquivalenciasRepo ?? new InMemoryInsumoEquivalenciasRepository();
+  const insumosCatalogoRepo = options.insumosRepo ?? new InMemoryInsumosCatalogoRepository();
+
+  const registrarEquivalenciaUC = new RegistrarInsumoEquivalenciaUseCase(insumoEquivalenciasRepo, insumosCatalogoRepo);
+  const listarEquivalenciasUC = new ListarEquivalenciasPorInsumoUseCase(insumoEquivalenciasRepo, insumosCatalogoRepo);
+  const convertirUnidadUC = new ConvertirUnidadInsumoUseCase(insumoEquivalenciasRepo, insumosCatalogoRepo);
+
+  const insumoEquivalenciasController = new InsumoEquivalenciasController(
+    registrarEquivalenciaUC,
+    listarEquivalenciasUC,
+    convertirUnidadUC
+  );
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -596,6 +643,8 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     usuariosController,
     authController,
     auditoriaController,
+    proveedoresController,
+    insumoEquivalenciasController,
   });
 
   return app;

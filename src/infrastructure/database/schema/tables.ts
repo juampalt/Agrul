@@ -507,5 +507,51 @@ export const auditoriaSeguridadLogTable = pgTable('auditoria_seguridad_log', {
   index('idx_auditoria_timestamp').on(table.timestamp),
 ]);
 
+// ============================================================================
+// ÉPICA 15: MÓDULO 9 — INVENTARIO DE INSUMOS Y STOCK (AGRUL-041)
+// ============================================================================
+
+// TABLA MAESTRA: Proveedores Comerciales (RF-M9-01)
+export const proveedoresTable = pgTable('proveedores', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  razonSocial: varchar('razon_social', { length: 200 }).notNull(),
+  cuit: varchar('cuit', { length: 30 }),
+  contacto: varchar('contacto', { length: 150 }),
+  telefono: varchar('telefono', { length: 50 }),
+  email: varchar('email', { length: 150 }),
+  direccion: varchar('direccion', { length: 255 }),
+  activo: boolean('activo').default(true).notNull(),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_proveedores_razon').on(table.razonSocial),
+  index('idx_proveedores_cuit').on(table.cuit),
+  index('idx_proveedores_activo').on(table.activo),
+]);
+
+// TABLA DETALLE: Equivalencias de Unidades de Medida y Densidad de Insumos (RF-M9-01 / RF-M9-14 / RN-12)
+export const insumoUnidadesEquivalenciaTable = pgTable('insumo_unidades_equivalencia', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  insumoId: uuid('insumo_id').notNull().references(() => insumosCatalogoTable.id, { onDelete: 'cascade' }),
+  unidadCompra: varchar('unidad_compra', { length: 50 }).notNull(),
+  unidadConsumo: varchar('unidad_consumo', { length: 50 }).notNull(),
+  factorMultiplicador: numeric('factor_multiplicador', { precision: 14, scale: 4 }).notNull(),
+  densidadKgL: numeric('densidad_kg_l', { precision: 10, scale: 4 }),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_equiv_insumo').on(table.insumoId),
+  index('idx_equiv_compra_consumo').on(table.unidadCompra, table.unidadConsumo),
+]);
+
+export const proveedoresRelations = relations(proveedoresTable, () => ({}));
+
+export const insumoUnidadesEquivalenciaRelations = relations(insumoUnidadesEquivalenciaTable, ({ one }) => ({
+  insumo: one(insumosCatalogoTable, {
+    fields: [insumoUnidadesEquivalenciaTable.insumoId],
+    references: [insumosCatalogoTable.id],
+  }),
+}));
+
 
 

@@ -17,6 +17,8 @@ import { DashboardController } from '../controllers/dashboard.controller.js';
 import { UsuariosController } from '../controllers/usuarios.controller.js';
 import { AuthController } from '../controllers/auth.controller.js';
 import { AuditoriaController } from '../controllers/auditoria.controller.js';
+import { ProveedoresController } from '../controllers/proveedores.controller.js';
+import { InsumoEquivalenciasController } from '../controllers/insumo-equivalencias.controller.js';
 import {
   verificarAutenticacion,
   verificarAutenticacionOpcional,
@@ -45,6 +47,8 @@ export interface ApiRoutesDependencies {
   usuariosController?: UsuariosController;
   authController?: AuthController;
   auditoriaController?: AuditoriaController;
+  proveedoresController?: ProveedoresController;
+  insumoEquivalenciasController?: InsumoEquivalenciasController;
 }
 
 
@@ -263,6 +267,23 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/auditoria', { preHandler: [requerirRol('ADMINISTRADOR'), verificarPasswordInicial] }, (req, rep) => deps.auditoriaController!.listar(req, rep));
         v1.get('/auditoria/:id', { preHandler: [requerirRol('ADMINISTRADOR'), verificarPasswordInicial] }, (req, rep) => deps.auditoriaController!.obtenerPorId(req, rep));
         v1.post('/auditoria/simular-inactividad', (req, rep) => deps.auditoriaController!.simularInactividad(req, rep));
+      }
+
+      // Catálogo de Proveedores (Módulo 9 — AGRUL-041 / RF-M9-01)
+      if (deps.proveedoresController) {
+        v1.post('/proveedores', (req, rep) => deps.proveedoresController!.registrar(req, rep));
+        v1.get('/proveedores', (req, rep) => deps.proveedoresController!.listar(req, rep));
+        v1.get('/proveedores/:id', (req, rep) => deps.proveedoresController!.obtenerPorId(req, rep));
+        v1.put('/proveedores/:id', (req, rep) => deps.proveedoresController!.actualizar(req, rep));
+      }
+
+      // Equivalencias y Conversión de Unidades de Insumos (Módulo 9 — AGRUL-041 / RF-M9-01, RF-M9-14, RN-12)
+      if (deps.insumoEquivalenciasController) {
+        v1.post('/insumos/:id/equivalencias', (req, rep) => deps.insumoEquivalenciasController!.registrarEquivalencia(req, rep));
+        v1.get('/insumos/:id/equivalencias', (req, rep) => deps.insumoEquivalenciasController!.listarEquivalencias(req, rep));
+        v1.post('/insumos/:id/convertir-unidad', (req, rep) => deps.insumoEquivalenciasController!.convertirUnidad(req, rep));
+        v1.post('/insumos/:id/convertir', (req, rep) => deps.insumoEquivalenciasController!.convertirUnidad(req, rep));
+        v1.post('/insumos/conversiones/convertir', (req, rep) => deps.insumoEquivalenciasController!.convertirUnidad(req, rep));
       }
     },
     { prefix: '/api/v1' }

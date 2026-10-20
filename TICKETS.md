@@ -23,10 +23,10 @@
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 3 | 0 | 0 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 3 | 0 | 0 |
 | **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 2 | 0 | 1 |
-| **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
+| **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 1 | 0 | 4 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **33** | **0** | **17** |
+| **TOTAL GENERAL** | **50** | **34** | **0** | **16** |
 
 ---
 
@@ -813,21 +813,21 @@
 ## ÉPICA 15: MÓDULO 9 — INVENTARIO DE INSUMOS Y STOCK
 
 ### `[AGRUL-041]` Catálogo de Proveedores, Unidades de Medida y Conversiones Validadas
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 9: Stock de Insumos
 - **Requisitos Funcionales:** RF-M9-01, RF-M9-02, RF-M9-14
 - **Reglas de Negocio:** RN-12
 - **Skills:** [domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
-- **Etiquetas:** `catalogo`, `proveedores`, `unidades`, `conversiones`, `ready-for-agent`
+- **Etiquetas:** `catalogo`, `proveedores`, `unidades`, `conversiones`, `status:done`
 - **Descripción:** Gestión de proveedores comerciales y sistema riguroso de unidades de medida (unidad de consumo vs unidad de compra) con tabla de equivalencias explícita (el sistema nunca convierte litros a kg sin densidad cargada, RN-12).
 - **Tareas Técnicas:**
   1. Crear tabla proveedores (id, razonSocial, cuit, contacto, telefono, email).
   2. Crear tabla insumo_unidades_equivalencia (insumoId, unidadCompra, unidadConsumo, factorMultiplicador, densidadKgL nullable).
   3. Implementar convertidor de unidades de dominio que arroje UnidadConversionInvalidaError si no existe equivalencia registrada (RN-12 / RF-M9-14).
 - **Criterios de Aceptación:**
-  - [ ] RF-M9-01: Definición clara de unidad de compra (ej. bidón 20L) y unidad de consumo (ej. L o ml).
-  - [ ] RN-12 / RF-M9-14: Prohibida la conversión automática litros a kg salvo que exista densidad registrada para ese insumo.
+  - [x] RF-M9-01: Definición clara de unidad de compra (ej. bidón 20L) y unidad de consumo (ej. L o ml).
+  - [x] RN-12 / RF-M9-14: Prohibida la conversión automática litros a kg salvo que exista densidad registrada para ese insumo.
 
 ### `[AGRUL-042]` Gestión de Ingresos por Compra y Segregación de Depósitos BPA
 - **Estado:** `TODO` 📌

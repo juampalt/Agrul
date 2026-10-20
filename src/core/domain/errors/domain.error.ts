@@ -196,4 +196,36 @@ export class AuditoriaInvalidaError extends DomainError {
   }
 }
 
+export class UnidadConversionInvalidaError extends DomainError {
+  public readonly code = 'UNIDAD_CONVERSION_INVALIDA';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
+export class ProveedorInvalidoError extends DomainError {
+  public readonly code = 'PROVEEDOR_INVALIDO';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
+export class ProveedorDuplicadoError extends DomainError {
+  public readonly code = 'PROVEEDOR_DUPLICADO';
+
+  constructor(cuit: string) {
+    super(`Ya existe un proveedor registrado con el CUIT '${cuit}'.`);
+  }
+}
+
+export class InsumoEquivalenciaInvalidaError extends DomainError {
+  public readonly code = 'INSUMO_EQUIVALENCIA_INVALIDA';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
 

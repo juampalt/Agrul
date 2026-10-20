@@ -1524,7 +1524,7 @@
     "epic": "Épica 15: Módulo 9 — Inventario de Insumos y Stock",
     "epicId": "epic-15-modulo-9-stock",
     "title": "Catálogo de Proveedores, Unidades de Medida y Conversiones Validadas",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Alta (P1)",
     "skills": [
       ".cursor/skills/domain-traceability.md",

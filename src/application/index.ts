@@ -40,4 +40,7 @@ export * from './use-cases/usuarios.use-cases.js';
 export * from './dtos/usuarios.dto.js';
 export * from './use-cases/auditoria.use-cases.js';
 export * from './dtos/auditoria.dto.js';
-
+export * from './use-cases/proveedores.use-cases.js';
+export * from './dtos/proveedores.dto.js';
+export * from './use-cases/insumo-equivalencias.use-cases.js';
+export * from './dtos/insumo-equivalencias.dto.js';

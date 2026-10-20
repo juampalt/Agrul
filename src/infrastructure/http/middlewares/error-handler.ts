@@ -11,6 +11,7 @@ import {
   PermisoInsuficienteError,
   SesionExpiradaInactividadError,
   PasswordCambioObligatorioError,
+  ProveedorDuplicadoError,
 } from '../../../core/domain/errors/domain.error.js';
 import { CodigoLoteDuplicadoError } from '../../../application/use-cases/crear-lote.use-case.js';
 import { InsumoDuplicadoError } from '../../../application/use-cases/insumos-catalogo.use-cases.js';
@@ -87,7 +88,8 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
   if (
     error instanceof CodigoLoteDuplicadoError ||
     error instanceof InsumoDuplicadoError ||
-    error instanceof UsuarioDuplicadoError
+    error instanceof UsuarioDuplicadoError ||
+    error instanceof ProveedorDuplicadoError
   ) {
     return reply.status(409).send({
       success: false,
