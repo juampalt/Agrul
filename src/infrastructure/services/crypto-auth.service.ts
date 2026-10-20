@@ -9,6 +9,7 @@ export interface TokenPayload {
   apellido: string;
   perfil: PerfilUsuario;
   fincas: string[];
+  debeCambiarPassword?: boolean;
   iat?: number;
   exp?: number;
 }

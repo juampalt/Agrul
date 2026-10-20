@@ -3358,6 +3358,264 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ==========================================================================
+  // AGRUL-040: BITÁCORA CENTRALIZADA DE AUDITORÍA Y SEGURIDAD DE SESIÓN
+  // ==========================================================================
+  const btnBitacoraAuditoria = document.getElementById('btn-bitacora-auditoria');
+  const modalAuditoriaSeguridad = document.getElementById('modal-auditoria-seguridad');
+  const tbodyAuditoriaLogs = document.getElementById('tbody-auditoria-logs');
+  const filtroAuditAccion = document.getElementById('filtro-audit-accion');
+  const filtroAuditEntidad = document.getElementById('filtro-audit-entidad');
+  const btnAuditFiltrar = document.getElementById('btn-audit-filtrar');
+  const btnAuditRefrescar = document.getElementById('btn-audit-refrescar');
+
+  const modalDeltaAuditoria = document.getElementById('modal-delta-auditoria');
+  const deltaValorPrevio = document.getElementById('delta-valor-previo');
+  const deltaValorNuevo = document.getElementById('delta-valor-nuevo');
+
+  const selectSessionTimeout = document.getElementById('select-session-timeout');
+  const btnAplicarTimeout = document.getElementById('btn-aplicar-timeout');
+  const btnSimularInactividad = document.getElementById('btn-simular-inactividad');
+  const sessionTimeoutLabel = document.getElementById('session-timeout-label');
+  const sessionLastActLabel = document.getElementById('session-last-act-label');
+  const sessionTimeLeftLabel = document.getElementById('session-time-left-label');
+  const resultadoSimularInactividad = document.getElementById('resultado-simular-inactividad');
+  const formCambiarPasswordModal = document.getElementById('form-cambiar-password-modal');
+
+  let currentLogsCache = [];
+
+  // Pestañas del modal de auditoría
+  document.querySelectorAll('[data-auditortab]').forEach(tabBtn => {
+    tabBtn.addEventListener('click', () => {
+      document.querySelectorAll('[data-auditortab]').forEach(b => b.classList.remove('active'));
+      tabBtn.classList.add('active');
+      const targetId = tabBtn.getAttribute('data-auditortab');
+      document.querySelectorAll('.auditor-tab-content').forEach(content => {
+        content.style.display = content.id === targetId ? 'block' : 'none';
+      });
+    });
+  });
+
+  if (btnBitacoraAuditoria && modalAuditoriaSeguridad) {
+    btnBitacoraAuditoria.addEventListener('click', () => {
+      modalAuditoriaSeguridad.classList.add('active');
+      cargarBitacoraAuditoria();
+      actualizarEstadoSesionUI();
+    });
+  }
+
+  function getActionBadge(accion) {
+    const map = {
+      LOGIN: 'badge-audit-login',
+      CREAR: 'badge-audit-crear',
+      EDITAR: 'badge-audit-editar',
+      ANULAR: 'badge-audit-anular',
+      EMITIR_REPORTE: 'badge-audit-reporte',
+      BLOQUEO: 'badge-audit-bloqueo',
+      DESBLOQUEO: 'badge-audit-desbloqueo',
+      CAMBIO_PASSWORD: 'badge-audit-password',
+    };
+    const cls = map[accion] || 'badge-audit-login';
+    return `<span class="${cls}">${accion}</span>`;
+  }
+
+  async function cargarBitacoraAuditoria() {
+    if (!tbodyAuditoriaLogs) return;
+    tbodyAuditoriaLogs.innerHTML = '<tr><td colspan="7" class="text-center">Cargando bitácora de auditoría...</td></tr>';
+
+    try {
+      const headers = {};
+      if (activeAuthToken) headers['Authorization'] = `Bearer ${activeAuthToken}`;
+
+      const params = new URLSearchParams();
+      if (filtroAuditAccion?.value) params.append('accion', filtroAuditAccion.value);
+      if (filtroAuditEntidad?.value) params.append('entidad', filtroAuditEntidad.value);
+
+      const res = await fetch(`/api/v1/auditoria?${params.toString()}`, { headers });
+      const json = await res.json();
+
+      if (res.status === 403) {
+        tbodyAuditoriaLogs.innerHTML = `<tr><td colspan="7" class="text-center text-danger">⚠️ Acceso Denegado: Se requiere rol ADMINISTRADOR para inspeccionar la bitácora centralizada de seguridad (RF-M8-04).</td></tr>`;
+        return;
+      }
+
+      if (!json.success || !json.data?.logs) {
+        tbodyAuditoriaLogs.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error: ${json.error?.message || 'No se pudieron obtener registros.'}</td></tr>`;
+        return;
+      }
+
+      currentLogsCache = json.data.logs;
+      if (currentLogsCache.length === 0) {
+        tbodyAuditoriaLogs.innerHTML = '<tr><td colspan="7" class="text-center text-dim">No se encontraron eventos de auditoría con los filtros aplicados.</td></tr>';
+        return;
+      }
+
+      tbodyAuditoriaLogs.innerHTML = currentLogsCache.map((log, idx) => {
+        const fecha = new Date(log.timestamp).toLocaleString('es-AR', { timeZone: 'America/Argentina/Tucuman' });
+        const tieneDelta = !!(log.valorPrevioJson || log.valorNuevoJson);
+        const deltaBtn = tieneDelta
+          ? `<button class="btn btn-secondary btn-sm btn-ver-delta" data-index="${idx}" style="font-size: 11px; padding: 2px 8px;">🔍 Ver Delta (RN-06)</button>`
+          : '<span class="text-dim" style="font-size: 11px;">N/A</span>';
+
+        return `
+          <tr>
+            <td style="font-size: 12px; font-family: monospace;">${fecha}</td>
+            <td><strong>${log.usuarioEmail || log.usuarioId || 'Sistema'}</strong></td>
+            <td>${getActionBadge(log.accion)}</td>
+            <td><code>${log.entidad}</code></td>
+            <td style="font-size: 11px; font-family: monospace;">${log.entidadId ? log.entidadId.substring(0, 16) + '...' : '-'}</td>
+            <td style="font-size: 11px;">${log.ip || 'Local'}${log.userAgent ? ' &bull; ' + log.userAgent.substring(0, 20) + '...' : ''}</td>
+            <td>${deltaBtn}</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.btn-ver-delta').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(btn.getAttribute('data-index'), 10);
+          const item = currentLogsCache[idx];
+          if (item) {
+            abrirModalDelta(item);
+          }
+        });
+      });
+    } catch (err) {
+      tbodyAuditoriaLogs.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error de conexión: ${err.message}</td></tr>`;
+    }
+  }
+
+  function abrirModalDelta(log) {
+    if (!modalDeltaAuditoria || !deltaValorPrevio || !deltaValorNuevo) return;
+    deltaValorPrevio.textContent = log.valorPrevioJson
+      ? JSON.stringify(log.valorPrevioJson, null, 2)
+      : 'Sin datos previos (Registro Inicial o Inexistente)';
+
+    deltaValorNuevo.textContent = log.valorNuevoJson
+      ? JSON.stringify(log.valorNuevoJson, null, 2)
+      : 'Sin datos posteriores';
+
+    modalDeltaAuditoria.classList.add('active');
+  }
+
+  if (btnAuditFiltrar) btnAuditFiltrar.addEventListener('click', cargarBitacoraAuditoria);
+  if (btnAuditRefrescar) btnAuditRefrescar.addEventListener('click', cargarBitacoraAuditoria);
+
+  function actualizarEstadoSesionUI() {
+    if (sessionTimeoutLabel) {
+      sessionTimeoutLabel.textContent = `${Math.round(900000 / 60000)} min`;
+    }
+    if (sessionLastActLabel) {
+      sessionLastActLabel.textContent = 'En línea (Activa)';
+    }
+    if (sessionTimeLeftLabel) {
+      sessionTimeLeftLabel.textContent = '14:59';
+    }
+  }
+
+  // Simulación de Timeout de Sesión (RF-M8-09)
+  if (btnAplicarTimeout && selectSessionTimeout) {
+    btnAplicarTimeout.addEventListener('click', async () => {
+      const timeoutMs = parseInt(selectSessionTimeout.value, 10);
+      try {
+        const res = await fetch('/api/v1/auditoria/simular-inactividad', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ timeoutMs }),
+        });
+        const json = await res.json();
+        if (json.success) {
+          showToast(`Timeout de sesión actualizado a ${Math.round(timeoutMs / 60000)} minutos.`, 'success');
+          if (sessionTimeoutLabel) sessionTimeoutLabel.textContent = `${Math.round(timeoutMs / 60000)} min`;
+        }
+      } catch (err) {
+        showToast(`Error al configurar timeout: ${err.message}`, 'error');
+      }
+    });
+  }
+
+  if (btnSimularInactividad) {
+    btnSimularInactividad.addEventListener('click', async () => {
+      if (!resultadoSimularInactividad) return;
+      resultadoSimularInactividad.style.display = 'block';
+      resultadoSimularInactividad.innerHTML = '<span class="text-dim">Simulando paso del tiempo (> timeout) y enviando request a la API...</span>';
+
+      const inactividadPasada = Date.now() - 30 * 60 * 1000; // 30 min atrás
+
+      try {
+        const headers = {
+          'x-last-activity': inactividadPasada.toString(),
+        };
+        if (activeAuthToken) headers['Authorization'] = `Bearer ${activeAuthToken}`;
+
+        const res = await fetch('/api/v1/auth/me', { headers });
+        const json = await res.json();
+
+        if (res.status === 401 && json.error?.code === 'SESION_EXPIRADA_POR_INACTIVIDAD') {
+          resultadoSimularInactividad.innerHTML = `
+            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); padding: 12px; border-radius: 6px; color: #f87171;">
+              <strong>🛡️ CIERRE AUTOMÁTICO DE SESIÓN EXITOSO (RF-M8-09)</strong>
+              <p style="margin: 4px 0 0; font-size: 13px;">${json.error.message}</p>
+            </div>
+          `;
+          showToast('Sesión cerrada automáticamente por inactividad prolongada (RF-M8-09).', 'error');
+        } else {
+          resultadoSimularInactividad.innerHTML = `
+            <div style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); padding: 12px; border-radius: 6px; color: #60a5fa;">
+              Respuesta: Status ${res.status}
+            </div>
+          `;
+        }
+      } catch (err) {
+        resultadoSimularInactividad.innerHTML = `<span class="text-danger">Error: ${err.message}</span>`;
+      }
+    });
+  }
+
+  // Cambio Obligatorio de Password Modal
+  if (formCambiarPasswordModal) {
+    formCambiarPasswordModal.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const actual = document.getElementById('chg-pass-actual')?.value;
+      const nueva = document.getElementById('chg-pass-nueva')?.value;
+      const repetir = document.getElementById('chg-pass-repetir')?.value;
+
+      if (nueva !== repetir) {
+        showToast('Las contraseñas no coinciden.', 'error');
+        return;
+      }
+
+      if (!nueva || nueva.length < 8) {
+        showToast('La nueva contraseña debe tener al menos 8 caracteres (RNF-04).', 'error');
+        return;
+      }
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (activeAuthToken) headers['Authorization'] = `Bearer ${activeAuthToken}`;
+
+        const res = await fetch('/api/v1/auth/cambiar-password', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            passwordActual: actual,
+            passwordNueva: nueva,
+          }),
+        });
+
+        const json = await res.json();
+        if (json.success) {
+          showToast('Contraseña actualizada con éxito. Política de primer ingreso cumplida.', 'success');
+          formCambiarPasswordModal.reset();
+          cargarBitacoraAuditoria();
+        } else {
+          showToast(`Error: ${json.error?.message || 'Verifique la contraseña actual'}`, 'error');
+        }
+      } catch (err) {
+        showToast(`Error de conexión: ${err.message}`, 'error');
+      }
+    });
+  }
+
   // Carga inicial
   cargarLotes();
   cargarFincas();

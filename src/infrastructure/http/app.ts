@@ -102,10 +102,13 @@ import { DashboardController } from './controllers/dashboard.controller.js';
 import { ObtenerDashboardResumenUseCase } from '../../application/use-cases/obtener-dashboard-resumen.use-case.js';
 import { UsuariosRepositoryPort } from '../../core/ports/usuarios-repository.port.js';
 import { UsuarioFincasRepositoryPort } from '../../core/ports/usuario-fincas-repository.port.js';
+import { AuditoriaSeguridadRepositoryPort } from '../../core/ports/auditoria-seguridad-repository.port.js';
 import { InMemoryUsuariosRepository } from '../../../tests/mocks/in-memory-usuarios.repository.js';
 import { InMemoryUsuarioFincasRepository } from '../../../tests/mocks/in-memory-usuario-fincas.repository.js';
+import { InMemoryAuditoriaSeguridadRepository } from '../../../tests/mocks/in-memory-auditoria-seguridad.repository.js';
 import { UsuariosController } from './controllers/usuarios.controller.js';
 import { AuthController } from './controllers/auth.controller.js';
+import { AuditoriaController } from './controllers/auditoria.controller.js';
 import {
   CrearUsuarioUseCase,
   AutenticarUsuarioUseCase,
@@ -117,6 +120,11 @@ import {
   CambiarPasswordUseCase,
   VerificarAccesoFincaUseCase,
 } from '../../application/use-cases/usuarios.use-cases.js';
+import {
+  RegistrarAuditoriaSeguridadUseCase,
+  ConsultarAuditoriaSeguridadUseCase,
+  ObtenerAuditoriaPorIdUseCase,
+} from '../../application/use-cases/auditoria.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 
 import { resolve } from 'node:path';
@@ -140,6 +148,7 @@ export interface BuildAppOptions {
   informesRepo?: InformesTrazabilidadRepositoryPort;
   usuariosRepo?: UsuariosRepositoryPort;
   usuarioFincasRepo?: UsuarioFincasRepositoryPort;
+  auditoriaRepo?: AuditoriaSeguridadRepositoryPort;
   logger?: boolean;
 }
 
@@ -530,19 +539,23 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     dashboardController = new DashboardController(obtenerDashboardResumenUC);
   }
 
-  // Módulo 8: Usuarios, Roles, Seguridad y Auditoría (AGRUL-038)
+  // Módulo 8: Usuarios, Roles, Seguridad y Auditoría (AGRUL-038 / AGRUL-040)
   const usuariosRepo = options.usuariosRepo ?? new InMemoryUsuariosRepository();
   const usuarioFincasRepo = options.usuarioFincasRepo ?? new InMemoryUsuarioFincasRepository();
+  const auditoriaRepo = options.auditoriaRepo ?? new InMemoryAuditoriaSeguridadRepository();
 
-  const crearUsuarioUC = new CrearUsuarioUseCase(usuariosRepo, usuarioFincasRepo);
-  const autenticarUsuarioUC = new AutenticarUsuarioUseCase(usuariosRepo, usuarioFincasRepo);
+  const crearUsuarioUC = new CrearUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
+  const autenticarUsuarioUC = new AutenticarUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
   const listarUsuariosUC = new ListarUsuariosUseCase(usuariosRepo, usuarioFincasRepo);
   const obtenerUsuarioPorIdUC = new ObtenerUsuarioPorIdUseCase(usuariosRepo, usuarioFincasRepo);
-  const actualizarUsuarioUC = new ActualizarUsuarioUseCase(usuariosRepo, usuarioFincasRepo);
-  const bloquearUsuarioUC = new BloquearUsuarioUseCase(usuariosRepo, usuarioFincasRepo);
-  const desbloquearUsuarioUC = new DesbloquearUsuarioUseCase(usuariosRepo, usuarioFincasRepo);
-  const cambiarPasswordUC = new CambiarPasswordUseCase(usuariosRepo);
+  const actualizarUsuarioUC = new ActualizarUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
+  const bloquearUsuarioUC = new BloquearUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
+  const desbloquearUsuarioUC = new DesbloquearUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
+  const cambiarPasswordUC = new CambiarPasswordUseCase(usuariosRepo, auditoriaRepo);
   const verificarAccesoFincaUC = new VerificarAccesoFincaUseCase(usuariosRepo, usuarioFincasRepo);
+
+  const consultarAuditoriaUC = new ConsultarAuditoriaSeguridadUseCase(auditoriaRepo);
+  const obtenerAuditoriaPorIdUC = new ObtenerAuditoriaPorIdUseCase(auditoriaRepo);
 
   const usuariosController = new UsuariosController(
     crearUsuarioUC,
@@ -557,6 +570,10 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     autenticarUsuarioUC,
     obtenerUsuarioPorIdUC,
     cambiarPasswordUC
+  );
+  const auditoriaController = new AuditoriaController(
+    consultarAuditoriaUC,
+    obtenerAuditoriaPorIdUC
   );
 
   // Registro de Rutas
@@ -578,6 +595,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     dashboardController,
     usuariosController,
     authController,
+    auditoriaController,
   });
 
   return app;

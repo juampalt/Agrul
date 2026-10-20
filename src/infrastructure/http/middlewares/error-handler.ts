@@ -9,6 +9,8 @@ import {
   UsuarioDuplicadoError,
   AccesoDenegadoFincaError,
   PermisoInsuficienteError,
+  SesionExpiradaInactividadError,
+  PasswordCambioObligatorioError,
 } from '../../../core/domain/errors/domain.error.js';
 import { CodigoLoteDuplicadoError } from '../../../application/use-cases/crear-lote.use-case.js';
 import { InsumoDuplicadoError } from '../../../application/use-cases/insumos-catalogo.use-cases.js';
@@ -33,8 +35,8 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
     });
   }
 
-  // 2. Credenciales inválidas / Autenticación fallida (401 Unauthorized)
-  if (error instanceof CredencialesInvalidasError) {
+  // 2. Credenciales inválidas / Autenticación fallida o expiración por inactividad (401 Unauthorized)
+  if (error instanceof CredencialesInvalidasError || error instanceof SesionExpiradaInactividadError) {
     return reply.status(401).send({
       success: false,
       data: null,
@@ -47,12 +49,13 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
     });
   }
 
-  // 3. Permisos insuficientes, cuentas bloqueadas o acceso a finca no autorizado (403 Forbidden)
+  // 3. Permisos insuficientes, cuentas bloqueadas, cambio obligatorio de password o acceso a finca no autorizado (403 Forbidden)
   if (
     error instanceof UsuarioBloqueadoError ||
     error instanceof UsuarioInactivoError ||
     error instanceof AccesoDenegadoFincaError ||
-    error instanceof PermisoInsuficienteError
+    error instanceof PermisoInsuficienteError ||
+    error instanceof PasswordCambioObligatorioError
   ) {
     return reply.status(403).send({
       success: false,

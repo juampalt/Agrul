@@ -21,6 +21,7 @@ export interface UsuarioProps {
   perfil: PerfilUsuario;
   estado: EstadoUsuario;
   intentosFallidos: number;
+  debeCambiarPassword: boolean;
   bloqueadoHasta?: string | null;
   ultimoAcceso?: string | null;
   creadoEn: string;
@@ -36,6 +37,7 @@ export interface CrearUsuarioParams {
   salt: string;
   perfil: PerfilUsuario;
   estado?: EstadoUsuario;
+  debeCambiarPassword?: boolean;
 }
 
 export class Usuario {
@@ -89,6 +91,7 @@ export class Usuario {
       perfil: params.perfil,
       estado: params.estado ?? 'ACTIVO',
       intentosFallidos: 0,
+      debeCambiarPassword: params.debeCambiarPassword ?? false,
       bloqueadoHasta: null,
       ultimoAcceso: null,
       creadoEn: ahora,
@@ -97,7 +100,10 @@ export class Usuario {
   }
 
   public static reconstituir(props: UsuarioProps): Usuario {
-    return new Usuario({ ...props });
+    return new Usuario({
+      ...props,
+      debeCambiarPassword: props.debeCambiarPassword ?? false,
+    });
   }
 
   public static validarEmail(email: string): boolean {
@@ -143,6 +149,10 @@ export class Usuario {
 
   public get intentosFallidos(): number {
     return this.props.intentosFallidos;
+  }
+
+  public get debeCambiarPassword(): boolean {
+    return this.props.debeCambiarPassword;
   }
 
   public get bloqueadoHasta(): string | null | undefined {
@@ -253,6 +263,7 @@ export class Usuario {
     }
     this.props.passwordHash = nuevoHash;
     this.props.salt = nuevoSalt;
+    this.props.debeCambiarPassword = false;
     this.props.actualizadoEn = new Date().toISOString();
   }
 
@@ -266,6 +277,7 @@ export class Usuario {
       perfil: this.props.perfil,
       estado: this.props.estado,
       intentosFallidos: this.props.intentosFallidos,
+      debeCambiarPassword: this.props.debeCambiarPassword,
       bloqueadoHasta: this.props.bloqueadoHasta,
       ultimoAcceso: this.props.ultimoAcceso,
       creadoEn: this.props.creadoEn,

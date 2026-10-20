@@ -1488,7 +1488,7 @@
     "epic": "Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría",
     "epicId": "epic-14-modulo-8-usuarios",
     "title": "Bitácora Centralizada de Auditoría y Seguridad de Sesión",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Alta (P1)",
     "skills": [
       ".cursor/skills/database-events.md",
@@ -1506,7 +1506,7 @@
       "audit-log",
       "session",
       "security",
-      "ready-for-agent"
+      "status:done"
     ],
     "description": "Registro inmutable de auditoría para ingresos, altas, modificaciones (con valor previo), bajas lógicas y emisión de reportes, junto con expiración de sesión por inactividad y cambio obligatorio de password inicial.",
     "tasks": [

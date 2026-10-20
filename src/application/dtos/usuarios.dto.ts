@@ -18,6 +18,7 @@ export interface UsuarioOutputDto {
   perfil: PerfilUsuario;
   estado: EstadoUsuario;
   intentosFallidos: number;
+  debeCambiarPassword: boolean;
   ultimoAcceso?: string | null;
   fincasAsignadas: string[];
   creadoEn: string;
@@ -27,6 +28,8 @@ export interface UsuarioOutputDto {
 export interface LoginInputDto {
   email: string;
   password: string;
+  ip?: string;
+  userAgent?: string;
 }
 
 export interface LoginOutputDto {

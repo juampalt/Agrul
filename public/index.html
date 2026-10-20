@@ -41,6 +41,9 @@
         <button id="btn-usuarios-roles" class="btn btn-users-header" title="Gestión de Usuarios, Autenticación y Control de Acceso por Finca (AGRUL-038)">
           <span class="btn-icon">🔐</span> Usuarios &amp; Roles
         </button>
+        <button id="btn-bitacora-auditoria" class="btn btn-audit-header" title="Bitácora Centralizada de Auditoría y Seguridad de Sesión (AGRUL-040)">
+          <span class="btn-icon">📜</span> Auditoría &amp; Sesión
+        </button>
         <button id="btn-abrir-escaner" class="btn btn-secondary">
           <span class="btn-icon">📷</span> Escanear QR
         </button>
@@ -1842,6 +1845,191 @@
 
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" data-close="modal-usuarios-roles">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: BITÁCORA CENTRALIZADA DE AUDITORÍA Y SEGURIDAD (AGRUL-040 / RF-M8-08 / RF-M8-09 / RN-06) -->
+  <div id="modal-auditoria-seguridad" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-auditoria-title">
+    <div class="modal-backdrop" data-close="modal-auditoria-seguridad"></div>
+    <div class="modal-content glass modal-lg" style="max-width: 1000px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.5rem;">📜</span>
+          <div>
+            <h3 id="modal-auditoria-title" style="margin: 0;">Bitácora Centralizada de Auditoría y Seguridad</h3>
+            <p class="dash-subtitle" style="margin: 0; font-size: 12px;">Registro inmutable append-only con deltas de cambio (RN-06), expiración por inactividad (RF-M8-09) y cambio obligatorio de password</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" data-close="modal-auditoria-seguridad">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Pestañas de Navegación -->
+        <div class="comp-tabs-nav" style="margin-bottom: 16px;">
+          <button class="comp-tab active" data-auditortab="tab-audit-logs">📜 Bitácora de Eventos (RN-06)</button>
+          <button class="comp-tab" data-auditortab="tab-audit-sesion">⏱️ Seguridad de Sesión (RF-M8-09)</button>
+          <button class="comp-tab" data-auditortab="tab-audit-password">🔑 Cambio Obligatorio de Password</button>
+        </div>
+
+        <!-- Pestaña 1: Logs de Auditoría -->
+        <div id="tab-audit-logs" class="auditor-tab-content">
+          <!-- Filtros de la Bitácora -->
+          <div class="glass" style="padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+            <div class="form-group" style="flex: 1; min-width: 150px; margin: 0;">
+              <label for="filtro-audit-accion" class="form-label" style="font-size: 11px;">Acción Auditada</label>
+              <select id="filtro-audit-accion" class="form-select" style="height: 34px; font-size: 12px;">
+                <option value="">TODAS LAS ACCIONES</option>
+                <option value="LOGIN">LOGIN</option>
+                <option value="CREAR">CREAR</option>
+                <option value="EDITAR">EDITAR</option>
+                <option value="ANULAR">ANULAR</option>
+                <option value="EMITIR_REPORTE">EMITIR_REPORTE</option>
+                <option value="BLOQUEO">BLOQUEO</option>
+                <option value="DESBLOQUEO">DESBLOQUEO</option>
+                <option value="CAMBIO_PASSWORD">CAMBIO_PASSWORD</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 150px; margin: 0;">
+              <label for="filtro-audit-entidad" class="form-label" style="font-size: 11px;">Entidad</label>
+              <select id="filtro-audit-entidad" class="form-select" style="height: 34px; font-size: 12px;">
+                <option value="">TODAS LAS ENTIDADES</option>
+                <option value="USUARIO">USUARIO</option>
+                <option value="LOTE">LOTE</option>
+                <option value="ACTIVIDAD">ACTIVIDAD</option>
+                <option value="COSECHA">COSECHA</option>
+                <option value="DESPACHO">DESPACHO</option>
+                <option value="REPORTE">REPORTE</option>
+              </select>
+            </div>
+            <button id="btn-audit-filtrar" class="btn btn-primary btn-sm" style="height: 34px;">
+              <span class="btn-icon">🔍</span> Filtrar
+            </button>
+            <button id="btn-audit-refrescar" class="btn btn-secondary btn-sm" style="height: 34px;">
+              <span class="btn-icon">🔄</span> Refrescar
+            </button>
+          </div>
+
+          <!-- Tabla de Auditoría -->
+          <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Fecha/Hora (UTC)</th>
+                  <th>Usuario</th>
+                  <th>Acción</th>
+                  <th>Entidad</th>
+                  <th>ID Entidad</th>
+                  <th>IP / User-Agent</th>
+                  <th>Detalle / Delta</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-auditoria-logs">
+                <tr><td colspan="7" class="text-center">Cargando registros de auditoría...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pestaña 2: Seguridad de Sesión y Timeout por Inactividad (RF-M8-09) -->
+        <div id="tab-audit-sesion" class="auditor-tab-content" style="display: none;">
+          <div class="glass" style="padding: 16px; border-radius: 8px;">
+            <h4>⏱️ Política de Expiración por Inactividad (RF-M8-09)</h4>
+            <p class="dash-subtitle" style="margin-bottom: 16px;">
+              Agrul exige el cierre automático de sesión si el operario o administrador no registra actividad dentro del límite configurado, protegiendo terminales rurales o de empaque desatendidas.
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 16px;">
+              <div class="kpi-card glass" style="padding: 12px;">
+                <span class="kpi-label">Timeout Configurado</span>
+                <span id="session-timeout-label" class="kpi-value" style="font-size: 1.5rem; color: #38bdf8;">15 min</span>
+                <span class="kpi-sub">Definido en el servidor</span>
+              </div>
+              <div class="kpi-card glass" style="padding: 12px;">
+                <span class="kpi-label">Última Actividad Registrada</span>
+                <span id="session-last-act-label" class="kpi-value" style="font-size: 1.1rem; color: #a7f3d0;">Activa</span>
+                <span id="session-last-act-time" class="kpi-sub">En tiempo real</span>
+              </div>
+              <div class="kpi-card glass" style="padding: 12px;">
+                <span class="kpi-label">Tiempo Restante Estimado</span>
+                <span id="session-time-left-label" class="kpi-value" style="font-size: 1.5rem; color: #facc15;">--:--</span>
+                <span class="kpi-sub">Hasta auto-logout</span>
+              </div>
+            </div>
+
+            <div class="glass" style="padding: 12px; border-radius: 6px; margin-top: 12px;">
+              <h5>🧪 Simulador de Timeout de Sesión para Verificación</h5>
+              <p class="dash-subtitle" style="margin-bottom: 10px;">Ajusta el timeout o simula inactividad prolongada para verificar el rechazo inmediato (401 SESION_EXPIRADA_POR_INACTIVIDAD).</p>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <select id="select-session-timeout" class="form-select" style="max-width: 200px; height: 36px;">
+                  <option value="60000">1 minuto (Prueba rápida)</option>
+                  <option value="300000">5 minutos</option>
+                  <option value="900000" selected>15 minutos (Estándar)</option>
+                  <option value="1800000">30 minutos</option>
+                </select>
+                <button id="btn-aplicar-timeout" class="btn btn-secondary btn-sm" style="height: 36px;">Actualizar Timeout</button>
+                <button id="btn-simular-inactividad" class="btn btn-warning-mobile btn-sm" style="height: 36px;">Simular Inactividad Prolongada (> Timeout)</button>
+              </div>
+              <div id="resultado-simular-inactividad" style="margin-top: 12px; display: none;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pestaña 3: Cambio Obligatorio de Password en Primer Ingreso -->
+        <div id="tab-audit-password" class="auditor-tab-content" style="display: none;">
+          <div class="glass" style="padding: 16px; border-radius: 8px;">
+            <h4>🔑 Política de Cambio Obligatorio de Contraseña (RF-M8-08 / RF-M8-09)</h4>
+            <p class="dash-subtitle" style="margin-bottom: 14px;">
+              Cuando un usuario es dado de alta por el Administrador con contraseña provisoria, la flag <code>debeCambiarPassword</code> se activa obligatoriamente. Cualquier petición operativa es bloqueada con <strong>403 PASSWORD_CAMBIO_OBLIGATORIO</strong> hasta que la actualice.
+            </p>
+
+            <form id="form-cambiar-password-modal" style="max-width: 480px; margin-top: 14px;">
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label for="chg-pass-actual" class="form-label">Contraseña Actual *</label>
+                <input type="password" id="chg-pass-actual" class="form-input" required placeholder="Contraseña provisoria actual">
+              </div>
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label for="chg-pass-nueva" class="form-label">Nueva Contraseña Definitiva * (min 8 car., letras y números)</label>
+                <input type="password" id="chg-pass-nueva" class="form-input" required placeholder="Mínimo 8 caracteres alfanuméricos">
+              </div>
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label for="chg-pass-repetir" class="form-label">Repetir Nueva Contraseña *</label>
+                <input type="password" id="chg-pass-repetir" class="form-input" required placeholder="Confirme la nueva contraseña">
+              </div>
+              <button type="submit" class="btn btn-primary">Actualizar Contraseña &amp; Habilitar Cuenta</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close="modal-auditoria-seguridad">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SECUNDARIO: VISUALIZADOR DE DELTA JSON (RN-06) -->
+  <div id="modal-delta-auditoria" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-delta-title">
+    <div class="modal-backdrop" data-close="modal-delta-auditoria"></div>
+    <div class="modal-content glass" style="max-width: 650px;">
+      <div class="modal-header">
+        <h4 id="modal-delta-title" style="margin: 0;">🔍 Detalle de Cambio Auditado (Delta RN-06)</h4>
+        <button type="button" class="modal-close" data-close="modal-delta-auditoria">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label class="form-label" style="color: #f87171; font-weight: 700;">⬅️ Valor Previo (Anterior)</label>
+            <pre id="delta-valor-previo" class="delta-json-box delta-previo">Sin datos previos</pre>
+          </div>
+          <div>
+            <label class="form-label" style="color: #34d399; font-weight: 700;">➡️ Valor Nuevo (Posterior)</label>
+            <pre id="delta-valor-nuevo" class="delta-json-box delta-nuevo">Sin datos nuevos</pre>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close="modal-delta-auditoria">Cerrar</button>
       </div>
     </div>
   </div>

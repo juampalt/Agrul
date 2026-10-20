@@ -16,12 +16,14 @@ import { IndicadoresController } from '../controllers/indicadores.controller.js'
 import { DashboardController } from '../controllers/dashboard.controller.js';
 import { UsuariosController } from '../controllers/usuarios.controller.js';
 import { AuthController } from '../controllers/auth.controller.js';
+import { AuditoriaController } from '../controllers/auditoria.controller.js';
 import {
   verificarAutenticacion,
   verificarAutenticacionOpcional,
   requerirRol,
   requerirAccesoFinca,
   requerirPermisoAgronomo,
+  verificarPasswordInicial,
 } from '../middlewares/auth.middleware.js';
 
 export interface ApiRoutesDependencies {
@@ -42,6 +44,7 @@ export interface ApiRoutesDependencies {
   dashboardController?: DashboardController;
   usuariosController?: UsuariosController;
   authController?: AuthController;
+  auditoriaController?: AuditoriaController;
 }
 
 
@@ -253,6 +256,13 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
 
         // Verificación de Acceso y Aislamiento por Finca (RF-M8-05 / RN-16)
         v1.get('/fincas/:id/verificar-acceso', { preHandler: [verificarAutenticacion] }, (req, rep) => deps.usuariosController!.verificarAccesoFinca(req, rep));
+      }
+
+      // Bitácora Centralizada de Auditoría y Seguridad de Sesión (Módulo 8 — AGRUL-040 / RF-M8-08, RF-M8-09, RN-06)
+      if (deps.auditoriaController) {
+        v1.get('/auditoria', { preHandler: [requerirRol('ADMINISTRADOR'), verificarPasswordInicial] }, (req, rep) => deps.auditoriaController!.listar(req, rep));
+        v1.get('/auditoria/:id', { preHandler: [requerirRol('ADMINISTRADOR'), verificarPasswordInicial] }, (req, rep) => deps.auditoriaController!.obtenerPorId(req, rep));
+        v1.post('/auditoria/simular-inactividad', (req, rep) => deps.auditoriaController!.simularInactividad(req, rep));
       }
     },
     { prefix: '/api/v1' }

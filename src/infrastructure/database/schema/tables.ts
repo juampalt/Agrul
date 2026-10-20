@@ -459,6 +459,7 @@ export const usuariosTable = pgTable('usuarios', {
   perfil: varchar('perfil', { length: 50 }).notNull(), // ADMINISTRADOR | ENCARGADO | OPERARIO | ASESOR_AGRONOMO
   estado: varchar('estado', { length: 30 }).notNull().default('ACTIVO'), // ACTIVO | INACTIVO | BLOQUEADO
   intentosFallidos: integer('intentos_fallidos').notNull().default(0),
+  debeCambiarPassword: boolean('debe_cambiar_password').notNull().default(true),
   bloqueadoHasta: timestamp('bloqueado_hasta', { withTimezone: true, mode: 'string' }),
   ultimoAcceso: timestamp('ultimo_acceso', { withTimezone: true, mode: 'string' }),
   creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -481,5 +482,30 @@ export const usuarioFincaAsignacionTable = pgTable('usuario_finca_asignacion', {
   index('idx_usuario_finca_usuario').on(table.usuarioId),
   index('idx_usuario_finca_finca').on(table.fincaId),
 ]);
+
+// ============================================================================
+// ÉPICA 14: MÓDULO 8 — BITÁCORA CENTRALIZADA DE AUDITORÍA Y SEGURIDAD (AGRUL-040)
+// ============================================================================
+
+// TABLA APPEND-ONLY: Bitácora Centralizada de Auditoría de Seguridad (RF-M8-08 / RN-06)
+export const auditoriaSeguridadLogTable = pgTable('auditoria_seguridad_log', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  usuarioId: uuid('usuario_id').references(() => usuariosTable.id, { onDelete: 'set null' }),
+  usuarioEmail: varchar('usuario_email', { length: 150 }),
+  accion: varchar('accion', { length: 50 }).notNull(), // LOGIN | CREAR | EDITAR | ANULAR | EMITIR_REPORTE | BLOQUEO | DESBLOQUEO | CAMBIO_PASSWORD
+  entidad: varchar('entidad', { length: 100 }).notNull(), // USUARIO | LOTE | ACTIVIDAD | COSECHA | DESPACHO | REPORTE | SESION
+  entidadId: varchar('entidad_id', { length: 100 }),
+  valorPrevioJson: jsonb('valor_previo_json'),
+  valorNuevoJson: jsonb('valor_nuevo_json'),
+  ip: varchar('ip', { length: 60 }),
+  userAgent: varchar('user_agent', { length: 255 }),
+  timestamp: timestamp('timestamp', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_auditoria_usuario').on(table.usuarioId),
+  index('idx_auditoria_accion').on(table.accion),
+  index('idx_auditoria_entidad').on(table.entidad),
+  index('idx_auditoria_timestamp').on(table.timestamp),
+]);
+
 
 

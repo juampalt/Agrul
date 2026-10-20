@@ -172,3 +172,28 @@ export class PasswordInseguraError extends DomainError {
   }
 }
 
+export class SesionExpiradaInactividadError extends DomainError {
+  public readonly code = 'SESION_EXPIRADA_POR_INACTIVIDAD';
+
+  constructor(mensaje: string = 'La sesión ha expirado por inactividad prolongada conforme a las políticas de seguridad (RF-M8-09).') {
+    super(mensaje);
+  }
+}
+
+export class PasswordCambioObligatorioError extends DomainError {
+  public readonly code = 'PASSWORD_CAMBIO_OBLIGATORIO';
+
+  constructor(mensaje: string = 'Debe cambiar su contraseña inicial antes de continuar operando en el sistema (RF-M8-08 / RF-M8-09).') {
+    super(mensaje);
+  }
+}
+
+export class AuditoriaInvalidaError extends DomainError {
+  public readonly code = 'AUDITORIA_INVALIDA';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
+

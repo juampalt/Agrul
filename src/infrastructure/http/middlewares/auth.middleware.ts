@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { CryptoAuthService, TokenPayload } from '../../services/crypto-auth.service.js';
+import { SessionInactivityService } from '../../services/session-inactivity.service.js';
 import { PerfilUsuario } from '../../../core/domain/entities/usuario.entity.js';
 
 declare module 'fastify' {
@@ -9,7 +10,7 @@ declare module 'fastify' {
 }
 
 /**
- * Middleware para validar el encabezado Authorization con esquema Bearer token.
+ * Middleware para validar el encabezado Authorization con esquema Bearer token y verificar expiración por inactividad.
  */
 export async function verificarAutenticacion(request: FastifyRequest, reply: FastifyReply) {
   const authHeader = request.headers.authorization;
@@ -44,6 +45,33 @@ export async function verificarAutenticacion(request: FastifyRequest, reply: Fas
     });
   }
 
+  // Validación de inactividad de sesión (RF-M8-09)
+  const clientHeader = request.headers['x-last-activity'];
+  let clientTimeMs: number | undefined;
+  if (clientHeader) {
+    const parsed = parseInt(String(clientHeader), 10);
+    if (!isNaN(parsed)) {
+      clientTimeMs = parsed;
+    }
+  }
+
+  const expirado = SessionInactivityService.verificarExpiracion(payload.sub, Date.now(), clientTimeMs);
+  if (expirado) {
+    return reply.status(401).send({
+      success: false,
+      data: null,
+      error: {
+        code: 'SESION_EXPIRADA_POR_INACTIVIDAD',
+        message: `La sesión ha expirado por inactividad prolongada (> ${Math.round(SessionInactivityService.getTimeoutMs() / 60000)} minutos) conforme a las políticas de seguridad (RF-M8-09).`,
+        details: null,
+      },
+      timestamp,
+    });
+  }
+
+  reply.header('X-Last-Activity', Date.now().toString());
+  reply.header('X-Session-Timeout-Ms', SessionInactivityService.getTimeoutMs().toString());
+
   request.usuario = payload;
 }
 
@@ -57,6 +85,41 @@ export async function verificarAutenticacionOpcional(request: FastifyRequest) {
     const payload = CryptoAuthService.verifyToken(token);
     if (payload) {
       request.usuario = payload;
+      SessionInactivityService.registrarActividad(payload.sub);
+    }
+  }
+}
+
+/**
+ * Middleware para forzar el cambio de contraseña inicial en primer ingreso (RF-M8-08 / RF-M8-09).
+ * Si debeCambiarPassword es true, restringe el acceso impidiendo cualquier operación operativa
+ * excepto cambiar la contraseña o consultar el perfil propio.
+ */
+export async function verificarPasswordInicial(request: FastifyRequest, reply: FastifyReply) {
+  if (!request.usuario) {
+    await verificarAutenticacion(request, reply);
+    if (reply.sent) return;
+  }
+
+  const usuario = request.usuario!;
+  if (usuario.debeCambiarPassword === true) {
+    const url = request.url.split('?')[0];
+    const permitido =
+      url.endsWith('/auth/cambiar-password') ||
+      url.endsWith('/auth/me') ||
+      url.endsWith('/auth/logout');
+
+    if (!permitido) {
+      return reply.status(403).send({
+        success: false,
+        data: null,
+        error: {
+          code: 'PASSWORD_CAMBIO_OBLIGATORIO',
+          message: 'Debe cambiar su contraseña inicial antes de continuar operando en el sistema (RF-M8-08 / RF-M8-09).',
+          details: null,
+        },
+        timestamp: new Date().toISOString(),
+      });
     }
   }
 }

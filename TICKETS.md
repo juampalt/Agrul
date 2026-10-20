@@ -22,11 +22,11 @@
 | **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 4 | 0 | 0 |
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 3 | 0 | 0 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 3 | 0 | 0 |
-| **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 1 | 0 | 2 |
+| **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 2 | 0 | 1 |
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **32** | **0** | **18** |
+| **TOTAL GENERAL** | **50** | **33** | **0** | **17** |
 
 ---
 
@@ -792,21 +792,21 @@
   - [ ] RF-M8-07: Claridad total entre quién ingresó el dato al sistema y quién ejecutó la labor en el lote.
 
 ### `[AGRUL-040]` Bitácora Centralizada de Auditoría y Seguridad de Sesión
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 8: Usuarios y Seguridad
 - **Requisitos Funcionales:** RF-M8-08, RF-M8-09
 - **Reglas de Negocio:** RN-06
 - **Skills:** [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md), [architecture.md](file:///c:/AGRUL/.cursor/skills/architecture.md)
-- **Etiquetas:** `audit-log`, `session`, `security`, `ready-for-agent`
+- **Etiquetas:** `audit-log`, `session`, `security`, `status:done`
 - **Descripción:** Registro inmutable de auditoría para ingresos, altas, modificaciones (con valor previo), bajas lógicas y emisión de reportes, junto con expiración de sesión por inactividad y cambio obligatorio de password inicial.
 - **Tareas Técnicas:**
   1. Crear tabla auditoria_seguridad_log (id, usuarioId, accion: LOGIN | CREAR | EDITAR | ANULAR | EMITIR_REPORTE, entidad, entidadId, valorPrevioJson, valorNuevoJson, ip, userAgent, timestamp).
   2. Configurar timeout de inactividad configurable en sesión (RF-M8-09).
   3. Forzar flag debeCambiarPassword en primer ingreso del usuario.
 - **Criterios de Aceptación:**
-  - [ ] RF-M8-08 / RN-06: Cada cambio crítico queda registrado con su delta de valor previo y posterior.
-  - [ ] RF-M8-09: Cierre automático de sesión tras tiempo de inactividad configurado.
+  - [x] RF-M8-08 / RN-06: Cada cambio crítico queda registrado con su delta de valor previo y posterior.
+  - [x] RF-M8-09: Cierre automático de sesión tras tiempo de inactividad configurado.
 
 ---
 

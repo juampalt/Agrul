@@ -38,3 +38,6 @@ export * from './use-cases/obtener-dashboard-resumen.use-case.js';
 export * from './dtos/dashboard-resumen.dto.js';
 export * from './use-cases/usuarios.use-cases.js';
 export * from './dtos/usuarios.dto.js';
+export * from './use-cases/auditoria.use-cases.js';
+export * from './dtos/auditoria.dto.js';
+
