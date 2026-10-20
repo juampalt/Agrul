@@ -90,6 +90,10 @@ import {
 } from '../../application/use-cases/perdidas-cosecha.use-cases.js';
 import { TrazabilidadController } from './controllers/trazabilidad.controller.js';
 import { ObtenerRecorridoTrazabilidadUseCase } from '../../application/use-cases/recorrido-trazabilidad.use-case.js';
+import { EmitirInformeTrazabilidadUseCase } from '../../application/use-cases/emitir-informe-trazabilidad.use-case.js';
+import { ListarInformesTrazabilidadLogUseCase } from '../../application/use-cases/listar-informes-trazabilidad-log.use-case.js';
+import { InformesTrazabilidadRepositoryPort } from '../../core/ports/informes-trazabilidad-repository.port.js';
+import { InMemoryInformesTrazabilidadRepository } from '../../../tests/mocks/in-memory-informes-trazabilidad.repository.js';
 import { readFileSync, existsSync } from 'node:fs';
 
 import { resolve } from 'node:path';
@@ -110,6 +114,7 @@ export interface BuildAppOptions {
   destinatariosRepo?: DestinatariosRepositoryPort;
   despachosRepo?: DespachosRepositoryPort;
   perdidasRepo?: PerdidasCosechaRepositoryPort;
+  informesRepo?: InformesTrazabilidadRepositoryPort;
   logger?: boolean;
 }
 
@@ -424,7 +429,14 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       fincasRepo: options.fincasRepo,
       insumosRepo: options.insumosRepo,
     });
-    trazabilidadController = new TrazabilidadController(obtenerRecorridoUC);
+    const informesRepo = options.informesRepo ?? new InMemoryInformesTrazabilidadRepository();
+    const emitirInformeUC = new EmitirInformeTrazabilidadUseCase({
+      obtenerRecorridoUseCase: obtenerRecorridoUC,
+      informesRepo,
+    });
+    const listarLogsUC = new ListarInformesTrazabilidadLogUseCase(informesRepo);
+
+    trazabilidadController = new TrazabilidadController(obtenerRecorridoUC, emitirInformeUC, listarLogsUC);
   }
 
   // Registro de Rutas

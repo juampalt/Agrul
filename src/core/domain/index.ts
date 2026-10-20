@@ -4,6 +4,7 @@ export * from './entities/lote-genealogia.entity.js';
 export * from './entities/aplicacion-agricola.entity.js';
 export * from './entities/recomendacion-tecnica.entity.js';
 export * from './entities/insumo-catalogo.entity.js';
+export * from './entities/informe-trazabilidad-log.entity.js';
 
 export * from './services/verificacion-carencia.service.js';
 

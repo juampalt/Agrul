@@ -163,11 +163,28 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/cosechas/:id/perdidas', (req, rep) => deps.perdidasController!.listar(req, rep));
       }
 
-      // Motor de Recorrido de Trazabilidad Integral (Módulo 6 — AGRUL-032 / RF-M6-01 a RF-M6-07)
+      // Motor de Recorrido de Trazabilidad e Informes Oficiales (Módulo 6 — AGRUL-032 / AGRUL-033 / RF-M6-01 a RF-M6-13)
       if (deps.trazabilidadController) {
         v1.get('/trazabilidad/recorrido/:identificador', (req, rep) => deps.trazabilidadController!.obtenerRecorrido(req, rep));
         v1.get('/trazabilidad/cosechas/:identificador/recorrido', (req, rep) => deps.trazabilidadController!.obtenerRecorrido(req, rep));
         v1.get('/cosechas/:identificador/recorrido', (req, rep) => deps.trazabilidadController!.obtenerRecorrido(req, rep));
+
+        // Emisión y descarga en PDF oficial (RF-M6-08 / RF-M6-09 / RN-06)
+        v1.get('/trazabilidad/recorrido/:identificador/pdf', (req, rep) => deps.trazabilidadController!.descargarPdf(req, rep));
+        v1.get('/trazabilidad/cosechas/:identificador/pdf', (req, rep) => deps.trazabilidadController!.descargarPdf(req, rep));
+        v1.get('/cosechas/:identificador/pdf', (req, rep) => deps.trazabilidadController!.descargarPdf(req, rep));
+
+        // Exportación en CSV / Excel UTF-8 con unidades de medida (RF-M6-10 / RNF-11)
+        v1.get('/trazabilidad/recorrido/:identificador/csv', (req, rep) => deps.trazabilidadController!.descargarCsv(req, rep));
+        v1.get('/trazabilidad/cosechas/:identificador/csv', (req, rep) => deps.trazabilidadController!.descargarCsv(req, rep));
+        v1.get('/cosechas/:identificador/csv', (req, rep) => deps.trazabilidadController!.descargarCsv(req, rep));
+
+        // Endpoint unificado de emisión de informes
+        v1.get('/trazabilidad/informes/:identificador', (req, rep) => deps.trazabilidadController!.emitirInforme(req, rep));
+        v1.post('/trazabilidad/informes/:identificador', (req, rep) => deps.trazabilidadController!.emitirInforme(req, rep));
+
+        // Bitácora inmutable de emisión de informes (RF-M6-13)
+        v1.get('/trazabilidad/informes/logs', (req, rep) => deps.trazabilidadController!.listarLogs(req, rep));
       }
     },
     { prefix: '/api/v1' }

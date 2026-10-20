@@ -419,3 +419,29 @@ export const perdidasCosechaTable = pgTable('perdidas_cosecha', {
   index('idx_perdidas_tipo').on(table.tipo),
 ]);
 
+// ============================================================================
+// ÉPICA 12: MÓDULO 6 — TRAZABILIDAD E INFORMES OFICIALES (AGRUL-033)
+// ============================================================================
+
+// TABLA APPEND-ONLY: Bitácora Inmutable de Emisión de Informes de Trazabilidad (RF-M6-13 / RN-06)
+export const informeTrazabilidadLogTable = pgTable('informe_trazabilidad_log', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  codigoInforme: varchar('codigo_informe', { length: 80 }).notNull().unique(),
+  cosechaId: uuid('cosecha_id').notNull().references(() => cosechasTable.id, { onDelete: 'restrict' }),
+  loteId: uuid('lote_id').notNull().references(() => lotesTable.id, { onDelete: 'restrict' }),
+  codigoTrazabilidad: varchar('codigo_trazabilidad', { length: 80 }).notNull(),
+  tipoFormato: varchar('tipo_formato', { length: 20 }).notNull(), // PDF | CSV | EXCEL
+  usuarioEmisor: varchar('usuario_emisor', { length: 150 }).notNull(),
+  rolEmisor: varchar('rol_emisor', { length: 80 }),
+  filtrosAplicados: jsonb('filtros_aplicados').notNull().default({}),
+  emitidoEn: timestamp('emitido_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  hashContenido: varchar('hash_contenido', { length: 128 }),
+}, (table) => [
+  index('idx_informe_log_cosecha').on(table.cosechaId),
+  index('idx_informe_log_lote').on(table.loteId),
+  index('idx_informe_log_codigo').on(table.codigoInforme),
+  index('idx_informe_log_emisor').on(table.usuarioEmisor),
+  index('idx_informe_log_fecha').on(table.emitidoEn),
+]);
+
+

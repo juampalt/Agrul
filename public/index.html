@@ -264,13 +264,112 @@
           <h2>Bitácora de Trazabilidad</h2>
           <p class="subtitle" id="historial-subtitulo">Eventos inmutables registrados</p>
         </div>
-        <button class="close-btn" data-close="modal-historial">&times;</button>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-abrir-informe-desde-historial">
+            📄 Emitir Informe Oficial (PDF/CSV)
+          </button>
+          <button class="close-btn" data-close="modal-historial">&times;</button>
+        </div>
       </div>
       <div class="events-timeline" id="historial-eventos-lista">
         <!-- Renderizado dinámico -->
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" data-close="modal-historial">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Emisión de Informes de Trazabilidad Oficial (AGRUL-033) -->
+  <div class="modal-backdrop" id="modal-informe-trazabilidad" aria-hidden="true">
+    <div class="modal-dialog glass modal-informe">
+      <div class="modal-header">
+        <div>
+          <h2>Emisión de Informes de Trazabilidad</h2>
+          <p class="subtitle" id="informe-subtitulo">Certificación oficial SENASA & BPA / Exportación de Datos</p>
+        </div>
+        <button class="close-btn" data-close="modal-informe-trazabilidad">&times;</button>
+      </div>
+      <div class="modal-body-informe">
+        <div class="informe-summary-card glass">
+          <div class="informe-summary-header">
+            <span class="badge-informe">OFICIAL BPA</span>
+            <span class="informe-lote-tag" id="informe-lote-codigo-display">-</span>
+          </div>
+          <p class="informe-desc">
+            Genere informes certificados descargables en formato PDF (&lt;10s) con membrete estructurado, hash SHA-256 e historial de rectificaciones/anulaciones según RN-06. O exporte la matriz de trazabilidad en CSV/Excel compatible con UTF-8 BOM y unidades de medida explícitas.
+          </p>
+        </div>
+
+        <form id="form-emision-informe" onsubmit="event.preventDefault();">
+          <input type="hidden" id="informe-lote-id">
+          <input type="hidden" id="informe-codigo-lote">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="informe-emitido-por">Emitido por / Responsable Técnico</label>
+              <input type="text" id="informe-emitido-por" class="input-touch" value="Auditoría de Calidad Agrul" placeholder="Ej: Ing. Agrónomo Juan Pérez" required>
+            </div>
+            <div class="form-group">
+              <label for="informe-tipo-destino">Destino / Entidad Receptora</label>
+              <input type="text" id="informe-tipo-destino" class="input-touch" value="SENASA / Auditoría Oficial" placeholder="Ej: SENASA / Auditoría GlobalGAP">
+            </div>
+          </div>
+
+          <!-- Filtros de Privacidad y Cumplimiento (RF-M6-11, RNF-14) -->
+          <div class="privacy-filter-box glass">
+            <div class="privacy-box-header">
+              <span class="privacy-icon">🛡️</span>
+              <div>
+                <strong>Filtros de Privacidad y Cumplimiento (RF-M6-11 / RNF-14)</strong>
+                <p class="text-dim" style="font-size: 12px;">Por defecto se excluyen costos financieros y teléfonos de operarios del informe público.</p>
+              </div>
+            </div>
+            <div class="privacy-options">
+              <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+                <input type="checkbox" id="chk-incluir-costos">
+                <span>Incluir costos unitarios y totales de insumos/labores <span class="badge-inline-warning">Uso Interno</span></span>
+              </label>
+              <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; margin-top: 6px;">
+                <input type="checkbox" id="chk-incluir-datos-personales">
+                <span>Incluir teléfonos y contacto personal de operarios <span class="badge-inline-warning">Sensible</span></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Botones de Acción de Exportación Directa -->
+          <div class="export-actions-grid">
+            <button type="button" class="btn btn-export-pdf" id="btn-descargar-pdf">
+              <span class="export-btn-icon">📄</span>
+              <div class="export-btn-text">
+                <span class="export-btn-title">Descargar Informe Oficial (PDF)</span>
+                <span class="export-btn-sub">Formato PDF 1.4 con hash de seguridad e histórico</span>
+              </div>
+            </button>
+            <button type="button" class="btn btn-export-csv" id="btn-descargar-csv">
+              <span class="export-btn-icon">📊</span>
+              <div class="export-btn-text">
+                <span class="export-btn-title">Exportar a Excel / CSV</span>
+                <span class="export-btn-sub">UTF-8 BOM con unidades de medida explícitas [kg, l/ha]</span>
+              </div>
+            </button>
+          </div>
+
+          <!-- Historial de Emisiones Inmutables (RF-M6-13) -->
+          <div class="informes-log-section">
+            <div class="informes-log-header">
+              <h4 style="font-size: 14px; font-weight: 600; color: var(--text-main);">📜 Registro de Emisiones Inmutables de este Lote</h4>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-refrescar-logs">Refrescar</button>
+            </div>
+            <div class="informes-log-list" id="informes-log-list">
+              <p class="text-dim" style="font-size: 12px; padding: 12px 0;">Consultando emisiones...</p>
+            </div>
+          </div>
+
+          <div class="modal-actions" style="margin-top: 20px;">
+            <button type="button" class="btn btn-secondary" data-close="modal-informe-trazabilidad">Cerrar</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

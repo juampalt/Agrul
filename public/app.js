@@ -277,6 +277,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <button class="btn-action action-cartel" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Ver e imprimir Cartel de Cabecera de Lote (RF-M1-11)">
                 📋 Cartel
               </button>
+              <button class="btn-action action-report" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Emitir informe oficial en PDF o exportar a Excel/CSV (AGRUL-033)">
+                📄 Informe
+              </button>
               <button class="btn-action action-harvest" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Cosecha ultrarrápida en campo (RF-M5-13)">
                 🌾 Cosechar
               </button>
@@ -296,6 +299,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.action-timeline').forEach(btn => {
       btn.addEventListener('click', () => {
         abrirModalHistorial(btn.dataset.id, btn.dataset.codigo);
+      });
+    });
+
+    document.querySelectorAll('.action-report').forEach(btn => {
+      btn.addEventListener('click', () => {
+        abrirModalInforme(btn.dataset.id, btn.dataset.codigo);
       });
     });
 
@@ -494,7 +503,21 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Modal Historial de Eventos
+  let currentLoteIdHistorial = null;
+  let currentCodigoLoteHistorial = null;
+
+  const btnAbrirInformeDesdeHistorial = document.getElementById('btn-abrir-informe-desde-historial');
+  if (btnAbrirInformeDesdeHistorial) {
+    btnAbrirInformeDesdeHistorial.addEventListener('click', () => {
+      if (currentLoteIdHistorial) {
+        abrirModalInforme(currentLoteIdHistorial, currentCodigoLoteHistorial);
+      }
+    });
+  }
+
   async function abrirModalHistorial(loteId, codigoLote) {
+    currentLoteIdHistorial = loteId;
+    currentCodigoLoteHistorial = codigoLote;
     historialSubtitulo.textContent = `Lote ${codigoLote} — Auditoría inmutable append-only`;
     historialLista.innerHTML = '<p class="text-center" style="color: var(--text-muted); padding: 20px;">Consultando bitácora...</p>';
     openModal(modalHistorial);
@@ -1512,6 +1535,144 @@ document.addEventListener('DOMContentLoaded', () => {
           btnSubmitCosechaRapida.disabled = false;
           btnSubmitCosechaRapida.innerHTML = '<span class="btn-icon-large">💾</span> <span class="btn-text-large">REGISTRAR COSECHA INMEDIATA</span>';
         }
+      }
+    });
+  }
+
+  // ==========================================================================
+  // AGRUL-033: Emisión de Informes de Trazabilidad (PDF & CSV/Excel)
+  // ==========================================================================
+  const modalInforme = document.getElementById('modal-informe-trazabilidad');
+  const informeLoteIdInput = document.getElementById('informe-lote-id');
+  const informeCodigoLoteInput = document.getElementById('informe-codigo-lote');
+  const informeLoteCodigoDisplay = document.getElementById('informe-lote-codigo-display');
+  const informeSubtitulo = document.getElementById('informe-subtitulo');
+  const informeEmitidoPor = document.getElementById('informe-emitido-por');
+  const chkIncluirCostos = document.getElementById('chk-incluir-costos');
+  const chkIncluirDatosPersonales = document.getElementById('chk-incluir-datos-personales');
+  const btnDescargarPdf = document.getElementById('btn-descargar-pdf');
+  const btnDescargarCsv = document.getElementById('btn-descargar-csv');
+  const btnRefrescarLogs = document.getElementById('btn-refrescar-logs');
+  const informesLogList = document.getElementById('informes-log-list');
+
+  async function descargarArchivo(url, fallbackFilename) {
+    try {
+      showToast('Generando documento de trazabilidad...', 'info');
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error?.message || `Error del servidor (${res.status})`);
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get('content-disposition');
+      let filename = fallbackFilename;
+      if (disposition && disposition.includes('filename=')) {
+        const match = disposition.match(/filename=["']?([^"';]+)["']?/);
+        if (match && match[1]) filename = match[1];
+      }
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      showToast('Descarga completada con éxito.', 'success');
+      if (informeLoteIdInput && informeLoteIdInput.value) {
+        cargarLogsEmision(informeLoteIdInput.value);
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function cargarLogsEmision(loteId) {
+    if (!informesLogList) return;
+    informesLogList.innerHTML = '<p class="text-dim" style="font-size: 12px; padding: 8px 0;">Consultando emisiones...</p>';
+    try {
+      const res = await fetch(`/api/v1/trazabilidad/informes-log?loteId=${encodeURIComponent(loteId)}`);
+      const json = await res.json();
+      if (!json.success || !json.data) {
+        throw new Error(json.error?.message || 'Error al obtener historial');
+      }
+      const logs = json.data;
+      if (logs.length === 0) {
+        informesLogList.innerHTML = '<p class="text-dim" style="font-size: 12px; padding: 8px 0;">Sin emisiones previas registradas para este lote.</p>';
+        return;
+      }
+
+      informesLogList.innerHTML = logs.map(item => {
+        const fecha = new Date(item.emitidoEn).toLocaleString('es-AR');
+        const hashAbbr = item.hashSha256 ? `${item.hashSha256.substring(0, 10)}...${item.hashSha256.substring(item.hashSha256.length - 6)}` : '-';
+        const rectBadge = item.tuvoRectificacion ? '<span class="badge-rect-log" title="Incluye historial de modificaciones/rectificaciones">⚠️ Rectificado</span>' : '';
+        const anulBadge = item.tuvoAnulacion ? '<span class="badge-anul-log" title="Lote con anulación/compensación">⛔ Anulado</span>' : '';
+        const formatBadge = item.formato === 'PDF' 
+          ? '<span class="badge-format-pdf">PDF</span>' 
+          : '<span class="badge-format-csv">CSV</span>';
+
+        return `
+          <div class="informe-log-row">
+            <div class="log-row-main">
+              ${formatBadge}
+              <span class="log-id-informe">${item.idInforme}</span>
+              <span class="log-fecha">${fecha}</span>
+              <span class="log-emisor">${item.emitidoPor}</span>
+              ${rectBadge}
+              ${anulBadge}
+            </div>
+            <div class="log-hash-code" title="Hash inmutable SHA-256 de integridad">
+              SHA-256: <code>${hashAbbr}</code>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      informesLogList.innerHTML = `<p style="color: var(--accent-rose); font-size: 12px; padding: 8px 0;">${err.message}</p>`;
+    }
+  }
+
+  function abrirModalInforme(loteId, codigoLote) {
+    if (!modalInforme) return;
+    if (informeLoteIdInput) informeLoteIdInput.value = loteId;
+    if (informeCodigoLoteInput) informeCodigoLoteInput.value = codigoLote;
+    if (informeLoteCodigoDisplay) informeLoteCodigoDisplay.textContent = `LOTE: ${codigoLote}`;
+    if (informeSubtitulo) informeSubtitulo.textContent = `Lote ${codigoLote} — Certificación oficial SENASA & BPA / Exportación`;
+
+    // Filtros por defecto conforme RNF-14 / RF-M6-11 (privacidad activa por defecto)
+    if (chkIncluirCostos) chkIncluirCostos.checked = false;
+    if (chkIncluirDatosPersonales) chkIncluirDatosPersonales.checked = false;
+
+    openModal(modalInforme);
+    cargarLogsEmision(loteId);
+  }
+
+  if (btnDescargarPdf) {
+    btnDescargarPdf.addEventListener('click', () => {
+      const loteId = informeLoteIdInput.value;
+      const emitidoPor = (informeEmitidoPor && informeEmitidoPor.value.trim()) || 'Auditoría de Calidad Agrul';
+      const incluirCostos = chkIncluirCostos ? chkIncluirCostos.checked : false;
+      const incluirDatosPersonales = chkIncluirDatosPersonales ? chkIncluirDatosPersonales.checked : false;
+      const url = `/api/v1/trazabilidad/recorrido/${encodeURIComponent(loteId)}/pdf?emitidoPor=${encodeURIComponent(emitidoPor)}&incluirCostos=${incluirCostos}&incluirDatosPersonales=${incluirDatosPersonales}`;
+      descargarArchivo(url, `informe_trazabilidad_${informeCodigoLoteInput.value || loteId}.pdf`);
+    });
+  }
+
+  if (btnDescargarCsv) {
+    btnDescargarCsv.addEventListener('click', () => {
+      const loteId = informeLoteIdInput.value;
+      const emitidoPor = (informeEmitidoPor && informeEmitidoPor.value.trim()) || 'Auditoría de Calidad Agrul';
+      const incluirCostos = chkIncluirCostos ? chkIncluirCostos.checked : false;
+      const incluirDatosPersonales = chkIncluirDatosPersonales ? chkIncluirDatosPersonales.checked : false;
+      const url = `/api/v1/trazabilidad/recorrido/${encodeURIComponent(loteId)}/csv?emitidoPor=${encodeURIComponent(emitidoPor)}&incluirCostos=${incluirCostos}&incluirDatosPersonales=${incluirDatosPersonales}`;
+      descargarArchivo(url, `trazabilidad_${informeCodigoLoteInput.value || loteId}.csv`);
+    });
+  }
+
+  if (btnRefrescarLogs) {
+    btnRefrescarLogs.addEventListener('click', () => {
+      if (informeLoteIdInput && informeLoteIdInput.value) {
+        cargarLogsEmision(informeLoteIdInput.value);
       }
     });
   }

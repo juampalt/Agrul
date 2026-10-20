@@ -20,13 +20,13 @@
 | **Épica 9: Módulo 3 — Registro de Actividades y Labores Agrícolas** | 4 | 3 | 0 | 1 |
 | **Épica 10: Módulo 4 — Insumos y Aplicaciones de Campo** | 4 | 4 | 0 | 0 |
 | **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 4 | 0 | 0 |
-| **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 1 | 0 | 2 |
+| **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 2 | 0 | 1 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 0 | 0 | 3 |
 | **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 0 | 0 | 3 |
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **26** | **0** | **24** |
+| **TOTAL GENERAL** | **50** | **27** | **0** | **23** |
 
 ---
 
@@ -657,13 +657,13 @@
 
 
 ### `[AGRUL-033]` Emisión de Informes de Trazabilidad en PDF y Exportación CSV/Excel
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 6: Trazabilidad
 - **Requisitos Funcionales:** RF-M6-08, RF-M6-09, RF-M6-10, RF-M6-11, RF-M6-13
 - **Reglas de Negocio:** RN-06
 - **Skills:** [api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md), [architecture.md](file:///c:/AGRUL/.cursor/skills/architecture.md)
-- **Etiquetas:** `pdf`, `csv`, `informes`, `auditoria`, `export`, `ready-for-agent`
+- **Etiquetas:** `pdf`, `csv`, `informes`, `auditoria`, `export`, `status:done`
 - **Descripción:** Generación de documento formal PDF de trazabilidad para compradores y organismos de certificación (SENASA/GlobalG.A.P.) con ID de emisión, firma digital/usuario emisor, marca de anulaciones y exportación en UTF-8.
 - **Tareas Técnicas:**
   1. Generar PDF estructurado con encabezado oficial, identificador único de informe, timestamp de emisión y usuario emisor (RF-M6-08).
@@ -672,9 +672,9 @@
   4. Exportador a CSV/Excel con codificación UTF-8 y encabezados con unidades de medida (RNF-11).
   5. Tabla informe_trazabilidad_log para registrar cada emisión (quién, cuándo, cuál, RF-M6-13).
 - **Criterios de Aceptación:**
-  - [ ] RF-M6-08: PDF generado en < 10s (RNF-03) con diseño profesional apto para auditoría.
-  - [ ] RF-M6-10 / RNF-11: Archivos CSV/Excel abren sin fallas de tildes o caracteres especiales en Excel.
-  - [ ] RF-M6-13: Bitácora inmutable de emisión de informes completada.
+  - [x] RF-M6-08: PDF generado en < 10s (RNF-03) con diseño profesional apto para auditoría.
+  - [x] RF-M6-10 / RNF-11: Archivos CSV/Excel abren sin fallas de tildes o caracteres especiales en Excel.
+  - [x] RF-M6-13: Bitácora inmutable de emisión de informes completada.
 
 ### `[AGRUL-034]` Consulta Inversa de Trazabilidad para Retiro Preventivo de Insumos (Recall)
 - **Estado:** `TODO` 📌

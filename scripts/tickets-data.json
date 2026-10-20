@@ -1217,7 +1217,7 @@
     "epic": "Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales",
     "epicId": "epic-12-modulo-6-trazabilidad",
     "title": "Emisión de Informes de Trazabilidad en PDF y Exportación CSV/Excel",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Alta (P1)",
     "skills": [
       ".cursor/skills/api-contracts.md",

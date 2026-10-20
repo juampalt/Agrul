@@ -3820,7 +3820,159 @@ describe('API Integration Tests (Fastify HTTP Surface)', () => {
       expect(body.error.code).toBe('ENTITY_NOT_FOUND');
     });
   });
+
+  describe('Módulo 6: Emisión de Informes en PDF y Exportación CSV/Excel (AGRUL-033)', () => {
+    let cosechaTestId: string;
+    let codigoTraza: string;
+
+    beforeEach(async () => {
+      // 1. Crear Lote
+      const loteRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/lotes',
+        payload: {
+          codigoLote: 'LOT-2026-EXP01',
+          producto: 'Limón Eureka',
+          variedad: 'Exportación',
+          cantidadInicial: 5000,
+          unidadMedida: 'KG',
+        },
+      });
+      const lote = JSON.parse(loteRes.body).data;
+
+      // 2. Crear Ciclo
+      const ciclo = CicloProductivo.crear({
+        id: crypto.randomUUID(),
+        codigoCiclo: 'CIC-2026-LIMON-01',
+        loteId: lote.id,
+        cultivo: 'Limón Eureka',
+        variedad: 'Exportación',
+        superficieCultivadaHa: 10,
+        fechaInicio: '2026-04-01',
+      });
+      await ciclosRepo.guardar(ciclo);
+
+      // 3. Registrar Cosecha
+      const cosRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/cosechas/rapida',
+        payload: {
+          loteId: lote.id,
+          cantidadCosechadaKg: 4000,
+          cantidadComercializableKg: 3800,
+          fecha: '2026-09-10',
+        },
+      });
+      const cosData = JSON.parse(cosRes.body).data;
+      cosechaTestId = cosData.id;
+      codigoTraza = cosData.codigoTrazabilidad;
+    });
+
+    it('GET /api/v1/trazabilidad/recorrido/:identificador/pdf debe emitir el PDF oficial con headers correctos (RF-M6-08 / RNF-03)', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/trazabilidad/recorrido/${cosechaTestId}/pdf?usuarioEmisor=Ing.+Marta+Suarez`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toBe('application/pdf');
+      expect(res.headers['content-disposition']).toContain('attachment; filename="informe-trazabilidad-');
+      expect(res.headers['x-report-id']).toMatch(/^INF-TRZ-/);
+
+      const buffer = res.rawPayload;
+      expect(buffer.toString('latin1').startsWith('%PDF-1.4')).toBe(true);
+      expect(buffer.toString('latin1')).toContain('%%EOF');
+      expect(buffer.toString('latin1')).toContain('AGRUL');
+      expect(buffer.toString('latin1')).toContain('Marta Suarez');
+    });
+
+    it('GET /api/v1/cosechas/:identificador/pdf alias debe funcionar igualmente', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/cosechas/${codigoTraza}/pdf`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toBe('application/pdf');
+    });
+
+    it('GET /api/v1/trazabilidad/recorrido/:identificador/csv debe exportar archivo con BOM UTF-8 y encabezados con unidades (RF-M6-10 / RNF-11)', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/trazabilidad/recorrido/${cosechaTestId}/csv`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toBe('text/csv; charset=utf-8');
+      expect(res.headers['content-disposition']).toContain('attachment; filename="trazabilidad-');
+
+      const csvContent = res.body;
+      expect(csvContent.charCodeAt(0)).toBe(0xfeff); // BOM UTF-8
+      expect(csvContent).toContain('Cosechado Total (kg)');
+      expect(csvContent).toContain('Superficie (ha)');
+      expect(csvContent).toContain('Temperatura (°C)');
+      expect(csvContent).toContain('Limón Eureka');
+    });
+
+    it('GET /api/v1/cosechas/:identificador/csv alias debe funcionar igualmente', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/cosechas/${codigoTraza}/csv`,
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toBe('text/csv; charset=utf-8');
+    });
+
+    it('GET /api/v1/trazabilidad/informes/:identificador con Accept: application/json debe responder con envelope JSON y base64', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/trazabilidad/informes/${cosechaTestId}?formato=PDF`,
+        headers: {
+          accept: 'application/json',
+        },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.success).toBe(true);
+      expect(body.data.codigoInforme).toMatch(/^INF-TRZ-/);
+      expect(body.data.tipoFormato).toBe('PDF');
+      expect(body.data.mimeType).toBe('application/pdf');
+      expect(body.data.contenidoBase64).toBeDefined();
+      expect(body.data.log).toBeDefined();
+      expect(body.data.recorrido).toBeDefined();
+    });
+
+    it('GET /api/v1/trazabilidad/informes/logs debe listar la bitácora inmutable de emisiones (RF-M6-13)', async () => {
+      // 1. Emitir un PDF
+      await app.inject({
+        method: 'GET',
+        url: `/api/v1/trazabilidad/recorrido/${cosechaTestId}/pdf?usuarioEmisor=Auditor+A`,
+      });
+
+      // 2. Emitir un CSV
+      await app.inject({
+        method: 'GET',
+        url: `/api/v1/trazabilidad/recorrido/${cosechaTestId}/csv?usuarioEmisor=Auditor+B`,
+      });
+
+      // 3. Consultar bitácora
+      const logsRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/trazabilidad/informes/logs?cosechaId=${cosechaTestId}`,
+      });
+
+      expect(logsRes.statusCode).toBe(200);
+      const logsBody = JSON.parse(logsRes.body);
+      expect(logsBody.success).toBe(true);
+      expect(logsBody.data.length).toBeGreaterThanOrEqual(2);
+      expect(logsBody.data.some((l: any) => l.tipoFormato === 'PDF')).toBe(true);
+      expect(logsBody.data.some((l: any) => l.tipoFormato === 'CSV')).toBe(true);
+    });
+  });
 });
+
 
 
 

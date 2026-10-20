@@ -57,6 +57,10 @@ export interface RecorridoTrazabilidadOutputDto {
     cantidadCosechadaKg: number;
     cantidadComercializableKg: number;
     cantidadDescarteKg: number;
+    motivoAnulacion?: string | null;
+    usuarioAnulacionId?: string | null;
+    anuladoEn?: string | null;
+    historialModificaciones?: any[];
   };
   lote: {
     id: string;
@@ -65,6 +69,8 @@ export interface RecorridoTrazabilidadOutputDto {
     variedad: string | null;
     fincaId: string | null;
     fincaNombre?: string | null;
+    fincaLocalidad?: string | null;
+    fincaProvincia?: string | null;
     superficieHa: number | null;
   };
   ciclo: {

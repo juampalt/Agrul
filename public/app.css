@@ -2328,3 +2328,246 @@ input:focus, select:focus {
   }
 }
 
+/* ==========================================================================
+   AGRUL-033: Estilos de Emisión de Informes de Trazabilidad y Exportación
+   ========================================================================== */
+.modal-informe {
+  max-width: 680px;
+  width: 95%;
+}
+
+.modal-body-informe {
+  padding: 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.informe-summary-card {
+  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-subtle);
+}
+
+.informe-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.badge-informe {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.5px;
+}
+
+.informe-lote-tag {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-main);
+}
+
+.informe-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.privacy-filter-box {
+  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  background: rgba(30, 41, 59, 0.35);
+  border: 1px solid var(--border-subtle);
+  margin-top: 4px;
+}
+
+.privacy-box-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.privacy-icon {
+  font-size: 18px;
+}
+
+.badge-inline-warning {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  margin-left: 4px;
+}
+
+.export-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.btn-export-pdf {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.2) 0%, rgba(159, 18, 57, 0.3) 100%);
+  border: 1px solid rgba(244, 63, 94, 0.4);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  text-align: left;
+}
+
+.btn-export-pdf:hover {
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.35) 0%, rgba(159, 18, 57, 0.5) 100%);
+  border-color: rgba(244, 63, 94, 0.7);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.25);
+}
+
+.btn-export-csv {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.3) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  text-align: left;
+}
+
+.btn-export-csv:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.35) 0%, rgba(5, 150, 105, 0.5) 100%);
+  border-color: rgba(16, 185, 129, 0.7);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+}
+
+.export-btn-icon {
+  font-size: 24px;
+}
+
+.export-btn-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.export-btn-title {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.export-btn-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.informes-log-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.informes-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.informes-log-list {
+  max-height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.informe-log-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.log-row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge-format-pdf {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  background: rgba(244, 63, 94, 0.2);
+  color: #fda4af;
+  border-radius: 4px;
+}
+
+.badge-format-csv {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border-radius: 4px;
+}
+
+.badge-rect-log {
+  font-size: 10px;
+  color: #f59e0b;
+}
+
+.badge-anul-log {
+  font-size: 10px;
+  color: #f43f5e;
+}
+
+.log-id-informe {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.log-fecha {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.log-emisor {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.log-hash-code {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.log-hash-code code {
+  font-family: monospace;
+  color: var(--accent-blue);
+}
+

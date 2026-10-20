@@ -75,10 +75,14 @@ export class ObtenerRecorridoTrazabilidadUseCase {
     }
 
     let fincaNombre: string | null = null;
+    let fincaLocalidad: string | null = null;
+    let fincaProvincia: string | null = null;
     if (lote.fincaId && this.deps.fincasRepo) {
       const finca = await this.deps.fincasRepo.buscarPorId(lote.fincaId);
       if (finca) {
         fincaNombre = finca.nombre;
+        fincaLocalidad = finca.ubicacion.localidad;
+        fincaProvincia = finca.ubicacion.provincia;
       }
     }
 
@@ -436,6 +440,10 @@ export class ObtenerRecorridoTrazabilidadUseCase {
         cantidadCosechadaKg: cosecha.cantidadCosechadaKg,
         cantidadComercializableKg: cosecha.cantidadComercializableKg,
         cantidadDescarteKg: cosecha.cantidadDescarteKg,
+        motivoAnulacion: cosecha.motivoAnulacion ?? null,
+        usuarioAnulacionId: cosecha.usuarioAnulacionId ?? null,
+        anuladoEn: cosecha.anuladoEn ?? null,
+        historialModificaciones: cosecha.toJSON().historialModificaciones,
       },
       lote: {
         id: lote.id,
@@ -444,6 +452,8 @@ export class ObtenerRecorridoTrazabilidadUseCase {
         variedad: lote.variedad ?? null,
         fincaId: lote.fincaId ?? null,
         fincaNombre,
+        fincaLocalidad,
+        fincaProvincia,
         superficieHa: lote.superficieHa ?? null,
       },
       ciclo: cicloProps,
