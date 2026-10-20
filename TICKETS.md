@@ -22,11 +22,11 @@
 | **Épica 11: Módulo 5 — Cosecha, Destinos y Saldo Comercializable** | 4 | 4 | 0 | 0 |
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 3 | 0 | 0 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 3 | 0 | 0 |
-| **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 0 | 0 | 3 |
+| **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 1 | 0 | 2 |
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 0 | 0 | 5 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **31** | **0** | **19** |
+| **TOTAL GENERAL** | **50** | **32** | **0** | **18** |
 
 ---
 
@@ -756,23 +756,23 @@
 ## ÉPICA 14: MÓDULO 8 — USUARIOS, ROLES, SEGURIDAD Y AUDITORÍA
 
 ### `[AGRUL-038]` Gestión de Usuarios, Autenticación y Control de Acceso por Finca
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 8: Usuarios y Seguridad
 - **Requisitos Funcionales:** RF-M8-01, RF-M8-02, RF-M8-03, RF-M8-04, RF-M8-05, RF-M8-10
 - **Reglas de Negocio:** RN-16
 - **Skills:** [architecture.md](file:///c:/AGRUL/.cursor/skills/architecture.md), [api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
-- **Etiquetas:** `auth`, `security`, `rbac`, `fincas`, `ready-for-agent`
-- **Descripción:** Sistema de autenticación y autorización con perfiles diferenciados (ADMINISTRADOR, ENCARGADO, OPERARIO, ASESOR_AGRONOMO), hashing seguro (Argon2/bcrypt), bloqueo por intentos fallidos y restricción por fincas asignadas.
+- **Etiquetas:** `auth`, `security`, `rbac`, `fincas`, `status:done`
+- **Descripción:** Sistema de autenticación y autorización con perfiles diferenciados (ADMINISTRADOR, ENCARGADO, OPERARIO, ASESOR_AGRONOMO), hashing seguro (Argon2/bcrypt/PBKDF2-SHA512), bloqueo por intentos fallidos y restricción por fincas asignadas.
 - **Tareas Técnicas:**
   1. Crear tablas usuarios, perfiles_permisos y usuario_finca_asignacion.
   2. Implementar autenticación con JWT / cookie segura, hash + salt y bloqueo temporal tras N intentos fallidos.
   3. Middleware de autorización Fastify que verifica permisos del perfil y asignación de finca en cada request (RF-M8-05 / RN-16).
   4. Soportar rol asesor agrónomo con permisos de solo lectura y carga de recomendaciones (RF-M8-10).
 - **Criterios de Aceptación:**
-  - [ ] RF-M8-03 / RNF-04: Contraseñas con hash seguro y bloqueo tras intentos fallidos.
-  - [ ] RF-M8-04 / RN-16: Operario solo accede a carga/consulta de sus tareas; Administrador a configuración total.
-  - [ ] RF-M8-05: El usuario no puede visualizar ni operar fincas a las que no fue expresamente asignado.
+  - [x] RF-M8-03 / RNF-04: Contraseñas con hash seguro (PBKDF2-SHA512 con salt criptográfico) y bloqueo tras 5 intentos fallidos consecutivos.
+  - [x] RF-M8-04 / RN-16: Perfiles diferenciados RBAC (Operario solo accede a carga/consulta de sus tareas; Administrador a configuración total; Asesor Agrónomo lectura y recomendaciones).
+  - [x] RF-M8-05: El usuario no puede visualizar ni operar fincas a las que no fue expresamente asignado (403 Forbidden).
 
 ### `[AGRUL-039]` Atribución Automática Inalterable y Diferenciación de Ejecutor vs Cargador
 - **Estado:** `TODO` 📌

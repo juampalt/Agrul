@@ -14,6 +14,15 @@ import { PerdidasCosechaController } from '../controllers/perdidas-cosecha.contr
 import { TrazabilidadController } from '../controllers/trazabilidad.controller.js';
 import { IndicadoresController } from '../controllers/indicadores.controller.js';
 import { DashboardController } from '../controllers/dashboard.controller.js';
+import { UsuariosController } from '../controllers/usuarios.controller.js';
+import { AuthController } from '../controllers/auth.controller.js';
+import {
+  verificarAutenticacion,
+  verificarAutenticacionOpcional,
+  requerirRol,
+  requerirAccesoFinca,
+  requerirPermisoAgronomo,
+} from '../middlewares/auth.middleware.js';
 
 export interface ApiRoutesDependencies {
   lotesController: LotesController;
@@ -31,6 +40,8 @@ export interface ApiRoutesDependencies {
   trazabilidadController?: TrazabilidadController;
   indicadoresController?: IndicadoresController;
   dashboardController?: DashboardController;
+  usuariosController?: UsuariosController;
+  authController?: AuthController;
 }
 
 
@@ -49,7 +60,7 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
       if (deps.fincasController) {
         v1.get('/fincas', (req, rep) => deps.fincasController!.listar(req, rep));
         v1.post('/fincas', (req, rep) => deps.fincasController!.crear(req, rep));
-        v1.get('/fincas/:id', (req, rep) => deps.fincasController!.obtenerPorId(req, rep));
+        v1.get('/fincas/:id', { preHandler: [verificarAutenticacionOpcional, requerirAccesoFinca()] }, (req, rep) => deps.fincasController!.obtenerPorId(req, rep));
       }
 
       // Lotes
@@ -222,6 +233,26 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
       if (deps.dashboardController) {
         v1.get('/dashboard/resumen', (req, rep) => deps.dashboardController!.obtenerResumen(req, rep));
         v1.get('/dashboard', (req, rep) => deps.dashboardController!.obtenerResumen(req, rep));
+      }
+
+      // Autenticación y Sesión (Módulo 8 — AGRUL-038 / RF-M8-03)
+      if (deps.authController) {
+        v1.post('/auth/login', (req, rep) => deps.authController!.login(req, rep));
+        v1.get('/auth/me', { preHandler: [verificarAutenticacion] }, (req, rep) => deps.authController!.me(req, rep));
+        v1.post('/auth/cambiar-password', { preHandler: [verificarAutenticacion] }, (req, rep) => deps.authController!.cambiarPassword(req, rep));
+      }
+
+      // Gestión de Usuarios y Permisos RBAC (Módulo 8 — AGRUL-038 / RF-M8-01, RF-M8-02, RF-M8-04, RF-M8-05, RN-16)
+      if (deps.usuariosController) {
+        v1.post('/usuarios', { preHandler: [requerirRol('ADMINISTRADOR')] }, (req, rep) => deps.usuariosController!.crear(req, rep));
+        v1.get('/usuarios', { preHandler: [requerirRol('ADMINISTRADOR', 'ENCARGADO')] }, (req, rep) => deps.usuariosController!.listar(req, rep));
+        v1.get('/usuarios/:id', { preHandler: [verificarAutenticacion] }, (req, rep) => deps.usuariosController!.obtenerPorId(req, rep));
+        v1.put('/usuarios/:id', { preHandler: [requerirRol('ADMINISTRADOR')] }, (req, rep) => deps.usuariosController!.actualizar(req, rep));
+        v1.post('/usuarios/:id/bloquear', { preHandler: [requerirRol('ADMINISTRADOR')] }, (req, rep) => deps.usuariosController!.bloquear(req, rep));
+        v1.post('/usuarios/:id/desbloquear', { preHandler: [requerirRol('ADMINISTRADOR')] }, (req, rep) => deps.usuariosController!.desbloquear(req, rep));
+
+        // Verificación de Acceso y Aislamiento por Finca (RF-M8-05 / RN-16)
+        v1.get('/fincas/:id/verificar-acceso', { preHandler: [verificarAutenticacion] }, (req, rep) => deps.usuariosController!.verificarAccesoFinca(req, rep));
       }
     },
     { prefix: '/api/v1' }

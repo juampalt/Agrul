@@ -3849,5 +3849,159 @@ input:focus, select:focus {
   }
 }
 
+/* ==========================================================================
+   MÓDULO 8: USUARIOS, ROLES RBAC Y CONTROL POR FINCA (AGRUL-038)
+   ========================================================================== */
+.btn-users-header {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(2, 132, 199, 0.35));
+  border: 1px solid rgba(14, 165, 233, 0.5);
+  color: #38bdf8;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+  transition: all 0.25s ease;
+}
+
+.btn-users-header:hover {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(2, 132, 199, 0.55));
+  border-color: #38bdf8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
+}
+
+.user-session-banner {
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+.session-active-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.session-avatar {
+  font-size: 28px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(14, 165, 233, 0.15);
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  border-radius: 50%;
+}
+
+.session-details {
+  flex: 1;
+}
+
+.session-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  flex-wrap: wrap;
+}
+
+.session-meta-row {
+  font-size: 13px;
+  color: var(--text-dim, #94a3b8);
+  margin-top: 2px;
+}
+
+.login-form-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.login-prompt {
+  font-weight: 600;
+  font-size: 13px;
+  color: #38bdf8;
+}
+
+.login-help-text {
+  font-size: 12px;
+  color: var(--text-dim, #64748b);
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+.badge-role {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-role-admin {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.badge-role-encargado {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.badge-role-operario {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.badge-role-asesor {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.badge-status-active {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.badge-status-blocked {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.finca-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.finca-checkbox-item:hover {
+  background: rgba(14, 165, 233, 0.15);
+  border-color: rgba(14, 165, 233, 0.4);
+}
+
 
 

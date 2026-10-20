@@ -36,3 +36,5 @@ export * from './use-cases/comparar-campanas.use-case.js';
 export * from './dtos/comparador-campanas.dto.js';
 export * from './use-cases/obtener-dashboard-resumen.use-case.js';
 export * from './dtos/dashboard-resumen.dto.js';
+export * from './use-cases/usuarios.use-cases.js';
+export * from './dtos/usuarios.dto.js';

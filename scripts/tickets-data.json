@@ -1409,7 +1409,7 @@
     "epic": "Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría",
     "epicId": "epic-14-modulo-8-usuarios",
     "title": "Gestión de Usuarios, Autenticación y Control de Acceso por Finca",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Alta (P1)",
     "skills": [
       ".cursor/skills/architecture.md",
@@ -1432,7 +1432,7 @@
       "security",
       "rbac",
       "fincas",
-      "ready-for-agent"
+      "status:done"
     ],
     "description": "Sistema de autenticación y autorización con perfiles diferenciados (ADMINISTRADOR, ENCARGADO, OPERARIO, ASESOR_AGRONOMO), hashing seguro (Argon2/bcrypt), bloqueo por intentos fallidos y restricción por fincas asignadas.",
     "tasks": [

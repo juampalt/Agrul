@@ -1,6 +1,15 @@
 import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
-import { DomainError, EntidadNoEncontradaError } from '../../../core/domain/errors/domain.error.js';
+import {
+  DomainError,
+  EntidadNoEncontradaError,
+  CredencialesInvalidasError,
+  UsuarioBloqueadoError,
+  UsuarioInactivoError,
+  UsuarioDuplicadoError,
+  AccesoDenegadoFincaError,
+  PermisoInsuficienteError,
+} from '../../../core/domain/errors/domain.error.js';
 import { CodigoLoteDuplicadoError } from '../../../application/use-cases/crear-lote.use-case.js';
 import { InsumoDuplicadoError } from '../../../application/use-cases/insumos-catalogo.use-cases.js';
 
@@ -24,7 +33,40 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
     });
   }
 
-  // 2. Entidad no encontrada (404 Not Found)
+  // 2. Credenciales inválidas / Autenticación fallida (401 Unauthorized)
+  if (error instanceof CredencialesInvalidasError) {
+    return reply.status(401).send({
+      success: false,
+      data: null,
+      error: {
+        code: error.code,
+        message: error.message,
+        details: null,
+      },
+      timestamp,
+    });
+  }
+
+  // 3. Permisos insuficientes, cuentas bloqueadas o acceso a finca no autorizado (403 Forbidden)
+  if (
+    error instanceof UsuarioBloqueadoError ||
+    error instanceof UsuarioInactivoError ||
+    error instanceof AccesoDenegadoFincaError ||
+    error instanceof PermisoInsuficienteError
+  ) {
+    return reply.status(403).send({
+      success: false,
+      data: null,
+      error: {
+        code: error.code,
+        message: error.message,
+        details: null,
+      },
+      timestamp,
+    });
+  }
+
+  // 4. Entidad no encontrada (404 Not Found)
   if (error instanceof EntidadNoEncontradaError) {
     return reply.status(404).send({
       success: false,
@@ -38,8 +80,12 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
     });
   }
 
-  // 3. Conflicto de unicidad (409 Conflict)
-  if (error instanceof CodigoLoteDuplicadoError || error instanceof InsumoDuplicadoError) {
+  // 5. Conflicto de unicidad (409 Conflict)
+  if (
+    error instanceof CodigoLoteDuplicadoError ||
+    error instanceof InsumoDuplicadoError ||
+    error instanceof UsuarioDuplicadoError
+  ) {
     return reply.status(409).send({
       success: false,
       data: null,

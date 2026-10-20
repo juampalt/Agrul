@@ -116,3 +116,59 @@ export class PerdidaCosechaInvalidaError extends DomainError {
   }
 }
 
+export class CredencialesInvalidasError extends DomainError {
+  public readonly code = 'CREDENCIALES_INVALIDAS';
+
+  constructor(mensaje: string = 'Email o contraseña incorrectos.') {
+    super(mensaje);
+  }
+}
+
+export class UsuarioBloqueadoError extends DomainError {
+  public readonly code = 'USUARIO_BLOQUEADO';
+
+  constructor(mensaje: string = 'La cuenta se encuentra bloqueada por exceder el número máximo de intentos fallidos o por decisión administrativa (RF-M8-03).') {
+    super(mensaje);
+  }
+}
+
+export class UsuarioInactivoError extends DomainError {
+  public readonly code = 'USUARIO_INACTIVO';
+
+  constructor(mensaje: string = 'El usuario se encuentra inactivo y no puede iniciar sesión en la plataforma.') {
+    super(mensaje);
+  }
+}
+
+export class UsuarioDuplicadoError extends DomainError {
+  public readonly code = 'USUARIO_DUPLICADO';
+
+  constructor(email: string) {
+    super(`Ya existe un usuario registrado con el correo electrónico '${email}'.`);
+  }
+}
+
+export class AccesoDenegadoFincaError extends DomainError {
+  public readonly code = 'ACCESO_DENEGADO_FINCA';
+
+  constructor(fincaId: string) {
+    super(`El usuario no tiene autorización para operar o consultar la finca '${fincaId}' (RF-M8-05 / RN-16).`);
+  }
+}
+
+export class PermisoInsuficienteError extends DomainError {
+  public readonly code = 'PERMISO_INSUFICIENTE';
+
+  constructor(mensaje: string = 'No cuenta con los privilegios requeridos para ejecutar esta operación (RF-M8-04).') {
+    super(mensaje);
+  }
+}
+
+export class PasswordInseguraError extends DomainError {
+  public readonly code = 'PASSWORD_INSEGURA';
+
+  constructor(mensaje: string = 'La contraseña no cumple con los requisitos mínimos de seguridad (mínimo 8 caracteres, al menos una letra y un número) (RNF-04).') {
+    super(mensaje);
+  }
+}
+

@@ -9,3 +9,5 @@ export * from './observaciones-monitoreo-repository.port.js';
 export * from './insumos-catalogo-repository.port.js';
 export * from './aplicaciones-repository.port.js';
 export * from './informes-trazabilidad-repository.port.js';
+export * from './usuarios-repository.port.js';
+export * from './usuario-fincas-repository.port.js';

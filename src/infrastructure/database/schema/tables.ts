@@ -444,4 +444,42 @@ export const informeTrazabilidadLogTable = pgTable('informe_trazabilidad_log', {
   index('idx_informe_log_fecha').on(table.emitidoEn),
 ]);
 
+// ============================================================================
+// ÉPICA 14: MÓDULO 8 — USUARIOS, ROLES, SEGURIDAD Y AUDITORÍA (AGRUL-038)
+// ============================================================================
+
+// TABLA TRANSACCIONAL: Usuarios del Sistema y Roles RBAC (RF-M8-01 / RF-M8-03 / RF-M8-04)
+export const usuariosTable = pgTable('usuarios', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  nombre: varchar('nombre', { length: 100 }).notNull(),
+  apellido: varchar('apellido', { length: 100 }).notNull(),
+  email: varchar('email', { length: 150 }).notNull().unique(),
+  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
+  salt: varchar('salt', { length: 64 }).notNull(),
+  perfil: varchar('perfil', { length: 50 }).notNull(), // ADMINISTRADOR | ENCARGADO | OPERARIO | ASESOR_AGRONOMO
+  estado: varchar('estado', { length: 30 }).notNull().default('ACTIVO'), // ACTIVO | INACTIVO | BLOQUEADO
+  intentosFallidos: integer('intentos_fallidos').notNull().default(0),
+  bloqueadoHasta: timestamp('bloqueado_hasta', { withTimezone: true, mode: 'string' }),
+  ultimoAcceso: timestamp('ultimo_acceso', { withTimezone: true, mode: 'string' }),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_usuarios_email').on(table.email),
+  index('idx_usuarios_perfil').on(table.perfil),
+  index('idx_usuarios_estado').on(table.estado),
+]);
+
+// TABLA TRANSACCIONAL: Asignación N:M de Usuarios a Fincas (RF-M8-02 / RF-M8-05 / RN-16)
+export const usuarioFincaAsignacionTable = pgTable('usuario_finca_asignacion', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  usuarioId: uuid('usuario_id').notNull().references(() => usuariosTable.id, { onDelete: 'cascade' }),
+  fincaId: uuid('finca_id').notNull().references(() => fincasTable.id, { onDelete: 'cascade' }),
+  activo: boolean('activo').notNull().default(true),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_usuario_finca_usuario').on(table.usuarioId),
+  index('idx_usuario_finca_finca').on(table.fincaId),
+]);
+
 

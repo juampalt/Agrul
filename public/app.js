@@ -3029,6 +3029,335 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // ==========================================================================
+  // AGRUL-038: Módulo de Usuarios, Autenticación y Control de Fincas
+  // ==========================================================================
+  const modalUsuarios = document.getElementById('modal-usuarios-roles');
+  const btnUsuariosRoles = document.getElementById('btn-usuarios-roles');
+  const tbodyUsuariosLista = document.getElementById('tbody-usuarios-lista');
+  const formCrearUsuario = document.getElementById('form-crear-usuario');
+  const usrAltaFincasContainer = document.getElementById('usr-alta-fincas-container');
+  const checkAccesoUsuario = document.getElementById('check-acceso-usuario');
+  const checkAccesoFinca = document.getElementById('check-acceso-finca');
+  const btnTestAccesoFinca = document.getElementById('btn-test-acceso-finca');
+  const resultadoTestAcceso = document.getElementById('resultado-test-acceso');
+
+  const userSessionInfo = document.getElementById('user-session-info');
+  const userLoginBox = document.getElementById('user-login-box');
+  const sessionUserName = document.getElementById('session-user-name');
+  const sessionUserRole = document.getElementById('session-user-role');
+  const sessionUserEmail = document.getElementById('session-user-email');
+  const sessionUserFincas = document.getElementById('session-user-fincas');
+  const btnCerrarSesion = document.getElementById('btn-cerrar-sesion');
+  const btnEjecutarLogin = document.getElementById('btn-ejecutar-login');
+  const loginEmailInput = document.getElementById('login-email');
+  const loginPasswordInput = document.getElementById('login-password');
+
+  let activeAuthToken = localStorage.getItem('agrul_auth_token') || null;
+  let activeAuthUser = null;
+
+  function actualizarBannerSesion() {
+    if (activeAuthToken && activeAuthUser) {
+      if (userSessionInfo) userSessionInfo.style.display = 'flex';
+      if (userLoginBox) userLoginBox.style.display = 'none';
+      if (sessionUserName) sessionUserName.textContent = activeAuthUser.nombreCompleto || `${activeAuthUser.nombre} ${activeAuthUser.apellido}`;
+      if (sessionUserRole) {
+        sessionUserRole.textContent = activeAuthUser.perfil;
+        sessionUserRole.className = `badge-role badge-role-${activeAuthUser.perfil.toLowerCase()}`;
+      }
+      if (sessionUserEmail) sessionUserEmail.textContent = activeAuthUser.email;
+      if (sessionUserFincas) {
+        if (activeAuthUser.perfil === 'ADMINISTRADOR') {
+          sessionUserFincas.textContent = 'Todas (Acceso Global RN-16)';
+        } else {
+          const numFincas = activeAuthUser.fincasAsignadas?.length || 0;
+          sessionUserFincas.textContent = numFincas > 0 ? `${numFincas} finca(s) asignada(s)` : 'Ninguna';
+        }
+      }
+    } else {
+      if (userSessionInfo) userSessionInfo.style.display = 'none';
+      if (userLoginBox) userLoginBox.style.display = 'block';
+    }
+  }
+
+  async function cargarListaUsuarios() {
+    if (!tbodyUsuariosLista) return;
+    try {
+      const headers = {};
+      if (activeAuthToken) {
+        headers['Authorization'] = `Bearer ${activeAuthToken}`;
+      }
+      const res = await fetch('/api/v1/usuarios', { headers });
+      const json = await res.json();
+
+      if (!json.success || !Array.isArray(json.data)) {
+        tbodyUsuariosLista.innerHTML = `<tr><td colspan="7" class="text-center text-dim">${json.error?.message || 'Inicie sesión con perfil ADMINISTRADOR o ENCARGADO para listar usuarios.'}</td></tr>`;
+        return;
+      }
+
+      if (json.data.length === 0) {
+        tbodyUsuariosLista.innerHTML = '<tr><td colspan="7" class="text-center text-dim">No hay usuarios registrados en el sistema.</td></tr>';
+        return;
+      }
+
+      tbodyUsuariosLista.innerHTML = json.data.map(u => {
+        const roleClass = `badge-role badge-role-${u.perfil.toLowerCase()}`;
+        const statusClass = u.estado === 'ACTIVO' ? 'badge-status-active' : 'badge-status-blocked';
+        const fincasStr = u.perfil === 'ADMINISTRADOR' ? '<em>Global (Todas)</em>' : (u.fincasAsignadas && u.fincasAsignadas.length > 0 ? `${u.fincasAsignadas.length} finca(s)` : '<span class="text-dim">Sin asignación</span>');
+        const ultimoAccesoStr = u.ultimoAcceso ? new Date(u.ultimoAcceso).toLocaleString('es-AR') : '<span class="text-dim">Nunca</span>';
+
+        const btnBloqueo = u.estado === 'ACTIVO'
+          ? `<button class="btn btn-xs btn-outline-danger btn-toggle-bloqueo" data-action="bloquear" data-id="${u.id}">Bloquear</button>`
+          : `<button class="btn btn-xs btn-outline-success btn-toggle-bloqueo" data-action="desbloquear" data-id="${u.id}">Desbloquear</button>`;
+
+        return `
+          <tr>
+            <td><strong>${u.nombreCompleto || u.nombre + ' ' + u.apellido}</strong></td>
+            <td><code>${u.email}</code></td>
+            <td><span class="${roleClass}">${u.perfil}</span></td>
+            <td><span class="${statusClass}">${u.estado}</span></td>
+            <td>${fincasStr}</td>
+            <td>${ultimoAccesoStr}</td>
+            <td>${btnBloqueo}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // Adjuntar eventos de bloqueo/desbloqueo
+      tbodyUsuariosLista.querySelectorAll('.btn-toggle-bloqueo').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          const action = btn.getAttribute('data-action');
+          try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (activeAuthToken) headers['Authorization'] = `Bearer ${activeAuthToken}`;
+            const res = await fetch(`/api/v1/usuarios/${id}/${action}`, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ motivo: 'Acción administrativa manual desde dashboard' }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              showToast(`Usuario ${action === 'bloquear' ? 'bloqueado' : 'desbloqueado'} exitosamente.`, 'success');
+              cargarListaUsuarios();
+            } else {
+              showToast(`Error: ${data.error?.message || 'No autorizado'}`, 'error');
+            }
+          } catch (err) {
+            showToast(`Error de conexión: ${err.message}`, 'error');
+          }
+        });
+      });
+
+      // Actualizar select de prueba de acceso
+      if (checkAccesoUsuario) {
+        checkAccesoUsuario.innerHTML = json.data.map(u =>
+          `<option value="${u.id}">${u.nombreCompleto} (${u.perfil})</option>`
+        ).join('');
+      }
+    } catch (err) {
+      tbodyUsuariosLista.innerHTML = `<tr><td colspan="7" class="text-center text-dim">Error cargando usuarios: ${err.message}</td></tr>`;
+    }
+  }
+
+  async function poblarFincasParaAsignacion() {
+    try {
+      const res = await fetch('/api/v1/fincas');
+      const json = await res.json();
+      const fincas = (json.success && Array.isArray(json.data)) ? json.data : [];
+
+      if (usrAltaFincasContainer) {
+        if (fincas.length === 0) {
+          usrAltaFincasContainer.innerHTML = '<span class="text-dim">No hay fincas registradas en el sistema.</span>';
+        } else {
+          usrAltaFincasContainer.innerHTML = fincas.map(f => `
+            <label class="finca-checkbox-item">
+              <input type="checkbox" name="finca-asig" value="${f.id}">
+              <span>${f.nombre} (${f.ubicacion?.localidad || 'Tucumán'})</span>
+            </label>
+          `).join('');
+        }
+      }
+
+      if (checkAccesoFinca) {
+        checkAccesoFinca.innerHTML = fincas.map(f =>
+          `<option value="${f.id}">${f.nombre} (${f.ubicacion?.localidad || 'Tucumán'})</option>`
+        ).join('');
+      }
+    } catch {
+      // Ignorar error no bloqueante
+    }
+  }
+
+  if (btnUsuariosRoles) {
+    btnUsuariosRoles.addEventListener('click', () => {
+      openModal(modalUsuarios);
+      actualizarBannerSesion();
+      cargarListaUsuarios();
+      poblarFincasParaAsignacion();
+    });
+  }
+
+  // Pestañas internas
+  document.querySelectorAll('[data-usrtab]').forEach(tabBtn => {
+    tabBtn.addEventListener('click', () => {
+      document.querySelectorAll('[data-usrtab]').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.usr-tab-content').forEach(c => c.style.display = 'none');
+      tabBtn.classList.add('active');
+      const targetId = tabBtn.getAttribute('data-usrtab');
+      const target = document.getElementById(targetId);
+      if (target) target.style.display = 'block';
+    });
+  });
+
+  // Login
+  if (btnEjecutarLogin) {
+    btnEjecutarLogin.addEventListener('click', async () => {
+      const email = loginEmailInput?.value?.trim();
+      const password = loginPasswordInput?.value?.trim();
+
+      if (!email || !password) {
+        showToast('Complete email y contraseña.', 'error');
+        return;
+      }
+
+      btnEjecutarLogin.disabled = true;
+      btnEjecutarLogin.textContent = 'Autenticando...';
+
+      try {
+        const res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const json = await res.json();
+
+        if (json.success && json.data) {
+          activeAuthToken = json.data.token;
+          activeAuthUser = json.data.usuario;
+          localStorage.setItem('agrul_auth_token', activeAuthToken);
+          showToast(`¡Bienvenido/a, ${activeAuthUser.nombre}! Sesión iniciada con rol ${activeAuthUser.perfil}.`, 'success');
+          actualizarBannerSesion();
+          cargarListaUsuarios();
+        } else {
+          showToast(`Error de login: ${json.error?.message || 'Credenciales inválidas'}`, 'error');
+        }
+      } catch (err) {
+        showToast(`Error de conexión: ${err.message}`, 'error');
+      } finally {
+        btnEjecutarLogin.disabled = false;
+        btnEjecutarLogin.textContent = 'Ingresar';
+      }
+    });
+  }
+
+  // Logout
+  if (btnCerrarSesion) {
+    btnCerrarSesion.addEventListener('click', () => {
+      activeAuthToken = null;
+      activeAuthUser = null;
+      localStorage.removeItem('agrul_auth_token');
+      actualizarBannerSesion();
+      cargarListaUsuarios();
+      showToast('Sesión finalizada.', 'info');
+    });
+  }
+
+  // Alta de Usuario
+  if (formCrearUsuario) {
+    formCrearUsuario.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nombre = document.getElementById('usr-alta-nombre')?.value?.trim();
+      const apellido = document.getElementById('usr-alta-apellido')?.value?.trim();
+      const email = document.getElementById('usr-alta-email')?.value?.trim();
+      const password = document.getElementById('usr-alta-password')?.value;
+      const perfil = document.getElementById('usr-alta-perfil')?.value;
+
+      const selectedFincas = [];
+      document.querySelectorAll('input[name="finca-asig"]:checked').forEach(cb => {
+        selectedFincas.push(cb.value);
+      });
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (activeAuthToken) headers['Authorization'] = `Bearer ${activeAuthToken}`;
+
+        const res = await fetch('/api/v1/usuarios', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            nombre,
+            apellido,
+            email,
+            password,
+            perfil,
+            fincaIds: selectedFincas,
+          }),
+        });
+
+        const json = await res.json();
+
+        if (json.success && json.data) {
+          showToast(`Usuario ${json.data.nombreCompleto} creado exitosamente con rol ${json.data.perfil}.`, 'success');
+          formCrearUsuario.reset();
+          const tabLista = document.querySelector('[data-usrtab="tab-lista-usuarios"]');
+          if (tabLista) tabLista.click();
+          cargarListaUsuarios();
+        } else {
+          showToast(`Error al crear usuario: ${json.error?.message || 'Verifique los datos'}`, 'error');
+        }
+      } catch (err) {
+        showToast(`Error de conexión: ${err.message}`, 'error');
+      }
+    });
+  }
+
+  // Test de Aislamiento por Finca (RN-16)
+  if (btnTestAccesoFinca) {
+    btnTestAccesoFinca.addEventListener('click', async () => {
+      const usuarioId = checkAccesoUsuario?.value;
+      const fincaId = checkAccesoFinca?.value;
+
+      if (!usuarioId || !fincaId) {
+        showToast('Seleccione usuario y finca para verificar.', 'error');
+        return;
+      }
+
+      if (!resultadoTestAcceso) return;
+      resultadoTestAcceso.style.display = 'block';
+      resultadoTestAcceso.innerHTML = '<span class="text-dim">Consultando permisos en API...</span>';
+
+      try {
+        const headers = {};
+        if (activeAuthToken) headers['Authorization'] = `Bearer ${activeAuthToken}`;
+
+        const res = await fetch(`/api/v1/fincas/${fincaId}/verificar-acceso?usuarioId=${encodeURIComponent(usuarioId)}`, {
+          headers,
+        });
+        const json = await res.json();
+
+        if (res.status === 200 && json.data?.tieneAcceso) {
+          resultadoTestAcceso.innerHTML = `
+            <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); padding: 12px; border-radius: 6px; color: #34d399;">
+              <strong>✅ ACCESO AUTORIZADO (RN-16)</strong>
+              <p style="margin: 4px 0 0; font-size: 13px;">El usuario tiene autorización legal para operar esta finca. ${json.data.esAdminGlobal ? '<em>(Acceso global como Administrador)</em>' : ''}</p>
+            </div>
+          `;
+        } else {
+          const motivo = json.error?.message || json.data?.motivo || 'Acceso denegado (RF-M8-05).';
+          resultadoTestAcceso.innerHTML = `
+            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); padding: 12px; border-radius: 6px; color: #f87171;">
+              <strong>❌ ACCESO DENEGADO (403 Forbidden - RF-M8-05 / RN-16)</strong>
+              <p style="margin: 4px 0 0; font-size: 13px;">${motivo}</p>
+            </div>
+          `;
+        }
+      } catch (err) {
+        resultadoTestAcceso.innerHTML = `<span class="text-danger">Error: ${err.message}</span>`;
+      }
+    });
+  }
+
   // Carga inicial
   cargarLotes();
   cargarFincas();

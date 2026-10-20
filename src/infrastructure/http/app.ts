@@ -100,6 +100,23 @@ import { CalcularMetricasProduccionUseCase } from '../../application/use-cases/c
 import { CompararCampanasUseCase } from '../../application/use-cases/comparar-campanas.use-case.js';
 import { DashboardController } from './controllers/dashboard.controller.js';
 import { ObtenerDashboardResumenUseCase } from '../../application/use-cases/obtener-dashboard-resumen.use-case.js';
+import { UsuariosRepositoryPort } from '../../core/ports/usuarios-repository.port.js';
+import { UsuarioFincasRepositoryPort } from '../../core/ports/usuario-fincas-repository.port.js';
+import { InMemoryUsuariosRepository } from '../../../tests/mocks/in-memory-usuarios.repository.js';
+import { InMemoryUsuarioFincasRepository } from '../../../tests/mocks/in-memory-usuario-fincas.repository.js';
+import { UsuariosController } from './controllers/usuarios.controller.js';
+import { AuthController } from './controllers/auth.controller.js';
+import {
+  CrearUsuarioUseCase,
+  AutenticarUsuarioUseCase,
+  ListarUsuariosUseCase,
+  ObtenerUsuarioPorIdUseCase,
+  ActualizarUsuarioUseCase,
+  BloquearUsuarioUseCase,
+  DesbloquearUsuarioUseCase,
+  CambiarPasswordUseCase,
+  VerificarAccesoFincaUseCase,
+} from '../../application/use-cases/usuarios.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 
 import { resolve } from 'node:path';
@@ -121,6 +138,8 @@ export interface BuildAppOptions {
   despachosRepo?: DespachosRepositoryPort;
   perdidasRepo?: PerdidasCosechaRepositoryPort;
   informesRepo?: InformesTrazabilidadRepositoryPort;
+  usuariosRepo?: UsuariosRepositoryPort;
+  usuarioFincasRepo?: UsuarioFincasRepositoryPort;
   logger?: boolean;
 }
 
@@ -511,6 +530,35 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     dashboardController = new DashboardController(obtenerDashboardResumenUC);
   }
 
+  // Módulo 8: Usuarios, Roles, Seguridad y Auditoría (AGRUL-038)
+  const usuariosRepo = options.usuariosRepo ?? new InMemoryUsuariosRepository();
+  const usuarioFincasRepo = options.usuarioFincasRepo ?? new InMemoryUsuarioFincasRepository();
+
+  const crearUsuarioUC = new CrearUsuarioUseCase(usuariosRepo, usuarioFincasRepo);
+  const autenticarUsuarioUC = new AutenticarUsuarioUseCase(usuariosRepo, usuarioFincasRepo);
+  const listarUsuariosUC = new ListarUsuariosUseCase(usuariosRepo, usuarioFincasRepo);
+  const obtenerUsuarioPorIdUC = new ObtenerUsuarioPorIdUseCase(usuariosRepo, usuarioFincasRepo);
+  const actualizarUsuarioUC = new ActualizarUsuarioUseCase(usuariosRepo, usuarioFincasRepo);
+  const bloquearUsuarioUC = new BloquearUsuarioUseCase(usuariosRepo, usuarioFincasRepo);
+  const desbloquearUsuarioUC = new DesbloquearUsuarioUseCase(usuariosRepo, usuarioFincasRepo);
+  const cambiarPasswordUC = new CambiarPasswordUseCase(usuariosRepo);
+  const verificarAccesoFincaUC = new VerificarAccesoFincaUseCase(usuariosRepo, usuarioFincasRepo);
+
+  const usuariosController = new UsuariosController(
+    crearUsuarioUC,
+    listarUsuariosUC,
+    obtenerUsuarioPorIdUC,
+    actualizarUsuarioUC,
+    bloquearUsuarioUC,
+    desbloquearUsuarioUC,
+    verificarAccesoFincaUC
+  );
+  const authController = new AuthController(
+    autenticarUsuarioUC,
+    obtenerUsuarioPorIdUC,
+    cambiarPasswordUC
+  );
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -528,9 +576,10 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     trazabilidadController,
     indicadoresController,
     dashboardController,
+    usuariosController,
+    authController,
   });
 
   return app;
-
 }
 
