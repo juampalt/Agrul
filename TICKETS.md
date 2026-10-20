@@ -23,10 +23,10 @@
 | **Épica 12: Módulo 6 — Motor de Trazabilidad e Informes Oficiales** | 3 | 3 | 0 | 0 |
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 3 | 0 | 0 |
 | **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 2 | 0 | 1 |
-| **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 2 | 0 | 3 |
+| **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 3 | 0 | 2 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **35** | **0** | **15** |
+| **TOTAL GENERAL** | **50** | **36** | **0** | **14** |
 
 ---
 
@@ -848,13 +848,13 @@
   - [x] RF-M9-05: Carga de saldo inicial genera movimiento auditado.
 
 ### `[AGRUL-043]` Libro Mayor de Movimientos de Stock, Idempotencia y Atomicidad ACID
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 9: Stock de Insumos
 - **Requisitos Funcionales:** RF-M9-04, RF-M9-06, RF-M9-07, RF-M9-13, RF-M9-15
 - **Reglas de Negocio:** RN-10, RN-11
 - **Skills:** [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md), [api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
-- **Etiquetas:** `stock`, `ledger`, `idempotencia`, `acid`, `ready-for-agent`
+- **Etiquetas:** `stock`, `ledger`, `idempotencia`, `acid`, `status:done`
 - **Descripción:** Libro mayor append-only de inventario (el stock nunca cambia sin movimiento, RN-10), clave única de idempotencia en formularios (RN-11 / RF-M9-06), compensación de movimientos ante edición/anulación y manejo de saldos negativos advertidos.
 - **Tareas Técnicas:**
   1. Crear tabla stock_movimientos (id, insumoId, loteFabricacionId, tipoMovimiento: SALDO_INICIAL | INGRESO_COMPRA | SALIDA_CONSUMO | DEVOLUCION | PERDIDA | AJUSTE_FISICO | REVERSION, cantidad, unidadMedidaId, fecha, usuarioId, referenciaTipo, referenciaId, claveIdempotencia UK).
@@ -862,10 +862,10 @@
   3. Implementar reversión atómica de movimientos al modificar o anular una aplicación de campo (RF-M9-07).
   4. Si la salida excede el stock físico disponible, permitir continuar solo con justificación/motivo explícito marcando la diferencia (RF-M9-15).
 - **Criterios de Aceptación:**
-  - [ ] RN-10 / RNF-05: Todo cambio de stock es transaccional (ACID) y genera fila en stock_movimientos.
-  - [ ] RN-11 / RF-M9-06: Reintentos con la misma clave de idempotencia no duplican movimientos.
-  - [ ] RF-M9-07: Modificación de dosis revierte el movimiento anterior e inserta el nuevo ajustado.
-  - [ ] RF-M9-13: Saldo de envases parcialmente abiertos llevado en unidad de consumo.
+  - [x] RN-10 / RNF-05: Todo cambio de stock es transaccional (ACID) y genera fila en stock_movimientos.
+  - [x] RN-11 / RF-M9-06: Reintentos con la misma clave de idempotencia no duplican movimientos.
+  - [x] RF-M9-07: Modificación de dosis revierte el movimiento anterior e inserta el nuevo ajustado.
+  - [x] RF-M9-13: Saldo de envases parcialmente abiertos llevado en unidad de consumo.
 
 ### `[AGRUL-044]` Stock Mínimo Configurable, Stock Reservado y Alertas de Reposición
 - **Estado:** `TODO` 📌

@@ -21,6 +21,7 @@ import { ProveedoresController } from '../controllers/proveedores.controller.js'
 import { InsumoEquivalenciasController } from '../controllers/insumo-equivalencias.controller.js';
 import { DepositosController } from '../controllers/depositos.controller.js';
 import { ComprasStockController } from '../controllers/compras-stock.controller.js';
+import { StockMovimientosController } from '../controllers/stock-movimientos.controller.js';
 import {
   verificarAutenticacion,
   verificarAutenticacionOpcional,
@@ -53,6 +54,7 @@ export interface ApiRoutesDependencies {
   insumoEquivalenciasController?: InsumoEquivalenciasController;
   depositosController?: DepositosController;
   comprasStockController?: ComprasStockController;
+  stockMovimientosController?: StockMovimientosController;
 }
 
 
@@ -303,6 +305,15 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/stock/ingresos-compra', (req, rep) => deps.comprasStockController!.listarIngresos(req, rep));
         v1.post('/stock/saldo-inicial', (req, rep) => deps.comprasStockController!.cargarStockInicial(req, rep));
         v1.get('/stock/saldo-inicial', (req, rep) => deps.comprasStockController!.listarStockInicial(req, rep));
+      }
+
+      // Libro Mayor de Movimientos de Stock y Ledger (Módulo 9 — AGRUL-043 / RF-M9-04, RF-M9-06, RF-M9-07, RF-M9-13, RF-M9-15, RN-10, RN-11)
+      if (deps.stockMovimientosController) {
+        v1.post('/stock/movimientos', (req, rep) => deps.stockMovimientosController!.registrarMovimiento(req, rep));
+        v1.get('/stock/movimientos', (req, rep) => deps.stockMovimientosController!.listarMovimientos(req, rep));
+        v1.post('/stock/movimientos/:id/revertir', (req, rep) => deps.stockMovimientosController!.revertirMovimiento(req, rep));
+        v1.post('/stock/movimientos/:id/ajustar', (req, rep) => deps.stockMovimientosController!.ajustarMovimiento(req, rep));
+        v1.get('/stock/saldos/:insumoId', (req, rep) => deps.stockMovimientosController!.consultarSaldo(req, rep));
       }
     },
     { prefix: '/api/v1' }

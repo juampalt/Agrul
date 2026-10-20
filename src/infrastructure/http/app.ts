@@ -162,6 +162,16 @@ import {
   ListarIngresosCompraUseCase,
   ListarStockInicialUseCase,
 } from '../../application/use-cases/compras-stock.use-cases.js';
+import { StockMovimientosRepositoryPort } from '../../core/ports/stock-movimientos-repository.port.js';
+import { InMemoryStockMovimientosRepository } from '../../../tests/mocks/in-memory-stock-movimientos.repository.js';
+import { StockMovimientosController } from './controllers/stock-movimientos.controller.js';
+import {
+  RegistrarMovimientoStockUseCase,
+  RevertirMovimientoStockUseCase,
+  AjustarMovimientoAplicacionUseCase,
+  ConsultarSaldoInsumoUseCase,
+  ListarMovimientosStockUseCase,
+} from '../../application/use-cases/stock-movimientos.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 
 import { resolve } from 'node:path';
@@ -191,6 +201,7 @@ export interface BuildAppOptions {
   depositosRepo?: DepositosRepositoryPort;
   ingresosCompraRepo?: IngresosCompraRepositoryPort;
   stockInicialRepo?: StockInicialRepositoryPort;
+  stockMovimientosRepo?: StockMovimientosRepositoryPort;
   logger?: boolean;
 }
 
@@ -682,6 +693,26 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     listarStockInicialUC
   );
 
+  // Módulo 9: Libro Mayor de Movimientos de Stock y Ledger (AGRUL-043 / RF-M9-04, RF-M9-06, RF-M9-07, RF-M9-13, RF-M9-15)
+  const stockMovimientosRepo = options.stockMovimientosRepo ?? new InMemoryStockMovimientosRepository();
+  const registrarMovimientoStockUC = new RegistrarMovimientoStockUseCase(stockMovimientosRepo);
+  const revertirMovimientoStockUC = new RevertirMovimientoStockUseCase(stockMovimientosRepo);
+  const ajustarMovimientoAplicacionUC = new AjustarMovimientoAplicacionUseCase(
+    stockMovimientosRepo,
+    revertirMovimientoStockUC,
+    registrarMovimientoStockUC
+  );
+  const consultarSaldoInsumoUC = new ConsultarSaldoInsumoUseCase(stockMovimientosRepo);
+  const listarMovimientosStockUC = new ListarMovimientosStockUseCase(stockMovimientosRepo);
+
+  const stockMovimientosController = new StockMovimientosController(
+    registrarMovimientoStockUC,
+    revertirMovimientoStockUC,
+    ajustarMovimientoAplicacionUC,
+    consultarSaldoInsumoUC,
+    listarMovimientosStockUC
+  );
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -706,6 +737,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     insumoEquivalenciasController,
     depositosController,
     comprasStockController,
+    stockMovimientosController,
   });
 
   return app;

@@ -615,5 +615,33 @@ export const stockInicialInsumosTable = pgTable('stock_inicial_insumos', {
   index('idx_stock_inicial_usuario').on(table.usuarioCargaId),
 ]);
 
+// TABLA TRANSACCIONAL (APPEND-ONLY): Libro Mayor de Movimientos de Stock (AGRUL-043 / RF-M9-04 / RN-10 / RN-11)
+export const stockMovimientosTable = pgTable('stock_movimientos', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  insumoId: uuid('insumo_id').notNull().references(() => insumosCatalogoTable.id, { onDelete: 'restrict' }),
+  depositoId: uuid('deposito_id').notNull().references(() => depositoAlmacenamientoTable.id, { onDelete: 'restrict' }),
+  loteFabricacion: varchar('lote_fabricacion', { length: 100 }),
+  tipoMovimiento: varchar('tipo_movimiento', { length: 50 }).notNull(), // SALDO_INICIAL | INGRESO_COMPRA | SALIDA_CONSUMO | DEVOLUCION | PERDIDA | AJUSTE_FISICO | REVERSION
+  cantidad: numeric('cantidad', { precision: 14, scale: 4 }).notNull(),
+  unidadMedida: varchar('unidad_medida', { length: 50 }).notNull(),
+  fecha: varchar('fecha', { length: 30 }).notNull(),
+  usuarioId: uuid('usuario_id').notNull(),
+  referenciaTipo: varchar('referencia_tipo', { length: 50 }),
+  referenciaId: varchar('referencia_id', { length: 100 }),
+  claveIdempotencia: varchar('clave_idempotencia', { length: 150 }).notNull().unique(),
+  esSaldoNegativo: boolean('es_saldo_negativo').default(false).notNull(),
+  motivoJustificacion: text('motivo_justificacion'),
+  movimientoRevertidoId: uuid('movimiento_revertido_id'),
+  esEnvaseAbierto: boolean('es_envase_abierto').default(false).notNull(),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_stock_mov_insumo').on(table.insumoId),
+  index('idx_stock_mov_deposito').on(table.depositoId),
+  index('idx_stock_mov_tipo').on(table.tipoMovimiento),
+  index('idx_stock_mov_fecha').on(table.fecha),
+  index('idx_stock_mov_clave_idempotencia').on(table.claveIdempotencia),
+  index('idx_stock_mov_revertido').on(table.movimientoRevertidoId),
+]);
+
 
 

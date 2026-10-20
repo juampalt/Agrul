@@ -48,3 +48,5 @@ export * from './use-cases/depositos.use-cases.js';
 export * from './dtos/depositos.dto.js';
 export * from './use-cases/compras-stock.use-cases.js';
 export * from './dtos/compras-stock.dto.js';
+export * from './use-cases/stock-movimientos.use-cases.js';
+export * from './dtos/stock-movimientos.dto.js';
