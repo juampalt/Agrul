@@ -134,6 +134,8 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.post('/insumos', (req, rep) => deps.insumosController!.registrar(req, rep));
         v1.get('/insumos', (req, rep) => deps.insumosController!.listar(req, rep));
         v1.get('/insumos/:id', (req, rep) => deps.insumosController!.obtenerPorId(req, rep));
+        v1.patch('/insumos/:id/stock-minimo', (req, rep) => deps.insumosController!.configurarStockMinimo(req, rep));
+        v1.put('/insumos/:id/stock-minimo', (req, rep) => deps.insumosController!.configurarStockMinimo(req, rep));
       }
 
       // Aplicaciones Agrícolas de Campo (Módulo 4 — AGRUL-025 / RF-M4-03 a RF-M4-12)
@@ -314,6 +316,7 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.post('/stock/movimientos/:id/revertir', (req, rep) => deps.stockMovimientosController!.revertirMovimiento(req, rep));
         v1.post('/stock/movimientos/:id/ajustar', (req, rep) => deps.stockMovimientosController!.ajustarMovimiento(req, rep));
         v1.get('/stock/saldos/:insumoId', (req, rep) => deps.stockMovimientosController!.consultarSaldo(req, rep));
+        v1.get('/stock/disponibilidad/:insumoId', (req, rep) => deps.stockMovimientosController!.consultarSaldo(req, rep));
       }
     },
     { prefix: '/api/v1' }

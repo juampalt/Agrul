@@ -66,9 +66,14 @@ export interface SaldoInsumoResponseDTO {
   insumoId: string;
   depositoId?: string;
   saldo: number;
+  stockFisico: number;
+  stockReservado: number;
+  stockDisponible: number;
   unidadMedida: string;
   envasesAbiertos: number;
   totalIngresos: number;
   totalEgresos: number;
   esSaldoNegativo: boolean;
+  stockMinimoConfigurable?: number | null;
+  enAlertaReposicion: boolean;
 }

@@ -25,6 +25,7 @@ function toOutputDto(insumo: InsumoCatalogo): InsumoOutputDto {
     unidadMedidaId: json.unidadMedidaId,
     presentacion: json.presentacion,
     activo: json.activo,
+    stockMinimoConfigurable: json.stockMinimoConfigurable ?? null,
     fichaFitosanitaria: json.fichaFitosanitaria ? { ...json.fichaFitosanitaria } : null,
     creadoEn: json.creadoEn,
     actualizadoEn: json.actualizadoEn,
@@ -47,6 +48,7 @@ export class RegistrarInsumoCatalogoUseCase {
       unidadMedidaId: input.unidadMedidaId,
       presentacion: input.presentacion,
       activo: input.activo,
+      stockMinimoConfigurable: input.stockMinimoConfigurable,
       fichaFitosanitaria: input.fichaFitosanitaria,
     });
 
@@ -77,6 +79,22 @@ export class ObtenerInsumoPorIdUseCase {
     if (!insumo) {
       throw new EntidadNoEncontradaError('Insumo', id);
     }
+
+    return toOutputDto(insumo);
+  }
+}
+
+export class ConfigurarStockMinimoInsumoUseCase {
+  constructor(private readonly insumosRepo: InsumosCatalogoRepository) {}
+
+  public async execute(insumoId: string, stockMinimo: number | null): Promise<InsumoOutputDto> {
+    const insumo = await this.insumosRepo.buscarPorId(insumoId);
+    if (!insumo) {
+      throw new EntidadNoEncontradaError('Insumo', insumoId);
+    }
+
+    insumo.actualizarStockMinimo(stockMinimo);
+    await this.insumosRepo.guardar(insumo);
 
     return toOutputDto(insumo);
   }

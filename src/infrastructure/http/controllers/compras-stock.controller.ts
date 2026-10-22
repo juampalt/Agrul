@@ -56,6 +56,7 @@ export class ComprasStockController {
 
     const result = await this.cargarStockInicialUseCase.execute({
       ...body,
+      motivo: body.motivo ?? undefined,
       usuarioCargaId,
     });
 

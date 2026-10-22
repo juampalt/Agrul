@@ -91,7 +91,7 @@ export class RegistrarIngresoCompraUseCase {
       loteFabricacion: input.loteFabricacion,
       fechaVencimiento: input.fechaVencimiento,
       nroFacturaRemito: input.nroFacturaRemito,
-      fechaIngreso: input.fechaIngreso,
+      fechaIngreso: input.fechaIngreso ?? new Date().toISOString().slice(0, 10),
       precioUnitarioCompra: input.precioUnitarioCompra,
       comprobanteAdjuntoUrl: input.comprobanteAdjuntoUrl,
       observaciones: input.observaciones,
@@ -141,7 +141,7 @@ export class CargarStockInicialUseCase {
       fechaVencimiento: input.fechaVencimiento,
       motivo: input.motivo ?? 'Carga de saldo inicial de implantación del sistema',
       usuarioCargaId: input.usuarioCargaId,
-      fecha: input.fecha,
+      fecha: input.fecha ?? new Date().toISOString().slice(0, 10),
     });
 
     await this.stockInicialRepo.guardar(saldoInicial);

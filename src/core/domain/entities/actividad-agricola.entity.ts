@@ -32,6 +32,13 @@ export interface ActividadManoObraItem {
   jornales: number;
 }
 
+export interface ActividadInsumoItem {
+  id?: string;
+  insumoId: string;
+  cantidad: number;
+  unidadMedidaId?: string;
+}
+
 export interface ActividadAgricolaProps {
   id: string;
   codigoActividad: string;
@@ -50,6 +57,7 @@ export interface ActividadAgricolaProps {
   canceladoEn?: string | null;
   maquinarias: ActividadMaquinariaItem[];
   manoDeObra: ActividadManoObraItem[];
+  insumos?: ActividadInsumoItem[];
   creadoEn: string;
   actualizadoEn: string;
 }
@@ -70,6 +78,7 @@ export interface RegistrarActividadParams {
   estado?: EstadoActividad;
   maquinarias?: ActividadMaquinariaItem[];
   manoDeObra?: ActividadManoObraItem[];
+  insumos?: ActividadInsumoItem[];
   /** Permite inyectar la fecha de referencia para pruebas temporales deterministas */
   fechaReferenciaHoy?: Date;
 }
@@ -158,6 +167,22 @@ export class ActividadAgricola {
       };
     });
 
+    // Validar ítems de insumos previstos si existen (RF-M9-18)
+    const insumosValidados: ActividadInsumoItem[] = (params.insumos ?? []).map(ins => {
+      if (!ins.insumoId || ins.insumoId.trim().length === 0) {
+        throw new Error('insumoId es obligatorio en cada registro de insumo previsto.');
+      }
+      if (ins.cantidad <= 0 || isNaN(ins.cantidad)) {
+        throw new Error('La cantidad de insumo previsto debe ser mayor a cero.');
+      }
+      return {
+        id: ins.id ?? crypto.randomUUID(),
+        insumoId: ins.insumoId.trim(),
+        cantidad: Number(ins.cantidad),
+        unidadMedidaId: ins.unidadMedidaId ? ins.unidadMedidaId.trim() : undefined,
+      };
+    });
+
     const ahora = new Date().toISOString();
 
     return new ActividadAgricola({
@@ -178,13 +203,19 @@ export class ActividadAgricola {
       canceladoEn: null,
       maquinarias: maquinariasValidadas,
       manoDeObra: manoDeObraValidada,
+      insumos: insumosValidados,
       creadoEn: ahora,
       actualizadoEn: ahora,
     });
   }
 
   public static reconstituir(props: ActividadAgricolaProps): ActividadAgricola {
-    return new ActividadAgricola({ ...props });
+    return new ActividadAgricola({
+      ...props,
+      maquinarias: props.maquinarias ? [...props.maquinarias] : [],
+      manoDeObra: props.manoDeObra ? [...props.manoDeObra] : [],
+      insumos: props.insumos ? [...props.insumos] : [],
+    });
   }
 
   /**
@@ -222,6 +253,7 @@ export class ActividadAgricola {
   public get canceladoEn(): string | null | undefined { return this.props.canceladoEn; }
   public get maquinarias(): ActividadMaquinariaItem[] { return [...this.props.maquinarias]; }
   public get manoDeObra(): ActividadManoObraItem[] { return [...this.props.manoDeObra]; }
+  public get insumos(): ActividadInsumoItem[] { return [...(this.props.insumos || [])]; }
   public get creadoEn(): string { return this.props.creadoEn; }
   public get actualizadoEn(): string { return this.props.actualizadoEn; }
 
@@ -230,6 +262,7 @@ export class ActividadAgricola {
       ...this.props,
       maquinarias: [...this.props.maquinarias],
       manoDeObra: [...this.props.manoDeObra],
+      insumos: [...(this.props.insumos || [])],
     };
   }
 }

@@ -3,9 +3,11 @@ import {
   RegistrarInsumoCatalogoUseCase,
   ListarInsumosCatalogoUseCase,
   ObtenerInsumoPorIdUseCase,
+  ConfigurarStockMinimoInsumoUseCase,
 } from '../../../application/use-cases/insumos-catalogo.use-cases.js';
 import {
   RegistrarInsumoBodySchema,
+  ConfigurarStockMinimoBodySchema,
   ListarInsumosQuerySchema,
   InsumoIdParamSchema,
 } from '../schemas/insumos.schema.js';
@@ -15,6 +17,7 @@ export class InsumosController {
     private readonly registrarInsumoUseCase: RegistrarInsumoCatalogoUseCase,
     private readonly listarInsumosUseCase: ListarInsumosCatalogoUseCase,
     private readonly obtenerInsumoUseCase: ObtenerInsumoPorIdUseCase,
+    private readonly configurarStockMinimoUseCase?: ConfigurarStockMinimoInsumoUseCase,
   ) {}
 
   public async registrar(req: FastifyRequest, reply: FastifyReply) {
@@ -44,6 +47,24 @@ export class InsumosController {
   public async obtenerPorId(req: FastifyRequest, reply: FastifyReply) {
     const { id } = InsumoIdParamSchema.parse(req.params);
     const result = await this.obtenerInsumoUseCase.execute(id);
+
+    return reply.status(200).send({
+      success: true,
+      data: result,
+      error: null,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  public async configurarStockMinimo(req: FastifyRequest, reply: FastifyReply) {
+    const { id } = InsumoIdParamSchema.parse(req.params);
+    const body = ConfigurarStockMinimoBodySchema.parse(req.body);
+
+    if (!this.configurarStockMinimoUseCase) {
+      throw new Error('ConfigurarStockMinimoInsumoUseCase no está inyectado.');
+    }
+
+    const result = await this.configurarStockMinimoUseCase.execute(id, body.stockMinimo);
 
     return reply.status(200).send({
       success: true,

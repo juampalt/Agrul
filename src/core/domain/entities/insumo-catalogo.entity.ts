@@ -1,4 +1,4 @@
-import { DomainError } from '../errors/domain.error.js';
+import { DomainError, StockMinimoInvalidoError } from '../errors/domain.error.js';
 
 export type CategoriaInsumo = 'SEMILLA_PLANTIN' | 'FERTILIZANTE' | 'FITOSANITARIO' | 'ENMIENDA' | 'OTRO';
 
@@ -42,6 +42,7 @@ export interface InsumoCatalogoProps {
   unidadMedidaId: string;
   presentacion: string;
   activo: boolean;
+  stockMinimoConfigurable?: number | null;
   fichaFitosanitaria?: FichaFitosanitariaProps | null;
   creadoEn: string;
   actualizadoEn: string;
@@ -54,6 +55,7 @@ export interface CrearInsumoCatalogoParams {
   unidadMedidaId: string;
   presentacion: string;
   activo?: boolean;
+  stockMinimoConfigurable?: number | null;
   fichaFitosanitaria?: Omit<FichaFitosanitariaProps, 'insumoId'> | null;
 }
 
@@ -135,6 +137,12 @@ export class InsumoCatalogo {
       };
     }
 
+    if (params.stockMinimoConfigurable !== undefined && params.stockMinimoConfigurable !== null) {
+      if (typeof params.stockMinimoConfigurable !== 'number' || isNaN(params.stockMinimoConfigurable) || params.stockMinimoConfigurable < 0) {
+        throw new StockMinimoInvalidoError('El stock mínimo configurable debe ser un valor numérico mayor o igual a cero (RF-M9-08).');
+      }
+    }
+
     const ahora = new Date().toISOString();
 
     return new InsumoCatalogo({
@@ -144,6 +152,7 @@ export class InsumoCatalogo {
       unidadMedidaId: params.unidadMedidaId.trim(),
       presentacion: params.presentacion.trim(),
       activo: params.activo ?? true,
+      stockMinimoConfigurable: params.stockMinimoConfigurable !== undefined ? params.stockMinimoConfigurable : null,
       fichaFitosanitaria: fichaNormalizada,
       creadoEn: ahora,
       actualizadoEn: ahora,
@@ -153,6 +162,7 @@ export class InsumoCatalogo {
   public static reconstituir(props: InsumoCatalogoProps): InsumoCatalogo {
     return new InsumoCatalogo({
       ...props,
+      stockMinimoConfigurable: props.stockMinimoConfigurable !== undefined ? props.stockMinimoConfigurable : null,
       fichaFitosanitaria: props.fichaFitosanitaria ? { ...props.fichaFitosanitaria } : null,
     });
   }
@@ -163,6 +173,9 @@ export class InsumoCatalogo {
   public get unidadMedidaId(): string { return this.props.unidadMedidaId; }
   public get presentacion(): string { return this.props.presentacion; }
   public get activo(): boolean { return this.props.activo; }
+  public get stockMinimoConfigurable(): number | null | undefined {
+    return this.props.stockMinimoConfigurable;
+  }
   public get fichaFitosanitaria(): FichaFitosanitariaProps | null | undefined {
     return this.props.fichaFitosanitaria ? { ...this.props.fichaFitosanitaria } : null;
   }
@@ -174,9 +187,20 @@ export class InsumoCatalogo {
     this.props.actualizadoEn = new Date().toISOString();
   }
 
+  public actualizarStockMinimo(nuevoStockMinimo: number | null): void {
+    if (nuevoStockMinimo !== null && nuevoStockMinimo !== undefined) {
+      if (typeof nuevoStockMinimo !== 'number' || isNaN(nuevoStockMinimo) || nuevoStockMinimo < 0) {
+        throw new StockMinimoInvalidoError('El stock mínimo configurable debe ser un valor numérico mayor o igual a cero (RF-M9-08).');
+      }
+    }
+    this.props.stockMinimoConfigurable = nuevoStockMinimo !== undefined ? nuevoStockMinimo : null;
+    this.props.actualizadoEn = new Date().toISOString();
+  }
+
   public toJSON(): InsumoCatalogoProps {
     return {
       ...this.props,
+      stockMinimoConfigurable: this.props.stockMinimoConfigurable !== undefined ? this.props.stockMinimoConfigurable : null,
       fichaFitosanitaria: this.props.fichaFitosanitaria ? { ...this.props.fichaFitosanitaria } : null,
     };
   }

@@ -10,6 +10,12 @@ export interface ManoDeObraActividadInputDto {
   jornales: number;
 }
 
+export interface InsumoActividadInputDto {
+  insumoId: string;
+  cantidad: number;
+  unidadMedidaId?: string;
+}
+
 export interface RegistrarActividadEjecutadaInputDto {
   codigoActividad?: string;
   tipoActividadId: string;
@@ -22,8 +28,10 @@ export interface RegistrarActividadEjecutadaInputDto {
   superficieTrabajadaHa?: number | null;
   observaciones?: string | null;
   observacionMonitoreoId?: string | null;
+  estado?: 'REALIZADA' | 'PLANIFICADA' | 'VENCIDA' | 'CANCELADA';
   maquinarias?: MaquinariaActividadInputDto[];
   manoDeObra?: ManoDeObraActividadInputDto[];
+  insumos?: InsumoActividadInputDto[];
 }
 
 export interface AnularActividadInputDto {
@@ -46,6 +54,13 @@ export interface ManoDeObraActividadOutputDto {
   jornales: number;
 }
 
+export interface InsumoActividadOutputDto {
+  id: string;
+  insumoId: string;
+  cantidad: number;
+  unidadMedidaId?: string;
+}
+
 export interface ActividadOutputDto {
   id: string;
   codigoActividad: string;
@@ -64,6 +79,7 @@ export interface ActividadOutputDto {
   canceladoEn: string | null;
   maquinarias: MaquinariaActividadOutputDto[];
   manoDeObra: ManoDeObraActividadOutputDto[];
+  insumos: InsumoActividadOutputDto[];
   creadoEn: string;
   actualizadoEn: string;
 }

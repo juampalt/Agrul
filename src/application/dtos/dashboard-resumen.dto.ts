@@ -30,7 +30,11 @@ export interface AlertaStockInsumoItemDto {
   categoria: string;
   unidadMedida: string;
   stockActual: number;
+  stockFisico?: number;
+  stockReservado?: number;
+  stockDisponible?: number;
   stockMinimo: number;
+  esConfigurable?: boolean;
   consumoAcumulado: number;
   nivelAlerta: NivelAlertaStock;
 }

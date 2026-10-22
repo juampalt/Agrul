@@ -119,7 +119,7 @@ export class RegistrarActividadEjecutadaUseCase {
       superficieTrabajadaHa,
       observaciones: input.observaciones ?? null,
       observacionMonitoreoId: input.observacionMonitoreoId ?? null,
-      estado: 'REALIZADA',
+      estado: input.estado ?? 'REALIZADA',
       maquinarias: input.maquinarias?.map(m => ({
         id: crypto.randomUUID(),
         maquinariaId: m.maquinariaId,
@@ -132,48 +132,60 @@ export class RegistrarActividadEjecutadaUseCase {
         horasTrabajadas: Number(mo.horasTrabajadas),
         jornales: Number(mo.jornales),
       })),
+      insumos: input.insumos?.map(ins => ({
+        id: crypto.randomUUID(),
+        insumoId: ins.insumoId,
+        cantidad: Number(ins.cantidad),
+        unidadMedidaId: ins.unidadMedidaId,
+      })),
     });
 
     // 12. Persistir
     await this.actividadesRepo.guardar(actividad);
 
-    return this.mapToDto(actividad);
+    return mapActividadToDto(actividad);
   }
+}
 
-  private mapToDto(act: ActividadAgricola): ActividadOutputDto {
-    const raw = act.toJSON();
-    return {
-      id: raw.id,
-      codigoActividad: raw.codigoActividad,
-      tipoActividadId: raw.tipoActividadId,
-      loteId: raw.loteId,
-      cicloId: raw.cicloId,
-      fechaHecho: raw.fechaHecho,
-      hora: raw.hora ?? null,
-      usuarioCargaId: raw.usuarioCargaId,
-      trabajadorResponsableId: raw.trabajadorResponsableId ?? null,
-      superficieTrabajadaHa: raw.superficieTrabajadaHa,
-      observaciones: raw.observaciones ?? null,
-      observacionMonitoreoId: raw.observacionMonitoreoId ?? null,
-      estado: raw.estado,
-      motivoCancelacion: raw.motivoCancelacion ?? null,
-      canceladoEn: raw.canceladoEn ?? null,
-      maquinarias: raw.maquinarias.map(m => ({
-        id: m.id!,
-        maquinariaId: m.maquinariaId,
-        horasUso: m.horasUso,
-      })),
-      manoDeObra: raw.manoDeObra.map(mo => ({
-        id: mo.id!,
-        personalCuadrillaId: mo.personalCuadrillaId,
-        cantidadPersonas: mo.cantidadPersonas,
-        horasTrabajadas: mo.horasTrabajadas,
-        jornales: mo.jornales,
-      })),
-      creadoEn: raw.creadoEn,
-      actualizadoEn: raw.actualizadoEn,
-    };
-  }
+export function mapActividadToDto(act: ActividadAgricola): ActividadOutputDto {
+  const raw = act.toJSON();
+  return {
+    id: raw.id,
+    codigoActividad: raw.codigoActividad,
+    tipoActividadId: raw.tipoActividadId,
+    loteId: raw.loteId,
+    cicloId: raw.cicloId,
+    fechaHecho: raw.fechaHecho,
+    hora: raw.hora ?? null,
+    usuarioCargaId: raw.usuarioCargaId,
+    trabajadorResponsableId: raw.trabajadorResponsableId ?? null,
+    superficieTrabajadaHa: raw.superficieTrabajadaHa,
+    observaciones: raw.observaciones ?? null,
+    observacionMonitoreoId: raw.observacionMonitoreoId ?? null,
+    estado: raw.estado,
+    motivoCancelacion: raw.motivoCancelacion ?? null,
+    canceladoEn: raw.canceladoEn ?? null,
+    maquinarias: raw.maquinarias.map(m => ({
+      id: m.id!,
+      maquinariaId: m.maquinariaId,
+      horasUso: m.horasUso,
+    })),
+    manoDeObra: raw.manoDeObra.map(mo => ({
+      id: mo.id!,
+      personalCuadrillaId: mo.personalCuadrillaId,
+      cantidadPersonas: mo.cantidadPersonas,
+      horasTrabajadas: mo.horasTrabajadas,
+      jornales: mo.jornales,
+    })),
+    insumos: (raw.insumos ?? []).map(ins => ({
+      id: ins.id!,
+      insumoId: ins.insumoId,
+      cantidad: ins.cantidad,
+      unidadMedidaId: ins.unidadMedidaId,
+    })),
+    creadoEn: raw.creadoEn,
+    actualizadoEn: raw.actualizadoEn,
+  };
 }
 
 export class ObtenerActividadPorIdUseCase {
@@ -184,38 +196,7 @@ export class ObtenerActividadPorIdUseCase {
     if (!actividad) {
       throw new EntidadNoEncontradaError('ActividadAgricola', id);
     }
-    const raw = actividad.toJSON();
-    return {
-      id: raw.id,
-      codigoActividad: raw.codigoActividad,
-      tipoActividadId: raw.tipoActividadId,
-      loteId: raw.loteId,
-      cicloId: raw.cicloId,
-      fechaHecho: raw.fechaHecho,
-      hora: raw.hora ?? null,
-      usuarioCargaId: raw.usuarioCargaId,
-      trabajadorResponsableId: raw.trabajadorResponsableId ?? null,
-      superficieTrabajadaHa: raw.superficieTrabajadaHa,
-      observaciones: raw.observaciones ?? null,
-      observacionMonitoreoId: raw.observacionMonitoreoId ?? null,
-      estado: raw.estado,
-      motivoCancelacion: raw.motivoCancelacion ?? null,
-      canceladoEn: raw.canceladoEn ?? null,
-      maquinarias: raw.maquinarias.map(m => ({
-        id: m.id!,
-        maquinariaId: m.maquinariaId,
-        horasUso: m.horasUso,
-      })),
-      manoDeObra: raw.manoDeObra.map(mo => ({
-        id: mo.id!,
-        personalCuadrillaId: mo.personalCuadrillaId,
-        cantidadPersonas: mo.cantidadPersonas,
-        horasTrabajadas: mo.horasTrabajadas,
-        jornales: mo.jornales,
-      })),
-      creadoEn: raw.creadoEn,
-      actualizadoEn: raw.actualizadoEn,
-    };
+    return mapActividadToDto(actividad);
   }
 }
 
@@ -233,38 +214,7 @@ export class AnularActividadUseCase {
 
     await this.actividadesRepo.guardar(actividad);
 
-    const raw = actividad.toJSON();
-    return {
-      id: raw.id,
-      codigoActividad: raw.codigoActividad,
-      tipoActividadId: raw.tipoActividadId,
-      loteId: raw.loteId,
-      cicloId: raw.cicloId,
-      fechaHecho: raw.fechaHecho,
-      hora: raw.hora ?? null,
-      usuarioCargaId: raw.usuarioCargaId,
-      trabajadorResponsableId: raw.trabajadorResponsableId ?? null,
-      superficieTrabajadaHa: raw.superficieTrabajadaHa,
-      observaciones: raw.observaciones ?? null,
-      observacionMonitoreoId: raw.observacionMonitoreoId ?? null,
-      estado: raw.estado,
-      motivoCancelacion: raw.motivoCancelacion ?? null,
-      canceladoEn: raw.canceladoEn ?? null,
-      maquinarias: raw.maquinarias.map(m => ({
-        id: m.id!,
-        maquinariaId: m.maquinariaId,
-        horasUso: m.horasUso,
-      })),
-      manoDeObra: raw.manoDeObra.map(mo => ({
-        id: mo.id!,
-        personalCuadrillaId: mo.personalCuadrillaId,
-        cantidadPersonas: mo.cantidadPersonas,
-        horasTrabajadas: mo.horasTrabajadas,
-        jornales: mo.jornales,
-      })),
-      creadoEn: raw.creadoEn,
-      actualizadoEn: raw.actualizadoEn,
-    };
+    return mapActividadToDto(actividad);
   }
 }
 
@@ -273,40 +223,7 @@ export class ListarActividadesUseCase {
 
   public async execute(filtros?: ListarActividadesFiltrosDto): Promise<ActividadOutputDto[]> {
     const list = await this.actividadesRepo.listar(filtros);
-    return list.map(act => {
-      const raw = act.toJSON();
-      return {
-        id: raw.id,
-        codigoActividad: raw.codigoActividad,
-        tipoActividadId: raw.tipoActividadId,
-        loteId: raw.loteId,
-        cicloId: raw.cicloId,
-        fechaHecho: raw.fechaHecho,
-        hora: raw.hora ?? null,
-        usuarioCargaId: raw.usuarioCargaId,
-        trabajadorResponsableId: raw.trabajadorResponsableId ?? null,
-        superficieTrabajadaHa: raw.superficieTrabajadaHa,
-        observaciones: raw.observaciones ?? null,
-        observacionMonitoreoId: raw.observacionMonitoreoId ?? null,
-        estado: raw.estado,
-        motivoCancelacion: raw.motivoCancelacion ?? null,
-        canceladoEn: raw.canceladoEn ?? null,
-        maquinarias: raw.maquinarias.map(m => ({
-          id: m.id!,
-          maquinariaId: m.maquinariaId,
-          horasUso: m.horasUso,
-        })),
-        manoDeObra: raw.manoDeObra.map(mo => ({
-          id: mo.id!,
-          personalCuadrillaId: mo.personalCuadrillaId,
-          cantidadPersonas: mo.cantidadPersonas,
-          horasTrabajadas: mo.horasTrabajadas,
-          jornales: mo.jornales,
-        })),
-        creadoEn: raw.creadoEn,
-        actualizadoEn: raw.actualizadoEn,
-      };
-    });
+    return list.map(act => mapActividadToDto(act));
   }
 }
 

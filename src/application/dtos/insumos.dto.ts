@@ -23,7 +23,12 @@ export interface RegistrarInsumoInputDto {
   unidadMedidaId: string;
   presentacion: string;
   activo?: boolean;
+  stockMinimoConfigurable?: number | null;
   fichaFitosanitaria?: FichaFitosanitariaInputDto | null;
+}
+
+export interface ConfigurarStockMinimoInputDto {
+  stockMinimo: number | null;
 }
 
 export interface InsumoOutputDto {
@@ -33,6 +38,7 @@ export interface InsumoOutputDto {
   unidadMedidaId: string;
   presentacion: string;
   activo: boolean;
+  stockMinimoConfigurable?: number | null;
   fichaFitosanitaria?: FichaFitosanitariaOutputDto | null;
   creadoEn: string;
   actualizadoEn: string;

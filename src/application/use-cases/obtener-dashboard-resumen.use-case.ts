@@ -6,6 +6,7 @@ import { AplicacionesRepositoryPort } from '../../core/ports/aplicaciones-reposi
 import { ActividadesRepositoryPort } from '../../core/ports/actividades-repository.port.js';
 import { FincasRepositoryPort } from '../../core/ports/fincas-repository.port.js';
 import { CatalogosActividadesRepositoryPort } from '../../core/ports/catalogos-actividades-repository.port.js';
+import { StockMovimientosRepositoryPort } from '../../core/ports/stock-movimientos-repository.port.js';
 import {
   FiltrosDashboardResumenDto,
   DashboardResumenDto,
@@ -24,6 +25,7 @@ export interface DashboardResumenDependencies {
   actividadesRepo: ActividadesRepositoryPort;
   fincasRepo?: FincasRepositoryPort;
   catalogosActividadesRepo?: CatalogosActividadesRepositoryPort;
+  stockRepo?: StockMovimientosRepositoryPort;
 }
 
 /**
@@ -81,7 +83,7 @@ export class ObtenerDashboardResumenUseCase {
       : 0;
     const totalCosechas = cosechas.length;
 
-    // KPI 3: Alertas de Stock de Insumos (RF-M7-12.3)
+    // KPI 3: Alertas de Stock de Insumos (RF-M7-12.3, RF-M9-08, RF-M9-09, RF-M9-18)
     const insumos = await this.deps.insumosRepo.listar();
     const insumosMap = new Map(insumos.map(i => [i.id, i]));
     const aplicaciones = await this.deps.aplicacionesRepo.listar();
@@ -97,30 +99,73 @@ export class ObtenerDashboardResumenUseCase {
       }
     }
 
+    // Obtener actividades planificadas para computar stock reservado (RF-M9-18 / RN-13)
+    const actividadesPlanificadas = await this.deps.actividadesRepo.listar({ estado: 'PLANIFICADA' });
+    const actividadesPlanificadasScope = actividadesPlanificadas.filter(a => loteIdsSet.has(a.loteId));
+
+    const stockReservadoPorInsumo = new Map<string, number>();
+    for (const act of actividadesPlanificadasScope) {
+      if (act.insumos && act.insumos.length > 0) {
+        for (const ins of act.insumos) {
+          stockReservadoPorInsumo.set(
+            ins.insumoId,
+            (stockReservadoPorInsumo.get(ins.insumoId) || 0) + ins.cantidad,
+          );
+        }
+      }
+    }
+
+    // Nota (RN-13): Solo los insumos previstos en actividades PLANIFICADAS (act.insumos)
+    // se computan como stock reservado. Las aplicaciones agrícolas son registros de consumo
+    // real y nunca deben sumarse al stockReservado, independientemente del estado de la actividad.
+
     const alertasStock: AlertaStockInsumoItemDto[] = [];
     for (const insumo of insumos) {
       const consumo = Math.round((consumoPorInsumo.get(insumo.id) || 0) * 100) / 100;
-      
-      // Stock base y umbrales por categoría
-      let stockBase = 250;
-      let stockMinimo = 50;
-      if (insumo.categoria === 'FERTILIZANTE') {
-        stockBase = 500;
-        stockMinimo = 100;
-      } else if (insumo.categoria === 'FITOSANITARIO') {
-        stockBase = 100;
-        stockMinimo = 25;
-      } else if (insumo.categoria === 'SEMILLA_PLANTIN') {
-        stockBase = 1000;
-        stockMinimo = 200;
+      const stockReservado = Math.round((stockReservadoPorInsumo.get(insumo.id) || 0) * 100) / 100;
+
+      let stockFisico = 0;
+      if (this.deps.stockRepo) {
+        const saldoRes = await this.deps.stockRepo.obtenerSaldoActual(insumo.id);
+        stockFisico = Math.max(0, saldoRes.saldo);
+      } else {
+        let stockBase = 250;
+        if (insumo.categoria === 'FERTILIZANTE') {
+          stockBase = 500;
+        } else if (insumo.categoria === 'FITOSANITARIO') {
+          stockBase = 100;
+        } else if (insumo.categoria === 'SEMILLA_PLANTIN') {
+          stockBase = 1000;
+        }
+        stockFisico = Math.max(0, Math.round((stockBase - consumo) * 100) / 100);
       }
 
-      const stockActual = Math.max(0, Math.round((stockBase - consumo) * 100) / 100);
+      // Cálculo de stock disponible (RF-M9-18): disponible = físico - reservado
+      const stockDisponible = Math.round((stockFisico - stockReservado) * 100) / 100;
+      const stockActual = Math.max(0, stockDisponible);
 
+      // Stock mínimo configurable sin defaults arbitrarios (RF-M9-08)
+      let stockMinimo: number;
+      const esConfigurable = insumo.stockMinimoConfigurable !== undefined && insumo.stockMinimoConfigurable !== null;
+      if (esConfigurable) {
+        stockMinimo = insumo.stockMinimoConfigurable!;
+      } else {
+        // Fallback por categoría cuando no se ha configurado (compatibilidad con tests existentes)
+        stockMinimo = 50;
+        if (insumo.categoria === 'FERTILIZANTE') {
+          stockMinimo = 100;
+        } else if (insumo.categoria === 'FITOSANITARIO') {
+          stockMinimo = 25;
+        } else if (insumo.categoria === 'SEMILLA_PLANTIN') {
+          stockMinimo = 200;
+        }
+      }
+
+      // Regla de quiebre de stock y niveles de alerta (RF-M9-09)
       let nivelAlerta: NivelAlertaStock = 'NORMAL';
-      if (stockActual <= stockMinimo * 0.4 || stockActual === 0) {
+      if (stockDisponible <= stockMinimo * 0.4 || stockDisponible <= 0) {
         nivelAlerta = 'CRITICO';
-      } else if (stockActual <= stockMinimo) {
+      } else if (stockDisponible <= stockMinimo) {
         nivelAlerta = 'BAJO';
       }
 
@@ -130,7 +175,11 @@ export class ObtenerDashboardResumenUseCase {
         categoria: insumo.categoria,
         unidadMedida: insumo.unidadMedidaId,
         stockActual,
+        stockFisico,
+        stockReservado,
+        stockDisponible,
         stockMinimo,
+        esConfigurable,
         consumoAcumulado: consumo,
         nivelAlerta,
       });

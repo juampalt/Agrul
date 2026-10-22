@@ -283,12 +283,27 @@ export class ClaveIdempotenciaDuplicadaError extends DomainError {
     super(`Ya existe una operación registrada con la clave de idempotencia '${clave}' (RN-11 / RF-M9-06).`);
   }
 }
-
 export class MovimientoYaRevertidoError extends DomainError {
   public readonly code = 'MOVIMIENTO_YA_REVERTIDO';
 
   constructor(id: string) {
     super(`El movimiento de stock '${id}' ya fue revertido previamente (RF-M9-07).`);
+  }
+}
+
+export class StockReservadoComprometidoError extends DomainError {
+  public readonly code = 'STOCK_RESERVADO_COMPROMETIDO';
+
+  constructor(mensaje: string = 'El egreso solicitado compromete insumos asignados a actividades planificadas sin justificación explícita (RF-M9-18).') {
+    super(mensaje);
+  }
+}
+
+export class StockMinimoInvalidoError extends DomainError {
+  public readonly code = 'STOCK_MINIMO_INVALIDO';
+
+  constructor(mensaje: string = 'El stock mínimo configurable debe ser un valor numérico mayor o igual a cero (RF-M9-08).') {
+    super(mensaje);
   }
 }
 

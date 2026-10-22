@@ -247,13 +247,14 @@ export const actividadManoObraTable = pgTable('actividad_mano_obra', {
   index('idx_act_mo_personal').on(table.personalCuadrillaId),
 ]);
 
-// TABLA MAESTRA: Catálogo de Insumos (AGRUL-024 / RF-M4-01)
+// TABLA MAESTRA: Catálogo de Insumos (AGRUL-024 / RF-M4-01 / RF-M9-08)
 export const insumosCatalogoTable = pgTable('insumos_catalogo', {
   id: uuid('id').defaultRandom().primaryKey(),
   nombreComercial: varchar('nombre_comercial', { length: 200 }).notNull().unique(),
   categoria: varchar('categoria', { length: 50 }).notNull(), // SEMILLA_PLANTIN | FERTILIZANTE | FITOSANITARIO | ENMIENDA | OTRO
   unidadMedidaId: varchar('unidad_medida_id', { length: 30 }).notNull(),
   presentacion: varchar('presentacion', { length: 150 }).notNull(),
+  stockMinimoConfigurable: numeric('stock_minimo_configurable', { precision: 14, scale: 4 }),
   activo: boolean('activo').default(true).notNull(),
   creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -275,6 +276,19 @@ export const insumosFitosanitariosFichaTable = pgTable('insumos_fitosanitarios_f
 }, (table) => [
   index('idx_ficha_fito_principio').on(table.principioActivo),
   index('idx_ficha_fito_senasa').on(table.nroRegistroSenasa),
+]);
+
+// TABLA DETALLE: Insumos Previstos en Actividad Agrícola (AGRUL-044 / RF-M9-18 / RN-13)
+export const actividadInsumosTable = pgTable('actividad_insumos', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  actividadId: uuid('actividad_id').notNull().references(() => actividadesAgricolasTable.id, { onDelete: 'cascade' }),
+  insumoId: uuid('insumo_id').notNull().references(() => insumosCatalogoTable.id, { onDelete: 'restrict' }),
+  cantidad: numeric('cantidad', { precision: 14, scale: 4 }).notNull(),
+  unidadMedidaId: varchar('unidad_medida_id', { length: 50 }),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_act_insumo_actividad').on(table.actividadId),
+  index('idx_act_insumo_insumo').on(table.insumoId),
 ]);
 // ============================================================================
 // ÉPICA 10: MÓDULO 4 — APLICACIONES DE CAMPO Y DOSIS (AGRUL-025)

@@ -14,6 +14,7 @@ export const RegistrarInsumoBodySchema = z.object({
   unidadMedidaId: z.string().trim().min(1, 'La unidad de medida es obligatoria').max(30),
   presentacion: z.string().trim().min(1, 'La presentación comercial es obligatoria').max(150),
   activo: z.boolean().optional(),
+  stockMinimoConfigurable: z.number().min(0, 'El stock mínimo no puede ser negativo').optional().nullable(),
   fichaFitosanitaria: FichaFitosanitariaSchema.optional().nullable(),
 }).strict().superRefine((data, ctx) => {
   if (data.categoria === 'FITOSANITARIO' && !data.fichaFitosanitaria) {
@@ -24,6 +25,10 @@ export const RegistrarInsumoBodySchema = z.object({
     });
   }
 });
+
+export const ConfigurarStockMinimoBodySchema = z.object({
+  stockMinimo: z.number().min(0, 'El stock mínimo no puede ser negativo').nullable(),
+}).strict();
 
 export const ListarInsumosQuerySchema = z.object({
   categoria: z.enum(['SEMILLA_PLANTIN', 'FERTILIZANTE', 'FITOSANITARIO', 'ENMIENDA', 'OTRO']).optional(),
