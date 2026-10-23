@@ -14,6 +14,7 @@ export interface FiltrosStockMovimientos {
 export interface SaldoInsumoCalculado {
   insumoId: string;
   depositoId?: string;
+  loteFabricacion?: string;
   saldo: number;
   unidadMedida: string;
   envasesAbiertos: number;
@@ -26,6 +27,6 @@ export interface StockMovimientosRepositoryPort {
   buscarPorId(id: string): Promise<StockMovimiento | null>;
   buscarPorClaveIdempotencia(clave: string): Promise<StockMovimiento | null>;
   buscarPorMovimientoRevertidoId(movimientoRevertidoId: string): Promise<StockMovimiento | null>;
-  obtenerSaldoActual(insumoId: string, depositoId?: string): Promise<SaldoInsumoCalculado>;
+  obtenerSaldoActual(insumoId: string, depositoId?: string, loteFabricacion?: string): Promise<SaldoInsumoCalculado>;
   listar(filtros?: FiltrosStockMovimientos): Promise<StockMovimiento[]>;
 }

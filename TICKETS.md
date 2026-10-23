@@ -886,7 +886,7 @@
   - [ ] RF-M9-18: Stock reservado bloquea insumos comprometidos en tareas planificadas sin descontarlos antes de tiempo.
 
 ### `[AGRUL-045]` Control de Vencimientos (FEFO), Inventarios Físicos y Pérdidas
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 9: Stock de Insumos
 - **Requisitos Funcionales:** RF-M9-10, RF-M9-11, RF-M9-12, RF-M9-16, RF-M9-17, RF-M9-20
@@ -900,9 +900,9 @@
   4. Registrar mermas y pérdidas (robo, derrame, rotura) con motivo (RF-M9-12).
   5. Emitir reporte de existencias valorizadas según precio de compra ponderado (RF-M9-20).
 - **Criterios de Aceptación:**
-  - [ ] RF-M9-10: Error si se intenta aplicar un insumo vencido.
-  - [ ] RF-M9-16: Sugerencia automática del lote que vence primero.
-  - [ ] RF-M9-11: Inventario físico auditado con permisos de Encargado o Administrador.
+  - [x] RF-M9-10: Error si se intenta aplicar un insumo vencido.
+  - [x] RF-M9-16: Sugerencia automática del lote que vence primero.
+  - [x] RF-M9-11: Inventario físico auditado con permisos de Encargado o Administrador.
 
 ---
 

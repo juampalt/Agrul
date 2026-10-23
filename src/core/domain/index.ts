@@ -11,6 +11,7 @@ export * from './entities/deposito-almacenamiento.entity.js';
 export * from './entities/ingreso-compra-insumo.entity.js';
 export * from './entities/stock-inicial-insumo.entity.js';
 export * from './entities/stock-movimiento.entity.js';
+export * from './entities/inventario-fisico.entity.js';
 
 export * from './services/verificacion-carencia.service.js';
 export * from './services/conversor-unidades.service.js';

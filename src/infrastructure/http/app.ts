@@ -172,6 +172,17 @@ import {
   ConsultarSaldoInsumoUseCase,
   ListarMovimientosStockUseCase,
 } from '../../application/use-cases/stock-movimientos.use-cases.js';
+import { InventariosFisicosRepositoryPort } from '../../core/ports/inventarios-fisicos-repository.port.js';
+import { InMemoryInventariosFisicosRepository } from '../../../tests/mocks/in-memory-inventarios-fisicos.repository.js';
+import { ControlVencimientosInventariosController } from './controllers/control-vencimientos-inventarios.controller.js';
+import {
+  SugerirLotesFefoUseCase,
+  ValidarLoteInsumoUseCase,
+  RegistrarInventarioFisicoUseCase,
+  ListarInventariosFisicosUseCase,
+  RegistrarPerdidaStockUseCase,
+  ReporteExistenciasValorizadasUseCase,
+} from '../../application/use-cases/control-vencimientos-inventarios.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 
 import { resolve } from 'node:path';
@@ -202,6 +213,7 @@ export interface BuildAppOptions {
   ingresosCompraRepo?: IngresosCompraRepositoryPort;
   stockInicialRepo?: StockInicialRepositoryPort;
   stockMovimientosRepo?: StockMovimientosRepositoryPort;
+  inventariosFisicosRepo?: InventariosFisicosRepositoryPort;
   logger?: boolean;
 }
 
@@ -363,7 +375,9 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       options.actividadesRepo,
       options.lotesRepo,
       options.ciclosRepo,
-      options.insumosRepo
+      options.insumosRepo,
+      options.ingresosCompraRepo,
+      options.stockInicialRepo
     );
     const listarAplicacionesUseCase = new ListarAplicacionesUseCase(
       options.aplicacionesRepo,
@@ -713,6 +727,42 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     listarMovimientosStockUC
   );
 
+  // Módulo 9: Control de Vencimientos (FEFO), Inventarios Físicos y Pérdidas (AGRUL-045 / RF-M9-10, RF-M9-11, RF-M9-12, RF-M9-16, RF-M9-17, RF-M9-20)
+  const inventariosFisicosRepo = options.inventariosFisicosRepo ?? new InMemoryInventariosFisicosRepository();
+  const sugerirFefoUC = new SugerirLotesFefoUseCase(
+    insumosCatalogoRepo,
+    ingresosCompraRepo,
+    stockMovimientosRepo,
+    stockInicialRepo
+  );
+  const validarLoteUC = new ValidarLoteInsumoUseCase(
+    ingresosCompraRepo,
+    stockMovimientosRepo,
+    stockInicialRepo
+  );
+  const registrarInventarioFisicoUC = new RegistrarInventarioFisicoUseCase(
+    inventariosFisicosRepo,
+    stockMovimientosRepo,
+    usuariosRepo
+  );
+  const listarInventariosFisicosUC = new ListarInventariosFisicosUseCase(inventariosFisicosRepo);
+  const registrarPerdidaUC = new RegistrarPerdidaStockUseCase(stockMovimientosRepo);
+  const reporteValorizadoUC = new ReporteExistenciasValorizadasUseCase(
+    insumosCatalogoRepo,
+    ingresosCompraRepo,
+    stockMovimientosRepo,
+    stockInicialRepo
+  );
+
+  const controlVencimientosInventariosController = new ControlVencimientosInventariosController(
+    sugerirFefoUC,
+    validarLoteUC,
+    registrarInventarioFisicoUC,
+    listarInventariosFisicosUC,
+    registrarPerdidaUC,
+    reporteValorizadoUC
+  );
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -738,6 +788,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     depositosController,
     comprasStockController,
     stockMovimientosController,
+    controlVencimientosInventariosController,
   });
 
   return app;

@@ -17,6 +17,7 @@ export interface StockMovimientoProps {
   insumoId: string;
   depositoId: string;
   loteFabricacion?: string | null;
+  fechaVencimiento?: string | null;
   tipoMovimiento: TipoMovimientoStock;
   cantidad: number;
   unidadMedida: string;
@@ -37,6 +38,7 @@ export class StockMovimiento {
   public readonly insumoId: string;
   public readonly depositoId: string;
   public readonly loteFabricacion: string | null;
+  public readonly fechaVencimiento: string | null;
   public readonly tipoMovimiento: TipoMovimientoStock;
   public readonly cantidad: number;
   public readonly unidadMedida: string;
@@ -56,6 +58,7 @@ export class StockMovimiento {
     insumoId: string;
     depositoId: string;
     loteFabricacion: string | null;
+    fechaVencimiento: string | null;
     tipoMovimiento: TipoMovimientoStock;
     cantidad: number;
     unidadMedida: string;
@@ -74,6 +77,7 @@ export class StockMovimiento {
     this.insumoId = props.insumoId;
     this.depositoId = props.depositoId;
     this.loteFabricacion = props.loteFabricacion;
+    this.fechaVencimiento = props.fechaVencimiento;
     this.tipoMovimiento = props.tipoMovimiento;
     this.cantidad = props.cantidad;
     this.unidadMedida = props.unidadMedida;
@@ -134,6 +138,7 @@ export class StockMovimiento {
       insumoId: props.insumoId.trim(),
       depositoId: props.depositoId.trim(),
       loteFabricacion: props.loteFabricacion?.trim() || null,
+      fechaVencimiento: props.fechaVencimiento?.trim() || null,
       tipoMovimiento: props.tipoMovimiento,
       cantidad: props.cantidad,
       unidadMedida: props.unidadMedida.trim().toUpperCase(),
@@ -156,6 +161,7 @@ export class StockMovimiento {
       insumoId: this.insumoId,
       depositoId: this.depositoId,
       loteFabricacion: this.loteFabricacion,
+      fechaVencimiento: this.fechaVencimiento,
       tipoMovimiento: this.tipoMovimiento,
       cantidad: this.cantidad,
       unidadMedida: this.unidadMedida,

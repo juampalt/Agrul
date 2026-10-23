@@ -36,10 +36,17 @@ export class InMemoryStockMovimientosRepository implements StockMovimientosRepos
     return null;
   }
 
-  public async obtenerSaldoActual(insumoId: string, depositoId?: string): Promise<SaldoInsumoCalculado> {
+  public async obtenerSaldoActual(
+    insumoId: string,
+    depositoId?: string,
+    loteFabricacion?: string
+  ): Promise<SaldoInsumoCalculado> {
     let movimientos = Array.from(this.items.values()).filter(m => m.insumoId === insumoId);
     if (depositoId) {
       movimientos = movimientos.filter(m => m.depositoId === depositoId);
+    }
+    if (loteFabricacion) {
+      movimientos = movimientos.filter(m => m.loteFabricacion === loteFabricacion);
     }
 
     let totalIngresos = 0;
@@ -90,6 +97,7 @@ export class InMemoryStockMovimientosRepository implements StockMovimientosRepos
     return {
       insumoId,
       depositoId,
+      loteFabricacion,
       saldo,
       unidadMedida,
       envasesAbiertos,

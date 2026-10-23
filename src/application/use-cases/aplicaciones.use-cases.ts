@@ -3,12 +3,15 @@ import {
   EntidadNoEncontradaError,
   InconsistenciaLoteCicloError,
   CicloNoAbiertoError,
+  InsumoVencidoError,
 } from '../../core/domain/errors/domain.error.js';
 import { AplicacionesRepositoryPort } from '../../core/ports/aplicaciones-repository.port.js';
 import { ActividadesRepositoryPort } from '../../core/ports/actividades-repository.port.js';
 import { CiclosRepositoryPort } from '../../core/ports/ciclos-repository.port.js';
 import { LotesRepositoryPort } from '../../core/ports/lotes-repository.port.js';
 import { InsumosCatalogoRepository } from '../../core/ports/insumos-catalogo-repository.port.js';
+import { IngresosCompraRepositoryPort } from '../../core/ports/ingresos-compra-repository.port.js';
+import { StockInicialRepositoryPort } from '../../core/ports/stock-inicial-repository.port.js';
 import {
   RegistrarAplicacionInputDto,
   AplicacionOutputDto,
@@ -23,6 +26,8 @@ export class RegistrarAplicacionUseCase {
     private readonly lotesRepo: LotesRepositoryPort,
     private readonly ciclosRepo: CiclosRepositoryPort,
     private readonly insumosRepo: InsumosCatalogoRepository,
+    private readonly ingresosCompraRepo?: IngresosCompraRepositoryPort,
+    private readonly stockInicialRepo?: StockInicialRepositoryPort,
   ) {}
 
   public async execute(
@@ -69,7 +74,10 @@ export class RegistrarAplicacionUseCase {
     }
 
     // 7. Validar existencia de cada insumo en el Catálogo Maestro (RF-M4-01 / RF-M4-06)
+    // y bloquear la aplicación de insumos vencidos (RF-M9-10)
     const insumosMap = new Map<string, { nombreComercial: string; categoria: string }>();
+    const fechaAppStr = input.fecha.includes('T') ? input.fecha.split('T')[0] : input.fecha;
+
     for (const linea of input.lineas) {
       const insumo = await this.insumosRepo.buscarPorId(linea.insumoId);
       if (!insumo) {
@@ -79,6 +87,36 @@ export class RegistrarAplicacionUseCase {
         nombreComercial: insumo.nombreComercial,
         categoria: insumo.categoria,
       });
+
+      // Validación de Vencimiento de Lote (RF-M9-10): Bloqueo estricto si ya expiró
+      if (linea.numeroLote) {
+        let fechaVencimiento: string | null = null;
+
+        if (this.ingresosCompraRepo) {
+          const compras = await this.ingresosCompraRepo.listar({
+            insumoId: linea.insumoId,
+            loteFabricacion: linea.numeroLote,
+          });
+          if (compras.length > 0 && compras[0].fechaVencimiento) {
+            fechaVencimiento = compras[0].fechaVencimiento;
+          }
+        }
+
+        if (!fechaVencimiento && this.stockInicialRepo) {
+          const iniciales = await this.stockInicialRepo.listar({ insumoId: linea.insumoId });
+          const match = iniciales.find(i => i.loteFabricacion === linea.numeroLote);
+          if (match?.fechaVencimiento) {
+            fechaVencimiento = match.fechaVencimiento;
+          }
+        }
+
+        if (fechaVencimiento) {
+          const fechaVencIso = fechaVencimiento.includes('T') ? fechaVencimiento.split('T')[0] : fechaVencimiento;
+          if (fechaVencIso < fechaAppStr) {
+            throw new InsumoVencidoError(linea.insumoId, linea.numeroLote, fechaVencimiento);
+          }
+        }
+      }
     }
 
     // 8. Instanciar Entidad de Dominio (aplica validaciones de dosis RF-M4-04, clima RF-M4-12, equipo RF-M4-11 y RN-04)
@@ -101,6 +139,8 @@ export class RegistrarAplicacionUseCase {
         dosisPorSuperficie: l.dosisPorSuperficie ?? null,
         dosisPorPlanta: l.dosisPorPlanta ?? null,
         concentracion: l.concentracion ?? null,
+        numeroLote: l.numeroLote ?? null,
+        loteInsumoId: l.loteInsumoId ?? null,
       })),
       recomendacionTecnica: input.recomendacionTecnica ?? null,
       fechaReferenciaHoy,

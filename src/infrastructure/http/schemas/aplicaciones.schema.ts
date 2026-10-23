@@ -14,6 +14,7 @@ export const LineaInsumoSchema = z.object({
   dosisPorSuperficie: z.number().min(0, 'La dosis por superficie no puede ser negativa').optional().nullable(),
   dosisPorPlanta: z.number().min(0, 'La dosis por planta no puede ser negativa').optional().nullable(),
   concentracion: z.union([z.string().trim().max(100), z.number()]).optional().nullable(),
+  numeroLote: z.string().trim().max(100).optional().nullable(),
 }).strict();
 
 export const RecomendacionTecnicaSchema = z.object({

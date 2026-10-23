@@ -642,6 +642,7 @@ export const stockMovimientosTable = pgTable('stock_movimientos', {
   usuarioId: uuid('usuario_id').notNull(),
   referenciaTipo: varchar('referencia_tipo', { length: 50 }),
   referenciaId: varchar('referencia_id', { length: 100 }),
+  fechaVencimiento: varchar('fecha_vencimiento', { length: 30 }),
   claveIdempotencia: varchar('clave_idempotencia', { length: 150 }).notNull().unique(),
   esSaldoNegativo: boolean('es_saldo_negativo').default(false).notNull(),
   motivoJustificacion: text('motivo_justificacion'),
@@ -655,6 +656,30 @@ export const stockMovimientosTable = pgTable('stock_movimientos', {
   index('idx_stock_mov_fecha').on(table.fecha),
   index('idx_stock_mov_clave_idempotencia').on(table.claveIdempotencia),
   index('idx_stock_mov_revertido').on(table.movimientoRevertidoId),
+]);
+
+// TABLA TRANSACCIONAL: Inventarios Físicos y Ajustes Auditados (AGRUL-045 / RF-M9-11)
+export const inventariosFisicosTable = pgTable('inventarios_fisicos', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  insumoId: uuid('insumo_id').notNull().references(() => insumosCatalogoTable.id, { onDelete: 'restrict' }),
+  depositoId: uuid('deposito_id').notNull().references(() => depositoAlmacenamientoTable.id, { onDelete: 'restrict' }),
+  loteFabricacion: varchar('lote_fabricacion', { length: 100 }),
+  cantidadSistema: numeric('cantidad_sistema', { precision: 14, scale: 4 }).notNull(),
+  cantidadFisica: numeric('cantidad_fisica', { precision: 14, scale: 4 }).notNull(),
+  diferencia: numeric('diferencia', { precision: 14, scale: 4 }).notNull(),
+  unidadMedida: varchar('unidad_medida', { length: 50 }).notNull(),
+  motivo: text('motivo').notNull(),
+  usuarioId: uuid('usuario_id').notNull(),
+  movimientoStockId: uuid('movimiento_stock_id'),
+  claveIdempotencia: varchar('clave_idempotencia', { length: 150 }).notNull().unique(),
+  fecha: varchar('fecha', { length: 30 }).notNull(),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_inv_fisico_insumo').on(table.insumoId),
+  index('idx_inv_fisico_deposito').on(table.depositoId),
+  index('idx_inv_fisico_usuario').on(table.usuarioId),
+  index('idx_inv_fisico_fecha').on(table.fecha),
+  index('idx_inv_fisico_clave').on(table.claveIdempotencia),
 ]);
 
 

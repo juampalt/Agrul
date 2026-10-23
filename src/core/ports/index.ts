@@ -19,3 +19,5 @@ export * from './ingresos-compra-repository.port.js';
 export * from './stock-inicial-repository.port.js';
 export * from './stock-movimientos-repository.port.js';
 export * from './notificador-stock-alertas.port.js';
+export * from './inventarios-fisicos-repository.port.js';
+

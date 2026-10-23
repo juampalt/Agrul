@@ -307,5 +307,27 @@ export class StockMinimoInvalidoError extends DomainError {
   }
 }
 
+export class InsumoVencidoError extends DomainError {
+  public readonly code = 'INSUMO_VENCIDO';
+
+  constructor(
+    public readonly insumoId: string,
+    public readonly loteFabricacion?: string | null,
+    public readonly fechaVencimiento?: string | null
+  ) {
+    super(
+      `El lote '${loteFabricacion || 'N/A'}' del insumo '${insumoId}' venció el '${fechaVencimiento || 'fecha no disponible'}' y no puede ser seleccionado ni aplicado (RF-M9-10).`
+    );
+  }
+}
+
+export class InventarioFisicoInvalidoError extends DomainError {
+  public readonly code = 'INVENTARIO_FISICO_INVALIDO';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
 
 

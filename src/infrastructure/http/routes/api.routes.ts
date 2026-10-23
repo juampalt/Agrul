@@ -22,6 +22,7 @@ import { InsumoEquivalenciasController } from '../controllers/insumo-equivalenci
 import { DepositosController } from '../controllers/depositos.controller.js';
 import { ComprasStockController } from '../controllers/compras-stock.controller.js';
 import { StockMovimientosController } from '../controllers/stock-movimientos.controller.js';
+import { ControlVencimientosInventariosController } from '../controllers/control-vencimientos-inventarios.controller.js';
 import {
   verificarAutenticacion,
   verificarAutenticacionOpcional,
@@ -55,6 +56,7 @@ export interface ApiRoutesDependencies {
   depositosController?: DepositosController;
   comprasStockController?: ComprasStockController;
   stockMovimientosController?: StockMovimientosController;
+  controlVencimientosInventariosController?: ControlVencimientosInventariosController;
 }
 
 
@@ -317,6 +319,30 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.post('/stock/movimientos/:id/ajustar', (req, rep) => deps.stockMovimientosController!.ajustarMovimiento(req, rep));
         v1.get('/stock/saldos/:insumoId', (req, rep) => deps.stockMovimientosController!.consultarSaldo(req, rep));
         v1.get('/stock/disponibilidad/:insumoId', (req, rep) => deps.stockMovimientosController!.consultarSaldo(req, rep));
+      }
+
+      // Control de Vencimientos (FEFO), Inventarios Físicos y Pérdidas (Módulo 9 — AGRUL-045 / RF-M9-10, RF-M9-11, RF-M9-12, RF-M9-16, RF-M9-17, RF-M9-20)
+      if (deps.controlVencimientosInventariosController) {
+        v1.get('/stock/fefo-sugerencia/:insumoId', (req, rep) =>
+          deps.controlVencimientosInventariosController!.sugerirFefo(req, rep)
+        );
+        v1.post('/stock/validar-lote', (req, rep) =>
+          deps.controlVencimientosInventariosController!.validarLote(req, rep)
+        );
+        v1.post(
+          '/stock/inventario-fisico',
+          { preHandler: [verificarAutenticacionOpcional] },
+          (req, rep) => deps.controlVencimientosInventariosController!.registrarInventarioFisico(req, rep)
+        );
+        v1.get('/stock/inventarios-fisicos', (req, rep) =>
+          deps.controlVencimientosInventariosController!.listarInventariosFisicos(req, rep)
+        );
+        v1.post('/stock/perdidas', (req, rep) =>
+          deps.controlVencimientosInventariosController!.registrarPerdida(req, rep)
+        );
+        v1.get('/stock/reporte-valorizado', (req, rep) =>
+          deps.controlVencimientosInventariosController!.reporteValorizado(req, rep)
+        );
       }
     },
     { prefix: '/api/v1' }
