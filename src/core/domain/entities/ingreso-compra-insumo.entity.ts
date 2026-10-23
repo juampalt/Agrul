@@ -10,7 +10,7 @@ export interface IngresoCompraInsumoProps {
   loteFabricacion: string;
   fechaVencimiento: string;
   nroFacturaRemito: string;
-  fechaIngreso: string;
+  fechaIngreso?: string;
   precioUnitarioCompra?: number | null;
   comprobanteAdjuntoUrl?: string | null;
   observaciones?: string | null;
@@ -28,6 +28,7 @@ export class IngresoCompraInsumo {
       actualizadoEn?: string;
     }
   ): IngresoCompraInsumo {
+
     if (!props.id || props.id.trim() === '') {
       throw new IngresoCompraInvalidoError('El identificador id del ingreso es obligatorio.');
     }
@@ -87,8 +88,9 @@ export class IngresoCompraInsumo {
   public get loteFabricacion(): string { return this.props.loteFabricacion; }
   public get fechaVencimiento(): string { return this.props.fechaVencimiento; }
   public get nroFacturaRemito(): string { return this.props.nroFacturaRemito; }
-  public get fechaIngreso(): string { return this.props.fechaIngreso; }
+  public get fechaIngreso(): string { return this.props.fechaIngreso ?? ''; }
   public get precioUnitarioCompra(): number | null { return this.props.precioUnitarioCompra ?? null; }
+
   public get comprobanteAdjuntoUrl(): string | null { return this.props.comprobanteAdjuntoUrl ?? null; }
   public get observaciones(): string | null { return this.props.observaciones ?? null; }
   public get usuarioCargaId(): string | null { return this.props.usuarioCargaId ?? null; }

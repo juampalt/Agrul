@@ -351,5 +351,20 @@ export class ImportacionCsvClimaInvalidaError extends DomainError {
   }
 }
 
+export class EventoClimaticoAdversoInvalidoError extends DomainError {
+  public readonly code = 'EVENTO_CLIMATICO_ADVERSO_INVALIDO';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
+export class EventoClimaticoNoEncontradoError extends EntidadNoEncontradaError {
+  constructor(id: string) {
+    super('EventoClimaticoAdverso', id);
+  }
+}
+
+
 
 

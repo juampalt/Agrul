@@ -14,7 +14,9 @@ export interface RegistrarMovimientoStockDTO {
   claveIdempotencia: string;
   motivoJustificacion?: string | null;
   esEnvaseAbierto?: boolean;
+  fechaVencimiento?: string | null;
 }
+
 
 export interface RevertirMovimientoStockDTO {
   movimientoId: string;

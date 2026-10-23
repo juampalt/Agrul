@@ -373,7 +373,43 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/clima/mediciones/:id/historial', (req, rep) =>
           deps.climaController!.obtenerHistorial(req, rep)
         );
+
+        // AGRUL-048: Contexto Climático en Labores (RF-M10-10)
+        v1.get('/fincas/:id/clima-contexto', (req, rep) =>
+          deps.climaController!.obtenerContextoFinca(req, rep)
+        );
+        v1.get('/clima/contexto/:id', (req, rep) =>
+          deps.climaController!.obtenerContextoFinca(req, rep)
+        );
+
+        // AGRUL-048: Eventos Climáticos Adversos y Siniestros (RF-M10-11)
+        v1.post(
+          '/clima/eventos-adversos',
+          { preHandler: [verificarAutenticacionOpcional] },
+          (req, rep) => deps.climaController!.registrarEventoAdverso(req, rep)
+        );
+        v1.get('/clima/eventos-adversos', (req, rep) =>
+          deps.climaController!.listarEventosAdversos(req, rep)
+        );
+        v1.get('/clima/eventos-adversos/:id', (req, rep) =>
+          deps.climaController!.obtenerEventoAdversoPorId(req, rep)
+        );
+
+        // AGRUL-048: Resumen Climático de Ciclo y Serie Histórica Integrada (RF-M10-12, RF-M10-07, RF-M10-13)
+        v1.get('/clima/lotes/:loteId/resumen-ciclo', (req, rep) =>
+          deps.climaController!.obtenerResumenCiclo(req, rep)
+        );
+        v1.get('/lotes/:loteId/resumen-climatico', (req, rep) =>
+          deps.climaController!.obtenerResumenCiclo(req, rep)
+        );
+        v1.get('/clima/lotes/:loteId/serie-historica', (req, rep) =>
+          deps.climaController!.obtenerSerieHistorica(req, rep)
+        );
+        v1.get('/lotes/:loteId/serie-climatica', (req, rep) =>
+          deps.climaController!.obtenerSerieHistorica(req, rep)
+        );
       }
+
     },
     { prefix: '/api/v1' }
   );

@@ -21,4 +21,5 @@ export * from './stock-movimientos-repository.port.js';
 export * from './notificador-stock-alertas.port.js';
 export * from './inventarios-fisicos-repository.port.js';
 export * from './mediciones-climaticas-repository.port.js';
+export * from './eventos-climaticos-adversos-repository.port.js';
 

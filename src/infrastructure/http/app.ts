@@ -185,6 +185,8 @@ import {
 } from '../../application/use-cases/control-vencimientos-inventarios.use-cases.js';
 import { MedicionesClimaticasRepositoryPort } from '../../core/ports/mediciones-climaticas-repository.port.js';
 import { InMemoryMedicionesClimaticasRepository } from '../../../tests/mocks/in-memory-mediciones-climaticas.repository.js';
+import { EventosClimaticosAdversosRepositoryPort } from '../../core/ports/eventos-climaticos-adversos-repository.port.js';
+import { InMemoryEventosClimaticosAdversosRepository } from '../../../tests/mocks/in-memory-eventos-climaticos-adversos.repository.js';
 import { ClimaController } from './controllers/clima.controller.js';
 import {
   RegistrarMedicionClimaticaUseCase,
@@ -193,6 +195,12 @@ import {
   ConsultarMedicionesClimaticasUseCase,
   ObtenerMedicionClimaticaPorIdUseCase,
   ObtenerHistorialCorreccionesClimaUseCase,
+  ObtenerContextoClimaticoLaborUseCase,
+  RegistrarEventoClimaticoAdversoUseCase,
+  ListarEventosClimaticosAdversosUseCase,
+  ObtenerEventoClimaticoAdversoPorIdUseCase,
+  CalcularResumenClimaticoCicloUseCase,
+  ObtenerSerieHistoricaClimaticaLoteUseCase,
 } from '../../application/use-cases/clima.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 
@@ -226,8 +234,10 @@ export interface BuildAppOptions {
   stockMovimientosRepo?: StockMovimientosRepositoryPort;
   inventariosFisicosRepo?: InventariosFisicosRepositoryPort;
   medicionesClimaticasRepo?: MedicionesClimaticasRepositoryPort;
+  eventosClimaticosAdversosRepo?: EventosClimaticosAdversosRepositoryPort;
   logger?: boolean;
 }
+
 
 export function buildApp(options: BuildAppOptions): FastifyInstance {
   const app = Fastify({
@@ -775,8 +785,10 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     reporteValorizadoUC
   );
 
-  // Módulo 10: Información Agro-meteorológica (AGRUL-046 / RF-M10-01, RF-M10-02, RF-M10-04, RF-M10-05, RF-M10-06)
+  // Módulo 10: Información Agro-meteorológica (AGRUL-046 & AGRUL-048)
   const climaRepo = options.medicionesClimaticasRepo ?? new InMemoryMedicionesClimaticasRepository();
+  const eventosAdversosRepo = options.eventosClimaticosAdversosRepo ?? new InMemoryEventosClimaticosAdversosRepository();
+
   const registrarMedicionClimaUC = new RegistrarMedicionClimaticaUseCase(climaRepo, options.fincasRepo);
   const corregirMedicionClimaUC = new CorregirMedicionClimaticaUseCase(climaRepo);
   const importarCsvClimaUC = new ImportarMedicionesCsvUseCase(climaRepo, options.fincasRepo);
@@ -784,14 +796,45 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   const obtenerMedicionClimaPorIdUC = new ObtenerMedicionClimaticaPorIdUseCase(climaRepo);
   const obtenerHistorialClimaUC = new ObtenerHistorialCorreccionesClimaUseCase(climaRepo);
 
+  // AGRUL-048 use cases
+  const obtenerContextoClimaUC = options.fincasRepo
+    ? new ObtenerContextoClimaticoLaborUseCase(climaRepo, options.fincasRepo, options.lotesRepo)
+    : undefined;
+  const registrarEventoAdversoUC = options.fincasRepo
+    ? new RegistrarEventoClimaticoAdversoUseCase(eventosAdversosRepo, options.fincasRepo, options.lotesRepo)
+    : undefined;
+  const listarEventosAdversosUC = new ListarEventosClimaticosAdversosUseCase(eventosAdversosRepo);
+  const obtenerEventoAdversoPorIdUC = new ObtenerEventoClimaticoAdversoPorIdUseCase(eventosAdversosRepo);
+  const calcularResumenCicloUC = new CalcularResumenClimaticoCicloUseCase(
+    options.lotesRepo,
+    climaRepo,
+    eventosAdversosRepo,
+    options.ciclosRepo
+  );
+  const obtenerSerieHistoricaUC = new ObtenerSerieHistoricaClimaticaLoteUseCase(
+    options.lotesRepo,
+    climaRepo,
+    eventosAdversosRepo,
+    options.actividadesRepo,
+    options.aplicacionesRepo,
+    options.cosechasRepo
+  );
+
   const climaController = new ClimaController(
     registrarMedicionClimaUC,
     corregirMedicionClimaUC,
     importarCsvClimaUC,
     consultarMedicionesClimaUC,
     obtenerMedicionClimaPorIdUC,
-    obtenerHistorialClimaUC
+    obtenerHistorialClimaUC,
+    obtenerContextoClimaUC,
+    registrarEventoAdversoUC,
+    listarEventosAdversosUC,
+    obtenerEventoAdversoPorIdUC,
+    calcularResumenCicloUC,
+    obtenerSerieHistoricaUC
   );
+
 
   // Registro de Rutas
   registerApiRoutes(app, {

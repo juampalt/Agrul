@@ -63,3 +63,66 @@ export const ListarMedicionesClimaticasQuerySchema = z.object({
 export const MedicionIdParamSchema = z.object({
   id: z.string().uuid('El ID de la medición debe ser un UUID válido'),
 }).strict();
+
+// ============================================================================
+// AGRUL-048: Contexto de Labores, Eventos Adversos y Serie Histórica
+// ============================================================================
+
+export const ContextoClimaParamSchema = z.object({
+  id: z.string().uuid('El ID de la finca debe ser un UUID válido'),
+}).strict();
+
+export const ContextoClimaQuerySchema = z.object({
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'La fecha debe tener formato YYYY-MM-DD').optional(),
+  loteId: z.string().uuid('El loteId debe ser un UUID válido').optional(),
+}).strict();
+
+export const TipoSiniestroClimaticoSchema = z.enum([
+  'HELADA',
+  'GRANIZO',
+  'CALOR_EXTREMO',
+  'INUNDACION',
+  'VIENTO_FUERTE',
+]);
+
+export const RegistrarEventoAdversoSchema = z.object({
+  fincaId: z.string().uuid('El fincaId debe ser un UUID válido'),
+  loteId: z.string().uuid('El loteId debe ser un UUID válido'),
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'La fecha del siniestro debe tener formato YYYY-MM-DD (RN-04)'),
+  tipoSiniestro: TipoSiniestroClimaticoSchema,
+  danoEstimadoPct: z
+    .number()
+    .min(0, 'El porcentaje de daño no puede ser negativo')
+    .max(100, 'El porcentaje de daño no puede superar el 100%'),
+  superficieAfectadaHa: z.number().min(0, 'La superficie afectada no puede ser negativa').optional().nullable(),
+  fotosUrls: z.array(z.string().min(1)).optional().default([]),
+  descripcion: z.string().trim().min(3, 'La descripción detallada del siniestro es obligatoria (RF-M10-11)').max(2000),
+}).strict();
+
+export const ListarEventosAdversosQuerySchema = z.object({
+  fincaId: z.string().uuid().optional(),
+  loteId: z.string().uuid().optional(),
+  fechaDesde: z.string().optional(),
+  fechaHasta: z.string().optional(),
+  tipoSiniestro: TipoSiniestroClimaticoSchema.optional(),
+}).strict();
+
+export const EventoAdversoIdParamSchema = z.object({
+  id: z.string().uuid('El ID del evento adverso debe ser un UUID válido'),
+}).strict();
+
+export const LoteIdClimaParamSchema = z.object({
+  loteId: z.string().uuid('El ID del lote debe ser un UUID válido'),
+}).strict();
+
+export const ResumenCicloClimaQuerySchema = z.object({
+  cicloId: z.string().uuid().optional(),
+  fechaDesde: z.string().optional(),
+  fechaHasta: z.string().optional(),
+}).strict();
+
+export const SerieHistoricaClimaQuerySchema = z.object({
+  fechaDesde: z.string().optional(),
+  fechaHasta: z.string().optional(),
+}).strict();
+

@@ -710,5 +710,27 @@ export const medicionesMeteorologicasTable = pgTable('mediciones_meteorologicas'
   index('idx_med_meteo_original').on(table.medicionOriginalId),
 ]);
 
+// TABLA MÓDULO 10: Eventos Climáticos Adversos y Siniestros (AGRUL-048 / RF-M10-11)
+export const eventosClimaticosAdversosTable = pgTable('eventos_climaticos_adversos', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  fincaId: uuid('finca_id').notNull().references(() => fincasTable.id, { onDelete: 'cascade' }),
+  loteId: uuid('lote_id').notNull().references(() => lotesTable.id, { onDelete: 'cascade' }),
+  fecha: varchar('fecha', { length: 30 }).notNull(),
+  tipoSiniestro: varchar('tipo_siniestro', { length: 50 }).notNull(), // HELADA | GRANIZO | CALOR_EXTREMO | INUNDACION | VIENTO_FUERTE
+  danoEstimadoPct: numeric('dano_estimado_pct', { precision: 5, scale: 2 }).notNull(),
+  superficieAfectadaHa: numeric('superficie_afectada_ha', { precision: 8, scale: 2 }),
+  fotosUrls: text('fotos_urls'), // JSON array string
+  descripcion: text('descripcion').notNull(),
+  usuarioId: uuid('usuario_id'),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_eventos_adv_finca').on(table.fincaId),
+  index('idx_eventos_adv_lote').on(table.loteId),
+  index('idx_eventos_adv_fecha').on(table.fecha),
+  index('idx_eventos_adv_tipo').on(table.tipoSiniestro),
+]);
+
+
 
 

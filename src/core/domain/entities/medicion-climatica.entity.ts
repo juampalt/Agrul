@@ -27,9 +27,10 @@ export interface MedicionClimaticaProps {
   precipitacionMm: number;
   humedadRelativaPct?: number | null;
   vientoKmH?: number | null;
-  huboHelada?: boolean;
-  huboGranizo?: boolean;
+  huboHelada?: boolean | null;
+  huboGranizo?: boolean | null;
   fuenteDato: FuenteDatoClima;
+
   observaciones?: string | null;
   esCorreccion?: boolean;
   medicionOriginalId?: string | null;
@@ -251,13 +252,13 @@ export class MedicionClimatica {
     tempMinC?: number | null;
     tempMaxC?: number | null;
     tempMediaC?: number | null;
-    precipitacionMm?: number;
+    precipitacionMm?: number | null;
     humedadRelativaPct?: number | null;
     vientoKmH?: number | null;
-    huboHelada?: boolean;
-    huboGranizo?: boolean;
+    huboHelada?: boolean | null;
+    huboGranizo?: boolean | null;
     observaciones?: string | null;
-    fuenteDato?: FuenteDatoClima;
+    fuenteDato?: FuenteDatoClima | null;
     fechaReferenciaHoy?: Date;
   }): MedicionClimatica {
     return MedicionClimatica.crear({
@@ -267,11 +268,11 @@ export class MedicionClimatica {
       tempMinC: params.tempMinC !== undefined ? params.tempMinC : this.tempMinC,
       tempMaxC: params.tempMaxC !== undefined ? params.tempMaxC : this.tempMaxC,
       tempMediaC: params.tempMediaC !== undefined ? params.tempMediaC : undefined,
-      precipitacionMm: params.precipitacionMm !== undefined ? params.precipitacionMm : this.precipitacionMm,
+      precipitacionMm: params.precipitacionMm !== undefined && params.precipitacionMm !== null ? params.precipitacionMm : this.precipitacionMm,
       humedadRelativaPct: params.humedadRelativaPct !== undefined ? params.humedadRelativaPct : this.humedadRelativaPct,
       vientoKmH: params.vientoKmH !== undefined ? params.vientoKmH : this.vientoKmH,
-      huboHelada: params.huboHelada !== undefined ? params.huboHelada : this.huboHelada,
-      huboGranizo: params.huboGranizo !== undefined ? params.huboGranizo : this.huboGranizo,
+      huboHelada: params.huboHelada !== undefined && params.huboHelada !== null ? params.huboHelada : this.huboHelada,
+      huboGranizo: params.huboGranizo !== undefined && params.huboGranizo !== null ? params.huboGranizo : this.huboGranizo,
       fuenteDato: params.fuenteDato || this.fuenteDato,
       observaciones: params.observaciones !== undefined ? params.observaciones : this.observaciones,
       esCorreccion: true,
@@ -281,4 +282,5 @@ export class MedicionClimatica {
       fechaReferenciaHoy: params.fechaReferenciaHoy,
     });
   }
+
 }

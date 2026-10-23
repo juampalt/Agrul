@@ -946,12 +946,12 @@
   - [ ] RF-M10-14: Visualización de pronóstico extendido con advertencia temprana.
 
 ### `[AGRUL-048]` Contexto Climático en Labores, Eventos Adversos y Serie Histórica del Lote
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Media (P2)
 - **Módulo:** Módulo 10: Clima
 - **Requisitos Funcionales:** RF-M10-07, RF-M10-10, RF-M10-11, RF-M10-12, RF-M10-13
 - **Skills:** [domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
-- **Etiquetas:** `clima`, `series-temporales`, `eventos-adversos`, `ready-for-agent`
+- **Etiquetas:** `clima`, `series-temporales`, `eventos-adversos`, `status:done`
 - **Descripción:** Exhibición automática de condiciones del día (lluvia 24h previa, viento) al registrar riego o pulverizaciones, registro de siniestros (helada, granizo con fotos y daño estimado) y superposición de actividades sobre la curva climática del ciclo.
 - **Tareas Técnicas:**
   1. Endpoint contextual: GET /api/v1/fincas/:id/clima-contexto que devuelve lluvia últimas 24h, viento actual y temp para sugerir o advertir condiciones de pulverización (RF-M10-10).
@@ -959,9 +959,9 @@
   3. Calcular resumen climático del ciclo: lluvia acumulada en la campaña, días de helada registrados y temperaturas extremas (RF-M10-12).
   4. Gráfico de serie temporal combinando temperatura, lluvia acumulada e hitos de labores/aplicaciones (RF-M10-07 / RF-M10-13).
 - **Criterios de Aceptación:**
-  - [ ] RF-M10-10: Información climática previa visible al operario durante la carga de aplicaciones.
-  - [ ] RF-M10-11: Registro fotográfico y volumétrico de siniestros de campo.
-  - [ ] RF-M10-12 / RF-M10-13: Gráfica climática integrada con los eventos del ciclo productivo.
+  - [x] RF-M10-10: Información climática previa visible al operario durante la carga de aplicaciones.
+  - [x] RF-M10-11: Registro fotográfico y volumétrico de siniestros de campo.
+  - [x] RF-M10-12 / RF-M10-13: Gráfica climática integrada con los eventos del ciclo productivo.
 
 ---
 
