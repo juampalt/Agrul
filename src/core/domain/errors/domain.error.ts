@@ -329,5 +329,27 @@ export class InventarioFisicoInvalidoError extends DomainError {
   }
 }
 
+export class MedicionClimaticaInvalidaError extends DomainError {
+  public readonly code = 'MEDICION_CLIMATICA_INVALIDA';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
+export class MedicionClimaticaNoEncontradaError extends EntidadNoEncontradaError {
+  constructor(id: string) {
+    super('MedicionClimatica', id);
+  }
+}
+
+export class ImportacionCsvClimaInvalidaError extends DomainError {
+  public readonly code = 'IMPORTACION_CSV_CLIMA_INVALIDA';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
 
 

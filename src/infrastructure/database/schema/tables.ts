@@ -682,5 +682,33 @@ export const inventariosFisicosTable = pgTable('inventarios_fisicos', {
   index('idx_inv_fisico_clave').on(table.claveIdempotencia),
 ]);
 
+// TABLA MÓDULO 10: Mediciones Meteorológicas y Agro-meteorología (AGRUL-046 / RF-M10-01, RF-M10-02, RF-M10-04, RF-M10-05, RF-M10-06)
+export const medicionesMeteorologicasTable = pgTable('mediciones_meteorologicas', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  fincaId: uuid('finca_id').notNull().references(() => fincasTable.id, { onDelete: 'cascade' }),
+  fecha: varchar('fecha', { length: 30 }).notNull(),
+  tempMinC: numeric('temp_min_c', { precision: 5, scale: 2 }),
+  tempMaxC: numeric('temp_max_c', { precision: 5, scale: 2 }),
+  tempMediaC: numeric('temp_media_c', { precision: 5, scale: 2 }),
+  precipitacionMm: numeric('precipitacion_mm', { precision: 7, scale: 2 }).notNull().default('0'),
+  humedadRelativaPct: numeric('humedad_relativa_pct', { precision: 5, scale: 2 }),
+  vientoKmH: numeric('viento_km_h', { precision: 6, scale: 2 }),
+  huboHelada: boolean('hubo_helada').default(false).notNull(),
+  huboGranizo: boolean('hubo_granizo').default(false).notNull(),
+  fuenteDato: varchar('fuente_dato', { length: 50 }).notNull(),
+  observaciones: text('observaciones'),
+  esCorreccion: boolean('es_correccion').default(false).notNull(),
+  medicionOriginalId: uuid('medicion_original_id'),
+  motivoCorreccion: text('motivo_correccion'),
+  usuarioCargaId: uuid('usuario_carga_id'),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_med_meteo_finca_fecha').on(table.fincaId, table.fecha),
+  index('idx_med_meteo_fecha').on(table.fecha),
+  index('idx_med_meteo_fuente').on(table.fuenteDato),
+  index('idx_med_meteo_original').on(table.medicionOriginalId),
+]);
+
 
 

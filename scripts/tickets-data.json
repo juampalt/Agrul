@@ -1725,7 +1725,7 @@
     "epic": "Épica 16: Módulo 10 — Información Agro-Meteorológica",
     "epicId": "epic-16-modulo-10-clima",
     "title": "Registro Manual e Importación CSV de Datos Climáticos de Finca",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Media (P2)",
     "skills": [
       ".cursor/skills/database-events.md",

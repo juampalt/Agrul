@@ -52,3 +52,5 @@ export * from './use-cases/stock-movimientos.use-cases.js';
 export * from './dtos/stock-movimientos.dto.js';
 export * from './use-cases/control-vencimientos-inventarios.use-cases.js';
 export * from './dtos/control-vencimientos-inventarios.dto.js';
+export * from './use-cases/clima.use-cases.js';
+export * from './dtos/clima.dto.js';

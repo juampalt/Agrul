@@ -183,6 +183,17 @@ import {
   RegistrarPerdidaStockUseCase,
   ReporteExistenciasValorizadasUseCase,
 } from '../../application/use-cases/control-vencimientos-inventarios.use-cases.js';
+import { MedicionesClimaticasRepositoryPort } from '../../core/ports/mediciones-climaticas-repository.port.js';
+import { InMemoryMedicionesClimaticasRepository } from '../../../tests/mocks/in-memory-mediciones-climaticas.repository.js';
+import { ClimaController } from './controllers/clima.controller.js';
+import {
+  RegistrarMedicionClimaticaUseCase,
+  CorregirMedicionClimaticaUseCase,
+  ImportarMedicionesCsvUseCase,
+  ConsultarMedicionesClimaticasUseCase,
+  ObtenerMedicionClimaticaPorIdUseCase,
+  ObtenerHistorialCorreccionesClimaUseCase,
+} from '../../application/use-cases/clima.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 
 import { resolve } from 'node:path';
@@ -214,6 +225,7 @@ export interface BuildAppOptions {
   stockInicialRepo?: StockInicialRepositoryPort;
   stockMovimientosRepo?: StockMovimientosRepositoryPort;
   inventariosFisicosRepo?: InventariosFisicosRepositoryPort;
+  medicionesClimaticasRepo?: MedicionesClimaticasRepositoryPort;
   logger?: boolean;
 }
 
@@ -763,6 +775,24 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     reporteValorizadoUC
   );
 
+  // Módulo 10: Información Agro-meteorológica (AGRUL-046 / RF-M10-01, RF-M10-02, RF-M10-04, RF-M10-05, RF-M10-06)
+  const climaRepo = options.medicionesClimaticasRepo ?? new InMemoryMedicionesClimaticasRepository();
+  const registrarMedicionClimaUC = new RegistrarMedicionClimaticaUseCase(climaRepo, options.fincasRepo);
+  const corregirMedicionClimaUC = new CorregirMedicionClimaticaUseCase(climaRepo);
+  const importarCsvClimaUC = new ImportarMedicionesCsvUseCase(climaRepo, options.fincasRepo);
+  const consultarMedicionesClimaUC = new ConsultarMedicionesClimaticasUseCase(climaRepo);
+  const obtenerMedicionClimaPorIdUC = new ObtenerMedicionClimaticaPorIdUseCase(climaRepo);
+  const obtenerHistorialClimaUC = new ObtenerHistorialCorreccionesClimaUseCase(climaRepo);
+
+  const climaController = new ClimaController(
+    registrarMedicionClimaUC,
+    corregirMedicionClimaUC,
+    importarCsvClimaUC,
+    consultarMedicionesClimaUC,
+    obtenerMedicionClimaPorIdUC,
+    obtenerHistorialClimaUC
+  );
+
   // Registro de Rutas
   registerApiRoutes(app, {
     lotesController,
@@ -789,6 +819,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     comprasStockController,
     stockMovimientosController,
     controlVencimientosInventariosController,
+    climaController,
   });
 
   return app;

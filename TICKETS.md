@@ -909,7 +909,7 @@
 ## ÉPICA 16: MÓDULO 10 — INFORMACIÓN AGRO-METEOROLÓGICA
 
 ### `[AGRUL-046]` Registro Manual e Importación CSV de Datos Climáticos de Finca
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Media (P2)
 - **Módulo:** Módulo 10: Clima
 - **Requisitos Funcionales:** RF-M10-01, RF-M10-02, RF-M10-04, RF-M10-05, RF-M10-06
@@ -923,9 +923,9 @@
   3. Parser e importador de archivos CSV para estaciones automáticas locales (RF-M10-04).
   4. Inmutabilidad histórica (RF-M10-06): datos importados no se sobreescriben; correcciones generan nuevo registro auditado con motivo.
 - **Criterios de Aceptación:**
-  - [ ] RF-M10-01 / RF-M10-02: Registro manual diario con fuente de datos guardada.
-  - [ ] RF-M10-05: Rechazo inmediato ante datos físicamente inválidos (ej. humedad negativa o lluvia negativa).
-  - [ ] RF-M10-04: Carga batch vía CSV validada.
+  - [x] RF-M10-01 / RF-M10-02: Registro manual diario con fuente de datos guardada.
+  - [x] RF-M10-05: Rechazo inmediato ante datos físicamente inválidos (ej. humedad negativa o lluvia negativa).
+  - [x] RF-M10-04: Carga batch vía CSV validada.
 
 ### `[AGRUL-047]` Integración de API de Clima para Lules, Pronósticos y Alertas Adversas
 - **Estado:** `TODO` 📌

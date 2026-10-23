@@ -23,6 +23,7 @@ import { DepositosController } from '../controllers/depositos.controller.js';
 import { ComprasStockController } from '../controllers/compras-stock.controller.js';
 import { StockMovimientosController } from '../controllers/stock-movimientos.controller.js';
 import { ControlVencimientosInventariosController } from '../controllers/control-vencimientos-inventarios.controller.js';
+import { ClimaController } from '../controllers/clima.controller.js';
 import {
   verificarAutenticacion,
   verificarAutenticacionOpcional,
@@ -57,6 +58,7 @@ export interface ApiRoutesDependencies {
   comprasStockController?: ComprasStockController;
   stockMovimientosController?: StockMovimientosController;
   controlVencimientosInventariosController?: ControlVencimientosInventariosController;
+  climaController?: ClimaController;
 }
 
 
@@ -344,8 +346,37 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
           deps.controlVencimientosInventariosController!.reporteValorizado(req, rep)
         );
       }
+
+      // Módulo 10: Información Agro-meteorológica (AGRUL-046 / RF-M10-01, RF-M10-02, RF-M10-04, RF-M10-05, RF-M10-06)
+      if (deps.climaController) {
+        v1.post(
+          '/clima/mediciones',
+          { preHandler: [verificarAutenticacionOpcional] },
+          (req, rep) => deps.climaController!.registrar(req, rep)
+        );
+        v1.post(
+          '/clima/mediciones/:id/corregir',
+          { preHandler: [verificarAutenticacionOpcional] },
+          (req, rep) => deps.climaController!.corregir(req, rep)
+        );
+        v1.post(
+          '/clima/importar-csv',
+          { preHandler: [verificarAutenticacionOpcional] },
+          (req, rep) => deps.climaController!.importarCsv(req, rep)
+        );
+        v1.get('/clima/mediciones', (req, rep) =>
+          deps.climaController!.listar(req, rep)
+        );
+        v1.get('/clima/mediciones/:id', (req, rep) =>
+          deps.climaController!.obtenerPorId(req, rep)
+        );
+        v1.get('/clima/mediciones/:id/historial', (req, rep) =>
+          deps.climaController!.obtenerHistorial(req, rep)
+        );
+      }
     },
     { prefix: '/api/v1' }
   );
 }
+
 
