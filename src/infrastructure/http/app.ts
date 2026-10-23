@@ -279,6 +279,14 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     return reply.status(404).send('Not Found');
   });
 
+  app.get('/offline-manager.js', async (_req, reply) => {
+    const jsPath = resolve(publicPath, 'offline-manager.js');
+    if (existsSync(jsPath)) {
+      return reply.type('application/javascript; charset=utf-8').send(readFileSync(jsPath, 'utf-8'));
+    }
+    return reply.status(404).send('Not Found');
+  });
+
   // Configuración de validación Zod en Fastify
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);

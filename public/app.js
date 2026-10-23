@@ -124,6 +124,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 4000);
   }
 
+  // Elementos Conexión y Resiliencia Offline (AGRUL-049 / RNF-02 / RN-11)
+  const connectionBadge = document.getElementById('connection-badge');
+  const connectionStatusText = document.getElementById('connection-status-text');
+  const btnForzarSync = document.getElementById('btn-forzar-sync');
+  const countSyncPendientes = document.getElementById('count-sync-pendientes');
+
+  function actualizarUIConectividad(info) {
+    const offlineMgr = window.AgrulOffline;
+    const pendientes = offlineMgr ? offlineMgr.cantidadPendientes() : 0;
+    const isOnline = navigator.onLine;
+
+    if (btnForzarSync && countSyncPendientes) {
+      countSyncPendientes.textContent = String(pendientes);
+      btnForzarSync.style.display = pendientes > 0 ? 'inline-flex' : 'none';
+    }
+
+    if (connectionBadge && connectionStatusText) {
+      if (info?.estado === 'SINCRONIZANDO') {
+        connectionBadge.className = 'connection-badge is-syncing';
+        connectionStatusText.textContent = `Sincronizando (${pendientes})...`;
+      } else if (!isOnline || info?.estado === 'OFFLINE') {
+        connectionBadge.className = 'connection-badge is-offline';
+        connectionStatusText.textContent = pendientes > 0
+          ? `Modo Campo Offline (${pendientes} pendientes)`
+          : 'Modo Campo Offline';
+      } else {
+        connectionBadge.className = 'connection-badge';
+        connectionStatusText.textContent = pendientes > 0
+          ? `API Online (${pendientes} pendientes)`
+          : 'API v1 Online';
+      }
+    }
+  }
+
+  if (window.AgrulOffline) {
+    window.AgrulOffline.onEstadoChange(actualizarUIConectividad);
+    actualizarUIConectividad();
+  }
+
+  if (btnForzarSync) {
+    btnForzarSync.addEventListener('click', async () => {
+      if (!window.AgrulOffline) return;
+      showToast('Sincronizando operaciones en segundo plano...', 'info');
+      const res = await window.AgrulOffline.sincronizarCola();
+      if (res && res.exitosos > 0) {
+        showToast(`✅ Sincronizadas ${res.exitosos} operaciones en el servidor`, 'success');
+        await cargarLotes();
+      } else if (res && res.pendientes > 0) {
+        showToast(`⚠️ Quedan ${res.pendientes} operaciones esperando conexión estable`, 'warning');
+      } else {
+        showToast('Cola offline vacía. Todo al día.', 'success');
+      }
+      actualizarUIConectividad();
+    });
+  }
+
   // Cargar Lotes desde API REST
   async function cargarLotes() {
     try {
@@ -1299,23 +1355,60 @@ document.addEventListener('DOMContentLoaded', () => {
   // COSECHA MÓVIL ULTRARRÁPIDA EN CAMPO (AGRUL-031 / RF-M5-13 / RNF-01 / RNF-15)
   // ==========================================================================
 
+  function autoGuardarBorradorCosechaRapida() {
+    if (!window.AgrulOffline) return;
+    const datos = {
+      loteId: rapidaLoteId?.value || '',
+      cantidadCosechadaKg: rapidaTotalKg?.value || '',
+      cantidadComercializableKg: rapidaComercialKg?.value || '',
+      fecha: rapidaFecha?.value || '',
+      motivoDescarte: rapidaMotivoDescarte?.value || '',
+      observacionesCalidad: rapidaObservaciones?.value || '',
+      superficieCosechadaHa: rapidaSupHa?.value || '',
+      recipienteTipo: rapidaRecipienteTipo?.value || 'CAJON',
+      recipienteCant: rapidaRecipienteCant?.value || '',
+      claveIdempotencia: formCosechaRapida?.dataset.claveIdempotencia || '',
+    };
+    window.AgrulOffline.guardarBorrador('cosecha_rapida', datos);
+  }
+
   function abrirModalCosechaRapida(preselectedLoteId = null) {
     if (!formCosechaRapida) return;
     formCosechaRapida.reset();
 
-    // Fecha actual autocompletada por defecto (RN-01 / RF-M5-13)
-    if (rapidaFecha) {
-      rapidaFecha.value = new Date().toISOString().split('T')[0];
+    // Comprobar si existe borrador local previo (RNF-02)
+    const borrador = window.AgrulOffline ? window.AgrulOffline.obtenerBorrador('cosecha_rapida') : null;
+
+    if (borrador && !preselectedLoteId) {
+      if (rapidaTotalKg) rapidaTotalKg.value = borrador.cantidadCosechadaKg || '';
+      if (rapidaComercialKg) rapidaComercialKg.value = borrador.cantidadComercializableKg || '';
+      if (rapidaFecha && borrador.fecha) rapidaFecha.value = borrador.fecha;
+      if (rapidaMotivoDescarte && borrador.motivoDescarte) rapidaMotivoDescarte.value = borrador.motivoDescarte;
+      if (rapidaObservaciones && borrador.observacionesCalidad) rapidaObservaciones.value = borrador.observacionesCalidad;
+      if (rapidaSupHa && borrador.superficieCosechadaHa) rapidaSupHa.value = borrador.superficieCosechadaHa;
+      if (rapidaRecipienteTipo && borrador.recipienteTipo) rapidaRecipienteTipo.value = borrador.recipienteTipo;
+      if (rapidaRecipienteCant && borrador.recipienteCant) rapidaRecipienteCant.value = borrador.recipienteCant;
+      formCosechaRapida.dataset.claveIdempotencia = borrador.claveIdempotencia || (window.AgrulOffline ? window.AgrulOffline.generarClaveIdempotencia('cos') : '');
+      showToast('Borrador previo recuperado automáticamente (RNF-02)', 'info');
+    } else {
+      // Fecha actual autocompletada por defecto (RN-01 / RF-M5-13)
+      if (rapidaFecha) {
+        rapidaFecha.value = new Date().toISOString().split('T')[0];
+      }
+      formCosechaRapida.dataset.claveIdempotencia = window.AgrulOffline
+        ? window.AgrulOffline.generarClaveIdempotencia('cos')
+        : `cos_${Date.now()}`;
     }
 
     // Poblar selector de lotes
     if (rapidaLoteId) {
       rapidaLoteId.innerHTML = '<option value="">Seleccione lote a cosechar...</option>';
+      const targetLoteId = preselectedLoteId || (borrador?.loteId);
       allLotes.forEach(l => {
         const opt = document.createElement('option');
         opt.value = l.id;
         opt.textContent = `${l.codigoLote} — ${l.producto} (${l.estadoActual})`;
-        if (preselectedLoteId && l.id === preselectedLoteId) {
+        if (targetLoteId && l.id === targetLoteId) {
           opt.selected = true;
         }
         rapidaLoteId.appendChild(opt);
@@ -1424,11 +1517,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (rapidaTotalKg) {
-    rapidaTotalKg.addEventListener('input', recalcularBalanceEnVivo);
+    rapidaTotalKg.addEventListener('input', () => {
+      recalcularBalanceEnVivo();
+      autoGuardarBorradorCosechaRapida();
+    });
   }
 
   if (rapidaComercialKg) {
-    rapidaComercialKg.addEventListener('input', recalcularBalanceEnVivo);
+    rapidaComercialKg.addEventListener('input', () => {
+      recalcularBalanceEnVivo();
+      autoGuardarBorradorCosechaRapida();
+    });
   }
 
   if (rapidaLoteId) {
@@ -1437,11 +1536,15 @@ document.addEventListener('DOMContentLoaded', () => {
         rapidaLoteInfo.style.display = rapidaLoteId.value ? 'inline-flex' : 'none';
       }
       verificarCarenciaRapida();
+      autoGuardarBorradorCosechaRapida();
     });
   }
 
   if (rapidaFecha) {
-    rapidaFecha.addEventListener('change', verificarCarenciaRapida);
+    rapidaFecha.addEventListener('change', () => {
+      verificarCarenciaRapida();
+      autoGuardarBorradorCosechaRapida();
+    });
   }
 
   if (btnRapidaEscanearQr) {
@@ -1485,11 +1588,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      const claveIdempotencia = formCosechaRapida?.dataset.claveIdempotencia ||
+        (window.AgrulOffline ? window.AgrulOffline.generarClaveIdempotencia('cos') : `cos_${Date.now()}`);
+
       const payload = {
         loteId,
         cantidadCosechadaKg: totalKg,
         cantidadComercializableKg: comercialKg,
         fecha,
+        claveIdempotencia,
       };
 
       if (rapidaMotivoDescarte && rapidaMotivoDescarte.value) {
@@ -1506,6 +1613,22 @@ document.addEventListener('DOMContentLoaded', () => {
           tipo: rapidaRecipienteTipo?.value || 'CAJON',
           cantidad: parseInt(rapidaRecipienteCant.value, 10),
         }];
+      }
+
+      // Si está en modo offline o sin conexión en campo, encolar en dispositivo inmediatamente (RNF-02)
+      if (!navigator.onLine && window.AgrulOffline) {
+        window.AgrulOffline.encolarPeticionOffline({
+          url: '/api/v1/cosechas/rapida',
+          method: 'POST',
+          body: payload,
+          claveIdempotencia,
+          tipoOperacion: 'COSECHA_RAPIDA',
+        });
+        window.AgrulOffline.limpiarBorrador('cosecha_rapida');
+        showToast(`📡 Modo Campo Offline: Cosecha preservada en dispositivo (${claveIdempotencia.slice(0, 16)}...). Se sincronizará automáticamente (RNF-02 / RN-11).`, 'info');
+        closeModal(modalCosechaRapida);
+        actualizarUIConectividad();
+        return;
       }
 
       if (btnSubmitCosechaRapida) {
@@ -1527,6 +1650,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (json.meta && json.meta.advertenciaCarencia) {
             showToast('⚠️ Advertencia: Cosecha asentada pero violó período de carencia fitosanitaria.', 'error');
           }
+          if (window.AgrulOffline) {
+            window.AgrulOffline.limpiarBorrador('cosecha_rapida');
+          }
           closeModal(modalCosechaRapida);
           await cargarLotes();
         } else {
@@ -1534,7 +1660,22 @@ document.addEventListener('DOMContentLoaded', () => {
           showToast(`Error: ${msg}`, 'error');
         }
       } catch (err) {
-        showToast(`Error de conexión: ${err.message}`, 'error');
+        // En caso de caída de conexión durante el envío (Failed to fetch)
+        if (window.AgrulOffline) {
+          window.AgrulOffline.encolarPeticionOffline({
+            url: '/api/v1/cosechas/rapida',
+            method: 'POST',
+            body: payload,
+            claveIdempotencia,
+            tipoOperacion: 'COSECHA_RAPIDA',
+          });
+          window.AgrulOffline.limpiarBorrador('cosecha_rapida');
+          showToast(`📡 Conexión interrumpida: Cosecha guardada en cola offline sin duplicar en base de datos (RNF-02 / RN-11).`, 'info');
+          closeModal(modalCosechaRapida);
+          actualizarUIConectividad();
+        } else {
+          showToast(`Error de conexión: ${err.message}`, 'error');
+        }
       } finally {
         if (btnSubmitCosechaRapida) {
           btnSubmitCosechaRapida.disabled = false;

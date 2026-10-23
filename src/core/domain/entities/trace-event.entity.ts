@@ -1,4 +1,4 @@
-import { TipoEvento, esEventoCompensatorio } from '../value-objects/tipo-evento.vo.js';
+import { TipoEvento, esEventoCompensatorio, esTipoEventoValido } from '../value-objects/tipo-evento.vo.js';
 import { DomainError } from '../errors/domain.error.js';
 
 export interface TraceEventProps {
@@ -32,7 +32,7 @@ export class TraceEvent {
     if (!props.loteId) throw new TraceEventInvalidoError('loteId es obligatorio.');
     if (!props.actorId) throw new TraceEventInvalidoError('actorId es obligatorio.');
     if (!props.ubicacionId) throw new TraceEventInvalidoError('ubicacionId es obligatorio.');
-    if (!props.tipoEvento) throw new TraceEventInvalidoError('tipoEvento es obligatorio.');
+    if (!props.tipoEvento || !esTipoEventoValido(props.tipoEvento)) throw new TraceEventInvalidoError('tipoEvento es obligatorio y debe ser válido.');
     if (!props.timestampCapturaLocal) throw new TraceEventInvalidoError('timestampCapturaLocal es obligatorio.');
 
     if (esEventoCompensatorio(props.tipoEvento) && !props.eventoReferenciadoId) {

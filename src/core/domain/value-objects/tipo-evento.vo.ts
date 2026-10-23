@@ -22,3 +22,7 @@ export function esEventoCompensatorio(tipo: TipoEvento): boolean {
 export function esEventoTerminal(tipo: TipoEvento): boolean {
   return tipo === TipoEventoEnum.DESPACHO;
 }
+
+export function esTipoEventoValido(tipo: unknown): tipo is TipoEvento {
+  return typeof tipo === 'string' && Object.values(TipoEventoEnum).includes(tipo as TipoEvento);
+}

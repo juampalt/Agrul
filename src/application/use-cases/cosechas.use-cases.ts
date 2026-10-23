@@ -57,6 +57,15 @@ export class RegistrarCosechaUseCase {
       );
     }
 
+    // 0. Idempotencia en cliente / red rural intermitente (RNF-02 / RN-11):
+    // Si la conexión cayó durante el envío previo y se reintenta con la misma clave, no duplicar
+    if (input.claveIdempotencia && input.claveIdempotencia.trim().length > 0) {
+      const cosechaExistente = await this.cosechasRepo.buscarPorClaveIdempotencia(input.claveIdempotencia.trim());
+      if (cosechaExistente) {
+        return this.mapToDto(cosechaExistente, lote.codigoLote.value, ciclo.codigoCiclo);
+      }
+    }
+
     // 4. Regla RN-03: El ciclo productivo debe estar ABIERTO
     if (!ciclo.estaAbierto()) {
       throw new CicloNoAbiertoError(
@@ -106,6 +115,7 @@ export class RegistrarCosechaUseCase {
       cuadrillaId: input.cuadrillaId ?? null,
       recipientes: input.recipientes ?? null,
       superficieCosechadaHa: input.superficieCosechadaHa ?? null,
+      claveIdempotencia: input.claveIdempotencia ?? null,
       fechaReferenciaHoy,
     });
 
@@ -182,6 +192,7 @@ export class RegistrarCosechaUseCase {
       anuladoEn: raw.anuladoEn,
       historialModificaciones: raw.historialModificaciones,
       alertaCarencia: alertaCarencia ?? null,
+      claveIdempotencia: raw.claveIdempotencia ?? null,
       creadoEn: raw.creadoEn,
       actualizadoEn: raw.actualizadoEn,
     };
@@ -565,6 +576,7 @@ export class RegistrarCosechaRapidaUseCase {
         cuadrillaId: input.cuadrillaId ?? null,
         recipientes: input.recipientes ?? null,
         superficieCosechadaHa: input.superficieCosechadaHa ?? null,
+        claveIdempotencia: input.claveIdempotencia ?? null,
       },
       fechaReferenciaHoy,
     );

@@ -54,3 +54,5 @@ export * from './use-cases/control-vencimientos-inventarios.use-cases.js';
 export * from './dtos/control-vencimientos-inventarios.dto.js';
 export * from './use-cases/clima.use-cases.js';
 export * from './dtos/clima.dto.js';
+export * from './use-cases/sincronizar-eventos-offline.use-case.js';
+export * from './dtos/sincronizacion.dto.js';

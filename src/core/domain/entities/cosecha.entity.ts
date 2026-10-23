@@ -57,6 +57,7 @@ export interface CosechaProps {
   usuarioAnulacionId?: string | null;
   anuladoEn?: string | null;
   historialModificaciones?: HistorialModificacionCosecha[] | null;
+  claveIdempotencia?: string | null;
   creadoEn: string;
   actualizadoEn: string;
 }
@@ -77,6 +78,7 @@ export interface CrearCosechaParams {
   recipientes?: RecipienteCosechaProps[] | null;
   superficieCosechadaHa?: number | null;
   estado?: EstadoCosecha;
+  claveIdempotencia?: string | null;
   /** Permite inyectar fecha de referencia para pruebas deterministas (RN-04) */
   fechaReferenciaHoy?: Date;
 }
@@ -101,6 +103,7 @@ export interface CosechaJSON {
   usuarioAnulacionId: string | null;
   anuladoEn: string | null;
   historialModificaciones: HistorialModificacionCosecha[];
+  claveIdempotencia?: string | null;
   creadoEn: string;
   actualizadoEn: string;
 }
@@ -201,6 +204,7 @@ export class Cosecha {
       usuarioAnulacionId: null,
       anuladoEn: null,
       historialModificaciones: [],
+      claveIdempotencia: params.claveIdempotencia ? params.claveIdempotencia.trim() : null,
       creadoEn: ahora,
       actualizadoEn: ahora,
     });
@@ -227,6 +231,7 @@ export class Cosecha {
       usuarioAnulacionId: json.usuarioAnulacionId ?? null,
       anuladoEn: json.anuladoEn ?? null,
       historialModificaciones: json.historialModificaciones ?? [],
+      claveIdempotencia: json.claveIdempotencia ?? null,
       creadoEn: json.creadoEn,
       actualizadoEn: json.actualizadoEn,
     });
@@ -248,6 +253,7 @@ export class Cosecha {
   public get recipientes(): RecipienteCosechaProps[] | null { return this.props.recipientes ?? null; }
   public get superficieCosechadaHa(): number | null { return this.props.superficieCosechadaHa ?? null; }
   public get estado(): EstadoCosecha { return this.props.estado; }
+  public get claveIdempotencia(): string | null { return this.props.claveIdempotencia ?? null; }
   public get motivoAnulacion(): string | null { return this.props.motivoAnulacion ?? null; }
   public get usuarioAnulacionId(): string | null { return this.props.usuarioAnulacionId ?? null; }
   public get anuladoEn(): string | null { return this.props.anuladoEn ?? null; }
@@ -419,6 +425,7 @@ export class Cosecha {
       usuarioAnulacionId: this.props.usuarioAnulacionId ?? null,
       anuladoEn: this.props.anuladoEn ?? null,
       historialModificaciones: this.props.historialModificaciones ? [...this.props.historialModificaciones] : [],
+      claveIdempotencia: this.props.claveIdempotencia ?? null,
       creadoEn: this.props.creadoEn,
       actualizadoEn: this.props.actualizadoEn,
     };

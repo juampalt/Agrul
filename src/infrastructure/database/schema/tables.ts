@@ -356,6 +356,7 @@ export const cosechasTable = pgTable('cosechas', {
   usuarioAnulacionId: uuid('usuario_anulacion_id'),
   anuladoEn: timestamp('anulado_en', { withTimezone: true, mode: 'string' }),
   historialModificaciones: jsonb('historial_modificaciones').notNull().default([]),
+  claveIdempotencia: varchar('clave_idempotencia', { length: 150 }).unique(),
   creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
@@ -364,6 +365,7 @@ export const cosechasTable = pgTable('cosechas', {
   index('idx_cosechas_codigo').on(table.codigoTrazabilidad),
   index('idx_cosechas_fecha').on(table.fecha),
   index('idx_cosechas_estado').on(table.estado),
+  index('idx_cosechas_clave_idempotencia').on(table.claveIdempotencia),
 ]);
 
 // TABLA MAESTRA: Catálogo de Destinatarios (AGRUL-029 / RF-M5-08)

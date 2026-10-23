@@ -24,9 +24,9 @@
 | **Épica 13: Módulo 7 — Indicadores, Rendimientos y Métricas Productivas** | 3 | 3 | 0 | 0 |
 | **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 2 | 0 | 1 |
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 3 | 0 | 2 |
-| **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 0 | 0 | 3 |
-| **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 0 | 0 | 2 |
-| **TOTAL GENERAL** | **50** | **36** | **0** | **14** |
+| **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 2 | 0 | 1 |
+| **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 1 | 0 | 1 |
+| **TOTAL GENERAL** | **50** | **39** | **0** | **11** |
 
 ---
 
@@ -968,12 +968,12 @@
 ## ÉPICA 17: REQUISITOS NO FUNCIONALES & CUMPLIMIENTO NORMATIVO
 
 ### `[AGRUL-049]` Resiliencia Móvil Offline, Borradores Locales e Idempotencia en Cliente
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Transversal RNF
 - **Reglas de Negocio:** RN-11
 - **Skills:** [api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md), [architecture.md](file:///c:/AGRUL/.cursor/skills/architecture.md)
-- **Etiquetas:** `rnf`, `offline`, `pwa`, `idempotencia`, `ready-for-agent`
+- **Etiquetas:** `rnf`, `offline`, `pwa`, `idempotencia`, `status:done`
 - **Descripción:** Garantizar la operatividad en fincas rurales con conectividad intermitente: almacenamiento local en IndexedDB/LocalStorage, reintentos automáticos sin duplicación mediante claves UUIDv4 y diseño para pantallas de 360px.
 - **Tareas Técnicas:**
   1. Implementar wrapper de almacenamiento local para guardar borradores de actividades/cosechas ante caída de red (RNF-02).
@@ -981,9 +981,9 @@
   3. Sincronización en segundo plano con backoff exponencial al detectar restauración de conectividad.
   4. Verificar diseño responsivo desde 360px de ancho con viewport móvil adecuado (RNF-09).
 - **Criterios de Aceptación:**
-  - [ ] RNF-02: Cortar la conexión durante el envío y reintentar no genera duplicados en la base de datos.
-  - [ ] RNF-09: Funcionalidad completa y testeada en Chrome móvil y Android estándar.
-  - [ ] RNF-01 / RNF-15: Experiencia de usuario optimizada para campo.
+  - [x] RNF-02: Cortar la conexión durante el envío y reintentar no genera duplicados en la base de datos.
+  - [x] RNF-09: Funcionalidad completa y testeada en Chrome móvil y Android estándar.
+  - [x] RNF-01 / RNF-15: Experiencia de usuario optimizada para campo.
 
 ### `[AGRUL-050]` Localización Oficial (Tucumán UTC-3), Políticas de Retención 3 Años y Multi-Finca
 - **Estado:** `TODO` 📌

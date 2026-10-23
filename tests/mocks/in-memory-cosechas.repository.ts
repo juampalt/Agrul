@@ -23,6 +23,13 @@ export class InMemoryCosechasRepository implements CosechasRepositoryPort {
     return item ? Cosecha.reconstituir(item.toJSON()) : null;
   }
 
+  public async buscarPorClaveIdempotencia(clave: string): Promise<Cosecha | null> {
+    const item = Array.from(this.cosechas.values()).find(
+      c => c.claveIdempotencia === clave.trim()
+    );
+    return item ? Cosecha.reconstituir(item.toJSON()) : null;
+  }
+
   public async contarPorLoteYFecha(loteId: string, fecha: string): Promise<number> {
     const fechaStr = fecha.trim().slice(0, 10);
     return Array.from(this.cosechas.values()).filter(

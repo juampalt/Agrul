@@ -19,6 +19,7 @@ export interface RegistrarCosechaInputDto {
   cuadrillaId?: string | null;
   recipientes?: RecipienteCosechaDto[] | null;
   superficieCosechadaHa?: number | null;
+  claveIdempotencia?: string | null;
 }
 
 export interface RegistrarCosechaRapidaInputDto {
@@ -34,6 +35,7 @@ export interface RegistrarCosechaRapidaInputDto {
   cuadrillaId?: string | null;
   recipientes?: RecipienteCosechaDto[] | null;
   superficieCosechadaHa?: number | null;
+  claveIdempotencia?: string | null;
 }
 
 export interface CambioHistorialCosechaDto {
@@ -74,6 +76,7 @@ export interface CosechaOutputDto {
   anuladoEn: string | null;
   historialModificaciones: HistorialModificacionCosechaDto[];
   alertaCarencia?: ResultadoVerificacionCarenciaDto | null;
+  claveIdempotencia?: string | null;
   creadoEn: string;
   actualizadoEn: string;
 }

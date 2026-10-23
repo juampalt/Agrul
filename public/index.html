@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Agrul — Dashboard Operativo de Trazabilidad y Lotes</title>
   <meta name="description" content="Sistema integral de trazabilidad agroindustrial y gestión de lotes agrícolas.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,9 +23,12 @@
         </div>
       </div>
       <div class="header-actions">
-        <div class="connection-badge">
-          <span class="status-dot"></span> API v1 Online
+        <div id="connection-badge" class="connection-badge" title="Estado de conectividad y modo offline de campo (RNF-02)">
+          <span id="connection-status-dot" class="status-dot"></span> <span id="connection-status-text">API v1 Online</span>
         </div>
+        <button id="btn-forzar-sync" class="btn btn-sync-header" style="display: none;" title="Sincronizar inmediatamente operaciones pendientes capturadas en campo (RNF-02)">
+          <span class="btn-icon">🔄</span> Sincronizar (<span id="count-sync-pendientes">0</span>)
+        </button>
         <button id="btn-toggle-dashboard" class="btn btn-tablero-header" title="Tablero Ejecutivo de Inicio con Resumen Operativo y Gráficos (AGRUL-037)">
           <span class="btn-icon">📈</span> Tablero Ejecutivo
         </button>
@@ -2037,6 +2040,7 @@
   <!-- Notificaciones Toast -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
+  <script src="/offline-manager.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

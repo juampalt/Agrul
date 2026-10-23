@@ -1846,7 +1846,7 @@
     "epic": "Épica 17: Requisitos No Funcionales & Cumplimiento Normativo",
     "epicId": "epic-17-rnf-transversal",
     "title": "Resiliencia Móvil Offline, Borradores Locales e Idempotencia en Cliente",
-    "status": "TODO",
+    "status": "DONE",
     "priority": "Alta (P1)",
     "skills": [
       ".cursor/skills/api-contracts.md",
@@ -1862,7 +1862,7 @@
       "offline",
       "pwa",
       "idempotencia",
-      "ready-for-agent"
+      "status:done"
     ],
     "description": "Garantizar la operatividad en fincas rurales con conectividad intermitente: almacenamiento local en IndexedDB/LocalStorage, reintentos automáticos sin duplicación mediante claves UUIDv4 y diseño para pantallas de 360px.",
     "tasks": [

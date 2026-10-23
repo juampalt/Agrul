@@ -1,17 +1,22 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { RegistrarEventoUseCase } from '../../../application/use-cases/registrar-evento.use-case.js';
+import { SincronizarEventosOfflineUseCase } from '../../../application/use-cases/sincronizar-eventos-offline.use-case.js';
 import { EventosRepositoryPort } from '../../../core/ports/eventos-repository.port.js';
 import { RegistrarEventoBodySchema } from '../schemas/eventos.schema.js';
 import { LoteIdParamSchema } from '../schemas/lotes.schema.js';
 import { SincronizarBatchOfflineSchema } from '../schemas/sincronizacion.schema.js';
-import { TraceEvent } from '../../../core/domain/entities/trace-event.entity.js';
-import { TipoEvento } from '../../../core/domain/value-objects/tipo-evento.vo.js';
 
 export class EventosController {
+  private readonly sincronizarOfflineUseCase: SincronizarEventosOfflineUseCase;
+
   constructor(
     private readonly registrarEventoUseCase: RegistrarEventoUseCase,
-    private readonly eventosRepo: EventosRepositoryPort
-  ) {}
+    private readonly eventosRepo: EventosRepositoryPort,
+    sincronizarOfflineUseCase?: SincronizarEventosOfflineUseCase,
+  ) {
+    this.sincronizarOfflineUseCase =
+      sincronizarOfflineUseCase ?? new SincronizarEventosOfflineUseCase(this.eventosRepo);
+  }
 
   async registrar(req: FastifyRequest, reply: FastifyReply) {
     const { id: loteId } = LoteIdParamSchema.parse(req.params);
@@ -52,39 +57,11 @@ export class EventosController {
 
   async sincronizarBatchOffline(req: FastifyRequest, reply: FastifyReply) {
     const body = SincronizarBatchOfflineSchema.parse(req.body);
-
-    const eventosAInsertar: TraceEvent[] = [];
-    const fallidos: string[] = [];
-
-    for (const ev of body.eventos) {
-      try {
-        const eventoEntidad = TraceEvent.crear({
-          id: crypto.randomUUID(),
-          loteId: ev.loteId,
-          actorId: ev.actorId,
-          ubicacionId: ev.ubicacionId,
-          tipoEvento: ev.tipoEvento as TipoEvento,
-          timestampCapturaLocal: ev.timestampCapturaLocal,
-          payloadEspecifico: ev.payloadEspecifico,
-          eventoReferenciadoId: ev.eventoReferenciadoId ?? null,
-          estadoSincronizacion: 'PENDIENTE_AUDITORIA_OFFLINE',
-        });
-        eventosAInsertar.push(eventoEntidad);
-      } catch (err: unknown) {
-        fallidos.push(ev.idLocalTemporal);
-      }
-    }
-
-    const resultado = await this.eventosRepo.guardarBatchOffline(eventosAInsertar);
+    const data = await this.sincronizarOfflineUseCase.execute(body);
 
     return reply.status(200).send({
       success: true,
-      data: {
-        dispositivoId: body.dispositivoId,
-        totalRecibidos: body.eventos.length,
-        insertados: resultado.insertados,
-        fallidos: [...fallidos, ...resultado.fallidos],
-      },
+      data,
       error: null,
       timestamp: new Date().toISOString(),
     });

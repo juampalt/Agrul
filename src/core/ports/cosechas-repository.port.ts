@@ -12,6 +12,7 @@ export interface CosechasRepositoryPort {
   guardar(cosecha: Cosecha): Promise<void>;
   buscarPorId(id: string): Promise<Cosecha | null>;
   buscarPorCodigo(codigo: string): Promise<Cosecha | null>;
+  buscarPorClaveIdempotencia(clave: string): Promise<Cosecha | null>;
   listar(filtros?: ListarCosechasFiltros): Promise<Cosecha[]>;
   contarPorLoteYFecha(loteId: string, fecha: string): Promise<number>;
 }

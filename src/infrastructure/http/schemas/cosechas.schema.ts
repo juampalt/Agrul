@@ -18,6 +18,7 @@ export const RegistrarCosechaBodySchema = z.object({
   cuadrillaId: z.string().uuid('El cuadrillaId debe ser un UUID válido').optional().nullable(),
   recipientes: z.array(RecipienteSchema).optional().nullable(),
   superficieCosechadaHa: z.number().positive('La superficie cosechada debe ser un valor positivo').optional().nullable(),
+  claveIdempotencia: z.string().trim().max(150).optional().nullable(),
 }).strict();
 
 export const RegistrarCosechaRapidaBodySchema = z.object({
@@ -33,6 +34,7 @@ export const RegistrarCosechaRapidaBodySchema = z.object({
   cuadrillaId: z.string().uuid('El cuadrillaId debe ser un UUID válido').optional().nullable(),
   recipientes: z.array(RecipienteSchema).optional().nullable(),
   superficieCosechadaHa: z.number().positive('La superficie cosechada debe ser un valor positivo').optional().nullable(),
+  claveIdempotencia: z.string().trim().max(150).optional().nullable(),
 }).strict();
 
 export const ListarCosechasQuerySchema = z.object({
