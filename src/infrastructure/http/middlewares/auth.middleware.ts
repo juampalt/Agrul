@@ -200,6 +200,52 @@ export function requerirAccesoFinca(
 }
 
 /**
+ * Factory middleware para aislamiento estricto multi-organización (RNF-16).
+ * Regla de negocio:
+ * - Valida que el usuario pertenezca a la misma organización solicitada (vía cabecera X-Organizacion-Id, query, param o body).
+ * - Los administradores tienen acceso irrestricto transversal.
+ */
+export function requerirAccesoOrganizacion(
+  orgIdExtractor?: (request: FastifyRequest) => string | undefined
+) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!request.usuario) {
+      await verificarAutenticacion(request, reply);
+      if (reply.sent) return;
+    }
+
+    const usuario = request.usuario!;
+    if (usuario.perfil === 'ADMINISTRADOR') {
+      return;
+    }
+
+    const organizacionId = orgIdExtractor
+      ? orgIdExtractor(request)
+      : (request.headers['x-organizacion-id'] as string) ||
+        (request.params as Record<string, string>)?.organizacionId ||
+        (request.query as Record<string, string>)?.organizacionId ||
+        (request.body as Record<string, string>)?.organizacionId;
+
+    if (!organizacionId) {
+      return;
+    }
+
+    if (usuario.organizacionId && usuario.organizacionId !== organizacionId) {
+      return reply.status(403).send({
+        success: false,
+        data: null,
+        error: {
+          code: 'ACCESO_DENEGADO_ORGANIZACION',
+          message: `El usuario no tiene autorización para operar en la organización '${organizacionId}' (RNF-16).`,
+          details: null,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  };
+}
+
+/**
  * Middleware para auditar y restringir acciones del perfil ASESOR_AGRONOMO (RF-M8-10):
  * Solo puede realizar lecturas (GET) o emitir recomendaciones técnicas (POST /recomendaciones).
  */

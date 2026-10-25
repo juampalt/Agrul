@@ -24,6 +24,8 @@ import { ComprasStockController } from '../controllers/compras-stock.controller.
 import { StockMovimientosController } from '../controllers/stock-movimientos.controller.js';
 import { ControlVencimientosInventariosController } from '../controllers/control-vencimientos-inventarios.controller.js';
 import { ClimaController } from '../controllers/clima.controller.js';
+import { LocalizacionTucumanService } from '../../../core/domain/services/localizacion-tucuman.service.js';
+import { PoliticaRetencionBpaService } from '../../../core/domain/services/politica-retencion-bpa.service.js';
 import {
   verificarAutenticacion,
   verificarAutenticacionOpcional,
@@ -69,6 +71,29 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
       v1.get('/health', async () => ({
         success: true,
         data: { status: 'healthy', service: 'agrul-api', version: '0.1.0' },
+        error: null,
+        timestamp: new Date().toISOString(),
+      }));
+
+      // Localización Oficial Tucumán y Cumplimiento Normativo (RNF-12 / RNF-06 / RN-05)
+      v1.get('/localizacion/config', async () => ({
+        success: true,
+        data: {
+          zonaHoraria: LocalizacionTucumanService.ZONA_HORARIA,
+          offsetHoras: LocalizacionTucumanService.OFFSET_HORAS,
+          offsetString: LocalizacionTucumanService.OFFSET_STRING,
+          formatoFechaVisual: LocalizacionTucumanService.FORMATO_FECHA_VISUAL,
+          unidadesMetricasOficiales: LocalizacionTucumanService.UNIDADES_OFICIALES,
+          politicaRetencionMinimaAnosBPA: PoliticaRetencionBpaService.ANOS_RETENCION_MINIMA,
+          borradoFisicoPermitido: false,
+        },
+        error: null,
+        timestamp: new Date().toISOString(),
+      }));
+
+      v1.get('/localizacion/tiempo-actual', async () => ({
+        success: true,
+        data: LocalizacionTucumanService.descomponer(new Date()),
         error: null,
         timestamp: new Date().toISOString(),
       }));

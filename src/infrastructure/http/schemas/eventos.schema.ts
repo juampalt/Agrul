@@ -18,7 +18,7 @@ export const RegistrarEventoBodySchema = z.object({
     TipoEventoEnum.COMPENSACION_AJUSTE,
     TipoEventoEnum.COMPENSACION_ANULACION,
   ]),
-  timestampCapturaLocal: z.string().datetime({ message: 'Debe ser un timestamp ISO 8601 UTC válido' }).optional(),
+  timestampCapturaLocal: z.string().datetime({ offset: true, message: 'Debe ser un timestamp ISO 8601 válido con zona horaria' }).optional(),
   payloadEspecifico: z.record(z.unknown()),
   eventoReferenciadoId: z.string().uuid().optional().nullable(),
 }).strict();

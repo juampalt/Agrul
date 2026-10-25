@@ -2,6 +2,8 @@ import Fastify, { FastifyInstance } from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { errorHandler } from './middlewares/error-handler.js';
 import { registerApiRoutes } from './routes/api.routes.js';
+import { PoliticaRetencionBpaService } from '../../core/domain/services/politica-retencion-bpa.service.js';
+import { LocalizacionTucumanService } from '../../core/domain/services/localizacion-tucuman.service.js';
 import { LotesController } from './controllers/lotes.controller.js';
 import { EventosController } from './controllers/eventos.controller.js';
 import { LinajeController } from './controllers/linaje.controller.js';
@@ -293,6 +295,27 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
 
   // Manejo centralizado de errores según contratos de API
   app.setErrorHandler(errorHandler);
+
+  // RNF-06 / RN-05: Bloqueo irrestricto de eliminación física (DELETE) sobre datos productivos históricos por política BPA de 3 años
+  app.addHook('onRequest', async (request, reply) => {
+    if (request.method === 'DELETE' && request.url.startsWith('/api/v1')) {
+      const errorPayload = PoliticaRetencionBpaService.construirErrorBorradoProhibido(request.url);
+      return reply.status(405).send({
+        success: false,
+        data: null,
+        error: errorPayload,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  // RNF-12: Inyección de encabezados oficiales de localización y zona horaria legal (Tucumán UTC-3)
+  app.addHook('onSend', async (_request, reply, payload) => {
+    reply.header('X-Timezone', LocalizacionTucumanService.ZONA_HORARIA);
+    reply.header('X-Timezone-Offset', LocalizacionTucumanService.OFFSET_STRING);
+    reply.header('X-Date-Format', LocalizacionTucumanService.FORMATO_FECHA_VISUAL);
+    return payload;
+  });
 
   // Instanciación de Casos de Uso
   const crearLoteUseCase = new CrearLoteUseCase(options.lotesRepo);

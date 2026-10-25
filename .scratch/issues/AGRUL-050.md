@@ -2,10 +2,10 @@
 id: AGRUL-050
 title: "AGRUL-050: Localización Oficial (Tucumán UTC-3), Políticas de Retención 3 Años y Multi-Finca"
 epic: "Épica 17: Requisitos No Funcionales & Cumplimiento Normativo"
-status: ready-for-agent
+status: closed
 priority: "Alta (P1)"
 module: "Transversal RNF"
-labels: ["rnf", "localizacion", "compliance", "multi-tenant", "ready-for-agent"]
+labels: ["rnf", "localizacion", "compliance", "multi-tenant", "status:done"]
 ---
 
 # AGRUL-050 — Localización Oficial (Tucumán UTC-3), Políticas de Retención 3 Años y Multi-Finca
@@ -13,7 +13,7 @@ labels: ["rnf", "localizacion", "compliance", "multi-tenant", "ready-for-agent"]
 - **Épica:** Épica 17: Requisitos No Funcionales & Cumplimiento Normativo
 - **Módulo:** Transversal RNF
 - **Prioridad:** Alta (P1)
-- **Status:** ready-for-agent
+- **Status:** closed
 - **Reglas de Negocio:** RN-05
 - **Skills:** .cursor/skills/database-events.md, .cursor/skills/testing-quality.md
 
@@ -27,8 +27,14 @@ Configuración integral de localización: zona horaria obligatoria America/Argen
 4. Escribir test de regresión verificando que una carga a las 23:30 UTC-3 preserve la fecha correcta.
 
 ## Criterios de Aceptación
-- [ ] RNF-12: Prueba de guardado a las 23:30 hs no altera la fecha del evento.
-- [ ] RNF-06: Ningún endpoint de usuario admite DELETE físico sobre datos productivos históricos.
-- [ ] RNF-16: Aislamiento estricto multi-finca preparado para soportar múltiples organizaciones.
+- [x] RNF-12: Prueba de guardado a las 23:30 hs no altera la fecha del evento.
+- [x] RNF-06: Ningún endpoint de usuario admite DELETE físico sobre datos productivos históricos.
+- [x] RNF-16: Aislamiento estricto multi-finca preparado para soportar múltiples organizaciones.
 
 ## Comments
+Implementado exitosamente con:
+1. `LocalizacionTucumanService` con zona horaria `America/Argentina/Tucuman`, formato `dd/mm/aaaa`, catálogo de unidades métricas obligatorias y test de preservación a las 23:30 hs.
+2. `PoliticaRetencionBpaService` y hook global en Fastify que intercepta sentencias HTTP `DELETE` retornando `405 Method Not Allowed` con código `DELETE_FISICO_PROHIBIDO_BPA`.
+3. Migración SQL `0002_retencion_bpa_triggers.sql` con triggers PL/pgSQL bloqueando sentencias `DELETE` directas sobre datos productivos históricos.
+4. Soporte multi-organización y multi-finca mediante `organizacionId` indexado en `fincasTable`, `usuariosTable` e `insumosCatalogoTable` junto al middleware `requerirAccesoOrganizacion`.
+5. Suite completa de tests unitarios y de integración pasando con éxito al 100%.

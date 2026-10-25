@@ -4,6 +4,7 @@ import { relations } from 'drizzle-orm';
 // TABLA FINCAS: Gestión de Fincas y Establecimientos Productivos
 export const fincasTable = pgTable('fincas', {
   id: uuid('id').defaultRandom().primaryKey(),
+  organizacionId: uuid('organizacion_id'), // Aislamiento multi-organización (RNF-16)
   nombre: varchar('nombre', { length: 150 }).notNull().unique(),
   localidad: varchar('localidad', { length: 120 }).notNull(),
   departamento: varchar('departamento', { length: 120 }).notNull(),
@@ -16,6 +17,7 @@ export const fincasTable = pgTable('fincas', {
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
   index('idx_fincas_provincia_depto').on(table.provincia, table.departamento),
+  index('idx_fincas_organizacion').on(table.organizacionId),
 ]);
 
 // TABLA READ MODEL: Lotes
@@ -250,6 +252,8 @@ export const actividadManoObraTable = pgTable('actividad_mano_obra', {
 // TABLA MAESTRA: Catálogo de Insumos (AGRUL-024 / RF-M4-01 / RF-M9-08)
 export const insumosCatalogoTable = pgTable('insumos_catalogo', {
   id: uuid('id').defaultRandom().primaryKey(),
+  organizacionId: uuid('organizacion_id'), // Aislamiento multi-organización (RNF-16)
+  fincaId: uuid('finca_id').references(() => fincasTable.id, { onDelete: 'set null' }),
   nombreComercial: varchar('nombre_comercial', { length: 200 }).notNull().unique(),
   categoria: varchar('categoria', { length: 50 }).notNull(), // SEMILLA_PLANTIN | FERTILIZANTE | FITOSANITARIO | ENMIENDA | OTRO
   unidadMedidaId: varchar('unidad_medida_id', { length: 30 }).notNull(),
@@ -261,6 +265,8 @@ export const insumosCatalogoTable = pgTable('insumos_catalogo', {
 }, (table) => [
   index('idx_insumos_cat').on(table.categoria),
   index('idx_insumos_nombre').on(table.nombreComercial),
+  index('idx_insumos_organizacion').on(table.organizacionId),
+  index('idx_insumos_finca').on(table.fincaId),
 ]);
 
 // TABLA DETALLE: Ficha Técnica Fitosanitaria de Insumo (AGRUL-024 / RF-M4-02 / RN-14)
@@ -467,6 +473,7 @@ export const informeTrazabilidadLogTable = pgTable('informe_trazabilidad_log', {
 // TABLA TRANSACCIONAL: Usuarios del Sistema y Roles RBAC (RF-M8-01 / RF-M8-03 / RF-M8-04)
 export const usuariosTable = pgTable('usuarios', {
   id: uuid('id').defaultRandom().primaryKey(),
+  organizacionId: uuid('organizacion_id'), // Aislamiento multi-organización (RNF-16)
   nombre: varchar('nombre', { length: 100 }).notNull(),
   apellido: varchar('apellido', { length: 100 }).notNull(),
   email: varchar('email', { length: 150 }).notNull().unique(),
@@ -484,6 +491,7 @@ export const usuariosTable = pgTable('usuarios', {
   index('idx_usuarios_email').on(table.email),
   index('idx_usuarios_perfil').on(table.perfil),
   index('idx_usuarios_estado').on(table.estado),
+  index('idx_usuarios_organizacion').on(table.organizacionId),
 ]);
 
 // TABLA TRANSACCIONAL: Asignación N:M de Usuarios a Fincas (RF-M8-02 / RF-M8-05 / RN-16)

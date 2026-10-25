@@ -55,6 +55,19 @@ describe('AGRUL-009: Migraciones SQL y Triggers de Inmutabilidad', () => {
     expect(triggerContent).toContain('BEFORE UPDATE OR DELETE ON eventos_trazabilidad');
   });
 
+  it('debe contener la migración 0002 con la función y triggers PL/pgSQL de retención BPA de 3 años (RNF-06 / RN-05)', () => {
+    const triggerFile = resolve(migrationsFolder, '0002_retencion_bpa_triggers.sql');
+    expect(existsSync(triggerFile)).toBe(true);
+
+    const triggerContent = readFileSync(triggerFile, 'utf-8');
+
+    expect(triggerContent).toContain('CREATE OR REPLACE FUNCTION rechazar_delete_registros_productivos_bpa()');
+    expect(triggerContent).toContain('VIOLACION_RETENCION_BPA');
+    expect(triggerContent).toContain('trg_bloquear_delete_cosechas_bpa');
+    expect(triggerContent).toContain('trg_bloquear_delete_actividades_bpa');
+    expect(triggerContent).toContain('trg_bloquear_delete_stock_mov_bpa');
+  });
+
   it('debe rechazar UPDATE y DELETE en eventos_trazabilidad arrojando VIOLACION_DE_INMUTABILIDAD (si hay PostgreSQL disponible)', async () => {
     const connStr = process.env.DATABASE_URL || 'postgresql://agrul_user:agrul_pass@localhost:5432/agrul_db';
     const pool = new Pool({ connectionString: connStr, connectionTimeoutMillis: 1500 });

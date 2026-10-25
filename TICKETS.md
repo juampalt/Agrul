@@ -25,8 +25,8 @@
 | **Épica 14: Módulo 8 — Usuarios, Roles, Seguridad y Auditoría** | 3 | 2 | 0 | 1 |
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 3 | 0 | 2 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 2 | 0 | 1 |
-| **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 1 | 0 | 1 |
-| **TOTAL GENERAL** | **50** | **39** | **0** | **11** |
+| **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 2 | 0 | 0 |
+| **TOTAL GENERAL** | **50** | **40** | **0** | **10** |
 
 ---
 
@@ -986,12 +986,12 @@
   - [x] RNF-01 / RNF-15: Experiencia de usuario optimizada para campo.
 
 ### `[AGRUL-050]` Localización Oficial (Tucumán UTC-3), Políticas de Retención 3 Años y Multi-Finca
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Transversal RNF
 - **Reglas de Negocio:** RN-05
 - **Skills:** [database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md), [testing-quality.md](file:///c:/AGRUL/.cursor/skills/testing-quality.md)
-- **Etiquetas:** `rnf`, `localizacion`, `compliance`, `multi-tenant`, `ready-for-agent`
+- **Etiquetas:** `rnf`, `localizacion`, `compliance`, `multi-tenant`, `status:done`
 - **Descripción:** Configuración integral de localización: zona horaria obligatoria America/Argentina/Tucuman (UTC-3), formato dd/mm/aaaa, unidades métricas (kg, L, ha, °C, mm), política de no borrado físico por 3 años (BPA) y arquitectura multi-finca/productor.
 - **Tareas Técnicas:**
   1. Configurar formateo de fechas y parsing estricto con zona horaria America/Argentina/Tucuman evitando corrimientos de día a las 23:30 (RNF-12).
@@ -999,9 +999,9 @@
   3. Configurar reglas y políticas para impedir eliminación física (DELETE) de registros productivos antes de 3 años conforme manual de BPA (RNF-06 / RN-05).
   4. Escribir test de regresión verificando que una carga a las 23:30 UTC-3 preserve la fecha correcta.
 - **Criterios de Aceptación:**
-  - [ ] RNF-12: Prueba de guardado a las 23:30 hs no altera la fecha del evento.
-  - [ ] RNF-06: Ningún endpoint de usuario admite DELETE físico sobre datos productivos históricos.
-  - [ ] RNF-16: Aislamiento estricto multi-finca preparado para soportar múltiples organizaciones.
+  - [x] RNF-12: Prueba de guardado a las 23:30 hs no altera la fecha del evento.
+  - [x] RNF-06: Ningún endpoint de usuario admite DELETE físico sobre datos productivos históricos.
+  - [x] RNF-16: Aislamiento estricto multi-finca preparado para soportar múltiples organizaciones.
 
 ---
 

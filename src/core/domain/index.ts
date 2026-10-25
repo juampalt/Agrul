@@ -17,6 +17,8 @@ export * from './entities/evento-climatico-adverso.entity.js';
 
 export * from './services/verificacion-carencia.service.js';
 export * from './services/conversor-unidades.service.js';
+export * from './services/localizacion-tucuman.service.js';
+export * from './services/politica-retencion-bpa.service.js';
 
 export * from './value-objects/codigo-lote.vo.js';
 export * from './value-objects/tipo-evento.vo.js';
