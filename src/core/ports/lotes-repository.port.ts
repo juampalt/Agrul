@@ -7,6 +7,10 @@ export interface ListarLotesFiltros {
   superficieMinHa?: number;
   superficieMaxHa?: number;
   producto?: string;
+  codigo?: string;
+  nombre?: string;
+  sector?: string;
+  estadoTerritorial?: string;
   limit?: number;
   offset?: number;
 }
@@ -18,4 +22,5 @@ export interface LotesRepositoryPort {
   actualizar(lote: Lote): Promise<void>;
   existeCodigo(codigo: string): Promise<boolean>;
   listarTodos(filtro?: ListarLotesFiltros): Promise<Lote[]>;
+  sumarSuperficieActiva?(fincaId: string, excluirLoteId?: string): Promise<number>;
 }

@@ -31,6 +31,9 @@ export interface FincaProps {
   responsableId?: string | null;
   renspa?: string | null;
   geometria?: GeoJSONGeometry | null;
+  propietario?: string | null;
+  telefono?: string | null;
+  observaciones?: string | null;
   creadoEn: string;
   actualizadoEn: string;
 }
@@ -45,6 +48,20 @@ export interface CrearFincaParams {
   responsableId?: string | null;
   renspa?: string | null;
   geometria?: unknown;
+  propietario?: string | null;
+  telefono?: string | null;
+  observaciones?: string | null;
+}
+
+export interface ModificarFincaParams {
+  nombre: string;
+  localidad: string;
+  departamento: string;
+  provincia: string;
+  superficieTotalHa: number;
+  propietario?: string | null;
+  telefono?: string | null;
+  observaciones?: string | null;
 }
 
 export class Finca {
@@ -78,6 +95,9 @@ export class Finca {
       responsableId: params.responsableId ?? null,
       renspa: params.renspa ? params.renspa.trim().toUpperCase() : null,
       geometria: geomValidada,
+      propietario: params.propietario?.trim() || null,
+      telefono: params.telefono?.trim() || null,
+      observaciones: params.observaciones?.trim() || null,
       creadoEn: ahora,
       actualizadoEn: ahora,
     });
@@ -115,6 +135,22 @@ export class Finca {
     return this.props.geometria;
   }
 
+  public modificar(params: ModificarFincaParams): void {
+    if (!params.nombre?.trim()) throw new NombreFincaInvalidoError();
+    if (params.superficieTotalHa <= 0) throw new SuperficieInvalidaError('Debe ser mayor a 0 ha.');
+    this.props.nombre = params.nombre.trim();
+    this.props.ubicacion = {
+      localidad: params.localidad.trim(),
+      departamento: params.departamento.trim(),
+      provincia: params.provincia.trim(),
+    };
+    this.props.superficieTotalHa = Number(params.superficieTotalHa);
+    this.props.propietario = params.propietario?.trim() || null;
+    this.props.telefono = params.telefono?.trim() || null;
+    this.props.observaciones = params.observaciones?.trim() || null;
+    this.props.actualizadoEn = new Date().toISOString();
+  }
+
   public get creadoEn(): string {
     return this.props.creadoEn;
   }
@@ -132,6 +168,9 @@ export class Finca {
       responsableId: this.props.responsableId,
       renspa: this.props.renspa,
       geometria: this.props.geometria,
+      propietario: this.props.propietario,
+      telefono: this.props.telefono,
+      observaciones: this.props.observaciones,
       creadoEn: this.props.creadoEn,
       actualizadoEn: this.props.actualizadoEn,
     };

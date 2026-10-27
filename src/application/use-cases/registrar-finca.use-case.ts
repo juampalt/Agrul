@@ -31,6 +31,9 @@ export class RegistrarFincaUseCase {
       responsableId: dto.responsableId,
       renspa: dto.renspa,
       geometria: dto.geometria,
+      propietario: dto.propietario,
+      telefono: dto.telefono,
+      observaciones: dto.observaciones,
     });
 
     await this.fincasRepo.guardar(finca);

@@ -24,6 +24,7 @@ import { ComprasStockController } from '../controllers/compras-stock.controller.
 import { StockMovimientosController } from '../controllers/stock-movimientos.controller.js';
 import { ControlVencimientosInventariosController } from '../controllers/control-vencimientos-inventarios.controller.js';
 import { ClimaController } from '../controllers/clima.controller.js';
+import { TerritorioController } from '../controllers/territorio.controller.js';
 import { LocalizacionTucumanService } from '../../../core/domain/services/localizacion-tucuman.service.js';
 import { PoliticaRetencionBpaService } from '../../../core/domain/services/politica-retencion-bpa.service.js';
 import {
@@ -61,6 +62,7 @@ export interface ApiRoutesDependencies {
   stockMovimientosController?: StockMovimientosController;
   controlVencimientosInventariosController?: ControlVencimientosInventariosController;
   climaController?: ClimaController;
+  territorioController?: TerritorioController;
 }
 
 
@@ -103,6 +105,15 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/fincas', (req, rep) => deps.fincasController!.listar(req, rep));
         v1.post('/fincas', (req, rep) => deps.fincasController!.crear(req, rep));
         v1.get('/fincas/:id', { preHandler: [verificarAutenticacionOpcional, requerirAccesoFinca()] }, (req, rep) => deps.fincasController!.obtenerPorId(req, rep));
+      }
+
+      if (deps.territorioController) {
+        v1.get('/finca', (req, rep) => deps.territorioController!.obtenerFinca(req, rep));
+        v1.put('/finca', (req, rep) => deps.territorioController!.actualizarFinca(req, rep));
+        v1.post('/lotes-territorio', (req, rep) => deps.territorioController!.crearLote(req, rep));
+        v1.get('/lotes-territorio', (req, rep) => deps.territorioController!.listarLotes(req, rep));
+        v1.put('/lotes-territorio/:id', (req, rep) => deps.territorioController!.actualizarLote(req, rep));
+        v1.patch('/lotes-territorio/:id/desactivar', (req, rep) => deps.territorioController!.desactivar(req, rep));
       }
 
       // Lotes

@@ -49,6 +49,21 @@ export class InMemoryLotesRepository implements LotesRepositoryPort {
       const prodBuscado = filtro.producto.toLowerCase();
       resultado = resultado.filter((l) => l.producto.toLowerCase().includes(prodBuscado));
     }
+    if (filtro?.codigo) {
+      const codigo = filtro.codigo.toUpperCase();
+      resultado = resultado.filter((l) => l.codigoLote.value.includes(codigo));
+    }
+    if (filtro?.nombre) {
+      const nombre = filtro.nombre.toLowerCase();
+      resultado = resultado.filter((l) => l.nombreTerritorial?.toLowerCase().includes(nombre));
+    }
+    if (filtro?.sector) {
+      const sector = filtro.sector.toLowerCase();
+      resultado = resultado.filter((l) => l.ubicacionSector?.toLowerCase().includes(sector));
+    }
+    if (filtro?.estadoTerritorial) {
+      resultado = resultado.filter((l) => l.estadoTerritorial === filtro.estadoTerritorial);
+    }
     if (filtro?.offset !== undefined) {
       resultado = resultado.slice(filtro.offset);
     }
@@ -56,5 +71,11 @@ export class InMemoryLotesRepository implements LotesRepositoryPort {
       resultado = resultado.slice(0, filtro.limit);
     }
     return resultado;
+  }
+
+  async sumarSuperficieActiva(fincaId: string, excluirLoteId?: string): Promise<number> {
+    return Array.from(this.lotes.values())
+      .filter((l) => l.fincaId === fincaId && l.id !== excluirLoteId && l.estadoTerritorial !== 'INACTIVO')
+      .reduce((total, lote) => total + (lote.superficieHa ?? 0), 0);
   }
 }

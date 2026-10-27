@@ -8,6 +8,10 @@ export class InMemoryFincasRepository implements FincasRepositoryPort {
     this.fincas.set(finca.id, finca);
   }
 
+  async actualizar(finca: Finca): Promise<void> {
+    this.fincas.set(finca.id, finca);
+  }
+
   async buscarPorId(id: string): Promise<Finca | null> {
     return this.fincas.get(id) ?? null;
   }

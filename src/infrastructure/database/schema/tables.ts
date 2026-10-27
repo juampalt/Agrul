@@ -13,6 +13,9 @@ export const fincasTable = pgTable('fincas', {
   responsableId: uuid('responsable_id'),
   renspa: varchar('renspa', { length: 50 }),
   geometria: jsonb('geometria'),
+  propietario: varchar('propietario', { length: 150 }),
+  telefono: varchar('telefono', { length: 50 }),
+  observaciones: text('observaciones'),
   creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
@@ -32,11 +35,18 @@ export const lotesTable = pgTable('lotes', {
   fincaId: uuid('finca_id').references(() => fincasTable.id, { onDelete: 'set null' }),
   superficieHa: numeric('superficie_ha', { precision: 10, scale: 2 }),
   geometria: jsonb('geometria'),
+  nombreTerritorial: varchar('nombre_territorial', { length: 150 }),
+  ubicacionSector: varchar('ubicacion_sector', { length: 150 }),
+  tipoSuelo: varchar('tipo_suelo', { length: 100 }),
+  sistemaRiego: varchar('sistema_riego', { length: 100 }),
+  estadoTerritorial: varchar('estado_territorial', { length: 15 }).notNull().default('DISPONIBLE'),
+  fechaRegistro: varchar('fecha_registro', { length: 10 }),
   creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
   index('idx_lotes_finca').on(table.fincaId),
   index('idx_lotes_estado').on(table.estadoActual),
+  index('idx_lotes_territorio_filtros').on(table.estadoTerritorial, table.codigoLote, table.nombreTerritorial),
 ]);
 
 // TABLA WRITE MODEL: Eventos de Trazabilidad (Append-Only)

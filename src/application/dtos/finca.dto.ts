@@ -10,7 +10,12 @@ export interface RegistrarFincaDTO {
   responsableId?: string | null;
   renspa?: string | null;
   geometria?: GeoJSONGeometry | null;
+  propietario?: string | null;
+  telefono?: string | null;
+  observaciones?: string | null;
 }
+
+export type ModificarFincaDTO = Omit<RegistrarFincaDTO, 'id' | 'responsableId' | 'renspa' | 'geometria'>;
 
 export interface FincaResponseDTO {
   id: string;
@@ -24,6 +29,9 @@ export interface FincaResponseDTO {
   responsableId?: string | null;
   renspa?: string | null;
   geometria?: GeoJSONGeometry | null;
+  propietario?: string | null;
+  telefono?: string | null;
+  observaciones?: string | null;
   creadoEn: string;
   actualizadoEn: string;
 }
