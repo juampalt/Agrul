@@ -26,8 +26,8 @@
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 3 | 0 | 2 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 2 | 0 | 1 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 2 | 0 | 0 |
-| **Épica 18: Implementación Oficial SGTA (CU01 - CU70)** | 8 | 0 | 0 | 8 |
-| **TOTAL GENERAL** | **58** | **40** | **0** | **18** |
+| **Épica 18: Implementación Oficial SGTA (CU01 - CU70)** | 8 | 1 | 0 | 7 |
+| **TOTAL GENERAL** | **58** | **41** | **0** | **17** |
 
 ---
 
@@ -1010,14 +1010,14 @@
 
 ### `[AGRUL-051]` Módulo 1: Estructura Territorial de Finca Única y Lotes (CU01 - CU06)
 - **GitHub Issue:** [#45](https://github.com/juampalt/Agrul/issues/45)
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 1: Finca y Lotes
 - **Casos de Uso:** CU01, CU02, CU03, CU04, CU05, CU06
 - **Contratos:** `confirmarModificacionFinca`, `confirmarRegistroLote`, `confirmarModificacionLote`, `confirmarDesactivacionLote`
 - **Reglas de Negocio:** RN-01, RN-02, RN-03, RN-04, RN-26, RN-30
 - **Skills:** [.cursor/skills/domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [.cursor/skills/database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md), [.cursor/skills/api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
-- **Etiquetas:** `finca`, `lotes`, `territorial`, `cu01-cu06`, `ready-for-agent`
+- **Etiquetas:** `finca`, `lotes`, `territorial`, `cu01-cu06`, `status:done`
 - **Descripción:** Implementar el dominio, persistencia Drizzle y endpoints para la finca única y sus lotes territoriales con validación estricta de superficie (la suma de lotes activos/disponibles no supera la finca) y máquina de estados de lote (`DISPONIBLE`, `EN_PRODUCCION`, `INACTIVO`).
 - **Tareas Técnicas:**
   1. Definir tablas Drizzle `fincas` y `lotes` en el esquema.
@@ -1026,10 +1026,10 @@
   4. Implementar endpoints REST Fastify con schemas Zod y validaciones.
   5. Escribir tests unitarios y de integración en Vitest.
 - **Criterios de Aceptación:**
-  - [ ] Error al crear lote si la superficie excede la superficie disponible de la finca (RN-03).
-  - [ ] Código de lote único irrepetible incluso entre inactivos (RN-02).
-  - [ ] Desactivación lógica de lote bloqueada si tiene ciclos abiertos (RN-04).
-  - [ ] Tests pasando en verde.
+  - [x] Error al crear lote si la superficie excede la superficie disponible de la finca (RN-03).
+  - [x] Código de lote único irrepetible incluso entre inactivos (RN-02).
+  - [x] Desactivación lógica de lote bloqueada si tiene ciclos abiertos (RN-04).
+  - [x] Tests pasando en verde.
 
 ### `[AGRUL-052]` Módulo 2: Catálogo de Cultivos, Variedades, Plantaciones y Ciclos (CU07 - CU21)
 - **GitHub Issue:** [#46](https://github.com/juampalt/Agrul/issues/46)

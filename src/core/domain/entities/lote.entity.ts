@@ -15,6 +15,12 @@ export interface LoteProps {
   fincaId?: string | null;
   superficieHa?: number | null;
   geometria?: GeoJSONGeometry | null;
+  nombreTerritorial?: string | null;
+  ubicacionSector?: string | null;
+  tipoSuelo?: string | null;
+  sistemaRiego?: string | null;
+  estadoTerritorial?: EstadoTerritorial;
+  fechaRegistro?: string | null;
   creadoEn: string;
   actualizadoEn: string;
 }
@@ -29,6 +35,23 @@ export interface CrearLoteParams {
   fincaId?: string | null;
   superficieHa?: number | null;
   geometria?: unknown;
+  nombreTerritorial?: string | null;
+  ubicacionSector?: string | null;
+  tipoSuelo?: string | null;
+  sistemaRiego?: string | null;
+  estadoTerritorial?: EstadoTerritorial;
+  fechaRegistro?: string | null;
+}
+
+export type EstadoTerritorial = 'DISPONIBLE' | 'EN_PRODUCCION' | 'INACTIVO';
+
+export interface ModificarLoteTerritorialParams {
+  nombreTerritorial: string;
+  superficieHa: number;
+  ubicacionSector?: string | null;
+  tipoSuelo?: string | null;
+  sistemaRiego?: string | null;
+  estadoTerritorial?: Exclude<EstadoTerritorial, 'INACTIVO'>;
 }
 
 /**
@@ -61,6 +84,12 @@ export class Lote {
       fincaId: params.fincaId ?? null,
       superficieHa: params.superficieHa !== undefined && params.superficieHa !== null ? Number(params.superficieHa) : null,
       geometria: geomValidada,
+      nombreTerritorial: params.nombreTerritorial?.trim() || null,
+      ubicacionSector: params.ubicacionSector?.trim() || null,
+      tipoSuelo: params.tipoSuelo?.trim() || null,
+      sistemaRiego: params.sistemaRiego?.trim() || null,
+      estadoTerritorial: params.estadoTerritorial ?? 'DISPONIBLE',
+      fechaRegistro: params.fechaRegistro ?? ahora.slice(0, 10),
       creadoEn: ahora,
       actualizadoEn: ahora,
     });
@@ -119,6 +148,27 @@ export class Lote {
     this.props.actualizadoEn = new Date().toISOString();
   }
 
+  public modificarTerritorio(params: ModificarLoteTerritorialParams): void {
+    if (!params.nombreTerritorial?.trim()) throw new Error('El nombre territorial del lote es obligatorio.');
+    if (params.superficieHa <= 0) throw new Error('La superficie del lote debe ser mayor a 0 ha.');
+    if (this.props.estadoTerritorial === 'INACTIVO') throw new InvalidStateTransitionError('INACTIVO', 'MODIFICAR');
+    this.props.nombreTerritorial = params.nombreTerritorial.trim();
+    this.props.superficieHa = Number(params.superficieHa);
+    this.props.ubicacionSector = params.ubicacionSector?.trim() || null;
+    this.props.tipoSuelo = params.tipoSuelo?.trim() || null;
+    this.props.sistemaRiego = params.sistemaRiego?.trim() || null;
+    if (params.estadoTerritorial) this.props.estadoTerritorial = params.estadoTerritorial;
+    this.props.actualizadoEn = new Date().toISOString();
+  }
+
+  public desactivarTerritorialmente(): void {
+    if (this.props.estadoTerritorial !== 'DISPONIBLE') {
+      throw new InvalidStateTransitionError(this.props.estadoTerritorial ?? 'DISPONIBLE', 'INACTIVO');
+    }
+    this.props.estadoTerritorial = 'INACTIVO';
+    this.props.actualizadoEn = new Date().toISOString();
+  }
+
   // Getters
   public get id(): string { return this.props.id; }
   public get codigoLote(): CodigoLote { return this.props.codigoLote; }
@@ -130,6 +180,12 @@ export class Lote {
   public get fincaId(): string | null | undefined { return this.props.fincaId; }
   public get superficieHa(): number | null | undefined { return this.props.superficieHa; }
   public get geometria(): GeoJSONGeometry | null | undefined { return this.props.geometria; }
+  public get nombreTerritorial(): string | null { return this.props.nombreTerritorial ?? null; }
+  public get ubicacionSector(): string | null { return this.props.ubicacionSector ?? null; }
+  public get tipoSuelo(): string | null { return this.props.tipoSuelo ?? null; }
+  public get sistemaRiego(): string | null { return this.props.sistemaRiego ?? null; }
+  public get estadoTerritorial(): EstadoTerritorial { return this.props.estadoTerritorial ?? 'DISPONIBLE'; }
+  public get fechaRegistro(): string { return this.props.fechaRegistro ?? this.props.creadoEn.slice(0, 10); }
   public get creadoEn(): string { return this.props.creadoEn; }
   public get actualizadoEn(): string { return this.props.actualizadoEn; }
 
@@ -145,6 +201,12 @@ export class Lote {
       fincaId: this.props.fincaId,
       superficieHa: this.props.superficieHa,
       geometria: this.props.geometria,
+      nombreTerritorial: this.props.nombreTerritorial,
+      ubicacionSector: this.props.ubicacionSector,
+      tipoSuelo: this.props.tipoSuelo,
+      sistemaRiego: this.props.sistemaRiego,
+      estadoTerritorial: this.props.estadoTerritorial ?? 'DISPONIBLE',
+      fechaRegistro: this.props.fechaRegistro ?? this.props.creadoEn.slice(0, 10),
       creadoEn: this.props.creadoEn,
       actualizadoEn: this.props.actualizadoEn,
     };

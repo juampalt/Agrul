@@ -205,6 +205,14 @@ import {
   ObtenerSerieHistoricaClimaticaLoteUseCase,
 } from '../../application/use-cases/clima.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
+import { TerritorioController } from './controllers/territorio.controller.js';
+import { ConsultarFincaUseCase, ModificarFincaUseCase } from '../../application/use-cases/finca-territorial.use-cases.js';
+import {
+  ConsultarLotesTerritorialesUseCase,
+  DesactivarLoteTerritorialUseCase,
+  ModificarLoteTerritorialUseCase,
+  RegistrarLoteTerritorialUseCase,
+} from '../../application/use-cases/lotes-territoriales.use-cases.js';
 
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -344,10 +352,19 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   const linajeController = new LinajeController(obtenerLinajeUseCase);
 
   let fincasController: FincasController | undefined;
+  let territorioController: TerritorioController | undefined;
   if (options.fincasRepo) {
     const registrarFincaUseCase = new RegistrarFincaUseCase(options.fincasRepo);
     const listarFincasUseCase = new ListarFincasUseCase(options.fincasRepo);
     fincasController = new FincasController(registrarFincaUseCase, listarFincasUseCase, options.fincasRepo);
+    territorioController = new TerritorioController(
+      new ConsultarFincaUseCase(options.fincasRepo),
+      new ModificarFincaUseCase(options.fincasRepo, options.lotesRepo),
+      new RegistrarLoteTerritorialUseCase(options.lotesRepo, options.fincasRepo),
+      new ConsultarLotesTerritorialesUseCase(options.lotesRepo),
+      new ModificarLoteTerritorialUseCase(options.lotesRepo, options.fincasRepo),
+      new DesactivarLoteTerritorialUseCase(options.lotesRepo, options.ciclosRepo)
+    );
   }
 
   let catalogosController: CatalogosController | undefined;
@@ -873,6 +890,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     eventosController,
     linajeController,
     fincasController,
+    territorioController,
     catalogosController,
     actividadesController,
     monitoreoController,
