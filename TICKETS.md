@@ -1,7 +1,7 @@
 # 🎫 Agrul — Backlog de Tickets de Ingeniería (TICKETS.md)
-**Documento Fuente:** Especificación Técnica de Requisitos y Gestión Agrícola (Módulos 1 al 10, Reglas RN-01 a RN-16, Requisitos RNF-01 a RNF-16)
+**Documento Fuente:** Especificación Técnica SGTA (Módulos 1 al 11, Casos de Uso CU01 a CU70, Reglas RN-01 a RN-30, RNF-01 a RNF-14)
 **Metodología:** Spec-Driven Development & Matt Pocock Modular Skills  
-**Última actualización:** 2026-10-14  
+**Última actualización:** 2026-10-26  
 
 ---
 
@@ -26,7 +26,8 @@
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 3 | 0 | 2 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 2 | 0 | 1 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 2 | 0 | 0 |
-| **TOTAL GENERAL** | **50** | **40** | **0** | **10** |
+| **Épica 18: Implementación Oficial SGTA (CU01 - CU70)** | 8 | 0 | 0 | 8 |
+| **TOTAL GENERAL** | **58** | **40** | **0** | **18** |
 
 ---
 
@@ -1005,3 +1006,107 @@
 
 ---
 
+## ÉPICA 18: IMPLEMENTACIÓN OFICIAL SGTA (CASOS DE USO CU01 - CU70)
+
+### `[AGRUL-051]` Módulo 1: Estructura Territorial de Finca Única y Lotes (CU01 - CU06)
+- **Estado:** `TODO` 📌
+- **Prioridad:** Alta (P1)
+- **Módulo:** Módulo 1: Finca y Lotes
+- **Casos de Uso:** CU01, CU02, CU03, CU04, CU05, CU06
+- **Contratos:** `confirmarModificacionFinca`, `confirmarRegistroLote`, `confirmarModificacionLote`, `confirmarDesactivacionLote`
+- **Reglas de Negocio:** RN-01, RN-02, RN-03, RN-04, RN-26, RN-30
+- **Skills:** [.cursor/skills/domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [.cursor/skills/database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md), [.cursor/skills/api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
+- **Etiquetas:** `finca`, `lotes`, `territorial`, `cu01-cu06`, `ready-for-agent`
+- **Descripción:** Implementar el dominio, persistencia Drizzle y endpoints para la finca única y sus lotes territoriales con validación estricta de superficie (la suma de lotes activos/disponibles no supera la finca) y máquina de estados de lote (`DISPONIBLE`, `EN_PRODUCCION`, `INACTIVO`).
+- **Tareas Técnicas:**
+  1. Definir tablas Drizzle `fincas` y `lotes` en el esquema.
+  2. Implementar entidades de dominio y repositorios (`FincaRepositoryPort`, `LotesTerritorialesRepositoryPort`).
+  3. Crear casos de uso de consulta/modificación de finca (`CU01`, `CU02`) y CRUD/desactivación de lote (`CU03` a `CU06`).
+  4. Implementar endpoints REST Fastify con schemas Zod y validaciones.
+  5. Escribir tests unitarios y de integración en Vitest.
+- **Criterios de Aceptación:**
+  - [ ] Error al crear lote si la superficie excede la superficie disponible de la finca (RN-03).
+  - [ ] Código de lote único irrepetible incluso entre inactivos (RN-02).
+  - [ ] Desactivación lógica de lote bloqueada si tiene ciclos abiertos (RN-04).
+  - [ ] Tests pasando en verde.
+
+### `[AGRUL-052]` Módulo 2: Catálogo de Cultivos, Variedades, Plantaciones y Ciclos (CU07 - CU21)
+- **Estado:** `TODO` 📌
+- **Prioridad:** Alta (P1)
+- **Módulo:** Módulo 2: Cultivos y Ciclos
+- **Casos de Uso:** CU07 a CU21
+- **Contratos:** `confirmarRegistroCultivo`, `confirmarModificacionCultivo`, `confirmarDesactivacionCultivo`, `confirmarRegistroVariedad`, `confirmarModificacionVariedad`, `confirmarDesactivacionVariedad`, `confirmarRegistroPlantacion`, `confirmarFinalizacionPlantacion`, `confirmarRegistroCiclo`, `confirmarInicioCiclo`, `confirmarFinalizacionCiclo`
+- **Reglas de Negocio:** RN-05, RN-06, RN-07, RN-08, RN-09, RN-26
+- **Skills:** [.cursor/skills/domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [.cursor/skills/database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md), [.cursor/skills/api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
+- **Etiquetas:** `cultivos`, `variedades`, `plantaciones`, `ciclos`, `cu07-cu21`, `ready-for-agent`
+- **Descripción:** Implementar el ciclo biológico completo: cultivos (`ANUAL`, `PERENNE`), variedades, plantaciones en lotes y ciclos productivos (`PLANIFICADO -> ACTIVO -> FINALIZADO`), verificando que no se cierre un ciclo con labores pendientes (RN-09).
+- **Tareas Técnicas:**
+  1. Tablas Drizzle `cultivos`, `variedades`, `plantaciones` y `ciclos_productivos`.
+  2. Lógica de negocio para plantaciones (superficie ocupada/disponible de lote) y ciclos.
+  3. Contratos de casos de uso y endpoints Fastify.
+  4. Suite de pruebas en Vitest.
+
+### `[AGRUL-053]` Módulo 8: Gestión de Usuarios, Roles y Seguridad (CU59 - CU62)
+- **Estado:** `TODO` 📌
+- **Prioridad:** Alta (P1)
+- **Módulo:** Módulo 8: Seguridad y Acceso
+- **Casos de Uso:** CU59, CU60, CU61, CU62
+- **Contratos:** `confirmarRegistroUsuario`, `confirmarModificacionUsuario`
+- **Reglas de Negocio:** RN-29, RN-30
+- **Skills:** [.cursor/skills/architecture.md](file:///c:/AGRUL/.cursor/skills/architecture.md), [.cursor/skills/api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
+- **Etiquetas:** `auth`, `rbac`, `cu59-cu62`, `ready-for-agent`
+- **Descripción:** Autenticación y roles formales del sistema (`ADMINISTRADOR`, `ENCARGADO_CAMPO` / `INGENIERO_AGRONOMO`, `ADMINISTRADOR_DEL_SISTEMA`) con control de acceso RBAC.
+
+### `[AGRUL-054]` Módulo 3: Actividades Agrícolas y Monitoreos (CU22 - CU33)
+- **Estado:** `TODO` 📌
+- **Prioridad:** Alta (P1)
+- **Módulo:** Módulo 3: Actividades
+- **Casos de Uso:** CU22 a CU33
+- **Contratos:** `confirmarRegistroTipoActividad`, `confirmarModificacionTipoActividad`, `confirmarDesactivacionTipoActividad`, `confirmarProgramacionActividad`, `confirmarReprogramacionActividad`, `confirmarCancelacionActividad`, `confirmarRegistroEjecucion`, `confirmarRegistroMonitoreo`
+- **Reglas de Negocio:** RN-10, RN-11, RN-12, RN-13
+- **Skills:** [.cursor/skills/domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [.cursor/skills/database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
+- **Etiquetas:** `actividades`, `monitoreos`, `cu22-cu33`, `ready-for-agent`
+- **Descripción:** Flujo de tipos de actividad, labores programadas vs ejecutadas directas, y monitoreos técnicos con etapas fenológicas y recomendaciones desacopladas.
+
+### `[AGRUL-055]` Módulos 4 & 9: Insumos, Inventario y Aplicaciones FIFO (CU34 - CU40, CU63 - CU66)
+- **Estado:** `TODO` 📌
+- **Prioridad:** Alta (P1)
+- **Módulo:** Módulos 4 & 9: Insumos y Stock
+- **Casos de Uso:** CU34 a CU40, CU63 a CU66
+- **Contratos:** `confirmarRegistroInsumo`, `confirmarModificacionInsumo`, `confirmarDesactivacionInsumo`, `confirmarAplicacionInsumos`, `confirmarCorreccionAplicacion`, `confirmarIngresoInsumos`, `confirmarMovimientoInventario`
+- **Reglas de Negocio:** RN-14, RN-15, RN-16, RN-17
+- **Skills:** [.cursor/skills/domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [.cursor/skills/database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
+- **Etiquetas:** `insumos`, `stock`, `aplicaciones`, `fifo`, `ready-for-agent`
+- **Descripción:** Gestión de insumos por partida con vencimiento, alertas de stock mínimo, consumo automático FIFO en aplicaciones vinculadas a labores y regularizaciones por corrección.
+
+### `[AGRUL-056]` Módulos 5 & 11: Cosechas, Clasificación, Acondicionamiento y Cámaras (CU41 - CU54)
+- **Estado:** `TODO` 📌
+- **Prioridad:** Alta (P1)
+- **Módulo:** Módulos 5 & 11: Cosecha y Poscosecha
+- **Casos de Uso:** CU41 a CU46, CU47 a CU52, CU53 a CU54
+- **Contratos:** `confirmarProgramacionCosecha`, `confirmarReprogramacionCosecha`, `confirmarCancelacionJornada`, `confirmarRegistroCosecha`, `confirmarRegistroClasificacion`, `confirmarRegistroAcondicionamiento`, `confirmarIngresoAlmacenamiento`, `confirmarSalidaAlmacenamiento`, `confirmarRegistroDestino`
+- **Reglas de Negocio:** RN-18 a RN-24
+- **Skills:** [.cursor/skills/domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [.cursor/skills/database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
+- **Etiquetas:** `cosecha`, `clasificacion`, `acondicionamiento`, `almacenamiento`, `destinos`, `ready-for-agent`
+- **Descripción:** Registro de cosechas (pasadas, kg reales), clasificación en Fresco, Industria y Descarte (con causas de pérdida), acondicionamiento y saldo en cámaras frigoríficas.
+
+### `[AGRUL-057]` Módulo 10: Meteorología y Eventos Climáticos Adversos (CU67 - CU70)
+- **Estado:** `TODO` 📌
+- **Prioridad:** Media (P2)
+- **Módulo:** Módulo 10: Clima
+- **Casos de Uso:** CU67 a CU70
+- **Contratos:** `confirmarRegistroMeteorologico`, `confirmarRegistroEvento`
+- **Reglas de Negocio:** RN-28
+- **Skills:** [.cursor/skills/database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md), [.cursor/skills/api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
+- **Etiquetas:** `clima`, `eventos-adversos`, `cu67-cu70`, `ready-for-agent`
+- **Descripción:** Registro manual de condiciones meteorológicas (temp, humedad, lluvia) y eventos adversos con daño y superficie afectada por lote.
+
+### `[AGRUL-058]` Módulos 6 & 7: Trazabilidad Integral e Indicadores Productivos (CU56, CU58)
+- **Estado:** `TODO` 📌
+- **Prioridad:** Alta (P1)
+- **Módulo:** Módulos 6 & 7: Trazabilidad y Reportes
+- **Casos de Uso:** CU56, CU57, CU58
+- **Reglas de Negocio:** RN-25, RN-27, RN-30
+- **Skills:** [.cursor/skills/domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [.cursor/skills/database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
+- **Etiquetas:** `trazabilidad`, `reportes`, `indicadores`, `cu56-cu58`, `ready-for-agent`
+- **Descripción:** Reconstrucción de la historia completa de una producción desde el lote y labores hasta el destino, e indicadores de rendimiento (kg/ha, % descarte, consumo insumos) distinguiendo valores cero de datos ausentes.
