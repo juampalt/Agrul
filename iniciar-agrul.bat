@@ -50,4 +50,4 @@ echo   - API Healthcheck:             %BROWSER_URL%/api/v1/health
 echo   - Para detener el sistema:     Cerra la ventana Agrul Traceability Server
 echo ===============================================================================
 echo.
-pause
+pause

@@ -1009,6 +1009,7 @@
 ## ÉPICA 18: IMPLEMENTACIÓN OFICIAL SGTA (CASOS DE USO CU01 - CU70)
 
 ### `[AGRUL-051]` Módulo 1: Estructura Territorial de Finca Única y Lotes (CU01 - CU06)
+- **GitHub Issue:** [#45](https://github.com/juampalt/Agrul/issues/45)
 - **Estado:** `TODO` 📌
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 1: Finca y Lotes
@@ -1031,6 +1032,7 @@
   - [ ] Tests pasando en verde.
 
 ### `[AGRUL-052]` Módulo 2: Catálogo de Cultivos, Variedades, Plantaciones y Ciclos (CU07 - CU21)
+- **GitHub Issue:** [#46](https://github.com/juampalt/Agrul/issues/46)
 - **Estado:** `TODO` 📌
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 2: Cultivos y Ciclos
@@ -1047,6 +1049,7 @@
   4. Suite de pruebas en Vitest.
 
 ### `[AGRUL-053]` Módulo 8: Gestión de Usuarios, Roles y Seguridad (CU59 - CU62)
+- **GitHub Issue:** [#47](https://github.com/juampalt/Agrul/issues/47)
 - **Estado:** `TODO` 📌
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 8: Seguridad y Acceso
@@ -1058,6 +1061,7 @@
 - **Descripción:** Autenticación y roles formales del sistema (`ADMINISTRADOR`, `ENCARGADO_CAMPO` / `INGENIERO_AGRONOMO`, `ADMINISTRADOR_DEL_SISTEMA`) con control de acceso RBAC.
 
 ### `[AGRUL-054]` Módulo 3: Actividades Agrícolas y Monitoreos (CU22 - CU33)
+- **GitHub Issue:** [#48](https://github.com/juampalt/Agrul/issues/48)
 - **Estado:** `TODO` 📌
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 3: Actividades
@@ -1069,6 +1073,7 @@
 - **Descripción:** Flujo de tipos de actividad, labores programadas vs ejecutadas directas, y monitoreos técnicos con etapas fenológicas y recomendaciones desacopladas.
 
 ### `[AGRUL-055]` Módulos 4 & 9: Insumos, Inventario y Aplicaciones FIFO (CU34 - CU40, CU63 - CU66)
+- **GitHub Issue:** [#49](https://github.com/juampalt/Agrul/issues/49)
 - **Estado:** `TODO` 📌
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulos 4 & 9: Insumos y Stock
@@ -1080,6 +1085,7 @@
 - **Descripción:** Gestión de insumos por partida con vencimiento, alertas de stock mínimo, consumo automático FIFO en aplicaciones vinculadas a labores y regularizaciones por corrección.
 
 ### `[AGRUL-056]` Módulos 5 & 11: Cosechas, Clasificación, Acondicionamiento y Cámaras (CU41 - CU54)
+- **GitHub Issue:** [#50](https://github.com/juampalt/Agrul/issues/50)
 - **Estado:** `TODO` 📌
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulos 5 & 11: Cosecha y Poscosecha
@@ -1091,6 +1097,7 @@
 - **Descripción:** Registro de cosechas (pasadas, kg reales), clasificación en Fresco, Industria y Descarte (con causas de pérdida), acondicionamiento y saldo en cámaras frigoríficas.
 
 ### `[AGRUL-057]` Módulo 10: Meteorología y Eventos Climáticos Adversos (CU67 - CU70)
+- **GitHub Issue:** [#51](https://github.com/juampalt/Agrul/issues/51)
 - **Estado:** `TODO` 📌
 - **Prioridad:** Media (P2)
 - **Módulo:** Módulo 10: Clima
@@ -1102,6 +1109,7 @@
 - **Descripción:** Registro manual de condiciones meteorológicas (temp, humedad, lluvia) y eventos adversos con daño y superficie afectada por lote.
 
 ### `[AGRUL-058]` Módulos 6 & 7: Trazabilidad Integral e Indicadores Productivos (CU56, CU58)
+- **GitHub Issue:** [#52](https://github.com/juampalt/Agrul/issues/52)
 - **Estado:** `TODO` 📌
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulos 6 & 7: Trazabilidad y Reportes
@@ -1110,3 +1118,4 @@
 - **Skills:** [.cursor/skills/domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [.cursor/skills/database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
 - **Etiquetas:** `trazabilidad`, `reportes`, `indicadores`, `cu56-cu58`, `ready-for-agent`
 - **Descripción:** Reconstrucción de la historia completa de una producción desde el lote y labores hasta el destino, e indicadores de rendimiento (kg/ha, % descarte, consumo insumos) distinguiendo valores cero de datos ausentes.
+
