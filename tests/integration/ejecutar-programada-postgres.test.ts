@@ -13,7 +13,7 @@ const ADMIN = 'a0000000-0000-4000-8000-000000000130';
 const RESPONSABLE = 'b0000000-0000-4000-8000-000000000130';
 const LECTOR = 'd0000000-0000-4000-8000-000000000130';
 
-describe.skipIf(!url)('CU30: ejecución programada con PostgreSQL y bootstrap reales', () => {
+describe.skipIf(!url)('CU30/CU31: labores realizadas con PostgreSQL y bootstrap reales', () => {
   const connection = createDatabaseConnection(url);
   let servidor: ReturnType<typeof crearServidorProduccion>;
   let admin: { authorization: string };
@@ -25,6 +25,11 @@ describe.skipIf(!url)('CU30: ejecución programada con PostgreSQL y bootstrap re
   const datos = () => ({ actividadProgramadaId: programadaId, responsableId: RESPONSABLE,
     fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1.25, duracionHoras: 2.5 });
   const ejecutar = (body = datos()) => servidor.app.inject({ method: 'POST', url: '/api/v1/actividades-realizadas', headers: encargado, payload: body });
+  const datosDirectos = () => ({ origen: 'NO_PROGRAMADA', cicloId, tipoActividadId: tipoId,
+    responsableId: RESPONSABLE, fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1.25 });
+  const directa = (cambios: Partial<ReturnType<typeof datosDirectos>> = {}) => servidor.app.inject({
+    method: 'POST', url: '/api/v1/actividades-realizadas', headers: encargado, payload: { ...datosDirectos(), ...cambios },
+  });
   const estado = async () => (await connection.pool.query('select estado from actividades_programadas where id=$1', [programadaId])).rows[0].estado;
   const cantidad = async () => (await connection.pool.query('select count(*)::int as total from actividades_realizadas where actividad_programada_id=$1', [programadaId])).rows[0].total;
 
@@ -122,6 +127,84 @@ describe.skipIf(!url)('CU30: ejecución programada con PostgreSQL y bootstrap re
     expect(await cantidad()).toBe(0);
   });
 
+  it('registra y consulta NO_PROGRAMADA sin crear ni modificar programaciones', async () => {
+    const res = await directa(); expect(res.statusCode).toBe(201);
+    expect(res.json().data).toMatchObject({ ...datosDirectos(), actividadProgramadaId: null, loteId: 'a0000000-0000-4000-8000-000000000059' });
+    const id = res.json().data.id;
+    const fila = (await connection.pool.query('select actividad_programada_id from actividades_realizadas where id=$1', [id])).rows[0];
+    expect(fila.actividad_programada_id).toBeNull(); expect(await estado()).toBe('PENDIENTE');
+    const detalle = await servidor.app.inject({ method: 'GET', url: `/api/v1/actividades-realizadas/${id}`, headers: encargado });
+    expect(detalle.statusCode).toBe(200); expect(detalle.json().data).toEqual(res.json().data);
+    const total = (await connection.pool.query('select count(*)::int as total from actividades_programadas where ciclo_id=$1', [cicloId])).rows[0].total;
+    expect(total).toBe(1);
+  });
+
+  it('filtra y pagina labores directas y programadas con orden estable', async () => {
+    const primera = (await directa()).json().data.id;
+    const segunda = (await directa({ fechaEjecucion: '2026-10-16' })).json().data.id;
+    const programada = (await ejecutar()).json().data.id;
+    const filtro = `/api/v1/actividades-realizadas?cicloId=${cicloId}&loteId=a0000000-0000-4000-8000-000000000059&tipoActividadId=${tipoId}&responsableId=${RESPONSABLE}&origen=NO_PROGRAMADA&desde=2026-10-15&hasta=2026-10-16`;
+    const lista = await servidor.app.inject({ method: 'GET', url: filtro, headers: encargado });
+    expect(lista.statusCode).toBe(200); expect(lista.json().data.map((a: { id: string }) => a.id)).toEqual([segunda, primera]);
+    const pagina = await servidor.app.inject({ method: 'GET', url: `${filtro}&limit=1&offset=1`, headers: encargado });
+    expect(pagina.json().data.map((a: { id: string }) => a.id)).toEqual([primera]);
+    const plan = await servidor.app.inject({ method: 'GET', url: `/api/v1/actividades-realizadas?cicloId=${cicloId}&origen=PROGRAMADA`, headers: encargado });
+    expect(plan.json().data.map((a: { id: string }) => a.id)).toEqual([programada]);
+    const otro = await servidor.app.inject({ method: 'GET', url: `/api/v1/actividades-realizadas?cicloId=${randomUUID()}`, headers: encargado });
+    expect(otro.json().data).toEqual([]);
+  });
+
+  it('rechaza referencias inexistentes en registro directo', async () => {
+    for (const cambios of [{ cicloId: randomUUID() }, { tipoActividadId: randomUUID() }, { responsableId: randomUUID() }]) {
+      expect((await directa(cambios)).statusCode).toBe(404);
+    }
+  });
+
+  it('rechaza tipo inactivo y ciclo no activo sin crear una labor directa', async () => {
+    await connection.pool.query("update tipos_actividad set estado='INACTIVA' where id=$1", [tipoId]);
+    try { expect((await directa()).statusCode).toBe(422); }
+    finally { await connection.pool.query("update tipos_actividad set estado='ACTIVA' where id=$1", [tipoId]); }
+    await connection.pool.query("update ciclos_productivos set estado='FINALIZADO',fecha_fin_efectiva='2026-10-27' where id=$1", [cicloId]);
+    expect((await directa()).statusCode).toBe(422);
+    expect((await connection.pool.query('select count(*)::int as total from actividades_realizadas where ciclo_id=$1', [cicloId])).rows[0].total).toBe(0);
+  });
+
+  it('mantiene consultable el histórico tras finalizar ciclo e inactivar responsable', async () => {
+    const id = (await directa({ responsableId: LECTOR })).json().data.id;
+    await connection.pool.query("update ciclos_productivos set estado='FINALIZADO',fecha_fin_efectiva='2026-10-27' where id=$1", [cicloId]);
+    await connection.pool.query("update usuarios set estado='INACTIVO' where id=$1", [LECTOR]);
+    try {
+      const res = await servidor.app.inject({ method: 'GET', url: `/api/v1/actividades-realizadas/${id}`, headers: encargado });
+      expect(res.statusCode).toBe(200); expect(res.json().data.origen).toBe('NO_PROGRAMADA');
+    } finally { await connection.pool.query("update usuarios set estado='ACTIVO' where id=$1", [LECTOR]); }
+  });
+
+  it('espera un cierre concurrente y rechaza el registro directo si el ciclo termina finalizado', async () => {
+    const escritor = await connection.pool.connect();
+    let respuesta: ReturnType<typeof directa> | undefined;
+    try {
+      await escritor.query('begin');
+      const { rows } = await escritor.query('select pg_backend_pid() as pid');
+      await escritor.query("update ciclos_productivos set estado='FINALIZADO',fecha_fin_efectiva='2026-10-27' where id=$1", [cicloId]);
+      respuesta = directa();
+      const resultado = respuesta.then(r => r);
+      await expect.poll(async () => (await connection.pool.query(
+        'select exists(select 1 from pg_stat_activity where datname=current_database() and $1=ANY(pg_blocking_pids(pid))) as bloqueada', [rows[0].pid]
+      )).rows[0].bloqueada, { timeout: 3000 }).toBe(true);
+      await escritor.query('commit');
+      expect((await resultado).statusCode).toBe(422);
+      expect((await connection.pool.query('select count(*)::int as total from actividades_realizadas where ciclo_id=$1', [cicloId])).rows[0].total).toBe(0);
+    } finally { await escritor.query('rollback'); escritor.release(); await respuesta; }
+  }, 10000);
+
+  it('valida parámetros de consulta y diferencia inexistente de UUID inválido', async () => {
+    for (const query of ['desde=2026-02-30', 'desde=2026-10-20&hasta=2026-10-01', 'limit=101', 'offset=-1', 'origen=OTRO', 'extra=1']) {
+      expect((await servidor.app.inject({ method: 'GET', url: `/api/v1/actividades-realizadas?${query}`, headers: encargado })).statusCode).toBe(400);
+    }
+    expect((await servidor.app.inject({ method: 'GET', url: '/api/v1/actividades-realizadas/no-uuid', headers: encargado })).statusCode).toBe(400);
+    expect((await servidor.app.inject({ method: 'GET', url: `/api/v1/actividades-realizadas/${randomUUID()}`, headers: encargado })).statusCode).toBe(404);
+  });
+
   it('exige autenticación y permiso de operación', async () => {
     // El caso de usuario inactivo revocó su sesión anterior: iniciar una vigente.
     lector = await autenticarOperadorPrueba(connection.pool, servidor.app, { sub: LECTOR, nombre: 'Prueba', apellido: 'CU30', email: 'operario-cu30@example.test', perfil: 'OPERARIO' });
@@ -129,5 +212,9 @@ describe.skipIf(!url)('CU30: ejecución programada con PostgreSQL y bootstrap re
     expect(anonimo.statusCode).toBe(401);
     const denegado = await servidor.app.inject({ method: 'POST', url: '/api/v1/actividades-realizadas', headers: lector, payload: datos() });
     expect(denegado.statusCode).toBe(403);
+    for (const path of ['/api/v1/actividades-realizadas', `/api/v1/actividades-realizadas/${randomUUID()}`]) {
+      expect((await servidor.app.inject({ method: 'GET', url: path })).statusCode).toBe(401);
+      expect((await servidor.app.inject({ method: 'GET', url: path, headers: lector })).statusCode).toBe(403);
+    }
   });
 });

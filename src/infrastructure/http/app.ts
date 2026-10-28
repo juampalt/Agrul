@@ -9,7 +9,7 @@ import { registrarRutasCiclosProductivos } from './routes/ciclos-productivos.rou
 import { registrarRutasTiposActividad } from './routes/tipos-actividad.routes.js';
 import { registrarRutasActividadesProgramadas } from './routes/actividades-programadas.routes.js';
 import { registrarRutasActividadesRealizadas } from './routes/actividades-realizadas.routes.js';
-import { ActividadesRealizadasRepositoryPort } from '../../core/ports/actividades-realizadas-repository.port.js';
+import { ActividadesRealizadasGestionPort } from '../../core/ports/actividades-realizadas-repository.port.js';
 import { ActividadesProgramadasRepositoryPort } from '../../core/ports/actividades-programadas-repository.port.js';
 import { TiposActividadRepositoryPort } from '../../core/ports/tipos-actividad-repository.port.js';
 import { CiclosProductivosRepositoryPort } from '../../core/ports/ciclos-productivos-repository.port.js';
@@ -249,7 +249,7 @@ export interface BuildAppOptions {
   ciclosProductivosRepo?: CiclosProductivosRepositoryPort;
   tiposActividadRepo?: TiposActividadRepositoryPort;
   actividadesProgramadasRepo?: ActividadesProgramadasRepositoryPort;
-  actividadesRealizadasRepo?: ActividadesRealizadasRepositoryPort;
+  actividadesRealizadasRepo?: ActividadesRealizadasGestionPort;
   catalogosRepo?: CatalogosActividadesRepositoryPort;
   actividadesRepo?: ActividadesRepositoryPort;
   ciclosRepo?: CiclosRepositoryPort;

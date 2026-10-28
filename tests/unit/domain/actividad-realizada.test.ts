@@ -11,6 +11,42 @@ describe('CU30: ejecución de una programación', () => {
     responsableActivo: true,
   });
 
+  const datosDirectos = () => {
+    const { actividadProgramadaId: _programada, ...comunes } = datos;
+    return { ...comunes, cicloId: 'ciclo', tipoActividadId: 'tipo' };
+  };
+  const contextoDirecto = () => {
+    const { programada: _programada, ...comunes } = contexto();
+    return { ...comunes, tipoActivo: true };
+  };
+
+  it('registra NO_PROGRAMADA con vínculo nulo y mismas reglas de atribución', () => {
+    expect(ActividadRealizada.directa('directa', datosDirectos(), contextoDirecto(), hoy).toJSON())
+      .toMatchObject({ origen: 'NO_PROGRAMADA', actividadProgramadaId: null, cicloId: 'ciclo', loteId: 'lote', tipoActividadId: 'tipo' });
+  });
+
+  it('rechaza tipo inactivo y ciclo inconsistente en el registro directo', () => {
+    expect(() => ActividadRealizada.directa('directa', datosDirectos(), { ...contextoDirecto(), tipoActivo: false }, hoy)).toThrow();
+    expect(() => ActividadRealizada.directa('directa', { ...datosDirectos(), cicloId: 'otro' }, contextoDirecto(), hoy)).toThrow();
+  });
+
+  it.each(['2026-09-30', '2026-02-30', '2099-10-15'])('el registro directo rechaza fecha inválida %s', (fechaEjecucion) => {
+    expect(() => ActividadRealizada.directa('directa', { ...datosDirectos(), fechaEjecucion }, contextoDirecto(), hoy)).toThrow();
+  });
+
+  it('el registro directo rechaza ciclo no activo, responsable inactivo y superficie no representable', () => {
+    const ctx = contextoDirecto();
+    expect(() => ActividadRealizada.directa('directa', datosDirectos(), { ...ctx, ciclo: { ...ctx.ciclo, estado: 'FINALIZADO' } }, hoy)).toThrow();
+    expect(() => ActividadRealizada.directa('directa', datosDirectos(), { ...ctx, responsableActivo: false }, hoy)).toThrow();
+    expect(() => ActividadRealizada.directa('directa', { ...datosDirectos(), superficieTrabajadaHa: 0.001 }, ctx, hoy)).toThrow();
+  });
+
+  it('reconstituye hechos históricos sin exigir que el ciclo siga activo', () => {
+    const original = ActividadRealizada.directa('directa', datosDirectos(), contextoDirecto(), hoy).toJSON();
+    expect(ActividadRealizada.reconstituir(original).toJSON()).toEqual(original);
+    expect(ActividadRealizada.reconstituir({ ...original, actividadProgramadaId: 'programada' }).toJSON().origen).toBe('PROGRAMADA');
+  });
+
   it('deriva lote, ciclo y tipo desde la programación y conserva los valores reales', () => {
     expect(ActividadRealizada.desdeProgramada('hecho', datos, contexto(), hoy).toJSON()).toMatchObject({
       ...datos, id: 'hecho', loteId: 'lote', cicloId: 'ciclo', tipoActividadId: 'tipo', duracionHoras: null,

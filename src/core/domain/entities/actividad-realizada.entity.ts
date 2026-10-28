@@ -18,9 +18,18 @@ export interface ContextoEjecucionProgramada {
   responsableActivo: boolean;
 }
 
+export interface DatosEjecucionDirecta extends Omit<DatosEjecucionProgramada, 'actividadProgramadaId'> {
+  cicloId: string;
+  tipoActividadId: string;
+}
+
+export interface ContextoEjecucionDirecta extends Omit<ContextoEjecucionProgramada, 'programada'> {
+  tipoActivo: boolean;
+}
+
 export interface ActividadRealizadaProps {
   id: string;
-  actividadProgramadaId: string;
+  actividadProgramadaId: string | null;
   cicloId: string;
   loteId: string;
   tipoActividadId: string;
@@ -47,6 +56,24 @@ export class ActividadRealizada {
     if (programada.estado !== 'PENDIENTE') {
       throw new EjecucionActividadInvalidaError('Solo puede ejecutarse una actividad PENDIENTE.');
     }
+    return ActividadRealizada.crear(id, datos, contexto, programada.id, programada.tipoActividadId, hoy);
+  }
+
+  static directa(id: string, datos: DatosEjecucionDirecta, contexto: ContextoEjecucionDirecta, hoy = new Date()): ActividadRealizada {
+    if (!contexto.tipoActivo || !datos.tipoActividadId || datos.cicloId !== contexto.ciclo.id || !contexto.ciclo.loteId) {
+      throw new EjecucionActividadInvalidaError('El registro directo requiere un tipo activo y un ciclo vinculado al lote.');
+    }
+    return ActividadRealizada.crear(id, datos, contexto, null, datos.tipoActividadId, hoy);
+  }
+
+  // Las lecturas históricas no revalidan el estado actual del ciclo o responsable.
+  static reconstituir(props: ActividadRealizadaProps): ActividadRealizada {
+    return new ActividadRealizada(structuredClone(props));
+  }
+
+  private static crear(id: string, datos: Omit<DatosEjecucionProgramada, 'actividadProgramadaId'>,
+    contexto: Omit<ContextoEjecucionProgramada, 'programada'>, actividadProgramadaId: string | null, tipoActividadId: string, hoy: Date): ActividadRealizada {
+    const { ciclo } = contexto;
     if (ciclo.estado !== 'ACTIVO' || !contexto.responsableActivo || !datos.responsableId) {
       throw new EjecucionActividadInvalidaError('La ejecución requiere ciclo ACTIVO y responsable activo (RN-11).');
     }
@@ -60,15 +87,17 @@ export class ActividadRealizada {
       throw new EjecucionActividadInvalidaError('Superficie y duración deben ser positivas, finitas y tener hasta dos decimales dentro del rango permitido.');
     }
     return new ActividadRealizada({
-      id, actividadProgramadaId: programada.id, cicloId: ciclo.id, loteId: ciclo.loteId,
-      tipoActividadId: programada.tipoActividadId, responsableId: datos.responsableId,
+      id, actividadProgramadaId, cicloId: ciclo.id, loteId: ciclo.loteId,
+      tipoActividadId, responsableId: datos.responsableId,
       fechaEjecucion: datos.fechaEjecucion, superficieTrabajadaHa: datos.superficieTrabajadaHa,
       duracionHoras: datos.duracionHoras ?? null, descripcionTrabajo: datos.descripcionTrabajo?.trim() ?? null,
       datosEspecificos: structuredClone(datos.datosEspecificos ?? {}),
     });
   }
 
-  toJSON(): ActividadRealizadaProps { return structuredClone(this.props); }
+  toJSON(): ActividadRealizadaProps & { origen: 'PROGRAMADA' | 'NO_PROGRAMADA' } {
+    return { ...structuredClone(this.props), origen: this.props.actividadProgramadaId === null ? 'NO_PROGRAMADA' : 'PROGRAMADA' };
+  }
 }
 
 function esDecimalPositivo(valor: number, maximo: number): boolean {
