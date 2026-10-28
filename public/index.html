@@ -1789,6 +1789,44 @@
               <button type="button" id="btn-limpiar-consulta-usuarios" class="btn btn-secondary">Limpiar filtros</button>
             </div>
           </form>
+          <form id="form-modificar-usuario" class="glass form-grid" hidden style="padding: 16px; margin-top: 12px;">
+            <h4>Modificar usuario</h4>
+            <div class="form-group">
+              <label for="usr-editar-nombre" class="form-label">Nombre</label>
+              <input id="usr-editar-nombre" class="form-input" required maxlength="100">
+            </div>
+            <div class="form-group">
+              <label for="usr-editar-apellido" class="form-label">Apellido</label>
+              <input id="usr-editar-apellido" class="form-input" required maxlength="100">
+            </div>
+            <div class="form-group">
+              <label for="usr-editar-nombreUsuario" class="form-label">Nombre de usuario</label>
+              <input id="usr-editar-nombreUsuario" class="form-input" maxlength="100" pattern="[a-zA-Z0-9._-]+">
+            </div>
+            <div class="form-group">
+              <label for="usr-editar-email" class="form-label">Correo</label>
+              <input id="usr-editar-email" type="email" class="form-input" required maxlength="150">
+            </div>
+            <div class="form-group">
+              <label for="usr-editar-perfil" class="form-label">Perfil</label>
+              <select id="usr-editar-perfil" class="form-select">
+                <option value="">Conservar perfil actual</option>
+                <option value="ADMINISTRADOR">Administrador</option>
+                <option value="ENCARGADO_CAMPO">Encargado de Campo / Ingeniero Agrónomo</option>
+                <option value="ADMIN_SISTEMA">Administrador del Sistema</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="usr-editar-estado" class="form-label">Estado</label>
+              <select id="usr-editar-estado" class="form-select">
+                <option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option><option value="BLOQUEADO">Bloqueado</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary">Guardar cambios</button>
+              <button type="button" id="btn-cancelar-edicion-usuario" class="btn btn-secondary">Cancelar</button>
+            </div>
+          </form>
           <div class="table-responsive" style="margin-top: 12px;">
             <table class="data-table">
               <thead>

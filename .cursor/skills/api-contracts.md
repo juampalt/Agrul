@@ -81,6 +81,7 @@ export const SincronizarBatchOfflineSchema = z.object({
 - **DO:** Usar `fastify-type-provider-zod` para inferir tipos de Typescript directamente de los schemas Zod sin duplicar interfaces.
 - **DO:** Devolver `422 Unprocessable Entity` cuando una regla de negocio de trazabilidad falla (ej: lote ya cerrado o cantidad excedida).
 - **DO:** Asegurar que los errores de validación (400) retornen un array claro de campos con sus problemas (`error.details`).
+- **DO:** Validar como UUID los identificadores que llegan a columnas UUID de PostgreSQL antes de consultar o bloquear filas. Usar UUID válidos en los fixtures HTTP para verificar el contrato real y evitar errores SQL por parámetros inválidos.
 - **DO:** Al mostrar datos de la API en el dashboard, crear nodos y asignar `textContent` o `new Option(texto, valor)` para nombres, correos, identificadores y errores. Reservar `innerHTML` para markup estático; los datos persistidos de usuarios también son entrada no confiable.
 
 ### DON'T

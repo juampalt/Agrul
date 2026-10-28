@@ -3182,6 +3182,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tbodyUsuariosLista = document.getElementById('tbody-usuarios-lista');
   const formCrearUsuario = document.getElementById('form-crear-usuario');
   const formConsultarUsuarios = document.getElementById('form-consultar-usuarios');
+  const formModificarUsuario = document.getElementById('form-modificar-usuario');
   const usrAltaFincasContainer = document.getElementById('usr-alta-fincas-container');
   const checkAccesoUsuario = document.getElementById('check-acceso-usuario');
   const checkAccesoFinca = document.getElementById('check-acceso-finca');
@@ -3206,6 +3207,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formCrearUsuario) {
       const puedeRegistrar = activeAuthUser?.perfil === 'ADMIN_SISTEMA' && !activeAuthUser.debeCambiarPassword;
       Array.from(formCrearUsuario.elements).forEach(control => { control.disabled = !puedeRegistrar; });
+      if (!puedeRegistrar && formModificarUsuario) formModificarUsuario.hidden = true;
     }
     if (activeAuthToken && activeAuthUser) {
       if (userSessionInfo) userSessionInfo.style.display = 'flex';
@@ -3303,7 +3305,24 @@ document.addEventListener('DOMContentLoaded', () => {
         boton.dataset.action = bloquear ? 'bloquear' : 'desbloquear';
         boton.dataset.id = u.id;
         boton.textContent = bloquear ? 'Bloquear' : 'Desbloquear';
-        boton.disabled = activeAuthUser?.perfil !== 'ADMINISTRADOR';
+        const puedeModificar = activeAuthUser?.perfil === 'ADMIN_SISTEMA' && !activeAuthUser.debeCambiarPassword;
+        boton.disabled = !puedeModificar;
+        const editar = document.createElement('button');
+        editar.className = 'btn btn-xs btn-secondary';
+        editar.textContent = 'Modificar';
+        editar.disabled = !puedeModificar;
+        editar.addEventListener('click', () => {
+          if (!formModificarUsuario) return;
+          formModificarUsuario.dataset.usuarioId = u.id;
+          for (const campo of ['nombre', 'apellido', 'nombreUsuario', 'email', 'estado']) {
+            document.getElementById(`usr-editar-${campo}`).value = u[campo] ?? '';
+          }
+          const perfil = document.getElementById('usr-editar-perfil');
+          perfil.value = '';
+          perfil.options[0].textContent = `Conservar perfil actual (${u.perfil})`;
+          formModificarUsuario.hidden = false;
+        });
+        acciones.append(editar);
         acciones.append(boton);
         fila.append(acciones);
         return fila;
@@ -3446,6 +3465,39 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('Sesión finalizada.', 'info');
     });
   }
+
+  // Alta de Usuario
+  document.getElementById('btn-cancelar-edicion-usuario')?.addEventListener('click', () => {
+    formModificarUsuario.hidden = true;
+    formModificarUsuario.reset();
+  });
+  formModificarUsuario?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const id = formModificarUsuario.dataset.usuarioId;
+    const cambios = {};
+    for (const campo of ['nombre', 'apellido', 'nombreUsuario', 'email', 'perfil', 'estado']) {
+      const valor = document.getElementById(`usr-editar-${campo}`).value.trim();
+      if (valor) cambios[campo] = valor;
+    }
+    try {
+      const respuesta = await fetch(`/api/v1/usuarios/${encodeURIComponent(id)}`, { method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${activeAuthToken}` }, body: JSON.stringify(cambios) });
+      const resultado = await respuesta.json();
+      if (!resultado.success) { showToast(resultado.error?.message || 'No se pudo modificar el usuario.', 'error'); return; }
+      formModificarUsuario.hidden = true;
+      if (id === activeAuthUser?.id) {
+        if (resultado.data.perfil !== activeAuthUser.perfil || resultado.data.estado !== 'ACTIVO') {
+          activeAuthToken = null;
+          activeAuthUser = null;
+          localStorage.removeItem('agrul_auth_token');
+          showToast('Tus permisos cambiaron. Volvé a iniciar sesión.', 'info');
+        } else activeAuthUser = resultado.data;
+        actualizarBannerSesion();
+      }
+      showToast('Usuario modificado.', 'success');
+      cargarListaUsuarios();
+    } catch (error) { showToast(`Error de conexión: ${error.message}`, 'error'); }
+  });
 
   // Alta de Usuario
   if (formCrearUsuario) {
