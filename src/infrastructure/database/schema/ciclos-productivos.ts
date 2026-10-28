@@ -1,7 +1,8 @@
 import { sql } from 'drizzle-orm';
-import { check, date, index, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { check, date, foreignKey, index, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { EstadoCicloPlanificado } from '../../../core/domain/value-objects/planificacion-ciclo.vo.js';
 import { plantacionesTable } from './plantaciones.js';
+import { usuariosTable } from './tables.js';
 
 export const ciclosProductivosTable = pgTable('ciclos_productivos', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -17,6 +18,7 @@ export const ciclosProductivosTable = pgTable('ciclos_productivos', {
   creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
+  foreignKey({ name: 'ciclos_responsable_usuario_fk', columns: [table.responsableSeguimientoId], foreignColumns: [usuariosTable.id] }).onDelete('restrict'),
   index('idx_ciclos_plantacion_estado').on(table.plantacionId, table.estado),
   check('ciclos_nombre_valido', sql`length(trim(${table.nombreCodigo})) > 0 AND ${table.nombreCodigo} = trim(${table.nombreCodigo})`),
   check('ciclos_fechas_previstas', sql`${table.fechaFinPrevista} >= ${table.fechaInicioPrevista}`),

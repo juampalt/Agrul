@@ -5,6 +5,7 @@ import { DrizzlePlantacionesRepository } from './infrastructure/database/reposit
 import { createDatabaseConnection } from './infrastructure/database/connection.js';
 import { DrizzleCierreCicloGuard } from './infrastructure/database/cierre-ciclo.guard.js';
 import { DrizzleCiclosProductivosRepository } from './infrastructure/database/repositories/drizzle-ciclos-productivos.repository.js';
+import { DrizzleUsuariosRepository } from './infrastructure/database/repositories/drizzle-usuarios.repository.js';
 import { DrizzleFincasRepository } from './infrastructure/database/repositories/drizzle-fincas.repository.js';
 import { DrizzleLotesTerritorialesRepository } from './infrastructure/database/repositories/drizzle-lotes-territoriales.repository.js';
 import { InMemoryEventosRepository } from '../tests/mocks/in-memory-eventos.repository.js';
@@ -26,6 +27,7 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
   const cierreCicloGuard = new DrizzleCierreCicloGuard(db);
   const ciclosRepo = new DrizzleCiclosProductivosRepository(db, cierreCicloGuard);
   const app = buildApp({
+    usuariosRepo: new DrizzleUsuariosRepository(db),
     cultivosRepo: new DrizzleCultivosRepository(db),
     variedadesRepo: new DrizzleVariedadesRepository(db),
     plantacionesRepo: new DrizzlePlantacionesRepository(db),

@@ -83,40 +83,26 @@ describe('AGRUL-009: Migraciones SQL y Triggers de Inmutabilidad', () => {
     expect(territorioContent).toContain('idx_fincas_provincia_depto');
   });
 
-  it('debe rechazar UPDATE y DELETE en eventos_trazabilidad arrojando VIOLACION_DE_INMUTABILIDAD (si hay PostgreSQL disponible)', async () => {
-    const connStr = process.env.DATABASE_URL || 'postgresql://agrul_user:agrul_pass@localhost:5432/agrul_db';
+  it.skipIf(!process.env.INMUTABILIDAD_TEST_DATABASE_URL)('rechaza UPDATE y DELETE con el trigger PostgreSQL real', async () => {
+    const connStr = process.env.INMUTABILIDAD_TEST_DATABASE_URL;
     const pool = new Pool({ connectionString: connStr, connectionTimeoutMillis: 1500 });
-
-    let client: pg.PoolClient | null = null;
-    let dbAvailable = false;
-
+    const client = await pool.connect();
     try {
-      client = await pool.connect();
-      dbAvailable = true;
-    } catch {
-      console.log('ℹ️ PostgreSQL no se encuentra levantado localmente. Saltando validación dinámica de trigger en vivo.');
-    }
-
-    if (!dbAvailable || !client) {
-      await pool.end();
-      return;
-    }
-
-    try {
+      const { rows } = await client.query<{ nombre: string }>('select current_database() as nombre');
+      if (rows[0]?.nombre !== 'agrul_test_agrul_052_inmutabilidad') throw new Error('Solo se permite la base descartable de inmutabilidad.');
       // 1. Aplicar migraciones
       await runMigrations(connStr);
 
-      const loteId = '00000000-0000-0000-0000-000000000001';
+      const loteId = crypto.randomUUID();
       const actorId = '00000000-0000-0000-0000-000000000002';
       const ubicacionId = '00000000-0000-0000-0000-000000000003';
-      const eventoId = '00000000-0000-0000-0000-000000000004';
+      const eventoId = crypto.randomUUID();
 
       // 2. Insertar lote de prueba
       await client.query(`
         INSERT INTO lotes (id, codigo_lote, producto, unidad_medida)
-        VALUES ($1, 'LOT-TEST-IMMUTABLE', 'Uva de Prueba', 'KG')
-        ON CONFLICT (codigo_lote) DO NOTHING;
-      `, [loteId]);
+        VALUES ($1, $2, 'Uva de Prueba', 'KG');
+      `, [loteId, `LOT-TEST-${loteId}`]);
 
       // 3. Insertar evento de prueba
       await client.query(`

@@ -26,10 +26,12 @@ export class CiclosPostgresFixture {
     const { rows } = await this.conexion.pool.query<{ nombre: string }>('select current_database() as nombre');
     if (rows[0]?.nombre !== 'agrul_test_agrul_052_etapa4') throw new Error('Esta suite solo puede modificar agrul_test_agrul_052_etapa4.');
     await runMigrations(this.connectionString);
+    await this.conexion.pool.query("insert into usuarios(id,nombre,apellido,email,password_hash,salt,perfil) values ($1,'Responsable','Prueba','responsable-ciclos@example.test','hash-exclusivo-fixture','salt-fixture','ENCARGADO') on conflict (id) do update set estado='ACTIVO'", [USUARIO_CICLOS.sub]);
     this.servidor = crearServidorProduccion({ connectionString: this.connectionString, logger: false });
     await this.app.ready();
   }
   async sembrar() {
+    await this.conexion.pool.query("update usuarios set estado='ACTIVO' where id=$1", [USUARIO_CICLOS.sub]);
     for (const tabla of ['actividades_programadas', 'ciclos_productivos', 'plantaciones', 'variedades', 'cultivos', 'lotes', 'fincas']) {
       await this.conexion.pool.query(`delete from ${tabla}`);
     }

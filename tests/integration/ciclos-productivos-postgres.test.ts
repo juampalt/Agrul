@@ -204,4 +204,31 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
     await expect(f.conexion.pool.query("update ciclos_productivos set estado='FINALIZADO' where id=$1", [id])).rejects.toMatchObject({ code: '23514' });
     await expect(f.conexion.pool.query("insert into actividades_programadas(ciclo_id) values ($1)", [inexistente])).rejects.toMatchObject({ code: '23503' });
   });
+  it('exige un responsable existente y activo y conserva su referencia histórica', async () => {
+    expect((await registrar({ responsableSeguimientoId: inexistente })).statusCode).toBe(404);
+    await f.conexion.pool.query("update usuarios set estado='INACTIVO' where id=$1", [USUARIO_CICLOS.sub]);
+    expect((await registrar()).statusCode).toBe(422);
+    await f.conexion.pool.query("update usuarios set estado='ACTIVO' where id=$1", [USUARIO_CICLOS.sub]);
+    const id = await f.crear();
+    await expect(f.conexion.pool.query('delete from usuarios where id=$1', [USUARIO_CICLOS.sub])).rejects.toMatchObject({ code: '23001' });
+    await expect(f.conexion.pool.query('update ciclos_productivos set responsable_seguimiento_id=$1 where id=$2', [inexistente, id]))
+      .rejects.toMatchObject({ code: '23503' });
+    await f.conexion.pool.query("update usuarios set estado='INACTIVO' where id=$1", [USUARIO_CICLOS.sub]);
+    expect((await consultar(id)).json().data.responsableSeguimientoId).toBe(USUARIO_CICLOS.sub);
+  });
+  it('crea un responsable por HTTP y permite autenticarlo y asignarlo desde otra instancia', async () => {
+    const email = `responsable-${crypto.randomUUID()}@example.test`;
+    const responsableId = await f.alta('/usuarios', { nombre: 'Responsable', apellido: 'Persistente', email,
+      password: 'PruebaSegura123!', perfil: 'ENCARGADO' });
+    const otra = crearServidorProduccion({ connectionString, logger: false });
+    try {
+      const login = await otra.app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email, password: 'PruebaSegura123!' } });
+      expect(login.statusCode).toBe(200);
+      expect(login.body).not.toContain('passwordHash');
+      expect((await registrar({ responsableSeguimientoId: responsableId })).statusCode).toBe(201);
+      const duplicado = await otra.app.inject({ method: 'POST', url: '/api/v1/usuarios', headers,
+        payload: { nombre: 'Responsable', apellido: 'Duplicado', email, password: 'PruebaSegura123!', perfil: 'ENCARGADO' } });
+      expect(duplicado.statusCode).toBe(409);
+    } finally { await otra.app.close(); }
+  });
 });

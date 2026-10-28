@@ -23,10 +23,17 @@ heredados. La entidad existente reconoce ACTIVO/FINALIZADO sin romper ABIERTO/CE
 en pruebas y adaptadores anteriores. Las actividades heredadas en memoria no se migran;
 la fuente persistente de RN-09 es exclusivamente `actividades_programadas`.
 
-`responsable_seguimiento_id` se valida como UUID y se conserva en SQL. La validación de
-existencia y su FK a usuarios quedan pendientes de la persistencia de seguridad (#47);
-esta implementación no crea una segunda tabla de usuarios ni desarrolla ese módulo.
+La migración `0009` materializa la tabla `usuarios` que ya estaba modelada y agrega la FK
+del responsable con `ON DELETE RESTRICT`. El registro verifica existencia y estado ACTIVO
+dentro de la transacción, con bloqueo SHARE del usuario. El bootstrap comparte esa tabla
+con las rutas existentes de usuarios mediante `DrizzleUsuariosRepository`; no se crea
+un catálogo paralelo de responsables ni se implementan los casos de uso pendientes de #47.
+Si hubiera responsables huérfanos previos, la migración falla sin fabricar usuarios.
 
 Las pruebas del guard usan una tabla auxiliar exclusiva de la base descartable para
 verificar efectos transaccionales. Las de CU18–CU21 prueban el cierre por HTTP real,
 incluyendo pendientes persistidos, concurrencia y rollback de ciclo y lote.
+
+Validación final de AGRUL-052: lint, build y 822 pruebas aprobadas sin omisiones;
+migraciones `0000`–`0009` aplicadas desde una base vacía y descartable, incluida
+la verificación real de los triggers de inmutabilidad y la regresión territorial CU01–CU06.

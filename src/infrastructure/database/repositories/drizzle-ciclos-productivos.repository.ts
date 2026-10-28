@@ -7,7 +7,7 @@ import { ConsultarCiclosFiltros, CiclosProductivosRepositoryPort } from '../../.
 import { ListarCiclosFiltros } from '../../../core/ports/ciclos-repository.port.js';
 import { AgrulDatabase, AgrulTransaction } from '../connection.js';
 import { DrizzleCierreCicloGuard } from '../cierre-ciclo.guard.js';
-import { ciclosProductivosTable as ciclos, cultivosTable, lotesTable, plantacionesTable, variedadesTable } from '../schema/tables.js';
+import { ciclosProductivosTable as ciclos, cultivosTable, lotesTable, plantacionesTable, usuariosTable, variedadesTable } from '../schema/tables.js';
 import { consultaCiclos, mapearCiclo } from './ciclos-productivos.mapping.js';
 
 export class DrizzleCiclosProductivosRepository implements CiclosProductivosRepositoryPort {
@@ -16,6 +16,10 @@ export class DrizzleCiclosProductivosRepository implements CiclosProductivosRepo
   async registrar(datos: DatosPlanificacionCiclo & { id: string }): Promise<CicloProductivo> {
     try {
       return await this.db.transaction(async (tx) => {
+        const [responsable] = await tx.select({ estado: usuariosTable.estado }).from(usuariosTable)
+          .where(eq(usuariosTable.id, datos.responsableSeguimientoId)).for('share');
+        if (!responsable) throw new EntidadNoEncontradaError('Responsable del ciclo', datos.responsableSeguimientoId);
+        if (responsable.estado !== 'ACTIVO') throw new CicloProductivoInvalidoError('El responsable del ciclo debe ser un usuario activo.');
         const [origen] = await tx.select().from(plantacionesTable).where(eq(plantacionesTable.id, datos.plantacionId));
         if (!origen) throw new EntidadNoEncontradaError('Plantación', datos.plantacionId);
         const [lote] = await tx.select().from(lotesTable).where(eq(lotesTable.id, origen.loteId)).for('update');

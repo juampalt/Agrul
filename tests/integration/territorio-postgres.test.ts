@@ -3,6 +3,7 @@ import { FastifyInstance } from 'fastify';
 import { buildApp } from '../../src/infrastructure/http/app.js';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
+import { runMigrations } from '../../src/infrastructure/database/migrate.js';
 import { DrizzleFincasRepository } from '../../src/infrastructure/database/repositories/drizzle-fincas.repository.js';
 import { DrizzleLotesTerritorialesRepository } from '../../src/infrastructure/database/repositories/drizzle-lotes-territoriales.repository.js';
 import { Finca } from '../../src/core/domain/entities/finca.entity.js';
@@ -24,6 +25,7 @@ describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)',
   beforeAll(async () => {
     const { rows } = await connection.pool.query<{ current_database: string }>('select current_database()');
     expect(rows[0]?.current_database).toBe('agrul_test_agrul_0511');
+    await runMigrations(connectionString);
 
     app = buildApp({
       fincasRepo: fincas,
