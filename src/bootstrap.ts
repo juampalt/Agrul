@@ -1,6 +1,7 @@
 import { buildApp } from './infrastructure/http/app.js';
 import { DrizzleCultivosRepository } from './infrastructure/database/repositories/drizzle-cultivos.repository.js';
 import { DrizzleVariedadesRepository } from './infrastructure/database/repositories/drizzle-variedades.repository.js';
+import { DrizzlePlantacionesRepository } from './infrastructure/database/repositories/drizzle-plantaciones.repository.js';
 import { createDatabaseConnection } from './infrastructure/database/connection.js';
 import { DrizzleFincasRepository } from './infrastructure/database/repositories/drizzle-fincas.repository.js';
 import { DrizzleLotesTerritorialesRepository } from './infrastructure/database/repositories/drizzle-lotes-territoriales.repository.js';
@@ -24,6 +25,7 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
   const app = buildApp({
     cultivosRepo: new DrizzleCultivosRepository(db),
     variedadesRepo: new DrizzleVariedadesRepository(db),
+    plantacionesRepo: new DrizzlePlantacionesRepository(db),
     lotesRepo,
     fincasRepo,
     eventosRepo: new InMemoryEventosRepository(),

@@ -1,16 +1,23 @@
 import { and, eq, ilike, ne, sql } from 'drizzle-orm';
 import { Lote } from '../../../core/domain/entities/lote.entity.js';
+import { Plantacion } from '../../../core/domain/entities/plantacion.entity.js';
 import { CodigoLote } from '../../../core/domain/value-objects/codigo-lote.vo.js';
 import { ListarLotesFiltros, LotesRepositoryPort } from '../../../core/ports/lotes-repository.port.js';
 import { AgrulDatabase } from '../connection.js';
-import { lotesTable } from '../schema/tables.js';
+import { lotesTable, plantacionesTable } from '../schema/tables.js';
 
 export class DrizzleLotesTerritorialesRepository implements LotesRepositoryPort {
   constructor(private readonly db: AgrulDatabase) {}
 
   async guardar(lote: Lote): Promise<void> { await this.db.insert(lotesTable).values(this.valores(lote)); }
   async actualizar(lote: Lote): Promise<void> {
-    await this.db.update(lotesTable).set(this.valores(lote)).where(eq(lotesTable.id, lote.id));
+    await this.db.transaction(async (tx) => {
+      await tx.select({ id: lotesTable.id }).from(lotesTable).where(eq(lotesTable.id, lote.id)).for('update');
+      const [ocupacion] = await tx.select({ total: sql<string>`coalesce(sum(${plantacionesTable.superficieHa}), 0)` })
+        .from(plantacionesTable).where(and(eq(plantacionesTable.loteId, lote.id), eq(plantacionesTable.estado, 'ACTIVA')));
+      Plantacion.validarCapacidad(lote.superficieHa ?? 0, Number(ocupacion?.total ?? 0));
+      await tx.update(lotesTable).set(this.valores(lote)).where(eq(lotesTable.id, lote.id));
+    });
   }
   async buscarPorId(id: string) {
     const [fila] = await this.db.select().from(lotesTable).where(eq(lotesTable.id, id)).limit(1);

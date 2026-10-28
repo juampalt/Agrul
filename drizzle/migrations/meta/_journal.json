@@ -43,6 +43,13 @@
       "when": 1793149201000,
       "tag": "0005_catalogo_variedades",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793149202000,
+      "tag": "0006_plantaciones",
+      "breakpoints": true
     }
   ]
 }

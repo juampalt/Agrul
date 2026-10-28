@@ -11,6 +11,7 @@ export const variedadesTable = pgTable('variedades', {
   estado: varchar('estado', { length: 8 }).$type<EstadoVariedad>().notNull().default('ACTIVO'),
 }, (table) => [
   unique('variedades_cultivo_nombre_unique').on(table.cultivoId, table.nombre),
+  unique('variedades_id_cultivo_unique').on(table.id, table.cultivoId),
   index('idx_variedades_cultivo_estado').on(table.cultivoId, table.estado),
   check('variedades_nombre_valido', sql`length(trim(${table.nombre})) > 0 AND ${table.nombre} = trim(${table.nombre})`),
   check('variedades_estado_valido', sql`${table.estado} IN ('ACTIVO', 'INACTIVO')`),
