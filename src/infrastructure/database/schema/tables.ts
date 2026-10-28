@@ -4,6 +4,7 @@ export { cultivosTable } from './cultivos.js';
 export { variedadesTable } from './variedades.js';
 export { plantacionesTable } from './plantaciones.js';
 export { actividadesProgramadasTable } from './actividades-programadas.js';
+export { actividadesRealizadasTable } from './actividades-realizadas.js';
 import { ciclosProductivosTable } from './ciclos-productivos.js';
 export { ciclosProductivosTable };
 

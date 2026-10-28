@@ -8,6 +8,8 @@ import { registrarRutasPlantaciones } from './routes/plantaciones.routes.js';
 import { registrarRutasCiclosProductivos } from './routes/ciclos-productivos.routes.js';
 import { registrarRutasTiposActividad } from './routes/tipos-actividad.routes.js';
 import { registrarRutasActividadesProgramadas } from './routes/actividades-programadas.routes.js';
+import { registrarRutasActividadesRealizadas } from './routes/actividades-realizadas.routes.js';
+import { ActividadesRealizadasRepositoryPort } from '../../core/ports/actividades-realizadas-repository.port.js';
 import { ActividadesProgramadasRepositoryPort } from '../../core/ports/actividades-programadas-repository.port.js';
 import { TiposActividadRepositoryPort } from '../../core/ports/tipos-actividad-repository.port.js';
 import { CiclosProductivosRepositoryPort } from '../../core/ports/ciclos-productivos-repository.port.js';
@@ -247,6 +249,7 @@ export interface BuildAppOptions {
   ciclosProductivosRepo?: CiclosProductivosRepositoryPort;
   tiposActividadRepo?: TiposActividadRepositoryPort;
   actividadesProgramadasRepo?: ActividadesProgramadasRepositoryPort;
+  actividadesRealizadasRepo?: ActividadesRealizadasRepositoryPort;
   catalogosRepo?: CatalogosActividadesRepositoryPort;
   actividadesRepo?: ActividadesRepositoryPort;
   ciclosRepo?: CiclosRepositoryPort;
@@ -921,6 +924,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   if (options.tiposActividadRepo) {
     registrarRutasTiposActividad(app, options.tiposActividadRepo, options.cultivosRepo);
   }
+  if (options.actividadesRealizadasRepo) registrarRutasActividadesRealizadas(app, options.actividadesRealizadasRepo);
   if (
     options.actividadesProgramadasRepo &&
     options.ciclosProductivosRepo &&

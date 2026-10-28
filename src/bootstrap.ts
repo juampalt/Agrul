@@ -4,6 +4,7 @@ import { DrizzleVariedadesRepository } from './infrastructure/database/repositor
 import { DrizzlePlantacionesRepository } from './infrastructure/database/repositories/drizzle-plantaciones.repository.js';
 import { DrizzleTiposActividadRepository } from './infrastructure/database/repositories/drizzle-tipos-actividad.repository.js';
 import { DrizzleActividadesProgramadasRepository } from './infrastructure/database/repositories/drizzle-actividades-programadas.repository.js';
+import { DrizzleActividadesRealizadasRepository } from './infrastructure/database/repositories/drizzle-actividades-realizadas.repository.js';
 import { createDatabaseConnection } from './infrastructure/database/connection.js';
 import { DrizzleCierreCicloGuard } from './infrastructure/database/cierre-ciclo.guard.js';
 import { DrizzleCiclosProductivosRepository } from './infrastructure/database/repositories/drizzle-ciclos-productivos.repository.js';
@@ -45,6 +46,7 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
     ciclosProductivosRepo: ciclosRepo,
     tiposActividadRepo: new DrizzleTiposActividadRepository(db),
     actividadesProgramadasRepo: new DrizzleActividadesProgramadasRepository(db),
+    actividadesRealizadasRepo: new DrizzleActividadesRealizadasRepository(db),
     lotesRepo,
     fincasRepo,
     eventosRepo: new InMemoryEventosRepository(),
