@@ -1052,7 +1052,7 @@
 
 ### `[AGRUL-053]` Módulo 8: Gestión de Usuarios, Roles y Seguridad (CU59 - CU62)
 - **GitHub Issue:** [#47](https://github.com/juampalt/Agrul/issues/47)
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 8: Seguridad y Acceso
 - **Casos de Uso:** CU59, CU60, CU61, CU62
@@ -1066,6 +1066,7 @@
 - **Avance etapa 3 (2026-10-28):** CU61 implementado: consulta con filtros combinados de perfil/estado/texto, búsqueda por nombre de usuario, detalle con control de acceso y revalidación del consultante en PostgreSQL. Interfaz con filtros y renderización de datos como texto. Lint y build aprobados; 58 pruebas focalizadas (26 con PostgreSQL); regresión 912/916, con los mismos cuatro fallos anteriores. CU62 y auditoría/asignaciones persistentes pendientes. Ver `.scratch/agrul-053/etapa3.md`. Issue abierta; sin PR ni merge.
 - **Avance etapa 4 (2026-10-28):** CU62 implementado: modificación, bloqueo y desbloqueo exclusivos de `ADMIN_SISTEMA`, responsable revalidado, auditoría y deltas inmutables en PostgreSQL, asignaciones persistentes y transacciones con rollback/concurrencia comprobados. Alta CU60 integrada a la misma unidad transaccional. Migraciones `0000`–`0012` desde cero, lint/build aprobados; 54 pruebas nuevas CU62 aprobadas (45 PostgreSQL y 9 unitarias); regresión 966/970, con los cuatro fallos anteriores. Pendiente revisión final de seguridad/sesiones y resolución de la regresión antes de PR/merge. Ver `.scratch/agrul-053/etapa4.md`.
 - **Avance etapa 5 (2026-10-28):** Validación local CU59–CU62 completada: sesiones persistidas por huella, revocación por cierre/cambio de credenciales/rol/estado, inactividad persistente, permisos y fincas revalidados, utilidad de sesión restringida y logs sin datos sensibles. Corregidas las aserciones SQLSTATE verificando también conservación de filas. **988/988 pruebas aprobadas, sin omisiones**, incluidas doce suites PostgreSQL; lint/build correctos y migraciones `0000`–`0013` desde cero. PR, controles remotos y merge pendientes tras la pausa de consumo. Ver `.scratch/agrul-053/etapa5.md`.
+- **Cierre de implementación:** [PR #56](https://github.com/juampalt/Agrul/pull/56), con referencia `Closes #47`. CU59–CU62 completos y validados localmente; GitHub comprobado sin conflictos, revisiones solicitadas ni checks obligatorios configurados. Aplicar migraciones antes del arranque y configurar secreto JWT/TLS del despliegue; no se realizó despliegue ni prueba de navegador.
 
 ### `[AGRUL-054]` Módulo 3: Actividades Agrícolas y Monitoreos (CU22 - CU33)
 - **GitHub Issue:** [#48](https://github.com/juampalt/Agrul/issues/48)
