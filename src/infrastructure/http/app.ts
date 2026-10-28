@@ -3,6 +3,8 @@ import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod
 import { errorHandler } from './middlewares/error-handler.js';
 import { registerApiRoutes } from './routes/api.routes.js';
 import { registrarRutasCultivos } from './routes/cultivos.routes.js';
+import { registrarRutasVariedades } from './routes/variedades.routes.js';
+import { VariedadesRepositoryPort } from '../../core/ports/variedades-repository.port.js';
 import { CultivosRepositoryPort } from '../../core/ports/cultivos-repository.port.js';
 import { PoliticaRetencionBpaService } from '../../core/domain/services/politica-retencion-bpa.service.js';
 import { LocalizacionTucumanService } from '../../core/domain/services/localizacion-tucuman.service.js';
@@ -225,6 +227,7 @@ export interface BuildAppOptions {
   genealogiaRepo: GenealogiaRepositoryPort;
   fincasRepo?: FincasRepositoryPort;
   cultivosRepo?: CultivosRepositoryPort;
+  variedadesRepo?: VariedadesRepositoryPort;
   catalogosRepo?: CatalogosActividadesRepositoryPort;
   actividadesRepo?: ActividadesRepositoryPort;
   ciclosRepo?: CiclosRepositoryPort;
@@ -889,6 +892,9 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
 
   // Registro de Rutas
   if (options.cultivosRepo) registrarRutasCultivos(app, options.cultivosRepo);
+  if (options.variedadesRepo && options.cultivosRepo) {
+    registrarRutasVariedades(app, options.variedadesRepo, options.cultivosRepo);
+  }
   registerApiRoutes(app, {
     lotesController,
     eventosController,
