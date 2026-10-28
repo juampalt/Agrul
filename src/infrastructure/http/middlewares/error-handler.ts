@@ -15,6 +15,7 @@ import {
 } from '../../../core/domain/errors/domain.error.js';
 import { CodigoLoteDuplicadoError } from '../../../application/use-cases/crear-lote.use-case.js';
 import { InsumoDuplicadoError } from '../../../application/use-cases/insumos-catalogo.use-cases.js';
+import { CultivoDuplicadoError } from '../../../core/domain/entities/cultivo.entity.js';
 
 export function errorHandler(error: FastifyError | Error, request: FastifyRequest, reply: FastifyReply) {
   const timestamp = new Date().toISOString();
@@ -89,7 +90,8 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
     error instanceof CodigoLoteDuplicadoError ||
     error instanceof InsumoDuplicadoError ||
     error instanceof UsuarioDuplicadoError ||
-    error instanceof ProveedorDuplicadoError
+    error instanceof ProveedorDuplicadoError ||
+    error instanceof CultivoDuplicadoError
   ) {
     return reply.status(409).send({
       success: false,

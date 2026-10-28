@@ -1,5 +1,6 @@
 import { pgTable, uuid, varchar, numeric, timestamp, jsonb, index, boolean, text, integer } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+export { cultivosTable } from './cultivos.js';
 
 // TABLA FINCAS: Gestión de Fincas y Establecimientos Productivos
 export const fincasTable = pgTable('fincas', {
