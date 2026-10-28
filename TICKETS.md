@@ -1061,6 +1061,7 @@
 - **Skills:** [.cursor/skills/architecture.md](file:///c:/AGRUL/.cursor/skills/architecture.md), [.cursor/skills/api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
 - **Etiquetas:** `auth`, `rbac`, `cu59-cu62`, `ready-for-agent`
 - **Descripción:** Autenticación y roles formales del sistema (`ADMINISTRADOR`, `ENCARGADO_CAMPO` / `INGENIERO_AGRONOMO`, `ADMINISTRADOR_DEL_SISTEMA`) con control de acceso RBAC.
+- **Avance parcial (2026-10-28):** Etapa 1 / CU59: login por correo o nombre de usuario, validación estricta JWT y protección del timeout de sesión. Migración `0010` validada desde cero y cuatro pruebas CU59 con PostgreSQL real aprobadas. Regresión: 834/838 aprobadas; cuatro fallos de SQLSTATE también reproducidos con `origin/main`. CU60–CU62, perfiles canónicos y auditoría persistente pendientes. Ver `.scratch/agrul-053/etapa1.md`. Issue abierta; sin PR ni merge en esta etapa.
 
 ### `[AGRUL-054]` Módulo 3: Actividades Agrícolas y Monitoreos (CU22 - CU33)
 - **GitHub Issue:** [#48](https://github.com/juampalt/Agrul/issues/48)

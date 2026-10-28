@@ -25,7 +25,10 @@ export class SessionInactivityService {
     clientLastActivityMs?: number
   ): boolean {
     const serverLast = this.lastActivityByUser.get(usuarioId);
-    const ultimaActividad = clientLastActivityMs !== undefined ? clientLastActivityMs : serverLast;
+    // El cliente puede informar una actividad anterior, pero no prolongar la sesión.
+    const ultimaActividad = clientLastActivityMs !== undefined
+      ? Math.min(clientLastActivityMs, serverLast ?? currentTimestamp)
+      : serverLast;
 
     if (!ultimaActividad) {
       // Primera actividad registrada en esta sesión

@@ -1,6 +1,15 @@
 import crypto from 'node:crypto';
+import { z } from 'zod';
 import { PasswordInseguraError } from '../../core/domain/errors/domain.error.js';
 import { PerfilUsuario } from '../../core/domain/entities/usuario.entity.js';
+
+const tokenSchema = z.object({
+  sub: z.string().min(1), email: z.string().email(), nombre: z.string(), apellido: z.string(),
+  perfil: z.enum(['ADMINISTRADOR', 'ENCARGADO', 'OPERARIO', 'ASESOR_AGRONOMO']),
+  fincas: z.array(z.string()), organizacionId: z.string().optional(),
+  debeCambiarPassword: z.boolean().optional(),
+  iat: z.number().int().nonnegative(), exp: z.number().int().nonnegative(),
+});
 
 export interface TokenPayload {
   sub: string;
@@ -16,7 +25,16 @@ export interface TokenPayload {
 }
 
 export class CryptoAuthService {
-  private static readonly DEFAULT_SECRET = process.env.JWT_SECRET || 'agrul-jwt-super-secret-key-tucuman-bpa-2026';
+  private static readonly developmentSecret = crypto.randomBytes(48).toString('base64url');
+
+  private static getSecret(): string {
+    const secret = process.env.JWT_SECRET;
+    if (secret && Buffer.byteLength(secret) >= 32) return secret;
+    if (process.env.NODE_ENV === 'production' || secret !== undefined) {
+      throw new Error('JWT_SECRET debe configurarse con al menos 32 bytes.');
+    }
+    return this.developmentSecret;
+  }
   private static readonly SALT_LENGTH = 16;
   private static readonly ITERATIONS = 100000;
   private static readonly KEYLEN = 64;
@@ -73,7 +91,7 @@ export class CryptoAuthService {
    * Genera un token JWT (RFC 7519) firmado con HMAC-SHA256.
    * Por defecto expira en 86400 segundos (24 horas).
    */
-  public static generateToken(payload: TokenPayload, expiresInSeconds: number = 86400, secret: string = this.DEFAULT_SECRET): string {
+  public static generateToken(payload: TokenPayload, expiresInSeconds: number = 86400, secret: string = this.getSecret()): string {
     const now = Math.floor(Date.now() / 1000);
     const fullPayload: TokenPayload = {
       ...payload,
@@ -97,7 +115,7 @@ export class CryptoAuthService {
    * Valida un token JWT: verifica formato, firma criptográfica y expiración.
    * Retorna el payload decodificado o null si el token es inválido o expiró.
    */
-  public static verifyToken(token: string, secret: string = this.DEFAULT_SECRET): TokenPayload | null {
+  public static verifyToken(token: string, secret: string = this.getSecret()): TokenPayload | null {
     if (!token || typeof token !== 'string') {
       return null;
     }
@@ -110,6 +128,8 @@ export class CryptoAuthService {
     const [encodedHeader, encodedPayload, signature] = parts;
 
     try {
+      const header: unknown = JSON.parse(Buffer.from(encodedHeader, 'base64url').toString('utf-8'));
+      if (!z.object({ alg: z.literal('HS256'), typ: z.literal('JWT') }).strict().safeParse(header).success) return null;
       const expectedSignature = crypto
         .createHmac('sha256', secret)
         .update(`${encodedHeader}.${encodedPayload}`)
@@ -123,10 +143,12 @@ export class CryptoAuthService {
       }
 
       const payloadJson = Buffer.from(encodedPayload, 'base64url').toString('utf-8');
-      const payload: TokenPayload = JSON.parse(payloadJson);
+      const parsed = tokenSchema.safeParse(JSON.parse(payloadJson));
+      if (!parsed.success) return null;
+      const payload = parsed.data;
 
       const now = Math.floor(Date.now() / 1000);
-      if (payload.exp && payload.exp < now) {
+      if (payload.exp <= now || payload.iat > now || payload.exp <= payload.iat) {
         return null; // Token expirado
       }
 

@@ -53,4 +53,13 @@ describe('AGRUL-040: Infraestructura — SessionInactivityService (RF-M8-09)', (
     SessionInactivityService.cerrarSesion('usr-1');
     expect(SessionInactivityService.obtenerUltimaActividad('usr-1')).toBeUndefined();
   });
+
+  it('AGRUL-053: un timestamp del cliente no prolonga una sesión vencida', () => {
+    const inicio = Date.now();
+    SessionInactivityService.registrarActividad('usr-1', inicio);
+    const ahora = inicio + 16 * 60 * 1000;
+    expect(SessionInactivityService.verificarExpiracion('usr-1', ahora, ahora)).toBe(true);
+    expect(SessionInactivityService.verificarExpiracion('usr-1', ahora, ahora + 3600000)).toBe(true);
+    expect(SessionInactivityService.obtenerUltimaActividad('usr-1')).toBe(inicio);
+  });
 });
