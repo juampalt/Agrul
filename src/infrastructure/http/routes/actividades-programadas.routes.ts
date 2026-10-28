@@ -10,6 +10,8 @@ import { CiclosProductivosRepositoryPort } from '../../../core/ports/ciclos-prod
 import { TiposActividadRepositoryPort } from '../../../core/ports/tipos-actividad-repository.port.js';
 import { UsuariosRepositoryPort } from '../../../core/ports/usuarios-repository.port.js';
 import { requerirRol, verificarPasswordInicial } from '../middlewares/auth.middleware.js';
+import { AccesoRecursosAgricolasPort } from '../../../core/ports/acceso-recursos-agricolas.port.js';
+import { AutorizarRecursoAgricolaUseCase, fincasVisiblesAgricolas } from '../../../application/use-cases/autorizar-recurso-agricola.use-case.js';
 import {
   ProgramarActividadSchema,
   ActividadProgramadaIdSchema,
@@ -25,7 +27,10 @@ export function registrarRutasActividadesProgramadas(
   ciclosRepo: CiclosProductivosRepositoryPort,
   tiposRepo: TiposActividadRepositoryPort,
   usuariosRepo: UsuariosRepositoryPort,
+  accesoRepo?: AccesoRecursosAgricolasPort,
 ) {
+  if (!accesoRepo) throw new Error('Las rutas agrícolas requieren autorización persistente por finca.');
+  const autorizar = new AutorizarRecursoAgricolaUseCase(accesoRepo);
   const programar = new ProgramarActividadUseCase(repo, ciclosRepo, tiposRepo, usuariosRepo);
   const consultar = new ConsultarActividadesProgramadasUseCase(repo);
   const reprogramar = new ReprogramarActividadUseCase(repo, usuariosRepo);
@@ -40,19 +45,21 @@ export function registrarRutasActividadesProgramadas(
   app.post('/api/v1/actividades-programadas', permisosOperacion, async (req, reply) => {
     SolicitudVaciaActividadProgramadaSchema.parse(req.query);
     const datos = ProgramarActividadSchema.parse(req.body);
+    await autorizar.execute(req.usuario, 'ciclo', datos.cicloId);
     return reply.status(201).send(respuesta(await programar.execute(datos)));
   });
 
   // CU27: Consultar y listar actividades programadas
   app.get('/api/v1/actividades-programadas', permisosOperacion, async (req) => {
     const filtros = ConsultarActividadesProgramadasSchema.parse(req.query);
-    return respuesta(await consultar.execute(filtros));
+    return respuesta(await consultar.execute({ ...filtros, fincaIds: fincasVisiblesAgricolas(req.usuario) }));
   });
 
   // CU27: Obtener actividad programada por ID
   app.get('/api/v1/actividades-programadas/:id', permisosOperacion, async (req) => {
     const { id } = ActividadProgramadaIdSchema.parse(req.params);
     SolicitudVaciaActividadProgramadaSchema.parse(req.query);
+    await autorizar.execute(req.usuario, 'programada', id);
     return respuesta(await consultar.obtenerPorId(id));
   });
 
@@ -61,6 +68,7 @@ export function registrarRutasActividadesProgramadas(
     const { id } = ActividadProgramadaIdSchema.parse(req.params);
     SolicitudVaciaActividadProgramadaSchema.parse(req.query);
     const params = ReprogramarActividadSchema.parse(req.body);
+    await autorizar.execute(req.usuario, 'programada', id);
     return respuesta(await reprogramar.execute(id, params));
   });
 
@@ -69,6 +77,7 @@ export function registrarRutasActividadesProgramadas(
     const { id } = ActividadProgramadaIdSchema.parse(req.params);
     SolicitudVaciaActividadProgramadaSchema.parse(req.query);
     const { motivoCancelacion } = CancelarActividadSchema.parse(req.body);
+    await autorizar.execute(req.usuario, 'programada', id);
     return respuesta(await cancelar.execute(id, motivoCancelacion));
   });
 }

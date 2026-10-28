@@ -4,6 +4,8 @@ import { ConsultarMonitoreosUseCase, RegistrarMonitoreoUseCase } from '../../../
 import { MonitoreosRepositoryPort } from '../../../core/ports/monitoreos-repository.port.js';
 import { esFechaProgramadaValida } from '../../../core/domain/entities/actividad-programada.entity.js';
 import { requerirRol, verificarPasswordInicial } from '../middlewares/auth.middleware.js';
+import { AccesoRecursosAgricolasPort } from '../../../core/ports/acceso-recursos-agricolas.port.js';
+import { AutorizarRecursoAgricolaUseCase, fincasVisiblesAgricolas } from '../../../application/use-cases/autorizar-recurso-agricola.use-case.js';
 
 const texto = z.string().trim().min(1).max(100);
 const fecha = z.string().refine(esFechaProgramadaValida, 'La fecha debe existir y tener formato YYYY-MM-DD.');
@@ -21,19 +23,27 @@ export const ConsultarMonitoreosSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(100), offset: z.coerce.number().int().min(0).default(0),
 }).strict().refine(f => !f.desde || !f.hasta || f.desde <= f.hasta, { path: ['hasta'], message: 'El rango de fechas está invertido.' });
 
-export function registrarRutasMonitoreos(app: FastifyInstance, repo: MonitoreosRepositoryPort) {
+export function registrarRutasMonitoreos(app: FastifyInstance, repo: MonitoreosRepositoryPort, accesoRepo?: AccesoRecursosAgricolasPort) {
+  if (!accesoRepo) throw new Error('Las rutas agrícolas requieren autorización persistente por finca.');
+  const autorizar = new AutorizarRecursoAgricolaUseCase(accesoRepo);
   const registrar = new RegistrarMonitoreoUseCase(repo);
   const consultar = new ConsultarMonitoreosUseCase(repo);
   const permisos = { preHandler: [requerirRol('ADMINISTRADOR', 'ENCARGADO_CAMPO'), verificarPasswordInicial] };
   const respuesta = (data: unknown) => ({ success: true, data, error: null, timestamp: new Date().toISOString() });
   app.post('/api/v1/monitoreos', permisos, async (req, reply) => {
     z.object({}).strict().parse(req.query);
-    return reply.status(201).send(respuesta(await registrar.execute(RegistrarMonitoreoSchema.parse(req.body))));
+    const datos = RegistrarMonitoreoSchema.parse(req.body);
+    await autorizar.execute(req.usuario, 'ciclo', datos.cicloId);
+    return reply.status(201).send(respuesta(await registrar.execute(datos)));
   });
-  app.get('/api/v1/monitoreos', permisos, async req => respuesta(await consultar.execute(ConsultarMonitoreosSchema.parse(req.query))));
+  app.get('/api/v1/monitoreos', permisos, async req => {
+    const filtros = ConsultarMonitoreosSchema.parse(req.query);
+    return respuesta(await consultar.execute({ ...filtros, fincaIds: fincasVisiblesAgricolas(req.usuario) }));
+  });
   app.get('/api/v1/monitoreos/:id', permisos, async req => {
     z.object({}).strict().parse(req.query);
     const { id } = z.object({ id: z.string().uuid() }).strict().parse(req.params);
+    await autorizar.execute(req.usuario, 'monitoreo', id);
     return respuesta(await consultar.obtenerPorId(id));
   });
 }

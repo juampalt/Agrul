@@ -10,6 +10,8 @@ export interface ActividadesRealizadasRepositoryPort {
 }
 
 export interface FiltrosActividadesRealizadas {
+  /** Alcance interno derivado de la sesión; no forma parte del contrato HTTP. */
+  fincaIds?: readonly string[];
   cicloId?: string;
   loteId?: string;
   tipoActividadId?: string;

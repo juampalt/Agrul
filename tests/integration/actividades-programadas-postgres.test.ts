@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
 import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { DrizzleUsuarioFincasRepository } from '../../src/infrastructure/database/repositories/drizzle-usuario-fincas.repository.js';
 import { DrizzleActividadesProgramadasRepository } from '../../src/infrastructure/database/repositories/drizzle-actividades-programadas.repository.js';
 import { EstadoActividadInvalidoError } from '../../src/core/domain/entities/actividad-programada.entity.js';
 import { CicloConActividadesPendientesError } from '../../src/application/use-cases/verificar-cierre-ciclo.use-case.js';
@@ -47,6 +48,7 @@ describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
     admin = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: ADMIN, email: 'admin054@example.test' });
     encargado = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: ENCARGADO, email: 'encargado054@example.test', perfil: 'ENCARGADO_CAMPO' });
     lector = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: LECTOR, email: 'lector054@example.test', perfil: 'OPERARIO' });
+    await new DrizzleUsuarioFincasRepository(connection.db).asignarFincas(ENCARGADO, ['f0000000-0000-4000-8000-000000000059']);
     const tipo = await servidor.app.inject({ method: 'POST', url: '/api/v1/tipos-actividad', headers: admin, payload: { nombre: `Riego ${randomUUID().slice(0, 8)}`, categoria: 'RIEGO' } });
     expect(tipo.statusCode).toBe(201);
     tipoId = tipo.json().data.id;

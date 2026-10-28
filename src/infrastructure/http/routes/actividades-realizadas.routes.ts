@@ -5,6 +5,8 @@ import { ActividadesRealizadasGestionPort } from '../../../core/ports/actividade
 import { ConsultarActividadesRealizadasUseCase, RegistrarActividadDirectaUseCase } from '../../../application/use-cases/actividades-realizadas.use-cases.js';
 import { esFechaProgramadaValida } from '../../../core/domain/entities/actividad-programada.entity.js';
 import { requerirRol, verificarPasswordInicial } from '../middlewares/auth.middleware.js';
+import { AccesoRecursosAgricolasPort } from '../../../core/ports/acceso-recursos-agricolas.port.js';
+import { AutorizarRecursoAgricolaUseCase, fincasVisiblesAgricolas } from '../../../application/use-cases/autorizar-recurso-agricola.use-case.js';
 
 export const EjecutarProgramadaSchema = z.object({
   actividadProgramadaId: z.string().uuid(),
@@ -30,7 +32,9 @@ export const ConsultarRealizadasSchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 }).strict().refine(f => !f.desde || !f.hasta || f.desde <= f.hasta, { path: ['hasta'], message: 'Hasta debe ser igual o posterior a desde.' });
 
-export function registrarRutasActividadesRealizadas(app: FastifyInstance, repo: ActividadesRealizadasGestionPort) {
+export function registrarRutasActividadesRealizadas(app: FastifyInstance, repo: ActividadesRealizadasGestionPort, accesoRepo?: AccesoRecursosAgricolasPort) {
+  if (!accesoRepo) throw new Error('Las rutas agrícolas requieren autorización persistente por finca.');
+  const autorizar = new AutorizarRecursoAgricolaUseCase(accesoRepo);
   const ejecutar = new EjecutarActividadProgramadaUseCase(repo);
   const directa = new RegistrarActividadDirectaUseCase(repo);
   const consultar = new ConsultarActividadesRealizadasUseCase(repo);
@@ -41,15 +45,19 @@ export function registrarRutasActividadesRealizadas(app: FastifyInstance, repo: 
   app.post('/api/v1/actividades-realizadas', permisos, async (req, reply) => {
     z.object({}).strict().parse(req.query);
     const datos = z.union([EjecutarProgramadaSchema, RegistrarDirectaSchema]).parse(req.body);
+    if ('actividadProgramadaId' in datos) await autorizar.execute(req.usuario, 'programada', datos.actividadProgramadaId);
+    else await autorizar.execute(req.usuario, 'ciclo', datos.cicloId);
     const data = 'actividadProgramadaId' in datos ? await ejecutar.execute(datos) : await directa.execute(datos);
     return reply.status(201).send(respuesta(data));
   });
   app.get('/api/v1/actividades-realizadas', permisos, async (req) => {
-    return respuesta(await consultar.execute(ConsultarRealizadasSchema.parse(req.query)));
+    const filtros = ConsultarRealizadasSchema.parse(req.query);
+    return respuesta(await consultar.execute({ ...filtros, fincaIds: fincasVisiblesAgricolas(req.usuario) }));
   });
   app.get('/api/v1/actividades-realizadas/:id', permisos, async (req) => {
     z.object({}).strict().parse(req.query);
     const { id } = z.object({ id: z.string().uuid() }).strict().parse(req.params);
+    await autorizar.execute(req.usuario, 'realizada', id);
     return respuesta(await consultar.obtenerPorId(id));
   });
 }

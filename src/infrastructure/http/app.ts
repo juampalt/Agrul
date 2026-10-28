@@ -11,6 +11,7 @@ import { registrarRutasActividadesProgramadas } from './routes/actividades-progr
 import { registrarRutasActividadesRealizadas } from './routes/actividades-realizadas.routes.js';
 import { registrarRutasMonitoreos } from './routes/monitoreos.routes.js';
 import { MonitoreosRepositoryPort } from '../../core/ports/monitoreos-repository.port.js';
+import { AccesoRecursosAgricolasPort } from '../../core/ports/acceso-recursos-agricolas.port.js';
 import { ActividadesRealizadasGestionPort } from '../../core/ports/actividades-realizadas-repository.port.js';
 import { ActividadesProgramadasRepositoryPort } from '../../core/ports/actividades-programadas-repository.port.js';
 import { TiposActividadRepositoryPort } from '../../core/ports/tipos-actividad-repository.port.js';
@@ -253,6 +254,7 @@ export interface BuildAppOptions {
   actividadesProgramadasRepo?: ActividadesProgramadasRepositoryPort;
   actividadesRealizadasRepo?: ActividadesRealizadasGestionPort;
   monitoreosRepo?: MonitoreosRepositoryPort;
+  accesoRecursosAgricolasRepo?: AccesoRecursosAgricolasPort;
   catalogosRepo?: CatalogosActividadesRepositoryPort;
   actividadesRepo?: ActividadesRepositoryPort;
   ciclosRepo?: CiclosRepositoryPort;
@@ -927,8 +929,8 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   if (options.tiposActividadRepo) {
     registrarRutasTiposActividad(app, options.tiposActividadRepo, options.cultivosRepo);
   }
-  if (options.actividadesRealizadasRepo) registrarRutasActividadesRealizadas(app, options.actividadesRealizadasRepo);
-  if (options.monitoreosRepo) registrarRutasMonitoreos(app, options.monitoreosRepo);
+  if (options.actividadesRealizadasRepo) registrarRutasActividadesRealizadas(app, options.actividadesRealizadasRepo, options.accesoRecursosAgricolasRepo);
+  if (options.monitoreosRepo) registrarRutasMonitoreos(app, options.monitoreosRepo, options.accesoRecursosAgricolasRepo);
   if (
     options.actividadesProgramadasRepo &&
     options.ciclosProductivosRepo &&
@@ -940,7 +942,8 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       options.actividadesProgramadasRepo,
       options.ciclosProductivosRepo,
       options.tiposActividadRepo,
-      options.usuariosRepo
+      options.usuariosRepo,
+      options.accesoRecursosAgricolasRepo
     );
   }
   if (options.variedadesRepo && options.cultivosRepo) {

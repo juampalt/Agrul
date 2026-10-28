@@ -7,6 +7,7 @@ import {
 } from '../../../core/ports/actividades-programadas-repository.port.js';
 import { AgrulDatabase } from '../connection.js';
 import { actividadesProgramadasTable } from '../schema/actividades-programadas.js';
+import { alcanceFincasPorCiclo } from '../alcance-fincas-agricolas.js';
 
 export class DrizzleActividadesProgramadasRepository implements ActividadesProgramadasRepositoryPort {
   constructor(private readonly db: AgrulDatabase) {}
@@ -67,7 +68,7 @@ export class DrizzleActividadesProgramadasRepository implements ActividadesProgr
       condiciones.push(lte(actividadesProgramadasTable.fechaProgramada, filtros.hasta));
     }
 
-    const whereClause = condiciones.length > 0 ? and(...condiciones) : undefined;
+    const whereClause = and(...condiciones, alcanceFincasPorCiclo(this.db, actividadesProgramadasTable.cicloId, filtros.fincaIds));
 
     const filas = await this.db
       .select()

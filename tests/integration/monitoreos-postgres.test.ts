@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
 import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { DrizzleUsuarioFincasRepository } from '../../src/infrastructure/database/repositories/drizzle-usuario-fincas.repository.js';
 import { autenticarOperadorPrueba } from '../helpers/operador-postgres.fixture.js';
 import { sembrarCiclosRn09 } from '../helpers/sembrar-ciclos-rn09.js';
 import { InMemoryAplicacionesRepository } from '../mocks/in-memory-aplicaciones.repository.js';
@@ -40,6 +41,7 @@ describe.skipIf(!url)('CU32/CU33: monitoreos con PostgreSQL y bootstrap reales',
     admin = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: ADMIN, email: 'admin-cu32@example.test' });
     encargado = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: RESPONSABLE, email: 'encargado-cu32@example.test', perfil: 'ENCARGADO_CAMPO' });
     lector = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: LECTOR, email: 'operario-cu32@example.test', perfil: 'OPERARIO' });
+    await new DrizzleUsuarioFincasRepository(connection.db).asignarFincas(RESPONSABLE, ['f0000000-0000-4000-8000-000000000059']);
   }, 30000);
 
   beforeEach(async () => {

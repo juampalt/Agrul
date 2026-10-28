@@ -7,6 +7,7 @@ import { monitoreosTable as monitoreos } from '../schema/monitoreos.js';
 import { ciclosProductivosTable as ciclos } from '../schema/ciclos-productivos.js';
 import { plantacionesTable as plantaciones } from '../schema/plantaciones.js';
 import { usuariosTable } from '../schema/tables.js';
+import { alcanceFincasPorLote } from '../alcance-fincas-agricolas.js';
 
 export class DrizzleMonitoreosRepository implements MonitoreosRepositoryPort {
   constructor(private readonly db: AgrulDatabase) {}
@@ -43,7 +44,7 @@ export class DrizzleMonitoreosRepository implements MonitoreosRepositoryPort {
     if (f.tipoObservacion) condiciones.push(eq(monitoreos.tipoObservacion, f.tipoObservacion));
     if (f.desde) condiciones.push(gte(monitoreos.fechaInspeccion, f.desde));
     if (f.hasta) condiciones.push(lte(monitoreos.fechaInspeccion, f.hasta));
-    return (await this.db.select().from(monitoreos).where(and(...condiciones))
+    return (await this.db.select().from(monitoreos).where(and(...condiciones, alcanceFincasPorLote(this.db, monitoreos.loteId, f.fincaIds)))
       .orderBy(desc(monitoreos.fechaInspeccion), desc(monitoreos.id)).limit(f.limit).offset(f.offset)).map(m => this.mapear(m));
   }
 

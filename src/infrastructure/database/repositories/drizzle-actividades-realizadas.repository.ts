@@ -10,6 +10,7 @@ import { ciclosProductivosTable as ciclos } from '../schema/ciclos-productivos.j
 import { plantacionesTable as plantaciones } from '../schema/plantaciones.js';
 import { usuariosTable } from '../schema/tables.js';
 import { tiposActividadTable } from '../schema/tipos-actividad.js';
+import { alcanceFincasPorLote } from '../alcance-fincas-agricolas.js';
 
 export class DrizzleActividadesRealizadasRepository implements ActividadesRealizadasGestionPort {
   constructor(private readonly db: AgrulDatabase) {}
@@ -65,7 +66,7 @@ export class DrizzleActividadesRealizadasRepository implements ActividadesRealiz
     if (filtros.origen) condiciones.push(filtros.origen === 'NO_PROGRAMADA' ? isNull(realizadas.actividadProgramadaId) : isNotNull(realizadas.actividadProgramadaId));
     if (filtros.desde) condiciones.push(gte(realizadas.fechaEjecucion, filtros.desde));
     if (filtros.hasta) condiciones.push(lte(realizadas.fechaEjecucion, filtros.hasta));
-    return (await this.db.select().from(realizadas).where(and(...condiciones))
+    return (await this.db.select().from(realizadas).where(and(...condiciones, alcanceFincasPorLote(this.db, realizadas.loteId, filtros.fincaIds)))
       .orderBy(desc(realizadas.fechaEjecucion), desc(realizadas.id)).limit(filtros.limit).offset(filtros.offset)).map(f => this.mapear(f));
   }
 
