@@ -1,5 +1,5 @@
 import { and, asc, eq, getTableColumns, gte, lte, sql } from 'drizzle-orm';
-import { ActividadProgramada } from '../../../core/domain/entities/actividad-programada.entity.js';
+import { ActividadProgramada, validarSuperficiePrevista } from '../../../core/domain/entities/actividad-programada.entity.js';
 import { ConflictoActividadProgramadaError, EstadoActividadInvalidoError } from '../../../core/domain/entities/actividad-programada.entity.js';
 import {
   ActividadesProgramadasRepositoryPort,
@@ -19,6 +19,7 @@ export class DrizzleActividadesProgramadasRepository implements ActividadesProgr
 
   async guardar(actividad: ActividadProgramada): Promise<void> {
     const raw = actividad.toJSON();
+    validarSuperficiePrevista(raw.superficiePrevista);
     await this.db.insert(actividadesProgramadasTable).values({
       id: raw.id,
       cicloId: raw.cicloId,

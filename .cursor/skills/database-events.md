@@ -103,6 +103,8 @@ FOR EACH ROW EXECUTE FUNCTION rechazar_mutacion_evento_trazabilidad();
 
 - **DO:** En actualizaciones de entidades mutables, comparar la versión leída además del estado; un estado que sigue PENDIENTE no detecta cambios concurrentes. Actualizar solo los campos de la operación y rechazar el conflicto sin reintentar decisiones obsoletas. Si se usa `xmin`, mantenerlo como token opaco efímero del adaptador, nunca como identificador histórico o contrato persistente. Probar dos conexiones/solicitudes simultáneas, escrituras SQL externas y rollback (P2 / AGRUL-054).
 
+- **DO:** Antes de serializar hacia `NUMERIC(p,s)`, validar rango y precisión en dominio, contrato HTTP y adaptador de escritura. Usar `toFixed` solo después de validar: debe representar el valor sin redondearlo. Probar mínimos, máximos, exceso de decimales y desbordamiento desde el bootstrap. Conservar los nulos opcionales y separar estas reglas de creación de la reconstrucción histórica (S2 / AGRUL-054).
+
 ### DON'T
 - **DON'T:** No usar float o double para cantidades de stock. Usar `numeric(14, 4)` para evitar errores de redondeo de punto flotante en kilos, litros o cajas.
 - **DON'T:** No omitir el índice compuesto `(lote_id, timestamp_captura_local)`; es la clave del rendimiento del árbol de trazabilidad.

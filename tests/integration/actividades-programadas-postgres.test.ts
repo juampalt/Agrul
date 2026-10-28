@@ -30,6 +30,33 @@ describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
   const datos = () => ({ cicloId: CICLO, tipoActividadId: tipoId, responsableId: ENCARGADO, fechaProgramada: '2026-11-15' });
   const crear = () => servidor.app.inject({ method: 'POST', url: ruta, headers: encargado, payload: datos() });
 
+  it.each([0.01, 0.29, 1.23, 999999.99])('persiste y consulta %s ha sin redondear desde el bootstrap', async (superficiePrevista) => {
+    const res = await servidor.app.inject({ method: 'POST', url: ruta, headers: encargado, payload: { ...datos(), superficiePrevista } });
+    expect(res.statusCode).toBe(201);
+    const id = res.json().data.id;
+    const { rows } = await connection.pool.query('select superficie_prevista from actividades_programadas where id=$1', [id]);
+    expect(rows[0].superficie_prevista).toBe(superficiePrevista.toFixed(2));
+    const detalle = await servidor.app.inject({ method: 'GET', url: `${ruta}/${id}`, headers: encargado });
+    expect(detalle.statusCode).toBe(200);
+    expect(detalle.json().data.superficiePrevista).toBe(superficiePrevista);
+    const listado = await servidor.app.inject({ method: 'GET', url: `${ruta}?cicloId=${CICLO}`, headers: encargado });
+    expect(listado.statusCode).toBe(200);
+    expect(listado.json().data).toEqual([expect.objectContaining({ id, superficiePrevista })]);
+  });
+
+  it.each([0, -1, 0.001, 0.005, 1e-10, 0.1 + 0.2, 999999.999, 1000000, '1.23'])('rechaza superficie %s con HTTP 400 y sin insertar', async (superficiePrevista) => {
+    const res = await servidor.app.inject({ method: 'POST', url: ruta, headers: encargado, payload: { ...datos(), superficiePrevista } });
+    expect(res.statusCode).toBe(400);
+    expect(await repo.listar({ cicloId: CICLO, limit: 10, offset: 0 })).toEqual([]);
+  });
+
+  it('rechaza un exponente JSON no finito sin error SQL', async () => {
+    const payload = JSON.stringify(datos()).slice(0, -1) + ',"superficiePrevista":1e309}';
+    const res = await servidor.app.inject({ method: 'POST', url: ruta, headers: { ...encargado, 'content-type': 'application/json' }, payload });
+    expect(res.statusCode).toBe(400);
+    expect(await repo.listar({ cicloId: CICLO, limit: 10, offset: 0 })).toEqual([]);
+  });
+
   beforeAll(async () => {
     if (!url) throw new Error('Falta conexión explícita.');
     const target = new URL(url);

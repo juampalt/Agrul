@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { esFechaProgramadaValida } from '../../../core/domain/entities/actividad-programada.entity.js';
+import { esFechaProgramadaValida, esSuperficiePrevistaValida, MENSAJE_SUPERFICIE_PREVISTA } from '../../../core/domain/entities/actividad-programada.entity.js';
 
 const FechaProgramadaSchema = z.string().refine(esFechaProgramadaValida, 'Debe ser una fecha existente con formato YYYY-MM-DD');
 
@@ -9,7 +9,7 @@ export const ProgramarActividadSchema = z
     tipoActividadId: z.string().uuid(),
     fechaProgramada: FechaProgramadaSchema,
     responsableId: z.string().uuid(),
-    superficiePrevista: z.number().positive().nullable().optional(),
+    superficiePrevista: z.number().finite().refine(esSuperficiePrevistaValida, MENSAJE_SUPERFICIE_PREVISTA).nullable().optional(),
     descripcion: z.string().nullable().optional(),
   })
   .strict();

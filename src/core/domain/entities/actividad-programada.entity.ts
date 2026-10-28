@@ -47,9 +47,7 @@ export class ActividadProgramada {
     if (!esFechaProgramadaValida(datos.fechaProgramada)) {
       throw new ActividadProgramadaInvalidaError('La fecha programada debe tener formato YYYY-MM-DD válido.');
     }
-    if (datos.superficiePrevista != null && (!Number.isFinite(datos.superficiePrevista) || datos.superficiePrevista <= 0)) {
-      throw new ActividadProgramadaInvalidaError('La superficie prevista en hectáreas debe ser mayor a cero.');
-    }
+    validarSuperficiePrevista(datos.superficiePrevista);
     const ahora = new Date().toISOString();
     return ActividadProgramada.reconstituir({
       ...datos,
@@ -134,4 +132,17 @@ export function esFechaProgramadaValida(fecha: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || fecha.startsWith('0000')) return false;
   const instante = new Date(`${fecha}T00:00:00.000Z`);
   return Number.isFinite(instante.getTime()) && instante.toISOString().slice(0, 10) === fecha;
+}
+
+export const MENSAJE_SUPERFICIE_PREVISTA = 'La superficie prevista debe estar entre 0,01 y 999.999,99 ha, con hasta dos decimales.';
+
+/** Valores exactamente representables en la columna NUMERIC(8,2), sin redondear. */
+export function esSuperficiePrevistaValida(valor: number): boolean {
+  return Number.isFinite(valor) && valor >= 0.01 && valor <= 999999.99 && Number(valor.toFixed(2)) === valor;
+}
+
+export function validarSuperficiePrevista(valor: number | null | undefined): void {
+  if (valor != null && !esSuperficiePrevistaValida(valor)) {
+    throw new ActividadProgramadaInvalidaError(MENSAJE_SUPERFICIE_PREVISTA);
+  }
 }

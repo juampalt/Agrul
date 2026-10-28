@@ -20,6 +20,12 @@ describe('Escrituras de actividades programadas sin PostgreSQL', () => {
   }).toJSON(), '42');
   beforeEach(() => query.mockReset());
 
+  it.each([0.001, 1000000])('rechaza superficie %s antes de enviar SQL aunque provenga de reconstrucción', async (superficiePrevista) => {
+    const reconstruida = ActividadProgramada.reconstituir({ ...actividad().toJSON(), superficiePrevista });
+    await expect(repo.guardar(reconstruida)).rejects.toMatchObject({ code: 'ACTIVIDAD_PROGRAMADA_INVALIDA' });
+    expect(query).not.toHaveBeenCalled();
+  });
+
   it('persiste superficie omitida como NULL sin invocar toFixed sobre undefined', async () => {
     query.mockResolvedValue({ rows: [] });
     await expect(repo.guardar(actividad())).resolves.toBeUndefined();
