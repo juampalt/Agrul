@@ -18,6 +18,7 @@ import { InsumoDuplicadoError } from '../../../application/use-cases/insumos-cat
 import { CultivoDuplicadoError } from '../../../core/domain/entities/cultivo.entity.js';
 import { VariedadDuplicadaError } from '../../../core/domain/entities/variedad.entity.js';
 import { CodigoCicloDuplicadoError } from '../../../core/domain/value-objects/planificacion-ciclo.vo.js';
+import { TipoActividadDuplicadoError } from '../../../core/domain/entities/tipo-actividad-canonico.entity.js';
 
 export function errorHandler(error: FastifyError | Error, request: FastifyRequest, reply: FastifyReply) {
   const timestamp = new Date().toISOString();
@@ -95,7 +96,8 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
     error instanceof ProveedorDuplicadoError ||
     error instanceof CultivoDuplicadoError ||
     error instanceof VariedadDuplicadaError ||
-    error instanceof CodigoCicloDuplicadoError
+    error instanceof CodigoCicloDuplicadoError ||
+    error instanceof TipoActividadDuplicadoError
   ) {
     return reply.status(409).send({
       success: false,

@@ -99,6 +99,13 @@
       "when": 1793149209000,
       "tag": "0013_sesiones_vigentes",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793149210000,
+      "tag": "0014_tipos_actividad_cultivos",
+      "breakpoints": true
     }
   ]
 }
