@@ -124,7 +124,9 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
   }
 
   // 5. Error no controlado (500 Internal Server Error)
-  request.log.error(error);
+  // Los errores de persistencia pueden incluir consultas, parámetros o filas con credenciales.
+  request.log.error({ errorType: error instanceof Error ? error.constructor.name : 'UnknownError', requestId: request.id },
+    'Error interno del servidor');
   return reply.status(500).send({
     success: false,
     data: null,
