@@ -113,7 +113,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     const icon = type === 'success' ? '✅' : '❌';
-    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    const icono = document.createElement('span');
+    icono.textContent = icon;
+    const texto = document.createElement('span');
+    texto.textContent = message;
+    toast.append(icono, document.createTextNode(' '), texto);
     toastContainer.appendChild(toast);
 
     setTimeout(() => {
@@ -3177,6 +3181,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnUsuariosRoles = document.getElementById('btn-usuarios-roles');
   const tbodyUsuariosLista = document.getElementById('tbody-usuarios-lista');
   const formCrearUsuario = document.getElementById('form-crear-usuario');
+  const formConsultarUsuarios = document.getElementById('form-consultar-usuarios');
   const usrAltaFincasContainer = document.getElementById('usr-alta-fincas-container');
   const checkAccesoUsuario = document.getElementById('check-acceso-usuario');
   const checkAccesoFinca = document.getElementById('check-acceso-finca');
@@ -3225,48 +3230,84 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function mostrarMensajeUsuarios(mensaje) {
+    const fila = document.createElement('tr');
+    const celda = document.createElement('td');
+    celda.colSpan = 7;
+    celda.className = 'text-center text-dim';
+    celda.textContent = mensaje;
+    fila.append(celda);
+    tbodyUsuariosLista.replaceChildren(fila);
+  }
+
+  formConsultarUsuarios?.addEventListener('submit', event => {
+    event.preventDefault();
+    cargarListaUsuarios();
+  });
+  document.getElementById('btn-limpiar-consulta-usuarios')?.addEventListener('click', () => {
+    formConsultarUsuarios?.reset();
+    cargarListaUsuarios();
+  });
+
   async function cargarListaUsuarios() {
     if (!tbodyUsuariosLista) return;
+    mostrarMensajeUsuarios('Cargando usuarios...');
+    checkAccesoUsuario?.replaceChildren();
+    const tokenConsulta = activeAuthToken;
     try {
       const headers = {};
       if (activeAuthToken) {
         headers['Authorization'] = `Bearer ${activeAuthToken}`;
       }
-      const res = await fetch('/api/v1/usuarios', { headers });
+      const filtros = new URLSearchParams();
+      for (const campo of ['busqueda', 'perfil', 'estado']) {
+        const valor = document.getElementById(`usr-consulta-${campo}`)?.value?.trim();
+        if (valor) filtros.set(campo, valor);
+      }
+      const res = await fetch(`/api/v1/usuarios?${filtros}`, { headers });
       const json = await res.json();
+      if (tokenConsulta !== activeAuthToken) return;
 
       if (!json.success || !Array.isArray(json.data)) {
-        tbodyUsuariosLista.innerHTML = `<tr><td colspan="7" class="text-center text-dim">${json.error?.message || 'Inicie sesión con perfil ADMINISTRADOR o ENCARGADO para listar usuarios.'}</td></tr>`;
+        mostrarMensajeUsuarios(json.error?.message || 'La sesión no tiene autorización para consultar usuarios.');
         return;
       }
 
       if (json.data.length === 0) {
-        tbodyUsuariosLista.innerHTML = '<tr><td colspan="7" class="text-center text-dim">No hay usuarios registrados en el sistema.</td></tr>';
+        mostrarMensajeUsuarios('No se encontraron usuarios con estos filtros.');
         return;
       }
 
-      tbodyUsuariosLista.innerHTML = json.data.map(u => {
-        const roleClass = `badge-role badge-role-${u.perfil.toLowerCase()}`;
-        const statusClass = u.estado === 'ACTIVO' ? 'badge-status-active' : 'badge-status-blocked';
-        const fincasStr = u.perfil === 'ADMINISTRADOR' ? '<em>Global (Todas)</em>' : (u.fincasAsignadas && u.fincasAsignadas.length > 0 ? `${u.fincasAsignadas.length} finca(s)` : '<span class="text-dim">Sin asignación</span>');
-        const ultimoAccesoStr = u.ultimoAcceso ? new Date(u.ultimoAcceso).toLocaleString('es-AR') : '<span class="text-dim">Nunca</span>';
-
-        const btnBloqueo = u.estado === 'ACTIVO'
-          ? `<button class="btn btn-xs btn-outline-danger btn-toggle-bloqueo" data-action="bloquear" data-id="${u.id}">Bloquear</button>`
-          : `<button class="btn btn-xs btn-outline-success btn-toggle-bloqueo" data-action="desbloquear" data-id="${u.id}">Desbloquear</button>`;
-
-        return `
-          <tr>
-            <td><strong>${u.nombreCompleto || u.nombre + ' ' + u.apellido}</strong></td>
-            <td><code>${u.email}</code></td>
-            <td><span class="${roleClass}">${u.perfil}</span></td>
-            <td><span class="${statusClass}">${u.estado}</span></td>
-            <td>${fincasStr}</td>
-            <td>${ultimoAccesoStr}</td>
-            <td>${btnBloqueo}</td>
-          </tr>
-        `;
-      }).join('');
+      tbodyUsuariosLista.replaceChildren(...json.data.map(u => {
+        const fila = document.createElement('tr');
+        const datos = [
+          { texto: u.nombreCompleto || `${u.nombre} ${u.apellido}` },
+          { texto: u.nombreUsuario ? `${u.nombreUsuario} · ${u.email}` : u.email },
+          { texto: u.perfil, clase: `badge-role badge-role-${u.perfil.toLowerCase()}` },
+          { texto: u.estado, clase: u.estado === 'ACTIVO' ? 'badge-status-active' : 'badge-status-blocked' },
+          { texto: u.perfil === 'ADMINISTRADOR' ? 'Global (Todas)' : `${u.fincasAsignadas?.length || 0} finca(s)` },
+          { texto: u.ultimoAcceso ? new Date(u.ultimoAcceso).toLocaleString('es-AR') : 'Nunca' },
+        ];
+        for (const dato of datos) {
+          const celda = document.createElement('td');
+          const texto = document.createElement('span');
+          texto.textContent = dato.texto;
+          if (dato.clase) texto.className = dato.clase;
+          celda.append(texto);
+          fila.append(celda);
+        }
+        const acciones = document.createElement('td');
+        const boton = document.createElement('button');
+        const bloquear = u.estado === 'ACTIVO';
+        boton.className = `btn btn-xs btn-outline-${bloquear ? 'danger' : 'success'} btn-toggle-bloqueo`;
+        boton.dataset.action = bloquear ? 'bloquear' : 'desbloquear';
+        boton.dataset.id = u.id;
+        boton.textContent = bloquear ? 'Bloquear' : 'Desbloquear';
+        boton.disabled = activeAuthUser?.perfil !== 'ADMINISTRADOR';
+        acciones.append(boton);
+        fila.append(acciones);
+        return fila;
+      }));
 
       // Adjuntar eventos de bloqueo/desbloqueo
       tbodyUsuariosLista.querySelectorAll('.btn-toggle-bloqueo').forEach(btn => {
@@ -3296,12 +3337,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Actualizar select de prueba de acceso
       if (checkAccesoUsuario) {
-        checkAccesoUsuario.innerHTML = json.data.map(u =>
-          `<option value="${u.id}">${u.nombreCompleto} (${u.perfil})</option>`
-        ).join('');
+        checkAccesoUsuario.replaceChildren(...json.data.map(u => new Option(`${u.nombreCompleto} (${u.perfil})`, u.id)));
       }
     } catch (err) {
-      tbodyUsuariosLista.innerHTML = `<tr><td colspan="7" class="text-center text-dim">Error cargando usuarios: ${err.message}</td></tr>`;
+      if (tokenConsulta === activeAuthToken) mostrarMensajeUsuarios(`Error cargando usuarios: ${err.message}`);
     }
   }
 
@@ -3447,6 +3486,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (json.success && json.data) {
           showToast(`Usuario ${json.data.nombreCompleto} creado exitosamente con rol ${json.data.perfil}.`, 'success');
           formCrearUsuario.reset();
+          document.querySelector('[data-usrtab="tab-lista-usuarios"]')?.click();
+          cargarListaUsuarios();
         } else {
           showToast(`Error al crear usuario: ${json.error?.message || 'Verifique los datos'}`, 'error');
         }

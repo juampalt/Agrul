@@ -1758,12 +1758,43 @@
 
         <!-- Pestaña 1: Lista de Usuarios -->
         <div id="tab-lista-usuarios" class="usr-tab-content">
+          <form id="form-consultar-usuarios" class="form-grid" style="margin-top: 12px;">
+            <div class="form-group">
+              <label for="usr-consulta-busqueda" class="form-label">Buscar usuario</label>
+              <input id="usr-consulta-busqueda" class="form-input" type="search" maxlength="255" placeholder="Nombre, apellido, usuario o correo">
+            </div>
+            <div class="form-group">
+              <label for="usr-consulta-perfil" class="form-label">Perfil</label>
+              <select id="usr-consulta-perfil" class="form-select">
+                <option value="">Todos</option>
+                <option value="ADMIN_SISTEMA">Administrador del Sistema</option>
+                <option value="ADMINISTRADOR">Administrador</option>
+                <option value="ENCARGADO_CAMPO">Encargado de Campo / Ingeniero Agrónomo</option>
+                <option value="ENCARGADO">Encargado</option>
+                <option value="OPERARIO">Operario</option>
+                <option value="ASESOR_AGRONOMO">Asesor Agrónomo</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="usr-consulta-estado" class="form-label">Estado</label>
+              <select id="usr-consulta-estado" class="form-select">
+                <option value="">Todos</option>
+                <option value="ACTIVO">Activo</option>
+                <option value="INACTIVO">Inactivo</option>
+                <option value="BLOQUEADO">Bloqueado</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary">Consultar</button>
+              <button type="button" id="btn-limpiar-consulta-usuarios" class="btn btn-secondary">Limpiar filtros</button>
+            </div>
+          </form>
           <div class="table-responsive" style="margin-top: 12px;">
             <table class="data-table">
               <thead>
                 <tr>
                   <th>Nombre y Apellido</th>
-                  <th>Email</th>
+                  <th>Usuario / correo</th>
                   <th>Perfil (Rol RBAC)</th>
                   <th>Estado</th>
                   <th>Fincas Asignadas</th>

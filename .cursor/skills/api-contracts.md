@@ -81,6 +81,7 @@ export const SincronizarBatchOfflineSchema = z.object({
 - **DO:** Usar `fastify-type-provider-zod` para inferir tipos de Typescript directamente de los schemas Zod sin duplicar interfaces.
 - **DO:** Devolver `422 Unprocessable Entity` cuando una regla de negocio de trazabilidad falla (ej: lote ya cerrado o cantidad excedida).
 - **DO:** Asegurar que los errores de validación (400) retornen un array claro de campos con sus problemas (`error.details`).
+- **DO:** Al mostrar datos de la API en el dashboard, crear nodos y asignar `textContent` o `new Option(texto, valor)` para nombres, correos, identificadores y errores. Reservar `innerHTML` para markup estático; los datos persistidos de usuarios también son entrada no confiable.
 
 ### DON'T
 - **DON'T:** Nunca exponer stack traces o errores crudos de PostgreSQL al cliente.
@@ -91,3 +92,4 @@ export const SincronizarBatchOfflineSchema = z.object({
 ## 6. Registro de Decisiones (Self-Correction Log)
 - *2026-10-03:* Se incorpora endpoint específico `POST /api/v1/eventos/sincronizar` para absorción de colas offline generadas en campo.
 - *2026-10-03:* Se añaden endpoints dedicados de split y merge para el grafo N:M.
+- *2026-10-28:* CU61 detectó interpolaciones repetidas de datos de usuarios en la tabla y el selector del dashboard; se establece renderización como texto para prevenir XSS almacenado.
