@@ -3,6 +3,7 @@ import { DrizzleCultivosRepository } from './infrastructure/database/repositorie
 import { DrizzleVariedadesRepository } from './infrastructure/database/repositories/drizzle-variedades.repository.js';
 import { DrizzlePlantacionesRepository } from './infrastructure/database/repositories/drizzle-plantaciones.repository.js';
 import { createDatabaseConnection } from './infrastructure/database/connection.js';
+import { DrizzleCierreCicloGuard } from './infrastructure/database/cierre-ciclo.guard.js';
 import { DrizzleFincasRepository } from './infrastructure/database/repositories/drizzle-fincas.repository.js';
 import { DrizzleLotesTerritorialesRepository } from './infrastructure/database/repositories/drizzle-lotes-territoriales.repository.js';
 import { InMemoryEventosRepository } from '../tests/mocks/in-memory-eventos.repository.js';
@@ -38,5 +39,5 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
     logger: options.logger ?? true,
   });
   app.addHook('onClose', async () => pool.end());
-  return { app };
+  return { app, cierreCicloGuard: new DrizzleCierreCicloGuard(db) };
 }

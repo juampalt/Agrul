@@ -3,6 +3,7 @@ import { relations } from 'drizzle-orm';
 export { cultivosTable } from './cultivos.js';
 export { variedadesTable } from './variedades.js';
 export { plantacionesTable } from './plantaciones.js';
+export { actividadesProgramadasTable } from './actividades-programadas.js';
 
 // TABLA FINCAS: Gestión de Fincas y Establecimientos Productivos
 export const fincasTable = pgTable('fincas', {

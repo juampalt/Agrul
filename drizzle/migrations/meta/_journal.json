@@ -50,6 +50,13 @@
       "when": 1793149202000,
       "tag": "0006_plantaciones",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793149203000,
+      "tag": "0007_pendientes_cierre_ciclo",
+      "breakpoints": true
     }
   ]
 }

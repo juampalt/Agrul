@@ -5,6 +5,7 @@ import * as schema from './schema/tables.js';
 const { Pool } = pg;
 
 export type AgrulDatabase = NodePgDatabase<typeof schema>;
+export type AgrulTransaction = Parameters<Parameters<AgrulDatabase['transaction']>[0]>[0];
 
 export function createDatabaseConnection(connectionString?: string): { db: AgrulDatabase; pool: pg.Pool } {
   const connStr = connectionString || process.env.DATABASE_URL || 'postgresql://agrul_user:agrul_pass@localhost:5432/agrul_db';
