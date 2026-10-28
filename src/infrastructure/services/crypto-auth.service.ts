@@ -1,11 +1,11 @@
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { PasswordInseguraError } from '../../core/domain/errors/domain.error.js';
-import { PerfilUsuario } from '../../core/domain/entities/usuario.entity.js';
+import { PerfilUsuario, PERFILES_USUARIO } from '../../core/domain/entities/usuario.entity.js';
 
 const tokenSchema = z.object({
   sub: z.string().min(1), email: z.string().email(), nombre: z.string(), apellido: z.string(),
-  perfil: z.enum(['ADMINISTRADOR', 'ENCARGADO', 'OPERARIO', 'ASESOR_AGRONOMO']),
+  perfil: z.enum(PERFILES_USUARIO),
   fincas: z.array(z.string()), organizacionId: z.string().optional(),
   debeCambiarPassword: z.boolean().optional(),
   iat: z.number().int().nonnegative(), exp: z.number().int().nonnegative(),

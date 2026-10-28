@@ -32,6 +32,7 @@ export interface UsuariosUseCasesDependencies {
 
 export function mapUsuarioToOutput(usuario: Usuario, fincas: string[] = []): UsuarioOutputDto {
   return {
+    ...(usuario.nombreUsuario ? { nombreUsuario: usuario.nombreUsuario } : {}),
     id: usuario.id,
     nombre: usuario.nombre,
     apellido: usuario.apellido,
@@ -55,7 +56,7 @@ export class CrearUsuarioUseCase {
     private readonly auditoriaRepo?: AuditoriaSeguridadRepositoryPort,
   ) {}
 
-  async execute(input: CrearUsuarioInputDto): Promise<UsuarioOutputDto> {
+  async execute(input: CrearUsuarioInputDto, responsable?: Usuario): Promise<UsuarioOutputDto> {
     const existente = await this.usuariosRepo.buscarPorEmail(input.email);
     if (existente) {
       throw new UsuarioDuplicadoError(input.email);
@@ -65,6 +66,7 @@ export class CrearUsuarioUseCase {
     const id = crypto.randomUUID();
 
     const usuario = Usuario.crear({
+      nombreUsuario: input.nombreUsuario,
       id,
       nombre: input.nombre,
       apellido: input.apellido,
@@ -87,13 +89,14 @@ export class CrearUsuarioUseCase {
       await this.auditoriaRepo.registrar(
         AuditoriaSeguridadLog.crear({
           id: crypto.randomUUID(),
-          usuarioId: usuario.id,
-          usuarioEmail: usuario.email,
+          usuarioId: responsable?.id ?? usuario.id,
+          usuarioEmail: responsable?.email ?? usuario.email,
           accion: 'CREAR',
           entidad: 'USUARIO',
           entidadId: usuario.id,
           valorPrevioJson: null,
           valorNuevoJson: {
+            ...(usuario.nombreUsuario ? { nombreUsuario: usuario.nombreUsuario } : {}),
             nombre: usuario.nombre,
             apellido: usuario.apellido,
             email: usuario.email,

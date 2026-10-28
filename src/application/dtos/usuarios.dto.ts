@@ -1,6 +1,7 @@
-import { PerfilUsuario, EstadoUsuario } from '../../core/domain/entities/usuario.entity.js';
+import { PerfilUsuario, PerfilCanonico, EstadoUsuario } from '../../core/domain/entities/usuario.entity.js';
 
 export interface CrearUsuarioInputDto {
+  nombreUsuario?: string;
   nombre: string;
   apellido: string;
   email: string;
@@ -9,7 +10,13 @@ export interface CrearUsuarioInputDto {
   fincaIds?: string[];
 }
 
+export type RegistrarUsuarioInputDto = Omit<CrearUsuarioInputDto, 'perfil' | 'nombreUsuario'> & {
+  nombreUsuario: string;
+  perfil: PerfilCanonico;
+};
+
 export interface UsuarioOutputDto {
+  nombreUsuario?: string;
   id: string;
   nombre: string;
   apellido: string;

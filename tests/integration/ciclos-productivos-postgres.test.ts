@@ -217,17 +217,29 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
     expect((await consultar(id)).json().data.responsableSeguimientoId).toBe(USUARIO_CICLOS.sub);
   });
   it('crea un responsable por HTTP y permite autenticarlo y asignarlo desde otra instancia', async () => {
+    const sistemaId = crypto.randomUUID();
+    const sistemaEmail = `sistema-${sistemaId}@example.test`;
+    const { hash, salt } = CryptoAuthService.hashPassword('SistemaPrueba123!');
+    await f.conexion.pool.query(`insert into usuarios(id,nombre,apellido,email,password_hash,salt,perfil,debe_cambiar_password)
+      values ($1,'Admin','Sistema',$2,$3,$4,'ADMIN_SISTEMA',false)`, [sistemaId, sistemaEmail, hash, salt]);
+    const sesion = await f.app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: sistemaEmail, password: 'SistemaPrueba123!' } });
+    expect(sesion.statusCode).toBe(200);
+    const headersSistema = { authorization: `Bearer ${sesion.json().data.token}` };
     const email = `responsable-${crypto.randomUUID()}@example.test`;
-    const responsableId = await f.alta('/usuarios', { nombre: 'Responsable', apellido: 'Persistente', email,
-      password: 'PruebaSegura123!', perfil: 'ENCARGADO' });
+    const creado = await f.app.inject({ method: 'POST', url: '/api/v1/usuarios', headers: headersSistema,
+      payload: { nombre: 'Responsable', apellido: 'Persistente', nombreUsuario: crypto.randomUUID(), email,
+        password: 'PruebaSegura123!', perfil: 'ENCARGADO_CAMPO' } });
+    expect(creado.statusCode).toBe(201);
+    const responsableId = creado.json().data.id;
     const otra = crearServidorProduccion({ connectionString, logger: false });
     try {
       const login = await otra.app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email, password: 'PruebaSegura123!' } });
       expect(login.statusCode).toBe(200);
       expect(login.body).not.toContain('passwordHash');
       expect((await registrar({ responsableSeguimientoId: responsableId })).statusCode).toBe(201);
-      const duplicado = await otra.app.inject({ method: 'POST', url: '/api/v1/usuarios', headers,
-        payload: { nombre: 'Responsable', apellido: 'Duplicado', email, password: 'PruebaSegura123!', perfil: 'ENCARGADO' } });
+      const duplicado = await otra.app.inject({ method: 'POST', url: '/api/v1/usuarios', headers: headersSistema,
+        payload: { nombre: 'Responsable', apellido: 'Duplicado', nombreUsuario: crypto.randomUUID(), email,
+          password: 'PruebaSegura123!', perfil: 'ENCARGADO_CAMPO' } });
       expect(duplicado.statusCode).toBe(409);
     } finally { await otra.app.close(); }
   });

@@ -491,7 +491,9 @@ export const usuariosTable = pgTable('usuarios', {
 }, (table) => [
   index('idx_usuarios_email').on(table.email),
   uniqueIndex('usuarios_nombre_usuario_unique').on(sql`lower(${table.nombreUsuario})`),
+  uniqueIndex('usuarios_email_normalizado_unique').on(sql`lower(${table.email})`),
   check('usuarios_nombre_usuario_formato', sql`${table.nombreUsuario} IS NULL OR ${table.nombreUsuario} ~ '^[a-zA-Z0-9._-]{1,100}$'`),
+  check('usuarios_perfil_valido', sql`${table.perfil} IN ('ADMINISTRADOR', 'ENCARGADO_CAMPO', 'ADMIN_SISTEMA', 'ENCARGADO', 'OPERARIO', 'ASESOR_AGRONOMO')`),
   index('idx_usuarios_perfil').on(table.perfil),
   index('idx_usuarios_estado').on(table.estado),
   index('idx_usuarios_organizacion').on(table.organizacionId),

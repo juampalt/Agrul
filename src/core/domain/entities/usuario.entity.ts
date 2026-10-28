@@ -1,6 +1,10 @@
 import { DomainError, PasswordInseguraError } from '../errors/domain.error.js';
 
-export type PerfilUsuario = 'ADMINISTRADOR' | 'ENCARGADO' | 'OPERARIO' | 'ASESOR_AGRONOMO';
+export const PERFILES_CANONICOS = ['ADMINISTRADOR', 'ENCARGADO_CAMPO', 'ADMIN_SISTEMA'] as const;
+export type PerfilCanonico = typeof PERFILES_CANONICOS[number];
+// Los perfiles anteriores siguen siendo válidos para cuentas y sesiones existentes.
+export const PERFILES_USUARIO = [...PERFILES_CANONICOS, 'ENCARGADO', 'OPERARIO', 'ASESOR_AGRONOMO'] as const;
+export type PerfilUsuario = typeof PERFILES_USUARIO[number];
 export type EstadoUsuario = 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
 
 export class UsuarioInvalidoError extends DomainError {
@@ -45,12 +49,7 @@ export interface CrearUsuarioParams {
 export class Usuario {
   private constructor(private props: UsuarioProps) {}
 
-  public static readonly PERFILES_VALIDOS: PerfilUsuario[] = [
-    'ADMINISTRADOR',
-    'ENCARGADO',
-    'OPERARIO',
-    'ASESOR_AGRONOMO',
-  ];
+  public static readonly PERFILES_VALIDOS: readonly PerfilUsuario[] = PERFILES_USUARIO;
 
   public static readonly ESTADOS_VALIDOS: EstadoUsuario[] = [
     'ACTIVO',

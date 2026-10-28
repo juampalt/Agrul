@@ -9,10 +9,10 @@ export class DrizzleUsuariosRepository implements UsuariosRepositoryPort {
   constructor(private readonly db: AgrulDatabase) {}
 
   async guardar(usuario: Usuario): Promise<void> {
-    await this.conUnicidad(usuario.email, () => this.db.insert(usuariosTable).values(this.valores(usuario)));
+    await this.conUnicidad(usuario, () => this.db.insert(usuariosTable).values(this.valores(usuario)));
   }
   async actualizar(usuario: Usuario): Promise<void> {
-    const filas = await this.conUnicidad(usuario.email, () => this.db.update(usuariosTable)
+    const filas = await this.conUnicidad(usuario, () => this.db.update(usuariosTable)
       .set(this.valores(usuario)).where(eq(usuariosTable.id, usuario.id)).returning({ id: usuariosTable.id }));
     if (!filas.length) throw new EntidadNoEncontradaError('Usuario', usuario.id);
   }
@@ -21,7 +21,7 @@ export class DrizzleUsuariosRepository implements UsuariosRepositoryPort {
     return fila ? this.mapear(fila) : null;
   }
   async buscarPorEmail(email: string): Promise<Usuario | null> {
-    const [fila] = await this.db.select().from(usuariosTable).where(eq(usuariosTable.email, email.trim().toLowerCase()));
+    const [fila] = await this.db.select().from(usuariosTable).where(sql`lower(${usuariosTable.email}) = ${email.trim().toLowerCase()}`);
     return fila ? this.mapear(fila) : null;
   }
   async listar(filtros: FiltrosUsuarios = {}): Promise<Usuario[]> {
@@ -45,11 +45,17 @@ export class DrizzleUsuariosRepository implements UsuariosRepositoryPort {
   private mapear(fila: typeof usuariosTable.$inferSelect): Usuario {
     return Usuario.reconstituir({ ...fila, perfil: fila.perfil as PerfilUsuario, estado: fila.estado as EstadoUsuario });
   }
-  private async conUnicidad<T>(email: string, operacion: () => PromiseLike<T>): Promise<T> {
+  private async conUnicidad<T>(usuario: Usuario, operacion: () => PromiseLike<T>): Promise<T> {
     try { return await operacion(); }
     catch (error) {
-      if (error instanceof Error && 'code' in error && error.code === '23505'
-        && 'constraint' in error && error.constraint === 'usuarios_email_unique') throw new UsuarioDuplicadoError(email);
+      if (error instanceof Error && 'code' in error && error.code === '23505' && 'constraint' in error) {
+        if (error.constraint === 'usuarios_email_unique' || error.constraint === 'usuarios_email_normalizado_unique') {
+          throw new UsuarioDuplicadoError(usuario.email);
+        }
+        if (error.constraint === 'usuarios_nombre_usuario_unique') {
+          throw new UsuarioDuplicadoError(usuario.nombreUsuario ?? '', 'nombre de usuario');
+        }
+      }
       throw error;
     }
   }

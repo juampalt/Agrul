@@ -1,6 +1,5 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import {
-  CrearUsuarioUseCase,
   ListarUsuariosUseCase,
   ObtenerUsuarioPorIdUseCase,
   ActualizarUsuarioUseCase,
@@ -8,6 +7,7 @@ import {
   DesbloquearUsuarioUseCase,
   VerificarAccesoFincaUseCase,
 } from '../../../application/use-cases/usuarios.use-cases.js';
+import { RegistrarUsuarioUseCase } from '../../../application/use-cases/registrar-usuario.use-case.js';
 import {
   CrearUsuarioSchema,
   ActualizarUsuarioSchema,
@@ -18,7 +18,7 @@ import {
 
 export class UsuariosController {
   constructor(
-    private readonly crearUsuarioUC: CrearUsuarioUseCase,
+    private readonly crearUsuarioUC: RegistrarUsuarioUseCase,
     private readonly listarUsuariosUC: ListarUsuariosUseCase,
     private readonly obtenerUsuarioPorIdUC: ObtenerUsuarioPorIdUseCase,
     private readonly actualizarUsuarioUC: ActualizarUsuarioUseCase,
@@ -29,7 +29,7 @@ export class UsuariosController {
 
   async crear(req: FastifyRequest, reply: FastifyReply) {
     const body = CrearUsuarioSchema.parse(req.body);
-    const resultado = await this.crearUsuarioUC.execute(body);
+    const resultado = await this.crearUsuarioUC.execute(body, req.usuario?.sub);
 
     return reply.status(201).send({
       success: true,

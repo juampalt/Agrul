@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PERFILES_CANONICOS } from '../../../core/domain/entities/usuario.entity.js';
 
 export const PerfilUsuarioEnum = z.enum([
   'ADMINISTRADOR',
@@ -14,11 +15,12 @@ export const EstadoUsuarioEnum = z.enum([
 ]);
 
 export const CrearUsuarioSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es obligatorio.').max(100),
-  apellido: z.string().min(1, 'El apellido es obligatorio.').max(100),
-  email: z.string().email('Formato de email inválido.').max(150),
+  nombreUsuario: z.string().trim().regex(/^[a-zA-Z0-9._-]{1,100}$/),
+  nombre: z.string().trim().min(1, 'El nombre es obligatorio.').max(100),
+  apellido: z.string().trim().min(1, 'El apellido es obligatorio.').max(100),
+  email: z.string().trim().email('Formato de email inválido.').max(150),
   password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres (RNF-04).'),
-  perfil: PerfilUsuarioEnum,
+  perfil: z.enum(PERFILES_CANONICOS),
   fincaIds: z.array(z.string().trim()).optional(),
 }).strict();
 

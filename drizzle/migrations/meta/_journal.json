@@ -78,6 +78,13 @@
       "when": 1793149206000,
       "tag": "0010_login_nombre_usuario",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793149207000,
+      "tag": "0011_registro_usuarios_canonicos",
+      "breakpoints": true
     }
   ]
 }
