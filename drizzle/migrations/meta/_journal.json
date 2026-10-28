@@ -120,6 +120,13 @@
       "when": 1793149212000,
       "tag": "0016_actividades_realizadas",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793149213000,
+      "tag": "0017_monitoreos",
+      "breakpoints": true
     }
   ]
 }

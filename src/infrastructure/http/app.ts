@@ -9,6 +9,8 @@ import { registrarRutasCiclosProductivos } from './routes/ciclos-productivos.rou
 import { registrarRutasTiposActividad } from './routes/tipos-actividad.routes.js';
 import { registrarRutasActividadesProgramadas } from './routes/actividades-programadas.routes.js';
 import { registrarRutasActividadesRealizadas } from './routes/actividades-realizadas.routes.js';
+import { registrarRutasMonitoreos } from './routes/monitoreos.routes.js';
+import { MonitoreosRepositoryPort } from '../../core/ports/monitoreos-repository.port.js';
 import { ActividadesRealizadasGestionPort } from '../../core/ports/actividades-realizadas-repository.port.js';
 import { ActividadesProgramadasRepositoryPort } from '../../core/ports/actividades-programadas-repository.port.js';
 import { TiposActividadRepositoryPort } from '../../core/ports/tipos-actividad-repository.port.js';
@@ -250,6 +252,7 @@ export interface BuildAppOptions {
   tiposActividadRepo?: TiposActividadRepositoryPort;
   actividadesProgramadasRepo?: ActividadesProgramadasRepositoryPort;
   actividadesRealizadasRepo?: ActividadesRealizadasGestionPort;
+  monitoreosRepo?: MonitoreosRepositoryPort;
   catalogosRepo?: CatalogosActividadesRepositoryPort;
   actividadesRepo?: ActividadesRepositoryPort;
   ciclosRepo?: CiclosRepositoryPort;
@@ -925,6 +928,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     registrarRutasTiposActividad(app, options.tiposActividadRepo, options.cultivosRepo);
   }
   if (options.actividadesRealizadasRepo) registrarRutasActividadesRealizadas(app, options.actividadesRealizadasRepo);
+  if (options.monitoreosRepo) registrarRutasMonitoreos(app, options.monitoreosRepo);
   if (
     options.actividadesProgramadasRepo &&
     options.ciclosProductivosRepo &&
