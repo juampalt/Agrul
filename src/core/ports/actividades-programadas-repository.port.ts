@@ -1,0 +1,19 @@
+import { ActividadProgramada, EstadoActividadProgramada } from '../domain/entities/actividad-programada.entity.js';
+
+export interface FiltrosActividadesProgramadas {
+  cicloId?: string;
+  tipoActividadId?: string;
+  responsableId?: string;
+  estado?: EstadoActividadProgramada;
+  desde?: string;
+  hasta?: string;
+  limit: number;
+  offset: number;
+}
+
+export interface ActividadesProgramadasRepositoryPort {
+  guardar(actividad: ActividadProgramada): Promise<void>;
+  buscarPorId(id: string): Promise<ActividadProgramada | null>;
+  listar(filtros: FiltrosActividadesProgramadas): Promise<ActividadProgramada[]>;
+  actualizar(actividad: ActividadProgramada): Promise<void>;
+}

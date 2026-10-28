@@ -7,6 +7,8 @@ import { registrarRutasVariedades } from './routes/variedades.routes.js';
 import { registrarRutasPlantaciones } from './routes/plantaciones.routes.js';
 import { registrarRutasCiclosProductivos } from './routes/ciclos-productivos.routes.js';
 import { registrarRutasTiposActividad } from './routes/tipos-actividad.routes.js';
+import { registrarRutasActividadesProgramadas } from './routes/actividades-programadas.routes.js';
+import { ActividadesProgramadasRepositoryPort } from '../../core/ports/actividades-programadas-repository.port.js';
 import { TiposActividadRepositoryPort } from '../../core/ports/tipos-actividad-repository.port.js';
 import { CiclosProductivosRepositoryPort } from '../../core/ports/ciclos-productivos-repository.port.js';
 import { PlantacionesRepositoryPort } from '../../core/ports/plantaciones-repository.port.js';
@@ -244,6 +246,7 @@ export interface BuildAppOptions {
   plantacionesRepo?: PlantacionesRepositoryPort;
   ciclosProductivosRepo?: CiclosProductivosRepositoryPort;
   tiposActividadRepo?: TiposActividadRepositoryPort;
+  actividadesProgramadasRepo?: ActividadesProgramadasRepositoryPort;
   catalogosRepo?: CatalogosActividadesRepositoryPort;
   actividadesRepo?: ActividadesRepositoryPort;
   ciclosRepo?: CiclosRepositoryPort;
@@ -917,6 +920,20 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   if (options.ciclosProductivosRepo) registrarRutasCiclosProductivos(app, options.ciclosProductivosRepo);
   if (options.tiposActividadRepo) {
     registrarRutasTiposActividad(app, options.tiposActividadRepo, options.cultivosRepo);
+  }
+  if (
+    options.actividadesProgramadasRepo &&
+    options.ciclosProductivosRepo &&
+    options.tiposActividadRepo &&
+    options.usuariosRepo
+  ) {
+    registrarRutasActividadesProgramadas(
+      app,
+      options.actividadesProgramadasRepo,
+      options.ciclosProductivosRepo,
+      options.tiposActividadRepo,
+      options.usuariosRepo
+    );
   }
   if (options.variedadesRepo && options.cultivosRepo) {
     registrarRutasVariedades(app, options.variedadesRepo, options.cultivosRepo);

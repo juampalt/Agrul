@@ -6,6 +6,7 @@ import { CryptoAuthService, TokenPayload } from '../../src/infrastructure/servic
 async function verificarBase(pool: Pool) {
   const { rows } = await pool.query<{ nombre: string }>('select current_database() as nombre');
   const basesValidas = [
+    'agrul_test_agrul_054',
     ...[1, 2, 3, 4].map(etapa => `agrul_test_agrul_052_etapa${etapa}`),
     ...[1, 2, 3, 4, 5].map(etapa => `agrul_test_agrul_054_etapa${etapa}`),
   ];
