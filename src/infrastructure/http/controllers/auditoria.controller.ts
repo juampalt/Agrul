@@ -1,8 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import {
-  ConsultarAuditoriaSeguridadUseCase,
-  ObtenerAuditoriaPorIdUseCase,
-} from '../../../application/use-cases/auditoria.use-cases.js';
+import { ConsultarAuditoriaSeguraUseCase } from '../../../application/use-cases/consultar-auditoria-segura.use-case.js';
 import {
   ConsultarAuditoriaQuerySchema,
   AuditoriaIdParamSchema,
@@ -13,13 +10,13 @@ import { EntidadNoEncontradaError } from '../../../core/domain/errors/domain.err
 
 export class AuditoriaController {
   constructor(
-    private readonly consultarAuditoriaUseCase: ConsultarAuditoriaSeguridadUseCase,
-    private readonly obtenerAuditoriaPorIdUseCase: ObtenerAuditoriaPorIdUseCase,
+    private readonly consultarAuditoriaUseCase: ConsultarAuditoriaSeguraUseCase,
   ) {}
 
   public async listar(request: FastifyRequest, reply: FastifyReply) {
     const query = ConsultarAuditoriaQuerySchema.parse(request.query);
-    const resultado = await this.consultarAuditoriaUseCase.execute(query);
+    const resultado = await this.consultarAuditoriaUseCase.execute(query, request.usuario?.sub);
+    reply.header('Cache-Control', 'no-store');
 
     return reply.status(200).send({
       success: true,
@@ -31,7 +28,8 @@ export class AuditoriaController {
 
   public async obtenerPorId(request: FastifyRequest, reply: FastifyReply) {
     const params = AuditoriaIdParamSchema.parse(request.params);
-    const log = await this.obtenerAuditoriaPorIdUseCase.execute(params.id);
+    const log = await this.consultarAuditoriaUseCase.obtener(params.id, request.usuario?.sub);
+    reply.header('Cache-Control', 'no-store');
 
     if (!log) {
       throw new EntidadNoEncontradaError('AuditoriaSeguridadLog', params.id);

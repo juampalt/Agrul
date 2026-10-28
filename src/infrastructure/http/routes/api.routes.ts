@@ -302,9 +302,9 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.post('/usuarios', { preHandler: [requerirRol('ADMIN_SISTEMA'), verificarPasswordInicial] }, (req, rep) => deps.usuariosController!.crear(req, rep));
         v1.get('/usuarios', { preHandler: [verificarAutenticacion] }, (req, rep) => deps.usuariosController!.listar(req, rep));
         v1.get('/usuarios/:id', { preHandler: [verificarAutenticacion] }, (req, rep) => deps.usuariosController!.obtenerPorId(req, rep));
-        v1.put('/usuarios/:id', { preHandler: [requerirRol('ADMINISTRADOR')] }, (req, rep) => deps.usuariosController!.actualizar(req, rep));
-        v1.post('/usuarios/:id/bloquear', { preHandler: [requerirRol('ADMINISTRADOR')] }, (req, rep) => deps.usuariosController!.bloquear(req, rep));
-        v1.post('/usuarios/:id/desbloquear', { preHandler: [requerirRol('ADMINISTRADOR')] }, (req, rep) => deps.usuariosController!.desbloquear(req, rep));
+        v1.put('/usuarios/:id', { preHandler: [requerirRol('ADMIN_SISTEMA'), verificarPasswordInicial] }, (req, rep) => deps.usuariosController!.actualizar(req, rep));
+        v1.post('/usuarios/:id/bloquear', { preHandler: [requerirRol('ADMIN_SISTEMA'), verificarPasswordInicial] }, (req, rep) => deps.usuariosController!.bloquear(req, rep));
+        v1.post('/usuarios/:id/desbloquear', { preHandler: [requerirRol('ADMIN_SISTEMA'), verificarPasswordInicial] }, (req, rep) => deps.usuariosController!.desbloquear(req, rep));
 
         // Verificación de Acceso y Aislamiento por Finca (RF-M8-05 / RN-16)
         v1.get('/fincas/:id/verificar-acceso', { preHandler: [verificarAutenticacion] }, (req, rep) => deps.usuariosController!.verificarAccesoFinca(req, rep));
@@ -312,8 +312,8 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
 
       // Bitácora Centralizada de Auditoría y Seguridad de Sesión (Módulo 8 — AGRUL-040 / RF-M8-08, RF-M8-09, RN-06)
       if (deps.auditoriaController) {
-        v1.get('/auditoria', { preHandler: [requerirRol('ADMINISTRADOR'), verificarPasswordInicial] }, (req, rep) => deps.auditoriaController!.listar(req, rep));
-        v1.get('/auditoria/:id', { preHandler: [requerirRol('ADMINISTRADOR'), verificarPasswordInicial] }, (req, rep) => deps.auditoriaController!.obtenerPorId(req, rep));
+        v1.get('/auditoria', { preHandler: [requerirRol('ADMINISTRADOR', 'ADMIN_SISTEMA'), verificarPasswordInicial] }, (req, rep) => deps.auditoriaController!.listar(req, rep));
+        v1.get('/auditoria/:id', { preHandler: [requerirRol('ADMINISTRADOR', 'ADMIN_SISTEMA'), verificarPasswordInicial] }, (req, rep) => deps.auditoriaController!.obtenerPorId(req, rep));
         v1.post('/auditoria/simular-inactividad', (req, rep) => deps.auditoriaController!.simularInactividad(req, rep));
       }
 

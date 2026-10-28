@@ -1,27 +1,24 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import {
-  ActualizarUsuarioUseCase,
-  BloquearUsuarioUseCase,
-  DesbloquearUsuarioUseCase,
   VerificarAccesoFincaUseCase,
 } from '../../../application/use-cases/usuarios.use-cases.js';
 import { RegistrarUsuarioUseCase } from '../../../application/use-cases/registrar-usuario.use-case.js';
 import { ConsultarUsuariosUseCase } from '../../../application/use-cases/consultar-usuarios.use-case.js';
+import { ModificarUsuarioUseCase } from '../../../application/use-cases/modificar-usuario.use-case.js';
 import {
   CrearUsuarioSchema,
   ActualizarUsuarioSchema,
   ListarUsuariosQuerySchema,
   UsuarioIdParamSchema,
   FincaIdParamSchema,
+  BloquearUsuarioSchema,
 } from '../schemas/usuarios.schema.js';
 
 export class UsuariosController {
   constructor(
     private readonly crearUsuarioUC: RegistrarUsuarioUseCase,
     private readonly consultarUsuariosUC: ConsultarUsuariosUseCase,
-    private readonly actualizarUsuarioUC: ActualizarUsuarioUseCase,
-    private readonly bloquearUsuarioUC: BloquearUsuarioUseCase,
-    private readonly desbloquearUsuarioUC: DesbloquearUsuarioUseCase,
+    private readonly modificarUsuarioUC: ModificarUsuarioUseCase,
     private readonly verificarAccesoFincaUC: VerificarAccesoFincaUseCase,
   ) {}
 
@@ -66,7 +63,7 @@ export class UsuariosController {
   async actualizar(req: FastifyRequest, reply: FastifyReply) {
     const { id } = UsuarioIdParamSchema.parse(req.params);
     const body = ActualizarUsuarioSchema.parse(req.body);
-    const resultado = await this.actualizarUsuarioUC.execute(id, body);
+    const resultado = await this.modificarUsuarioUC.execute(id, body, req.usuario?.sub);
 
     return reply.status(200).send({
       success: true,
@@ -78,8 +75,8 @@ export class UsuariosController {
 
   async bloquear(req: FastifyRequest, reply: FastifyReply) {
     const { id } = UsuarioIdParamSchema.parse(req.params);
-    const body = (req.body as { motivo?: string }) || {};
-    const resultado = await this.bloquearUsuarioUC.execute(id, body.motivo);
+    const body = BloquearUsuarioSchema.parse(req.body ?? {});
+    const resultado = await this.modificarUsuarioUC.bloquear(id, req.usuario?.sub, body.motivo);
 
     return reply.status(200).send({
       success: true,
@@ -91,7 +88,8 @@ export class UsuariosController {
 
   async desbloquear(req: FastifyRequest, reply: FastifyReply) {
     const { id } = UsuarioIdParamSchema.parse(req.params);
-    const resultado = await this.desbloquearUsuarioUC.execute(id);
+    BloquearUsuarioSchema.parse(req.body ?? {});
+    const resultado = await this.modificarUsuarioUC.desbloquear(id, req.usuario?.sub);
 
     return reply.status(200).send({
       success: true,

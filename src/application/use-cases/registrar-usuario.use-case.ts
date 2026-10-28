@@ -3,15 +3,20 @@ import { PasswordCambioObligatorioError, PermisoInsuficienteError, UsuarioDuplic
 import { UsuariosRepositoryPort } from '../../core/ports/usuarios-repository.port.js';
 import { RegistrarUsuarioInputDto, UsuarioOutputDto } from '../dtos/usuarios.dto.js';
 import { CrearUsuarioUseCase } from './usuarios.use-cases.js';
+import { UsuariosTransaccionPort } from '../../core/ports/usuarios-transaccion.port.js';
 
 /** CU60 / confirmarRegistroUsuario: autorización sobre el estado persistido del responsable. */
 export class RegistrarUsuarioUseCase {
   constructor(
     private readonly usuariosRepo: UsuariosRepositoryPort,
     private readonly crearUsuario: CrearUsuarioUseCase,
+    private readonly transaccion?: UsuariosTransaccionPort,
   ) {}
 
   async execute(input: RegistrarUsuarioInputDto, responsableId: string | undefined): Promise<UsuarioOutputDto> {
+    if (this.transaccion) return this.transaccion.ejecutar(responsableId ? [responsableId] : [], repos =>
+      new RegistrarUsuarioUseCase(repos.usuariosRepo,
+        new CrearUsuarioUseCase(repos.usuariosRepo, repos.usuarioFincasRepo, repos.auditoriaRepo)).execute(input, responsableId));
     const responsable = responsableId ? await this.usuariosRepo.buscarPorId(responsableId) : null;
     if (!responsable?.estaActivo || responsable.perfil !== 'ADMIN_SISTEMA') {
       throw new PermisoInsuficienteError('Solo un Administrador del Sistema activo puede registrar usuarios.');

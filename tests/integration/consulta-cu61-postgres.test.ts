@@ -3,6 +3,7 @@ import { FastifyInstance } from 'fastify';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
 import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { limpiarUsuariosSeguridad } from '../helpers/limpiar-usuarios-seguridad.js';
 import { DrizzleUsuariosRepository } from '../../src/infrastructure/database/repositories/drizzle-usuarios.repository.js';
 import { PerfilUsuario, Usuario } from '../../src/core/domain/entities/usuario.entity.js';
 import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth.service.js';
@@ -31,7 +32,7 @@ describe.skipIf(!connectionString)('AGRUL-053 CU61 con HTTP y PostgreSQL reales'
     await app.ready();
   });
   beforeEach(async () => {
-    await conexion.pool.query('delete from usuarios');
+    await limpiarUsuariosSeguridad(conexion.pool);
     for (const usuario of [
       { id: sistemaId, nombre: 'Admin', apellido: 'Sistema', nombreUsuario: 'sistema', email: 'sistema@example.test', perfil: 'ADMIN_SISTEMA' as const },
       { id: anaId, nombre: 'Ana', apellido: 'Pérez', nombreUsuario: 'huerta.norte', email: 'ana@example.test', perfil: 'ENCARGADO_CAMPO' as const, estado: 'INACTIVO' as const },
@@ -106,6 +107,7 @@ describe.skipIf(!connectionString)('AGRUL-053 CU61 con HTTP y PostgreSQL reales'
       await conexion.pool.query('update usuarios set perfil=$1 where id=$2', [perfil, sistemaId]);
       const sesion = await iniciarSesion();
       expect((await consultar(`/usuarios/${sistemaId}`, sesion)).statusCode).toBe(200);
+      expect((await consultar(`/usuarios/${sistemaId.toUpperCase()}`, sesion)).statusCode).toBe(200);
       expect((await consultar('/usuarios', sesion)).statusCode).toBe(403);
       expect((await consultar(`/usuarios/${anaId}`, sesion)).statusCode).toBe(403);
       expect((await consultar(`/usuarios/${inexistente}`, sesion)).statusCode).toBe(403);

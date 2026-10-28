@@ -119,6 +119,9 @@ import { InMemoryAuditoriaSeguridadRepository } from '../../../tests/mocks/in-me
 import { UsuariosController } from './controllers/usuarios.controller.js';
 import { RegistrarUsuarioUseCase } from '../../application/use-cases/registrar-usuario.use-case.js';
 import { ConsultarUsuariosUseCase } from '../../application/use-cases/consultar-usuarios.use-case.js';
+import { ModificarUsuarioUseCase } from '../../application/use-cases/modificar-usuario.use-case.js';
+import { ConsultarAuditoriaSeguraUseCase } from '../../application/use-cases/consultar-auditoria-segura.use-case.js';
+import { UsuariosTransaccionPort } from '../../core/ports/usuarios-transaccion.port.js';
 import { AuthController } from './controllers/auth.controller.js';
 import { AuditoriaController } from './controllers/auditoria.controller.js';
 import {
@@ -126,9 +129,6 @@ import {
   AutenticarUsuarioUseCase,
   ListarUsuariosUseCase,
   ObtenerUsuarioPorIdUseCase,
-  ActualizarUsuarioUseCase,
-  BloquearUsuarioUseCase,
-  DesbloquearUsuarioUseCase,
   CambiarPasswordUseCase,
   VerificarAccesoFincaUseCase,
 } from '../../application/use-cases/usuarios.use-cases.js';
@@ -250,6 +250,7 @@ export interface BuildAppOptions {
   usuariosRepo?: UsuariosRepositoryPort;
   usuarioFincasRepo?: UsuarioFincasRepositoryPort;
   auditoriaRepo?: AuditoriaSeguridadRepositoryPort;
+  usuariosTransaccion?: UsuariosTransaccionPort;
   proveedoresRepo?: ProveedoresRepositoryPort;
   insumoEquivalenciasRepo?: InsumoEquivalenciasRepositoryPort;
   depositosRepo?: DepositosRepositoryPort;
@@ -699,9 +700,6 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   const autenticarUsuarioUC = new AutenticarUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
   const listarUsuariosUC = new ListarUsuariosUseCase(usuariosRepo, usuarioFincasRepo);
   const obtenerUsuarioPorIdUC = new ObtenerUsuarioPorIdUseCase(usuariosRepo, usuarioFincasRepo);
-  const actualizarUsuarioUC = new ActualizarUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
-  const bloquearUsuarioUC = new BloquearUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
-  const desbloquearUsuarioUC = new DesbloquearUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
   const cambiarPasswordUC = new CambiarPasswordUseCase(usuariosRepo, auditoriaRepo);
   const verificarAccesoFincaUC = new VerificarAccesoFincaUseCase(usuariosRepo, usuarioFincasRepo);
 
@@ -709,11 +707,9 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   const obtenerAuditoriaPorIdUC = new ObtenerAuditoriaPorIdUseCase(auditoriaRepo);
 
   const usuariosController = new UsuariosController(
-    new RegistrarUsuarioUseCase(usuariosRepo, crearUsuarioUC),
+    new RegistrarUsuarioUseCase(usuariosRepo, crearUsuarioUC, options.usuariosTransaccion),
     new ConsultarUsuariosUseCase(usuariosRepo, listarUsuariosUC, obtenerUsuarioPorIdUC),
-    actualizarUsuarioUC,
-    bloquearUsuarioUC,
-    desbloquearUsuarioUC,
+    new ModificarUsuarioUseCase({ usuariosRepo, usuarioFincasRepo, auditoriaRepo }, options.usuariosTransaccion),
     verificarAccesoFincaUC
   );
   const authController = new AuthController(
@@ -722,8 +718,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     cambiarPasswordUC
   );
   const auditoriaController = new AuditoriaController(
-    consultarAuditoriaUC,
-    obtenerAuditoriaPorIdUC
+    new ConsultarAuditoriaSeguraUseCase(usuariosRepo, consultarAuditoriaUC, obtenerAuditoriaPorIdUC)
   );
 
   // Módulo 9: Inventario de Insumos y Stock (AGRUL-041)

@@ -112,7 +112,7 @@ describe('AGRUL-038: Integration Tests — Autenticación, RBAC y Aislamiento po
     await usuarioFincasRepo.asignarFincas('usr-encargado', [FINCA_LULES_ID]);
 
     const operarioUser = Usuario.crear({
-      id: 'usr-operario',
+      id: 'c0000000-0000-4000-8000-000000000038',
       nombre: 'Operario',
       apellido: 'Campo',
       email: 'operario@agrul.com',
@@ -121,7 +121,7 @@ describe('AGRUL-038: Integration Tests — Autenticación, RBAC y Aislamiento po
       perfil: 'OPERARIO',
     });
     await usuariosRepo.guardar(operarioUser);
-    await usuarioFincasRepo.asignarFincas('usr-operario', [FINCA_LULES_ID]);
+    await usuarioFincasRepo.asignarFincas('c0000000-0000-4000-8000-000000000038', [FINCA_LULES_ID]);
 
     const asesorUser = Usuario.crear({
       id: 'usr-asesor',
@@ -308,11 +308,11 @@ describe('AGRUL-038: Integration Tests — Autenticación, RBAC y Aislamiento po
       expect(resOperario.statusCode).toBe(403);
     });
 
-    it('POST /usuarios/:id/bloquear permite al Administrador bloquear y desbloquear cuentas', async () => {
+    it('POST /usuarios/:id/bloquear permite al Administrador del Sistema bloquear y desbloquear cuentas', async () => {
       const resBloqueo = await app.inject({
         method: 'POST',
-        url: '/api/v1/usuarios/usr-operario/bloquear',
-        headers: { authorization: `Bearer ${adminToken}` },
+        url: '/api/v1/usuarios/c0000000-0000-4000-8000-000000000038/bloquear',
+        headers: { authorization: `Bearer ${sistemaToken}` },
         payload: { motivo: 'Suspensión preventiva por auditoría' },
       });
 
@@ -322,8 +322,8 @@ describe('AGRUL-038: Integration Tests — Autenticación, RBAC y Aislamiento po
       // Desbloquear
       const resDesbloqueo = await app.inject({
         method: 'POST',
-        url: '/api/v1/usuarios/usr-operario/desbloquear',
-        headers: { authorization: `Bearer ${adminToken}` },
+        url: '/api/v1/usuarios/c0000000-0000-4000-8000-000000000038/desbloquear',
+        headers: { authorization: `Bearer ${sistemaToken}` },
       });
       expect(resDesbloqueo.statusCode).toBe(200);
       expect(resDesbloqueo.json().data.estado).toBe('ACTIVO');

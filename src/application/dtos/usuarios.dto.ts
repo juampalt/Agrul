@@ -45,6 +45,7 @@ export interface LoginOutputDto {
 }
 
 export interface ActualizarUsuarioInputDto {
+  nombreUsuario?: string;
   nombre?: string;
   apellido?: string;
   email?: string;

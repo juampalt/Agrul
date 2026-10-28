@@ -60,9 +60,7 @@ export class Usuario {
   public static readonly MAX_INTENTOS_FALLIDOS = 5;
 
   public static crear(params: CrearUsuarioParams): Usuario {
-    if (params.nombreUsuario !== undefined && !/^[a-zA-Z0-9._-]{1,100}$/.test(params.nombreUsuario.trim())) {
-      throw new UsuarioInvalidoError('El nombre de usuario debe contener entre 1 y 100 letras, números, puntos, guiones o guiones bajos.');
-    }
+    const nombreUsuario = params.nombreUsuario === undefined ? undefined : Usuario.normalizarNombreUsuario(params.nombreUsuario);
     if (!params.nombre || params.nombre.trim().length === 0) {
       throw new UsuarioInvalidoError('El nombre del usuario es obligatorio.');
     }
@@ -86,7 +84,7 @@ export class Usuario {
     const ahora = new Date().toISOString();
 
     return new Usuario({
-      nombreUsuario: params.nombreUsuario?.trim().toLowerCase(),
+      nombreUsuario,
       id: params.id,
       nombre: params.nombre.trim(),
       apellido: params.apellido.trim(),
@@ -241,7 +239,8 @@ export class Usuario {
     this.props.actualizadoEn = new Date().toISOString();
   }
 
-  public actualizarDatos(datos: { nombre?: string; apellido?: string; email?: string }): void {
+  public actualizarDatos(datos: { nombre?: string; apellido?: string; email?: string; nombreUsuario?: string }): void {
+    if (datos.nombreUsuario !== undefined) this.props.nombreUsuario = Usuario.normalizarNombreUsuario(datos.nombreUsuario);
     if (datos.nombre !== undefined) {
       if (!datos.nombre || datos.nombre.trim().length === 0) {
         throw new UsuarioInvalidoError('El nombre no puede ser vacío.');
@@ -274,6 +273,13 @@ export class Usuario {
     this.props.salt = nuevoSalt;
     this.props.debeCambiarPassword = false;
     this.props.actualizadoEn = new Date().toISOString();
+  }
+
+  private static normalizarNombreUsuario(valor: string): string {
+    if (!/^[a-zA-Z0-9._-]{1,100}$/.test(valor.trim())) {
+      throw new UsuarioInvalidoError('El nombre de usuario debe contener entre 1 y 100 letras, números, puntos, guiones o guiones bajos.');
+    }
+    return valor.trim().toLowerCase();
   }
 
   public toJSON() {
