@@ -33,8 +33,13 @@ export class EstadoActividadInvalidoError extends DomainError {
   readonly code = 'ESTADO_ACTIVIDAD_INVALIDO';
 }
 
+export class ConflictoActividadProgramadaError extends DomainError {
+  readonly code = 'ACTIVIDAD_PROGRAMADA_DESACTUALIZADA';
+  constructor() { super('La actividad cambió desde su lectura o ya no está pendiente. Volvé a consultarla antes de modificarla.'); }
+}
+
 export class ActividadProgramada {
-  private constructor(private readonly props: ActividadProgramadaProps) {}
+  private constructor(private readonly props: ActividadProgramadaProps, private readonly revisionLectura?: string) {}
 
   static programar(datos: DatosProgramacionActividad & { id: string }): ActividadProgramada {
     if (!datos.tipoActividadId) throw new ActividadProgramadaInvalidaError('El ID del tipo de actividad es obligatorio.');
@@ -57,7 +62,7 @@ export class ActividadProgramada {
     });
   }
 
-  static reconstituir(props: ActividadProgramadaProps): ActividadProgramada {
+  static reconstituir(props: ActividadProgramadaProps, versionPersistida?: string): ActividadProgramada {
     if (!props.id) throw new ActividadProgramadaInvalidaError('El ID de la actividad es obligatorio.');
     if (!props.cicloId) {
       throw new ActividadProgramadaInvalidaError('El ID del ciclo productivo es obligatorio.');
@@ -67,7 +72,7 @@ export class ActividadProgramada {
     }
     // Recuperar hechos no aplica reglas de alta ni inventa valores para campos
     // desconocidos. Las operaciones validan exclusivamente los datos que cambian.
-    return new ActividadProgramada({ ...props });
+    return new ActividadProgramada({ ...props }, versionPersistida);
   }
 
   get id(): string { return this.props.id; }
@@ -81,6 +86,8 @@ export class ActividadProgramada {
   get motivoCancelacion(): string | null { return this.props.motivoCancelacion ?? null; }
   get creadoEn(): string { return this.props.creadoEn; }
   get actualizadoEn(): string { return this.props.actualizadoEn; }
+  /** Token opaco del adaptador, válido para el ciclo interno de lectura/escritura. */
+  get versionPersistida(): string | undefined { return this.revisionLectura; }
 
   reprogramar(params: { fechaProgramada: string; responsableId?: string }): ActividadProgramada {
     if (this.props.estado !== 'PENDIENTE') {
@@ -98,7 +105,7 @@ export class ActividadProgramada {
       fechaProgramada: params.fechaProgramada,
       responsableId: params.responsableId ?? this.props.responsableId,
       actualizadoEn: new Date().toISOString(),
-    });
+    }, this.revisionLectura);
   }
 
   cancelar(motivo: string): ActividadProgramada {
@@ -115,7 +122,7 @@ export class ActividadProgramada {
       estado: 'CANCELADA',
       motivoCancelacion: motivoLimpio,
       actualizadoEn: new Date().toISOString(),
-    });
+    }, this.revisionLectura);
   }
 
   toJSON(): ActividadProgramadaProps {

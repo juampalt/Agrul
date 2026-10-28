@@ -101,6 +101,8 @@ FOR EACH ROW EXECUTE FUNCTION rechazar_mutacion_evento_trazabilidad();
 
 - **DO:** Separar la validación de altas y transiciones de la reconstrucción histórica. Si una migración agrega campos nullable o un CHECK `NOT VALID`, recuperar los nulos y valores anteriores sin inventarlos ni aplicar requisitos nuevos al leer. Probar listado y detalle desde el bootstrap con filas creadas antes de la migración; los datos nuevos deben seguir cumpliendo las restricciones vigentes (P1 / AGRUL-054).
 
+- **DO:** En actualizaciones de entidades mutables, comparar la versión leída además del estado; un estado que sigue PENDIENTE no detecta cambios concurrentes. Actualizar solo los campos de la operación y rechazar el conflicto sin reintentar decisiones obsoletas. Si se usa `xmin`, mantenerlo como token opaco efímero del adaptador, nunca como identificador histórico o contrato persistente. Probar dos conexiones/solicitudes simultáneas, escrituras SQL externas y rollback (P2 / AGRUL-054).
+
 ### DON'T
 - **DON'T:** No usar float o double para cantidades de stock. Usar `numeric(14, 4)` para evitar errores de redondeo de punto flotante en kilos, litros o cajas.
 - **DON'T:** No omitir el índice compuesto `(lote_id, timestamp_captura_local)`; es la clave del rendimiento del árbol de trazabilidad.

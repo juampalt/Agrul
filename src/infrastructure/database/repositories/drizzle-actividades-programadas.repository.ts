@@ -1,6 +1,6 @@
-import { and, asc, eq, gte, lte } from 'drizzle-orm';
+import { and, asc, eq, getTableColumns, gte, lte, sql } from 'drizzle-orm';
 import { ActividadProgramada } from '../../../core/domain/entities/actividad-programada.entity.js';
-import { EstadoActividadInvalidoError } from '../../../core/domain/entities/actividad-programada.entity.js';
+import { ConflictoActividadProgramadaError, EstadoActividadInvalidoError } from '../../../core/domain/entities/actividad-programada.entity.js';
 import {
   ActividadesProgramadasRepositoryPort,
   FiltrosActividadesProgramadas,
@@ -8,6 +8,11 @@ import {
 import { AgrulDatabase } from '../connection.js';
 import { actividadesProgramadasTable } from '../schema/actividades-programadas.js';
 import { alcanceFincasPorCiclo } from '../alcance-fincas-agricolas.js';
+
+// xmin cambia con cada versión de fila confirmada, incluso en escrituras SQL
+// ajenas al repositorio. Solo se usa como token efímero dentro de una solicitud.
+const columnas = { ...getTableColumns(actividadesProgramadasTable),
+  versionPersistida: sql<string>`${actividadesProgramadasTable}.xmin::text` };
 
 export class DrizzleActividadesProgramadasRepository implements ActividadesProgramadasRepositoryPort {
   constructor(private readonly db: AgrulDatabase) {}
@@ -30,7 +35,7 @@ export class DrizzleActividadesProgramadasRepository implements ActividadesProgr
   }
 
   async buscarPorId(id: string): Promise<ActividadProgramada | null> {
-    const [fila] = await this.db.select().from(actividadesProgramadasTable).where(eq(actividadesProgramadasTable.id, id));
+    const [fila] = await this.db.select(columnas).from(actividadesProgramadasTable).where(eq(actividadesProgramadasTable.id, id));
     if (!fila) return null;
     return ActividadProgramada.reconstituir({
       id: fila.id,
@@ -44,7 +49,7 @@ export class DrizzleActividadesProgramadasRepository implements ActividadesProgr
       motivoCancelacion: fila.motivoCancelacion,
       creadoEn: fila.creadoEn,
       actualizadoEn: fila.actualizadoEn,
-    });
+    }, fila.versionPersistida);
   }
 
   async listar(filtros: FiltrosActividadesProgramadas): Promise<ActividadProgramada[]> {
@@ -71,7 +76,7 @@ export class DrizzleActividadesProgramadasRepository implements ActividadesProgr
     const whereClause = and(...condiciones, alcanceFincasPorCiclo(this.db, actividadesProgramadasTable.cicloId, filtros.fincaIds));
 
     const filas = await this.db
-      .select()
+      .select(columnas)
       .from(actividadesProgramadasTable)
       .where(whereClause)
       .orderBy(asc(actividadesProgramadasTable.fechaProgramada), asc(actividadesProgramadasTable.id))
@@ -91,33 +96,32 @@ export class DrizzleActividadesProgramadasRepository implements ActividadesProgr
         motivoCancelacion: fila.motivoCancelacion,
         creadoEn: fila.creadoEn,
         actualizadoEn: fila.actualizadoEn,
-      })
+      }, fila.versionPersistida)
     );
   }
 
   async actualizar(actividad: ActividadProgramada): Promise<void> {
     const raw = actividad.toJSON();
-    // La condición se evalúa en el UPDATE: una lectura anterior nunca habilita
-    // sobrescribir una cancelación o ejecución confirmada por otra solicitud.
+    if (raw.estado !== 'PENDIENTE' && raw.estado !== 'CANCELADA') {
+      throw new EstadoActividadInvalidoError('La ejecución requiere registrar una labor realizada de forma transaccional.');
+    }
+    if (!actividad.versionPersistida) throw new ConflictoActividadProgramadaError();
+    const cambios = raw.estado === 'CANCELADA'
+      ? { estado: raw.estado, motivoCancelacion: raw.motivoCancelacion, actualizadoEn: raw.actualizadoEn }
+      : { fechaProgramada: raw.fechaProgramada, responsableId: raw.responsableId, actualizadoEn: raw.actualizadoEn };
+    // Compare-and-swap: estado y versión deben seguir siendo los leídos. No se
+    // reintenta automáticamente una decisión tomada sobre una lectura obsoleta.
     const filas = await this.db
       .update(actividadesProgramadasTable)
-      .set({
-        tipoActividadId: raw.tipoActividadId,
-        fechaProgramada: raw.fechaProgramada,
-        responsableId: raw.responsableId,
-        superficiePrevista: raw.superficiePrevista !== null ? raw.superficiePrevista.toFixed(2) : null,
-        descripcion: raw.descripcion,
-        estado: raw.estado,
-        motivoCancelacion: raw.motivoCancelacion,
-        actualizadoEn: raw.actualizadoEn,
-      })
+      .set(cambios)
       .where(and(
         eq(actividadesProgramadasTable.id, raw.id),
         eq(actividadesProgramadasTable.estado, 'PENDIENTE'),
+        eq(columnas.versionPersistida, actividad.versionPersistida),
       ))
       .returning({ id: actividadesProgramadasTable.id });
     if (filas.length === 0) {
-      throw new EstadoActividadInvalidoError('La actividad ya no está pendiente o no existe. Volvé a consultar su estado.');
+      throw new ConflictoActividadProgramadaError();
     }
   }
 }

@@ -6,7 +6,7 @@ import { createDatabaseConnection } from '../../src/infrastructure/database/conn
 import { runMigrations } from '../../src/infrastructure/database/migrate.js';
 import { DrizzleUsuarioFincasRepository } from '../../src/infrastructure/database/repositories/drizzle-usuario-fincas.repository.js';
 import { DrizzleActividadesProgramadasRepository } from '../../src/infrastructure/database/repositories/drizzle-actividades-programadas.repository.js';
-import { EstadoActividadInvalidoError } from '../../src/core/domain/entities/actividad-programada.entity.js';
+import { ConflictoActividadProgramadaError } from '../../src/core/domain/entities/actividad-programada.entity.js';
 import { CicloConActividadesPendientesError } from '../../src/application/use-cases/verificar-cierre-ciclo.use-case.js';
 import { autenticarOperadorPrueba } from '../helpers/operador-postgres.fixture.js';
 import { sembrarCiclosRn09 } from '../helpers/sembrar-ciclos-rn09.js';
@@ -111,7 +111,7 @@ describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
     const escritor = await connection.pool.connect();
     try {
       await escritor.query("update actividades_programadas set estado='CANCELADA',motivo_cancelacion='Otra solicitud' where id=$1", [id]);
-      await expect(repo.actualizar(leida.reprogramar({ fechaProgramada: '2026-11-20' }))).rejects.toBeInstanceOf(EstadoActividadInvalidoError);
+      await expect(repo.actualizar(leida.reprogramar({ fechaProgramada: '2026-11-20' }))).rejects.toBeInstanceOf(ConflictoActividadProgramadaError);
       expect((await repo.buscarPorId(id))?.toJSON()).toMatchObject({ estado: 'CANCELADA', motivoCancelacion: 'Otra solicitud', fechaProgramada: '2026-11-15' });
     } finally { escritor.release(); }
   });
