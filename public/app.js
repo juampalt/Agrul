@@ -3198,6 +3198,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let activeAuthUser = null;
 
   function actualizarBannerSesion() {
+    if (formCrearUsuario) {
+      const puedeRegistrar = activeAuthUser?.perfil === 'ADMIN_SISTEMA' && !activeAuthUser.debeCambiarPassword;
+      Array.from(formCrearUsuario.elements).forEach(control => { control.disabled = !puedeRegistrar; });
+    }
     if (activeAuthToken && activeAuthUser) {
       if (userSessionInfo) userSessionInfo.style.display = 'flex';
       if (userLoginBox) userLoginBox.style.display = 'none';
@@ -3410,6 +3414,7 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const nombre = document.getElementById('usr-alta-nombre')?.value?.trim();
       const apellido = document.getElementById('usr-alta-apellido')?.value?.trim();
+      const nombreUsuario = document.getElementById('usr-alta-usuario')?.value?.trim();
       const email = document.getElementById('usr-alta-email')?.value?.trim();
       const password = document.getElementById('usr-alta-password')?.value;
       const perfil = document.getElementById('usr-alta-perfil')?.value;
@@ -3429,6 +3434,7 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify({
             nombre,
             apellido,
+            nombreUsuario,
             email,
             password,
             perfil,
@@ -3441,9 +3447,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (json.success && json.data) {
           showToast(`Usuario ${json.data.nombreCompleto} creado exitosamente con rol ${json.data.perfil}.`, 'success');
           formCrearUsuario.reset();
-          const tabLista = document.querySelector('[data-usrtab="tab-lista-usuarios"]');
-          if (tabLista) tabLista.click();
-          cargarListaUsuarios();
         } else {
           showToast(`Error al crear usuario: ${json.error?.message || 'Verifique los datos'}`, 'error');
         }

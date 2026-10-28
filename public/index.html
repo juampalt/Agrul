@@ -1781,6 +1781,7 @@
         <!-- Pestaña 2: Alta de Usuario -->
         <div id="tab-alta-usuario" class="usr-tab-content" style="display: none;">
           <form id="form-crear-usuario" class="glass" style="padding: 16px; border-radius: 8px; margin-top: 12px;">
+            <p>El registro de usuarios requiere una sesión de Administrador del Sistema.</p>
             <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
               <div class="form-group">
                 <label for="usr-alta-nombre" class="form-label">Nombre *</label>
@@ -1789,6 +1790,10 @@
               <div class="form-group">
                 <label for="usr-alta-apellido" class="form-label">Apellido *</label>
                 <input type="text" id="usr-alta-apellido" class="form-input" required placeholder="Ej: Gómez">
+              </div>
+              <div class="form-group">
+                <label for="usr-alta-usuario" class="form-label">Nombre de usuario *</label>
+                <input type="text" id="usr-alta-usuario" class="form-input" required maxlength="100" pattern="[a-zA-Z0-9._-]+" autocomplete="off" placeholder="Ej: r.gomez">
               </div>
               <div class="form-group">
                 <label for="usr-alta-email" class="form-label">Email Corporativo *</label>
@@ -1801,10 +1806,9 @@
               <div class="form-group">
                 <label for="usr-alta-perfil" class="form-label">Perfil / Rol RBAC *</label>
                 <select id="usr-alta-perfil" class="form-select" required>
-                  <option value="ENCARGADO">ENCARGADO (Gestión operativa de finca)</option>
-                  <option value="OPERARIO">OPERARIO (Carga de tareas de campo)</option>
-                  <option value="ASESOR_AGRONOMO">ASESOR_AGRONOMO (Solo lectura + recomendaciones)</option>
-                  <option value="ADMINISTRADOR">ADMINISTRADOR (Acceso global y configuración)</option>
+                  <option value="ENCARGADO_CAMPO">Encargado de Campo / Ingeniero Agrónomo</option>
+                  <option value="ADMINISTRADOR">Administrador</option>
+                  <option value="ADMIN_SISTEMA">Administrador del Sistema</option>
                 </select>
               </div>
             </div>
