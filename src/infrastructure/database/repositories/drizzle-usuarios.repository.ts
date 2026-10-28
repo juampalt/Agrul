@@ -2,11 +2,11 @@ import { and, eq, sql } from 'drizzle-orm';
 import { Usuario, PerfilUsuario, EstadoUsuario } from '../../../core/domain/entities/usuario.entity.js';
 import { EntidadNoEncontradaError, UsuarioDuplicadoError } from '../../../core/domain/errors/domain.error.js';
 import { FiltrosUsuarios, UsuariosRepositoryPort } from '../../../core/ports/usuarios-repository.port.js';
-import { AgrulDatabase } from '../connection.js';
+import { AgrulDatabase, AgrulTransaction } from '../connection.js';
 import { usuariosTable } from '../schema/tables.js';
 
 export class DrizzleUsuariosRepository implements UsuariosRepositoryPort {
-  constructor(private readonly db: AgrulDatabase) {}
+  constructor(private readonly db: AgrulDatabase | AgrulTransaction) {}
 
   async guardar(usuario: Usuario): Promise<void> {
     await this.conUnicidad(usuario, () => this.db.insert(usuariosTable).values(this.valores(usuario)));

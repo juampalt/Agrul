@@ -85,6 +85,13 @@
       "when": 1793149207000,
       "tag": "0011_registro_usuarios_canonicos",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793149208000,
+      "tag": "0012_auditoria_usuarios_persistente",
+      "breakpoints": true
     }
   ]
 }

@@ -510,6 +510,7 @@ export const usuarioFincaAsignacionTable = pgTable('usuario_finca_asignacion', {
 }, (table) => [
   index('idx_usuario_finca_usuario').on(table.usuarioId),
   index('idx_usuario_finca_finca').on(table.fincaId),
+  uniqueIndex('usuario_finca_par_unique').on(table.usuarioId, table.fincaId),
 ]);
 
 // ============================================================================
@@ -519,13 +520,13 @@ export const usuarioFincaAsignacionTable = pgTable('usuario_finca_asignacion', {
 // TABLA APPEND-ONLY: Bitácora Centralizada de Auditoría de Seguridad (RF-M8-08 / RN-06)
 export const auditoriaSeguridadLogTable = pgTable('auditoria_seguridad_log', {
   id: uuid('id').defaultRandom().primaryKey(),
-  usuarioId: uuid('usuario_id').references(() => usuariosTable.id, { onDelete: 'set null' }),
+  usuarioId: uuid('usuario_id').references(() => usuariosTable.id, { onDelete: 'restrict' }),
   usuarioEmail: varchar('usuario_email', { length: 150 }),
   accion: varchar('accion', { length: 50 }).notNull(), // LOGIN | CREAR | EDITAR | ANULAR | EMITIR_REPORTE | BLOQUEO | DESBLOQUEO | CAMBIO_PASSWORD
   entidad: varchar('entidad', { length: 100 }).notNull(), // USUARIO | LOTE | ACTIVIDAD | COSECHA | DESPACHO | REPORTE | SESION
   entidadId: varchar('entidad_id', { length: 100 }),
-  valorPrevioJson: jsonb('valor_previo_json'),
-  valorNuevoJson: jsonb('valor_nuevo_json'),
+  valorPrevioJson: jsonb('valor_previo_json').$type<Record<string, unknown>>(),
+  valorNuevoJson: jsonb('valor_nuevo_json').$type<Record<string, unknown>>(),
   ip: varchar('ip', { length: 60 }),
   userAgent: varchar('user_agent', { length: 255 }),
   timestamp: timestamp('timestamp', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -535,6 +536,16 @@ export const auditoriaSeguridadLogTable = pgTable('auditoria_seguridad_log', {
   index('idx_auditoria_entidad').on(table.entidad),
   index('idx_auditoria_timestamp').on(table.timestamp),
 ]);
+
+export const registroModificacionesTable = pgTable('registro_modificaciones', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  fechaHora: timestamp('fecha_hora', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
+  usuarioId: uuid('usuario_id').notNull().references(() => usuariosTable.id, { onDelete: 'restrict' }),
+  usuarioAfectadoId: uuid('usuario_afectado_id').notNull().references(() => usuariosTable.id, { onDelete: 'restrict' }),
+  datoModificado: varchar('dato_modificado', { length: 100 }).notNull(),
+  valorAnterior: jsonb('valor_anterior'),
+  valorNuevo: jsonb('valor_nuevo'),
+}, table => [index('idx_modificaciones_usuario_fecha').on(table.usuarioAfectadoId, table.fechaHora)]);
 
 // ============================================================================
 // ÉPICA 15: MÓDULO 9 — INVENTARIO DE INSUMOS Y STOCK (AGRUL-041)
