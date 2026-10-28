@@ -11,7 +11,11 @@ export interface DatosProgramacionActividad {
   descripcion?: string | null;
 }
 
-export interface ActividadProgramadaProps extends DatosProgramacionActividad {
+export interface ActividadProgramadaProps extends Omit<DatosProgramacionActividad, 'tipoActividadId' | 'fechaProgramada' | 'responsableId'> {
+  // La migración 0015 conserva estos campos nulos en registros anteriores.
+  tipoActividadId: string | null;
+  fechaProgramada: string | null;
+  responsableId: string | null;
   superficiePrevista: number | null;
   descripcion: string | null;
   id: string;
@@ -33,6 +37,14 @@ export class ActividadProgramada {
   private constructor(private readonly props: ActividadProgramadaProps) {}
 
   static programar(datos: DatosProgramacionActividad & { id: string }): ActividadProgramada {
+    if (!datos.tipoActividadId) throw new ActividadProgramadaInvalidaError('El ID del tipo de actividad es obligatorio.');
+    if (!datos.responsableId) throw new ActividadProgramadaInvalidaError('El ID del responsable es obligatorio.');
+    if (!esFechaProgramadaValida(datos.fechaProgramada)) {
+      throw new ActividadProgramadaInvalidaError('La fecha programada debe tener formato YYYY-MM-DD válido.');
+    }
+    if (datos.superficiePrevista != null && (!Number.isFinite(datos.superficiePrevista) || datos.superficiePrevista <= 0)) {
+      throw new ActividadProgramadaInvalidaError('La superficie prevista en hectáreas debe ser mayor a cero.');
+    }
     const ahora = new Date().toISOString();
     return ActividadProgramada.reconstituir({
       ...datos,
@@ -46,44 +58,23 @@ export class ActividadProgramada {
   }
 
   static reconstituir(props: ActividadProgramadaProps): ActividadProgramada {
+    if (!props.id) throw new ActividadProgramadaInvalidaError('El ID de la actividad es obligatorio.');
     if (!props.cicloId) {
       throw new ActividadProgramadaInvalidaError('El ID del ciclo productivo es obligatorio.');
-    }
-    if (!props.tipoActividadId) {
-      throw new ActividadProgramadaInvalidaError('El ID del tipo de actividad es obligatorio.');
-    }
-    if (!props.responsableId) {
-      throw new ActividadProgramadaInvalidaError('El ID del responsable es obligatorio.');
-    }
-    if (!esFechaProgramadaValida(props.fechaProgramada)) {
-      throw new ActividadProgramadaInvalidaError('La fecha programada debe tener formato YYYY-MM-DD válido.');
-    }
-    if (props.superficiePrevista != null && (!Number.isFinite(props.superficiePrevista) || props.superficiePrevista <= 0)) {
-      throw new ActividadProgramadaInvalidaError('La superficie prevista en hectáreas debe ser mayor a cero.');
     }
     if (!['PENDIENTE', 'EJECUTADA', 'CANCELADA'].includes(props.estado)) {
       throw new ActividadProgramadaInvalidaError(`Estado inválido: '${props.estado}'.`);
     }
-    if (props.estado === 'CANCELADA') {
-      const motivo = props.motivoCancelacion?.trim();
-      if (!motivo || motivo.length === 0) {
-        throw new ActividadProgramadaInvalidaError('Toda actividad cancelada debe incluir obligatoriamente el motivo de cancelación (RN-12).');
-      }
-    }
-
-    return new ActividadProgramada({
-      ...props,
-      superficiePrevista: props.superficiePrevista !== null && props.superficiePrevista !== undefined ? Number(props.superficiePrevista) : null,
-      descripcion: props.descripcion?.trim() ?? null,
-      motivoCancelacion: props.motivoCancelacion?.trim() ?? null,
-    });
+    // Recuperar hechos no aplica reglas de alta ni inventa valores para campos
+    // desconocidos. Las operaciones validan exclusivamente los datos que cambian.
+    return new ActividadProgramada({ ...props });
   }
 
   get id(): string { return this.props.id; }
   get cicloId(): string { return this.props.cicloId; }
-  get tipoActividadId(): string { return this.props.tipoActividadId; }
-  get fechaProgramada(): string { return this.props.fechaProgramada; }
-  get responsableId(): string { return this.props.responsableId; }
+  get tipoActividadId(): string | null { return this.props.tipoActividadId; }
+  get fechaProgramada(): string | null { return this.props.fechaProgramada; }
+  get responsableId(): string | null { return this.props.responsableId; }
   get superficiePrevista(): number | null { return this.props.superficiePrevista ?? null; }
   get descripcion(): string | null { return this.props.descripcion ?? null; }
   get estado(): EstadoActividadProgramada { return this.props.estado; }
@@ -97,6 +88,9 @@ export class ActividadProgramada {
     }
     if (!esFechaProgramadaValida(params.fechaProgramada)) {
       throw new ActividadProgramadaInvalidaError('La nueva fecha programada debe tener formato YYYY-MM-DD válido.');
+    }
+    if (params.responsableId !== undefined && !params.responsableId) {
+      throw new ActividadProgramadaInvalidaError('El nuevo responsable no puede estar vacío.');
     }
 
     return ActividadProgramada.reconstituir({

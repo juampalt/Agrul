@@ -26,8 +26,6 @@ export class DrizzleActividadesRealizadasRepository implements ActividadesRealiz
       const contexto = await this.cargarContexto(tx, programada.cicloId, responsableId);
       const actividad = crear({
         programada: ActividadProgramada.reconstituir({ ...programada,
-          tipoActividadId: programada.tipoActividadId ?? '', fechaProgramada: programada.fechaProgramada ?? '',
-          responsableId: programada.responsableId ?? '',
           superficiePrevista: programada.superficiePrevista === null ? null : Number(programada.superficiePrevista),
         }).toJSON(),
         ...contexto,
