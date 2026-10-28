@@ -5,17 +5,35 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 --> statement-breakpoint
-DROP TRIGGER IF EXISTS trg_bloquear_delete_cosechas_bpa ON cosechas;
-CREATE TRIGGER trg_bloquear_delete_cosechas_bpa
-BEFORE DELETE ON cosechas
-FOR EACH ROW EXECUTE FUNCTION rechazar_delete_registros_productivos_bpa();
+DO $$
+BEGIN
+    IF to_regclass('public.cosechas') IS NOT NULL THEN
+        DROP TRIGGER IF EXISTS trg_bloquear_delete_cosechas_bpa ON cosechas;
+        CREATE TRIGGER trg_bloquear_delete_cosechas_bpa
+        BEFORE DELETE ON cosechas
+        FOR EACH ROW EXECUTE FUNCTION rechazar_delete_registros_productivos_bpa();
+    END IF;
+END;
+$$;
 --> statement-breakpoint
-DROP TRIGGER IF EXISTS trg_bloquear_delete_actividades_bpa ON actividades_agricolas;
-CREATE TRIGGER trg_bloquear_delete_actividades_bpa
-BEFORE DELETE ON actividades_agricolas
-FOR EACH ROW EXECUTE FUNCTION rechazar_delete_registros_productivos_bpa();
+DO $$
+BEGIN
+    IF to_regclass('public.actividades_agricolas') IS NOT NULL THEN
+        DROP TRIGGER IF EXISTS trg_bloquear_delete_actividades_bpa ON actividades_agricolas;
+        CREATE TRIGGER trg_bloquear_delete_actividades_bpa
+        BEFORE DELETE ON actividades_agricolas
+        FOR EACH ROW EXECUTE FUNCTION rechazar_delete_registros_productivos_bpa();
+    END IF;
+END;
+$$;
 --> statement-breakpoint
-DROP TRIGGER IF EXISTS trg_bloquear_delete_stock_mov_bpa ON stock_movimientos;
-CREATE TRIGGER trg_bloquear_delete_stock_mov_bpa
-BEFORE DELETE ON stock_movimientos
-FOR EACH ROW EXECUTE FUNCTION rechazar_delete_registros_productivos_bpa();
+DO $$
+BEGIN
+    IF to_regclass('public.stock_movimientos') IS NOT NULL THEN
+        DROP TRIGGER IF EXISTS trg_bloquear_delete_stock_mov_bpa ON stock_movimientos;
+        CREATE TRIGGER trg_bloquear_delete_stock_mov_bpa
+        BEFORE DELETE ON stock_movimientos
+        FOR EACH ROW EXECUTE FUNCTION rechazar_delete_registros_productivos_bpa();
+    END IF;
+END;
+$$;

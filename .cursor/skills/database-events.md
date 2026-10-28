@@ -97,6 +97,7 @@ FOR EACH ROW EXECUTE FUNCTION rechazar_mutacion_evento_trazabilidad();
 - **DO:** Usar `db.transaction()` de Drizzle para asegurar que el write model y el read model permanezcan 100% consistentes.
 - **DO:** Usar `ON DELETE RESTRICT` en todas las referencias foráneas de trazabilidad.
 - **DO:** Probar en tests de integración que el trigger de Postgres cancele cualquier intento de `db.delete(eventosTrazabilidad)`.
+- **DO:** Ejecutar la cadena completa de migraciones sobre una base PostgreSQL vacía y descartable antes de integrar; una migración no debe asumir tablas creadas manualmente fuera del journal.
 
 ### DON'T
 - **DON'T:** No usar float o double para cantidades de stock. Usar `numeric(14, 4)` para evitar errores de redondeo de punto flotante en kilos, litros o cajas.
@@ -107,3 +108,4 @@ FOR EACH ROW EXECUTE FUNCTION rechazar_mutacion_evento_trazabilidad();
 ## 6. Registro de Decisiones (Self-Correction Log)
 - *2026-10-03:* Se adopta Drizzle ORM sobre PostgreSQL con schema tipado.
 - *2026-10-03:* Se implementa trigger nativo PL/pgSQL para garantizar inmutabilidad forzada a nivel de base de datos.
+- *2026-10-27:* Se exige validar migraciones desde una base vacía y proteger triggers opcionales cuando su tabla todavía no forma parte del journal versionado.

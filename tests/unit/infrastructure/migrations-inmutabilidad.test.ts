@@ -66,6 +66,21 @@ describe('AGRUL-009: Migraciones SQL y Triggers de Inmutabilidad', () => {
     expect(triggerContent).toContain('trg_bloquear_delete_cosechas_bpa');
     expect(triggerContent).toContain('trg_bloquear_delete_actividades_bpa');
     expect(triggerContent).toContain('trg_bloquear_delete_stock_mov_bpa');
+    expect(triggerContent).toContain("to_regclass('public.cosechas')");
+    expect(triggerContent).toContain("to_regclass('public.actividades_agricolas')");
+    expect(triggerContent).toContain("to_regclass('public.stock_movimientos')");
+  });
+
+  it('debe poder crear la estructura territorial desde una base vacía', () => {
+    const territorioFile = resolve(migrationsFolder, '0003_territorio_finca_lotes.sql');
+    const territorioContent = readFileSync(territorioFile, 'utf-8');
+
+    expect(territorioContent).toContain('CREATE TABLE IF NOT EXISTS "fincas"');
+    expect(territorioContent).toContain('ADD COLUMN IF NOT EXISTS "finca_id"');
+    expect(territorioContent).toContain('ADD COLUMN IF NOT EXISTS "superficie_ha"');
+    expect(territorioContent).toContain('lotes_finca_id_fincas_id_fk');
+    expect(territorioContent).toContain('idx_lotes_finca');
+    expect(territorioContent).toContain('idx_fincas_provincia_depto');
   });
 
   it('debe rechazar UPDATE y DELETE en eventos_trazabilidad arrojando VIOLACION_DE_INMUTABILIDAD (si hay PostgreSQL disponible)', async () => {
