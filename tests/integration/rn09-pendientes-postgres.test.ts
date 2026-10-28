@@ -4,6 +4,7 @@ import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { AgrulTransaction, createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
 import { runMigrations } from '../../src/infrastructure/database/migrate.js';
 import { CicloConActividadesPendientesError } from '../../src/application/use-cases/verificar-cierre-ciclo.use-case.js';
+import { sembrarCiclosRn09 } from '../helpers/sembrar-ciclos-rn09.js';
 
 const connectionString = process.env.RN09_TEST_DATABASE_URL;
 const CICLO = 'c0000000-0000-4000-8000-000000000052';
@@ -29,6 +30,7 @@ describe.skipIf(!connectionString)('RN-09: consulta persistente y transacción d
     const { rows } = await connection.pool.query<{ nombre: string }>('select current_database() as nombre');
     if (rows[0]?.nombre !== 'agrul_test_agrul_052_rn09') throw new Error('Esta suite solo puede modificar agrul_test_agrul_052_rn09.');
     await runMigrations(connectionString);
+    await sembrarCiclosRn09(connection.pool, [CICLO, OTRO]);
     await connection.pool.query('create table if not exists rn09_efectos_prueba (id uuid primary key)');
     servidor = crearServidorProduccion({ connectionString, logger: false });
     // Ruta exclusiva de la prueba para verificar el errorHandler real sin desarrollar CU21.

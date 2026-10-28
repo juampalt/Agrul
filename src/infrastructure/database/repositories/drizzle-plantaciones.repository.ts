@@ -1,9 +1,10 @@
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, ne, sql } from 'drizzle-orm';
+import { CicloProductivoInvalidoError } from '../../../core/domain/value-objects/planificacion-ciclo.vo.js';
 import { Plantacion } from '../../../core/domain/entities/plantacion.entity.js';
 import { EntidadNoEncontradaError } from '../../../core/domain/errors/domain.error.js';
 import { FiltrosPlantaciones, PlantacionesRepositoryPort } from '../../../core/ports/plantaciones-repository.port.js';
 import { AgrulDatabase } from '../connection.js';
-import { cultivosTable, lotesTable, plantacionesTable, variedadesTable } from '../schema/tables.js';
+import { ciclosProductivosTable, cultivosTable, lotesTable, plantacionesTable, variedadesTable } from '../schema/tables.js';
 
 export class DrizzlePlantacionesRepository implements PlantacionesRepositoryPort {
   constructor(private readonly db: AgrulDatabase) {}
@@ -49,6 +50,14 @@ export class DrizzlePlantacionesRepository implements PlantacionesRepositoryPort
     return this.db.transaction(async (tx) => {
       const [fila] = await tx.select().from(plantacionesTable).where(eq(plantacionesTable.id, id)).for('update');
       if (!fila) return null;
+      const [abierto] = await tx.select({ id: ciclosProductivosTable.id }).from(ciclosProductivosTable)
+        .where(and(eq(ciclosProductivosTable.plantacionId, id), ne(ciclosProductivosTable.estado, 'FINALIZADO'))).limit(1);
+      if (abierto) throw new CicloProductivoInvalidoError('No se puede finalizar una plantación con ciclos sin finalizar.');
+      const [historial] = await tx.select({ ultimaFecha: sql<string | null>`max(${ciclosProductivosTable.fechaFinEfectiva})` })
+        .from(ciclosProductivosTable).where(eq(ciclosProductivosTable.plantacionId, id));
+      if (historial?.ultimaFecha && fecha < historial.ultimaFecha) {
+        throw new CicloProductivoInvalidoError('La finalización de la plantación no puede preceder al cierre de sus ciclos.');
+      }
       const finalizada = this.mapear(fila).finalizar(fecha);
       await tx.update(plantacionesTable).set({ estado: 'FINALIZADA', fechaFinalizacion: fecha }).where(eq(plantacionesTable.id, id));
       return finalizada;

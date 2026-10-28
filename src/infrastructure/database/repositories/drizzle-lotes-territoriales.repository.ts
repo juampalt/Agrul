@@ -1,10 +1,11 @@
 import { and, eq, ilike, ne, sql } from 'drizzle-orm';
 import { Lote } from '../../../core/domain/entities/lote.entity.js';
 import { Plantacion } from '../../../core/domain/entities/plantacion.entity.js';
+import { CicloProductivoInvalidoError } from '../../../core/domain/value-objects/planificacion-ciclo.vo.js';
 import { CodigoLote } from '../../../core/domain/value-objects/codigo-lote.vo.js';
 import { ListarLotesFiltros, LotesRepositoryPort } from '../../../core/ports/lotes-repository.port.js';
 import { AgrulDatabase } from '../connection.js';
-import { lotesTable, plantacionesTable } from '../schema/tables.js';
+import { ciclosProductivosTable, lotesTable, plantacionesTable } from '../schema/tables.js';
 
 export class DrizzleLotesTerritorialesRepository implements LotesRepositoryPort {
   constructor(private readonly db: AgrulDatabase) {}
@@ -13,6 +14,12 @@ export class DrizzleLotesTerritorialesRepository implements LotesRepositoryPort 
   async actualizar(lote: Lote): Promise<void> {
     await this.db.transaction(async (tx) => {
       await tx.select({ id: lotesTable.id }).from(lotesTable).where(eq(lotesTable.id, lote.id)).for('update');
+      const [activo] = await tx.select({ id: ciclosProductivosTable.id }).from(ciclosProductivosTable)
+        .innerJoin(plantacionesTable, eq(ciclosProductivosTable.plantacionId, plantacionesTable.id))
+        .where(and(eq(plantacionesTable.loteId, lote.id), eq(ciclosProductivosTable.estado, 'ACTIVO'))).limit(1);
+      if (activo && lote.estadoTerritorial !== 'EN_PRODUCCION') {
+        throw new CicloProductivoInvalidoError('El lote debe permanecer EN_PRODUCCION mientras tenga ciclos activos.');
+      }
       const [ocupacion] = await tx.select({ total: sql<string>`coalesce(sum(${plantacionesTable.superficieHa}), 0)` })
         .from(plantacionesTable).where(and(eq(plantacionesTable.loteId, lote.id), eq(plantacionesTable.estado, 'ACTIVA')));
       Plantacion.validarCapacidad(lote.superficieHa ?? 0, Number(ocupacion?.total ?? 0));

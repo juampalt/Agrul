@@ -57,6 +57,13 @@
       "when": 1793149203000,
       "tag": "0007_pendientes_cierre_ciclo",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793149204000,
+      "tag": "0008_ciclos_productivos",
+      "breakpoints": true
     }
   ]
 }

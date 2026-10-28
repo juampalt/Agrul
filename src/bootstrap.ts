@@ -4,6 +4,7 @@ import { DrizzleVariedadesRepository } from './infrastructure/database/repositor
 import { DrizzlePlantacionesRepository } from './infrastructure/database/repositories/drizzle-plantaciones.repository.js';
 import { createDatabaseConnection } from './infrastructure/database/connection.js';
 import { DrizzleCierreCicloGuard } from './infrastructure/database/cierre-ciclo.guard.js';
+import { DrizzleCiclosProductivosRepository } from './infrastructure/database/repositories/drizzle-ciclos-productivos.repository.js';
 import { DrizzleFincasRepository } from './infrastructure/database/repositories/drizzle-fincas.repository.js';
 import { DrizzleLotesTerritorialesRepository } from './infrastructure/database/repositories/drizzle-lotes-territoriales.repository.js';
 import { InMemoryEventosRepository } from '../tests/mocks/in-memory-eventos.repository.js';
@@ -11,7 +12,6 @@ import { InMemoryGenealogiaRepository } from '../tests/mocks/in-memory-genealogi
 import { InMemoryInsumosCatalogoRepository } from '../tests/mocks/in-memory-insumos-catalogo.repository.js';
 import { InMemoryAplicacionesRepository } from '../tests/mocks/in-memory-aplicaciones.repository.js';
 import { InMemoryActividadesRepository } from '../tests/mocks/in-memory-actividades.repository.js';
-import { InMemoryCiclosRepository } from '../tests/mocks/in-memory-ciclos.repository.js';
 import { InMemoryCatalogosActividadesRepository } from '../tests/mocks/in-memory-catalogos-actividades.repository.js';
 
 export interface ServidorProduccionOptions {
@@ -23,10 +23,13 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
   const { db, pool } = createDatabaseConnection(options.connectionString);
   const lotesRepo = new DrizzleLotesTerritorialesRepository(db);
   const fincasRepo = new DrizzleFincasRepository(db);
+  const cierreCicloGuard = new DrizzleCierreCicloGuard(db);
+  const ciclosRepo = new DrizzleCiclosProductivosRepository(db, cierreCicloGuard);
   const app = buildApp({
     cultivosRepo: new DrizzleCultivosRepository(db),
     variedadesRepo: new DrizzleVariedadesRepository(db),
     plantacionesRepo: new DrizzlePlantacionesRepository(db),
+    ciclosProductivosRepo: ciclosRepo,
     lotesRepo,
     fincasRepo,
     eventosRepo: new InMemoryEventosRepository(),
@@ -34,10 +37,10 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
     insumosRepo: new InMemoryInsumosCatalogoRepository(),
     catalogosRepo: new InMemoryCatalogosActividadesRepository(),
     actividadesRepo: new InMemoryActividadesRepository(),
-    ciclosRepo: new InMemoryCiclosRepository(),
+    ciclosRepo,
     aplicacionesRepo: new InMemoryAplicacionesRepository(),
     logger: options.logger ?? true,
   });
   app.addHook('onClose', async () => pool.end());
-  return { app, cierreCicloGuard: new DrizzleCierreCicloGuard(db) };
+  return { app, cierreCicloGuard };
 }
