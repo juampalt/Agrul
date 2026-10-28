@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth.service.js';
-import { CiclosPostgresFixture, HEADERS_CICLOS as headers, INEXISTENTE_CICLO as inexistente, USUARIO_CICLOS } from '../helpers/ciclos-postgres.fixture.js';
+import { emitirSesionPrueba } from '../helpers/operador-postgres.fixture.js';
+import { CiclosPostgresFixture, HEADERS_CICLOS as headers, INEXISTENTE_CICLO as inexistente, USUARIO_CICLOS, OPERADOR_CICLOS } from '../helpers/ciclos-postgres.fixture.js';
 
 const connectionString = process.env.CICLOS_TEST_DATABASE_URL;
 describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreSQL reales', () => {
@@ -193,14 +194,15 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
   it('exige autenticación, rol Administrador y cambio de contraseña inicial', async () => {
     expect((await f.app.inject({ method: 'GET', url: '/api/v1/ciclos-productivos' })).statusCode).toBe(401);
     for (const perfil of ['ENCARGADO', 'ADMINISTRADOR'] as const) {
-      const token = CryptoAuthService.generateToken({ ...USUARIO_CICLOS, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
+      const token = await emitirSesionPrueba(f.conexion.pool, { ...OPERADOR_CICLOS, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
       expect((await f.app.inject({ method: 'POST', url: '/api/v1/ciclos-productivos', payload: f.datos,
         headers: { authorization: `Bearer ${token}` } })).statusCode).toBe(403);
     }
   });
   it('SQL mantiene las referencias históricas y restringe estados inconsistentes', async () => {
     const id = await f.crear();
-    await expect(f.conexion.pool.query('delete from plantaciones where id=$1', [f.plantacionId])).rejects.toMatchObject({ code: '23001' });
+    await expect(f.conexion.pool.query('delete from plantaciones where id=$1', [f.plantacionId])).rejects.toMatchObject({ code: expect.stringMatching(/^(23001|23503)$/) });
+    expect((await f.conexion.pool.query('select id from plantaciones where id=$1', [f.plantacionId])).rows).toHaveLength(1);
     await expect(f.conexion.pool.query("update ciclos_productivos set estado='FINALIZADO' where id=$1", [id])).rejects.toMatchObject({ code: '23514' });
     await expect(f.conexion.pool.query("insert into actividades_programadas(ciclo_id) values ($1)", [inexistente])).rejects.toMatchObject({ code: '23503' });
   });
@@ -210,24 +212,37 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
     expect((await registrar()).statusCode).toBe(422);
     await f.conexion.pool.query("update usuarios set estado='ACTIVO' where id=$1", [USUARIO_CICLOS.sub]);
     const id = await f.crear();
-    await expect(f.conexion.pool.query('delete from usuarios where id=$1', [USUARIO_CICLOS.sub])).rejects.toMatchObject({ code: '23001' });
+    await expect(f.conexion.pool.query('delete from usuarios where id=$1', [USUARIO_CICLOS.sub])).rejects.toMatchObject({ code: expect.stringMatching(/^(23001|23503)$/) });
+    expect((await f.conexion.pool.query('select id from usuarios where id=$1', [USUARIO_CICLOS.sub])).rows).toHaveLength(1);
     await expect(f.conexion.pool.query('update ciclos_productivos set responsable_seguimiento_id=$1 where id=$2', [inexistente, id]))
       .rejects.toMatchObject({ code: '23503' });
     await f.conexion.pool.query("update usuarios set estado='INACTIVO' where id=$1", [USUARIO_CICLOS.sub]);
     expect((await consultar(id)).json().data.responsableSeguimientoId).toBe(USUARIO_CICLOS.sub);
   });
   it('crea un responsable por HTTP y permite autenticarlo y asignarlo desde otra instancia', async () => {
+    const sistemaId = crypto.randomUUID();
+    const sistemaEmail = `sistema-${sistemaId}@example.test`;
+    const { hash, salt } = CryptoAuthService.hashPassword('SistemaPrueba123!');
+    await f.conexion.pool.query(`insert into usuarios(id,nombre,apellido,email,password_hash,salt,perfil,debe_cambiar_password)
+      values ($1,'Admin','Sistema',$2,$3,$4,'ADMIN_SISTEMA',false)`, [sistemaId, sistemaEmail, hash, salt]);
+    const sesion = await f.app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: sistemaEmail, password: 'SistemaPrueba123!' } });
+    expect(sesion.statusCode).toBe(200);
+    const headersSistema = { authorization: `Bearer ${sesion.json().data.token}` };
     const email = `responsable-${crypto.randomUUID()}@example.test`;
-    const responsableId = await f.alta('/usuarios', { nombre: 'Responsable', apellido: 'Persistente', email,
-      password: 'PruebaSegura123!', perfil: 'ENCARGADO' });
+    const creado = await f.app.inject({ method: 'POST', url: '/api/v1/usuarios', headers: headersSistema,
+      payload: { nombre: 'Responsable', apellido: 'Persistente', nombreUsuario: crypto.randomUUID(), email,
+        password: 'PruebaSegura123!', perfil: 'ENCARGADO_CAMPO' } });
+    expect(creado.statusCode).toBe(201);
+    const responsableId = creado.json().data.id;
     const otra = crearServidorProduccion({ connectionString, logger: false });
     try {
       const login = await otra.app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email, password: 'PruebaSegura123!' } });
       expect(login.statusCode).toBe(200);
       expect(login.body).not.toContain('passwordHash');
       expect((await registrar({ responsableSeguimientoId: responsableId })).statusCode).toBe(201);
-      const duplicado = await otra.app.inject({ method: 'POST', url: '/api/v1/usuarios', headers,
-        payload: { nombre: 'Responsable', apellido: 'Duplicado', email, password: 'PruebaSegura123!', perfil: 'ENCARGADO' } });
+      const duplicado = await otra.app.inject({ method: 'POST', url: '/api/v1/usuarios', headers: headersSistema,
+        payload: { nombre: 'Responsable', apellido: 'Duplicado', nombreUsuario: crypto.randomUUID(), email,
+          password: 'PruebaSegura123!', perfil: 'ENCARGADO_CAMPO' } });
       expect(duplicado.statusCode).toBe(409);
     } finally { await otra.app.close(); }
   });

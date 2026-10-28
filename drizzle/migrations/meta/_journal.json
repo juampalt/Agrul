@@ -71,6 +71,34 @@
       "when": 1793149205000,
       "tag": "0009_responsables_ciclos",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793149206000,
+      "tag": "0010_login_nombre_usuario",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793149207000,
+      "tag": "0011_registro_usuarios_canonicos",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793149208000,
+      "tag": "0012_auditoria_usuarios_persistente",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793149209000,
+      "tag": "0013_sesiones_vigentes",
+      "breakpoints": true
     }
   ]
 }

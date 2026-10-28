@@ -143,8 +143,8 @@ export class UsuarioInactivoError extends DomainError {
 export class UsuarioDuplicadoError extends DomainError {
   public readonly code = 'USUARIO_DUPLICADO';
 
-  constructor(email: string) {
-    super(`Ya existe un usuario registrado con el correo electrónico '${email}'.`);
+  constructor(identificador: string, campo = 'correo electrónico') {
+    super(`Ya existe un usuario registrado con el ${campo} '${identificador}'.`);
   }
 }
 

@@ -5,9 +5,11 @@ import { runMigrations } from '../../src/infrastructure/database/migrate.js';
 import { DrizzleFincasRepository } from '../../src/infrastructure/database/repositories/drizzle-fincas.repository.js';
 import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth.service.js';
 import { Finca } from '../../src/core/domain/entities/finca.entity.js';
+import { autenticarOperadorPrueba } from './operador-postgres.fixture.js';
 
 export const USUARIO_CICLOS = { sub: 'a0000000-0000-4000-8000-000000000058', email: 'admin@example.test', nombre: 'Admin', apellido: 'Prueba', fincas: [] };
-export const HEADERS_CICLOS = { authorization: `Bearer ${CryptoAuthService.generateToken({ ...USUARIO_CICLOS, perfil: 'ADMINISTRADOR' })}` };
+export const OPERADOR_CICLOS = { sub: 'a0000000-0000-4000-8000-000000000158', email: 'operador-ciclos@example.test', nombre: 'Admin', apellido: 'Prueba', fincas: [] };
+export let HEADERS_CICLOS = { authorization: '' };
 export const INEXISTENTE_CICLO = '00000000-0000-4000-8000-000000000058';
 
 export class CiclosPostgresFixture {
@@ -29,6 +31,7 @@ export class CiclosPostgresFixture {
     await this.conexion.pool.query("insert into usuarios(id,nombre,apellido,email,password_hash,salt,perfil) values ($1,'Responsable','Prueba','responsable-ciclos@example.test','hash-exclusivo-fixture','salt-fixture','ENCARGADO') on conflict (id) do update set estado='ACTIVO'", [USUARIO_CICLOS.sub]);
     this.servidor = crearServidorProduccion({ connectionString: this.connectionString, logger: false });
     await this.app.ready();
+    HEADERS_CICLOS = await autenticarOperadorPrueba(this.conexion.pool, this.app, OPERADOR_CICLOS);
   }
   async sembrar() {
     await this.conexion.pool.query("update usuarios set estado='ACTIVO' where id=$1", [USUARIO_CICLOS.sub]);

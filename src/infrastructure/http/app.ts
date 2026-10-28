@@ -117,6 +117,16 @@ import { InMemoryUsuariosRepository } from '../../../tests/mocks/in-memory-usuar
 import { InMemoryUsuarioFincasRepository } from '../../../tests/mocks/in-memory-usuario-fincas.repository.js';
 import { InMemoryAuditoriaSeguridadRepository } from '../../../tests/mocks/in-memory-auditoria-seguridad.repository.js';
 import { UsuariosController } from './controllers/usuarios.controller.js';
+import { RegistrarUsuarioUseCase } from '../../application/use-cases/registrar-usuario.use-case.js';
+import { ConsultarUsuariosUseCase } from '../../application/use-cases/consultar-usuarios.use-case.js';
+import { ModificarUsuarioUseCase } from '../../application/use-cases/modificar-usuario.use-case.js';
+import { ConsultarAuditoriaSeguraUseCase } from '../../application/use-cases/consultar-auditoria-segura.use-case.js';
+import { UsuariosTransaccionPort } from '../../core/ports/usuarios-transaccion.port.js';
+import { SesionesRepositoryPort } from '../../core/ports/sesiones-repository.port.js';
+import { InMemorySesionesRepository } from '../../../tests/mocks/in-memory-sesiones.repository.js';
+import { ValidacionSesionService } from '../services/validacion-sesion.service.js';
+import { CerrarSesionUseCase } from '../../application/use-cases/cerrar-sesion.use-case.js';
+import { verificarAutenticacion } from './middlewares/auth.middleware.js';
 import { AuthController } from './controllers/auth.controller.js';
 import { AuditoriaController } from './controllers/auditoria.controller.js';
 import {
@@ -124,9 +134,6 @@ import {
   AutenticarUsuarioUseCase,
   ListarUsuariosUseCase,
   ObtenerUsuarioPorIdUseCase,
-  ActualizarUsuarioUseCase,
-  BloquearUsuarioUseCase,
-  DesbloquearUsuarioUseCase,
   CambiarPasswordUseCase,
   VerificarAccesoFincaUseCase,
 } from '../../application/use-cases/usuarios.use-cases.js';
@@ -248,6 +255,9 @@ export interface BuildAppOptions {
   usuariosRepo?: UsuariosRepositoryPort;
   usuarioFincasRepo?: UsuarioFincasRepositoryPort;
   auditoriaRepo?: AuditoriaSeguridadRepositoryPort;
+  usuariosTransaccion?: UsuariosTransaccionPort;
+  sesionesRepo?: SesionesRepositoryPort;
+  revalidarSesiones?: boolean;
   proveedoresRepo?: ProveedoresRepositoryPort;
   insumoEquivalenciasRepo?: InsumoEquivalenciasRepositoryPort;
   depositosRepo?: DepositosRepositoryPort;
@@ -692,37 +702,39 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   const usuariosRepo = options.usuariosRepo ?? new InMemoryUsuariosRepository();
   const usuarioFincasRepo = options.usuarioFincasRepo ?? new InMemoryUsuarioFincasRepository();
   const auditoriaRepo = options.auditoriaRepo ?? new InMemoryAuditoriaSeguridadRepository();
+  const sesionesRepo = options.sesionesRepo ?? new InMemorySesionesRepository();
+  const validacionSesion = new ValidacionSesionService(usuariosRepo, usuarioFincasRepo, sesionesRepo, options.revalidarSesiones ?? false);
+  app.decorate('validarSesionActual', validacionSesion.validar.bind(validacionSesion));
+  if (options.revalidarSesiones) app.addHook('onRequest', async (req, reply) => {
+    if (req.url.startsWith('/api/v1/') && req.headers.authorization && req.url.split('?')[0] !== '/api/v1/auth/login') {
+      await verificarAutenticacion(req, reply);
+    }
+  });
 
   const crearUsuarioUC = new CrearUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
-  const autenticarUsuarioUC = new AutenticarUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
+  const autenticarUsuarioUC = new AutenticarUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo, sesionesRepo, options.usuariosTransaccion);
   const listarUsuariosUC = new ListarUsuariosUseCase(usuariosRepo, usuarioFincasRepo);
   const obtenerUsuarioPorIdUC = new ObtenerUsuarioPorIdUseCase(usuariosRepo, usuarioFincasRepo);
-  const actualizarUsuarioUC = new ActualizarUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
-  const bloquearUsuarioUC = new BloquearUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
-  const desbloquearUsuarioUC = new DesbloquearUsuarioUseCase(usuariosRepo, usuarioFincasRepo, auditoriaRepo);
-  const cambiarPasswordUC = new CambiarPasswordUseCase(usuariosRepo, auditoriaRepo);
+  const cambiarPasswordUC = new CambiarPasswordUseCase(usuariosRepo, auditoriaRepo, options.usuariosTransaccion);
   const verificarAccesoFincaUC = new VerificarAccesoFincaUseCase(usuariosRepo, usuarioFincasRepo);
 
   const consultarAuditoriaUC = new ConsultarAuditoriaSeguridadUseCase(auditoriaRepo);
   const obtenerAuditoriaPorIdUC = new ObtenerAuditoriaPorIdUseCase(auditoriaRepo);
 
   const usuariosController = new UsuariosController(
-    crearUsuarioUC,
-    listarUsuariosUC,
-    obtenerUsuarioPorIdUC,
-    actualizarUsuarioUC,
-    bloquearUsuarioUC,
-    desbloquearUsuarioUC,
+    new RegistrarUsuarioUseCase(usuariosRepo, crearUsuarioUC, options.usuariosTransaccion),
+    new ConsultarUsuariosUseCase(usuariosRepo, listarUsuariosUC, obtenerUsuarioPorIdUC),
+    new ModificarUsuarioUseCase({ usuariosRepo, usuarioFincasRepo, auditoriaRepo }, options.usuariosTransaccion),
     verificarAccesoFincaUC
   );
   const authController = new AuthController(
     autenticarUsuarioUC,
     obtenerUsuarioPorIdUC,
-    cambiarPasswordUC
+    cambiarPasswordUC,
+    new CerrarSesionUseCase(sesionesRepo, auditoriaRepo, options.usuariosTransaccion)
   );
   const auditoriaController = new AuditoriaController(
-    consultarAuditoriaUC,
-    obtenerAuditoriaPorIdUC
+    new ConsultarAuditoriaSeguraUseCase(usuariosRepo, consultarAuditoriaUC, obtenerAuditoriaPorIdUC), sesionesRepo
   );
 
   // Módulo 9: Inventario de Insumos y Stock (AGRUL-041)

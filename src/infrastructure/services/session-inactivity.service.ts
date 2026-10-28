@@ -4,6 +4,7 @@ export class SessionInactivityService {
   private static lastActivityByUser = new Map<string, number>();
 
   public static setTimeoutMs(ms: number): void {
+    if (!Number.isSafeInteger(ms) || ms <= 0) throw new RangeError('El timeout de sesión debe ser un entero positivo.');
     this.timeoutMs = ms;
   }
 
@@ -19,13 +20,23 @@ export class SessionInactivityService {
     return this.lastActivityByUser.get(usuarioId);
   }
 
+  public static simularInactividadUsuario(usuarioId: string, timestamp: number): void {
+    this.registrarActividad(usuarioId, timestamp);
+    for (const clave of this.lastActivityByUser.keys()) {
+      if (clave.startsWith(`${usuarioId}:`)) this.lastActivityByUser.set(clave, timestamp);
+    }
+  }
+
   public static verificarExpiracion(
     usuarioId: string,
     currentTimestamp: number = Date.now(),
     clientLastActivityMs?: number
   ): boolean {
     const serverLast = this.lastActivityByUser.get(usuarioId);
-    const ultimaActividad = clientLastActivityMs !== undefined ? clientLastActivityMs : serverLast;
+    // El cliente puede informar una actividad anterior, pero no prolongar la sesión.
+    const ultimaActividad = clientLastActivityMs !== undefined
+      ? Math.min(clientLastActivityMs, serverLast ?? currentTimestamp)
+      : serverLast;
 
     if (!ultimaActividad) {
       // Primera actividad registrada en esta sesión

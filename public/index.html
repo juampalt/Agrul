@@ -1758,12 +1758,81 @@
 
         <!-- Pestaña 1: Lista de Usuarios -->
         <div id="tab-lista-usuarios" class="usr-tab-content">
+          <form id="form-consultar-usuarios" class="form-grid" style="margin-top: 12px;">
+            <div class="form-group">
+              <label for="usr-consulta-busqueda" class="form-label">Buscar usuario</label>
+              <input id="usr-consulta-busqueda" class="form-input" type="search" maxlength="255" placeholder="Nombre, apellido, usuario o correo">
+            </div>
+            <div class="form-group">
+              <label for="usr-consulta-perfil" class="form-label">Perfil</label>
+              <select id="usr-consulta-perfil" class="form-select">
+                <option value="">Todos</option>
+                <option value="ADMIN_SISTEMA">Administrador del Sistema</option>
+                <option value="ADMINISTRADOR">Administrador</option>
+                <option value="ENCARGADO_CAMPO">Encargado de Campo / Ingeniero Agrónomo</option>
+                <option value="ENCARGADO">Encargado</option>
+                <option value="OPERARIO">Operario</option>
+                <option value="ASESOR_AGRONOMO">Asesor Agrónomo</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="usr-consulta-estado" class="form-label">Estado</label>
+              <select id="usr-consulta-estado" class="form-select">
+                <option value="">Todos</option>
+                <option value="ACTIVO">Activo</option>
+                <option value="INACTIVO">Inactivo</option>
+                <option value="BLOQUEADO">Bloqueado</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary">Consultar</button>
+              <button type="button" id="btn-limpiar-consulta-usuarios" class="btn btn-secondary">Limpiar filtros</button>
+            </div>
+          </form>
+          <form id="form-modificar-usuario" class="glass form-grid" hidden style="padding: 16px; margin-top: 12px;">
+            <h4>Modificar usuario</h4>
+            <div class="form-group">
+              <label for="usr-editar-nombre" class="form-label">Nombre</label>
+              <input id="usr-editar-nombre" class="form-input" required maxlength="100">
+            </div>
+            <div class="form-group">
+              <label for="usr-editar-apellido" class="form-label">Apellido</label>
+              <input id="usr-editar-apellido" class="form-input" required maxlength="100">
+            </div>
+            <div class="form-group">
+              <label for="usr-editar-nombreUsuario" class="form-label">Nombre de usuario</label>
+              <input id="usr-editar-nombreUsuario" class="form-input" maxlength="100" pattern="[a-zA-Z0-9._-]+">
+            </div>
+            <div class="form-group">
+              <label for="usr-editar-email" class="form-label">Correo</label>
+              <input id="usr-editar-email" type="email" class="form-input" required maxlength="150">
+            </div>
+            <div class="form-group">
+              <label for="usr-editar-perfil" class="form-label">Perfil</label>
+              <select id="usr-editar-perfil" class="form-select">
+                <option value="">Conservar perfil actual</option>
+                <option value="ADMINISTRADOR">Administrador</option>
+                <option value="ENCARGADO_CAMPO">Encargado de Campo / Ingeniero Agrónomo</option>
+                <option value="ADMIN_SISTEMA">Administrador del Sistema</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="usr-editar-estado" class="form-label">Estado</label>
+              <select id="usr-editar-estado" class="form-select">
+                <option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option><option value="BLOQUEADO">Bloqueado</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary">Guardar cambios</button>
+              <button type="button" id="btn-cancelar-edicion-usuario" class="btn btn-secondary">Cancelar</button>
+            </div>
+          </form>
           <div class="table-responsive" style="margin-top: 12px;">
             <table class="data-table">
               <thead>
                 <tr>
                   <th>Nombre y Apellido</th>
-                  <th>Email</th>
+                  <th>Usuario / correo</th>
                   <th>Perfil (Rol RBAC)</th>
                   <th>Estado</th>
                   <th>Fincas Asignadas</th>
@@ -1781,6 +1850,7 @@
         <!-- Pestaña 2: Alta de Usuario -->
         <div id="tab-alta-usuario" class="usr-tab-content" style="display: none;">
           <form id="form-crear-usuario" class="glass" style="padding: 16px; border-radius: 8px; margin-top: 12px;">
+            <p>El registro de usuarios requiere una sesión de Administrador del Sistema.</p>
             <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
               <div class="form-group">
                 <label for="usr-alta-nombre" class="form-label">Nombre *</label>
@@ -1789,6 +1859,10 @@
               <div class="form-group">
                 <label for="usr-alta-apellido" class="form-label">Apellido *</label>
                 <input type="text" id="usr-alta-apellido" class="form-input" required placeholder="Ej: Gómez">
+              </div>
+              <div class="form-group">
+                <label for="usr-alta-usuario" class="form-label">Nombre de usuario *</label>
+                <input type="text" id="usr-alta-usuario" class="form-input" required maxlength="100" pattern="[a-zA-Z0-9._-]+" autocomplete="off" placeholder="Ej: r.gomez">
               </div>
               <div class="form-group">
                 <label for="usr-alta-email" class="form-label">Email Corporativo *</label>
@@ -1801,10 +1875,9 @@
               <div class="form-group">
                 <label for="usr-alta-perfil" class="form-label">Perfil / Rol RBAC *</label>
                 <select id="usr-alta-perfil" class="form-select" required>
-                  <option value="ENCARGADO">ENCARGADO (Gestión operativa de finca)</option>
-                  <option value="OPERARIO">OPERARIO (Carga de tareas de campo)</option>
-                  <option value="ASESOR_AGRONOMO">ASESOR_AGRONOMO (Solo lectura + recomendaciones)</option>
-                  <option value="ADMINISTRADOR">ADMINISTRADOR (Acceso global y configuración)</option>
+                  <option value="ENCARGADO_CAMPO">Encargado de Campo / Ingeniero Agrónomo</option>
+                  <option value="ADMINISTRADOR">Administrador</option>
+                  <option value="ADMIN_SISTEMA">Administrador del Sistema</option>
                 </select>
               </div>
             </div>

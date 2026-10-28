@@ -1,6 +1,10 @@
 import { DomainError, PasswordInseguraError } from '../errors/domain.error.js';
 
-export type PerfilUsuario = 'ADMINISTRADOR' | 'ENCARGADO' | 'OPERARIO' | 'ASESOR_AGRONOMO';
+export const PERFILES_CANONICOS = ['ADMINISTRADOR', 'ENCARGADO_CAMPO', 'ADMIN_SISTEMA'] as const;
+export type PerfilCanonico = typeof PERFILES_CANONICOS[number];
+// Los perfiles anteriores siguen siendo válidos para cuentas y sesiones existentes.
+export const PERFILES_USUARIO = [...PERFILES_CANONICOS, 'ENCARGADO', 'OPERARIO', 'ASESOR_AGRONOMO'] as const;
+export type PerfilUsuario = typeof PERFILES_USUARIO[number];
 export type EstadoUsuario = 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
 
 export class UsuarioInvalidoError extends DomainError {
@@ -12,6 +16,8 @@ export class UsuarioInvalidoError extends DomainError {
 }
 
 export interface UsuarioProps {
+  versionSesion?: number;
+  nombreUsuario?: string | null;
   id: string;
   nombre: string;
   apellido: string;
@@ -29,6 +35,7 @@ export interface UsuarioProps {
 }
 
 export interface CrearUsuarioParams {
+  nombreUsuario?: string;
   id: string;
   nombre: string;
   apellido: string;
@@ -43,12 +50,7 @@ export interface CrearUsuarioParams {
 export class Usuario {
   private constructor(private props: UsuarioProps) {}
 
-  public static readonly PERFILES_VALIDOS: PerfilUsuario[] = [
-    'ADMINISTRADOR',
-    'ENCARGADO',
-    'OPERARIO',
-    'ASESOR_AGRONOMO',
-  ];
+  public static readonly PERFILES_VALIDOS: readonly PerfilUsuario[] = PERFILES_USUARIO;
 
   public static readonly ESTADOS_VALIDOS: EstadoUsuario[] = [
     'ACTIVO',
@@ -59,6 +61,7 @@ export class Usuario {
   public static readonly MAX_INTENTOS_FALLIDOS = 5;
 
   public static crear(params: CrearUsuarioParams): Usuario {
+    const nombreUsuario = params.nombreUsuario === undefined ? undefined : Usuario.normalizarNombreUsuario(params.nombreUsuario);
     if (!params.nombre || params.nombre.trim().length === 0) {
       throw new UsuarioInvalidoError('El nombre del usuario es obligatorio.');
     }
@@ -82,6 +85,7 @@ export class Usuario {
     const ahora = new Date().toISOString();
 
     return new Usuario({
+      nombreUsuario,
       id: params.id,
       nombre: params.nombre.trim(),
       apellido: params.apellido.trim(),
@@ -113,6 +117,12 @@ export class Usuario {
 
   public get id(): string {
     return this.props.id;
+  }
+
+  public get versionSesion(): number { return this.props.versionSesion ?? 0; }
+
+  public get nombreUsuario(): string | null | undefined {
+    return this.props.nombreUsuario;
   }
 
   public get nombre(): string {
@@ -232,7 +242,8 @@ export class Usuario {
     this.props.actualizadoEn = new Date().toISOString();
   }
 
-  public actualizarDatos(datos: { nombre?: string; apellido?: string; email?: string }): void {
+  public actualizarDatos(datos: { nombre?: string; apellido?: string; email?: string; nombreUsuario?: string }): void {
+    if (datos.nombreUsuario !== undefined) this.props.nombreUsuario = Usuario.normalizarNombreUsuario(datos.nombreUsuario);
     if (datos.nombre !== undefined) {
       if (!datos.nombre || datos.nombre.trim().length === 0) {
         throw new UsuarioInvalidoError('El nombre no puede ser vacío.');
@@ -267,8 +278,17 @@ export class Usuario {
     this.props.actualizadoEn = new Date().toISOString();
   }
 
+  private static normalizarNombreUsuario(valor: string): string {
+    if (!/^[a-zA-Z0-9._-]{1,100}$/.test(valor.trim())) {
+      throw new UsuarioInvalidoError('El nombre de usuario debe contener entre 1 y 100 letras, números, puntos, guiones o guiones bajos.');
+    }
+    return valor.trim().toLowerCase();
+  }
+
   public toJSON() {
     return {
+      versionSesion: this.versionSesion,
+      ...(this.props.nombreUsuario ? { nombreUsuario: this.props.nombreUsuario } : {}),
       id: this.props.id,
       nombre: this.props.nombre,
       apellido: this.props.apellido,

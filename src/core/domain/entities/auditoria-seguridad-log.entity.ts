@@ -1,6 +1,7 @@
 import { AuditoriaInvalidaError } from '../errors/domain.error.js';
 
 export type AccionAuditoria =
+  | 'LOGOUT'
   | 'LOGIN'
   | 'CREAR'
   | 'EDITAR'
@@ -40,6 +41,7 @@ export interface CrearAuditoriaParams {
 
 export class AuditoriaSeguridadLog {
   public static readonly ACCIONES_VALIDAS: AccionAuditoria[] = [
+    'LOGOUT',
     'LOGIN',
     'CREAR',
     'EDITAR',

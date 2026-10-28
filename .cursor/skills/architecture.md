@@ -64,6 +64,7 @@ src/
 - **DO:** Escribir funciones o clases de casos de uso que reciban sus dependencias (repositorios) a través del constructor (Inyección de Dependencias manual o contenedor liviano).
 - **DO:** Nombrar archivos con kebab-case descriptivo: `registrar-evento.use-case.ts`, `lote.entity.ts`.
 - **DO:** Mantener cada archivo por debajo de 250 líneas.
+- **DO:** Inyectar adaptadores PostgreSQL para usuarios, sesiones, asignaciones de fincas, auditoría y transacciones de seguridad en el bootstrap de producción. Verificar CU60/CU62 con ese bootstrap: las escrituras del usuario, sus asignaciones y su historial deben compartir la misma transacción. Reservar los adaptadores en memoria de esos puertos para pruebas.
 
 ### DON'T
 - **DON'T:** No instanciar conexiones a base de datos dentro de las entidades de dominio.
@@ -103,3 +104,4 @@ export class EventosController {
 ## 6. Registro de Decisiones (Self-Correction Log)
 - *2026-10-03:* Se define oficialmente el stack: **TypeScript + Node.js + Fastify + PostgreSQL + Drizzle ORM**.
 - *2026-10-03:* Se aprueba arquitectura de ingesta offline-first con soporte para batch sync en endpoints de eventos.
+- *2026-10-28:* CU62 reemplaza los fallbacks en memoria repetidos de asignaciones y auditoría en producción y exige comprobar la persistencia y atomicidad desde el bootstrap real.

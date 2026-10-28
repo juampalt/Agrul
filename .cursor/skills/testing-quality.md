@@ -46,6 +46,8 @@ En Agrul, los tests son la salvaguarda de cumplimiento normativo. Verifican mate
 - **DO:** Usar **Vitest** como runner oficial de pruebas para máxima velocidad con TypeScript.
 - **DO:** Correr las pruebas de integración en transacciones aisladas o con base de datos limpia para evitar contaminación entre tests.
 - **DO:** Validar que los errores de negocio arrojen instancias de `DomainError` tipadas.
+- **DO:** Al probar una FK con borrado restringido, verificar un error de integridad (`23503` o `23001`) y que la fila referenciada permanezca. La garantía es el rechazo y la conservación de datos; no aceptar errores genéricos de conexión o permisos.
+- **DO:** En integración con el bootstrap productivo, crear y autenticar actores reales y sus sesiones persistidas. Reservar JWT fabricados para casos negativos explícitos, sin omitir las validaciones de vigencia del servidor.
 
 ### DON'T
 - **DON'T:** No silenciar errores de base de datos dentro de los tests.

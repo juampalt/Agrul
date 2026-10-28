@@ -3,13 +3,14 @@ import { FastifyInstance } from 'fastify';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
 import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { autenticarOperadorPrueba, emitirSesionPrueba } from '../helpers/operador-postgres.fixture.js';
 import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth.service.js';
 import { Finca } from '../../src/core/domain/entities/finca.entity.js';
 import { DrizzleFincasRepository } from '../../src/infrastructure/database/repositories/drizzle-fincas.repository.js';
 
 const connectionString = process.env.PLANTACIONES_TEST_DATABASE_URL;
 const usuario = { sub: 'a0000000-0000-4000-8000-000000000054', email: 'admin@example.test', nombre: 'Admin', apellido: 'Prueba', fincas: [] };
-const headers = { authorization: `Bearer ${CryptoAuthService.generateToken({ ...usuario, perfil: 'ADMINISTRADOR' })}` };
+let headers = { authorization: '' };
 const inexistente = '00000000-0000-4000-8000-000000000054';
 const datos = { fechaPlantacion: '2026-10-01', superficieHa: 4, cantidadInicialPlantas: 1000, procedencia: 'Vivero de prueba' };
 
@@ -26,6 +27,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU15-CU17 con bootstrap y PostgreS
     await runMigrations(connectionString);
     app = crearServidorProduccion({ connectionString, logger: false }).app;
     await app.ready();
+    headers = await autenticarOperadorPrueba(connection.pool, app, usuario);
   });
   beforeEach(async () => {
     for (const tabla of ['plantaciones', 'variedades', 'cultivos', 'lotes', 'fincas']) {
@@ -181,7 +183,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU15-CU17 con bootstrap y PostgreS
   it('exige autenticación y permisos y bloquea el borrado físico', async () => {
     expect((await app.inject({ method: 'GET', url: '/api/v1/plantaciones' })).statusCode).toBe(401);
     for (const perfil of ['ENCARGADO', 'ADMINISTRADOR'] as const) {
-      const token = CryptoAuthService.generateToken({ ...usuario, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
+      const token = await emitirSesionPrueba(connection.pool, { ...usuario, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
       expect((await app.inject({ method: 'POST', url: '/api/v1/plantaciones', payload: { ...datos, loteId, cultivoId, variedadId },
         headers: { authorization: `Bearer ${token}` } })).statusCode).toBe(403);
     }
@@ -193,8 +195,10 @@ describe.skipIf(!connectionString)('AGRUL-052 CU15-CU17 con bootstrap y PostgreS
     const id = (await registrar()).json().data.id;
     const otro = await alta('/cultivos', { nombre: 'Otro', tipoCicloVida: 'ANUAL' });
     await expect(connection.pool.query('update plantaciones set cultivo_id=$1 where id=$2', [otro, id])).rejects.toMatchObject({ code: '23503' });
-    await expect(connection.pool.query('delete from variedades where id=$1', [variedadId])).rejects.toMatchObject({ code: '23001' });
-    await expect(connection.pool.query('delete from lotes where id=$1', [loteId])).rejects.toMatchObject({ code: '23001' });
+    await expect(connection.pool.query('delete from variedades where id=$1', [variedadId])).rejects.toMatchObject({ code: expect.stringMatching(/^(23001|23503)$/) });
+    expect((await connection.pool.query('select id from variedades where id=$1', [variedadId])).rows).toHaveLength(1);
+    await expect(connection.pool.query('delete from lotes where id=$1', [loteId])).rejects.toMatchObject({ code: expect.stringMatching(/^(23001|23503)$/) });
+    expect((await connection.pool.query('select id from lotes where id=$1', [loteId])).rows).toHaveLength(1);
     await expect(connection.pool.query("update plantaciones set estado='FINALIZADA' where id=$1", [id])).rejects.toMatchObject({ code: '23514' });
   });
 });

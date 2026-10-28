@@ -19,6 +19,7 @@ describe('AGRUL-040: Integration Tests — Bitácora de Auditoría y Seguridad d
   let auditoriaRepo: InMemoryAuditoriaSeguridadRepository;
 
   let adminToken: string;
+  let sistemaToken: string;
   let operarioToken: string;
 
   beforeEach(async () => {
@@ -43,6 +44,10 @@ describe('AGRUL-040: Integration Tests — Bitácora de Auditoría y Seguridad d
       debeCambiarPassword: false,
     });
     await usuariosRepo.guardar(adminUser);
+    await usuariosRepo.guardar(Usuario.crear({
+      id: 'usr-sistema-id', nombre: 'Admin', apellido: 'Sistema', email: 'sistema@agrul.com',
+      passwordHash: hash, salt, perfil: 'ADMIN_SISTEMA', debeCambiarPassword: false,
+    }));
 
     // Operario con debeCambiarPassword = false
     const operarioUser = Usuario.crear({
@@ -76,6 +81,9 @@ describe('AGRUL-040: Integration Tests — Bitácora de Auditoría y Seguridad d
       payload: { email: 'admin@agrul.com', password: 'PasswordSegura123' },
     });
     adminToken = loginAdmin.json().data.token;
+    const loginSistema = await app.inject({ method: 'POST', url: '/api/v1/auth/login',
+      payload: { email: 'sistema@agrul.com', password: 'PasswordSegura123' } });
+    sistemaToken = loginSistema.json().data.token;
 
     const loginOperario = await app.inject({
       method: 'POST',
@@ -127,13 +135,14 @@ describe('AGRUL-040: Integration Tests — Bitácora de Auditoría y Seguridad d
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/v1/usuarios',
-        headers: { authorization: `Bearer ${adminToken}` },
+        headers: { authorization: `Bearer ${sistemaToken}` },
         payload: {
           nombre: 'Auditable',
+          nombreUsuario: 'auditable',
           apellido: 'Test',
           email: 'auditable@agrul.com',
           password: 'Password1234',
-          perfil: 'ENCARGADO',
+          perfil: 'ENCARGADO_CAMPO',
         },
       });
       expect(createRes.statusCode).toBe(201);
@@ -203,6 +212,7 @@ describe('AGRUL-040: Integration Tests — Bitácora de Auditoría y Seguridad d
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auditoria/simular-inactividad',
+        headers: { authorization: `Bearer ${sistemaToken}` },
         payload: {
           timeoutMs: 60000,
         },
@@ -220,9 +230,10 @@ describe('AGRUL-040: Integration Tests — Bitácora de Auditoría y Seguridad d
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/v1/usuarios',
-        headers: { authorization: `Bearer ${adminToken}` },
+        headers: { authorization: `Bearer ${sistemaToken}` },
         payload: {
           nombre: 'Recién',
+          nombreUsuario: 'recien',
           apellido: 'Llegado',
           email: 'recien@agrul.com',
           password: 'PasswordTemporal1',

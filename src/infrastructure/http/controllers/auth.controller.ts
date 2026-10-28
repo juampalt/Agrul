@@ -8,17 +8,29 @@ import {
   LoginSchema,
   CambiarPasswordSchema,
 } from '../schemas/usuarios.schema.js';
+import { CerrarSesionUseCase } from '../../../application/use-cases/cerrar-sesion.use-case.js';
+import { SessionInactivityService } from '../../services/session-inactivity.service.js';
+import { z } from 'zod';
+import { CredencialesInvalidasError } from '../../../core/domain/errors/domain.error.js';
 
 export class AuthController {
   constructor(
     private readonly autenticarUsuarioUC: AutenticarUsuarioUseCase,
     private readonly obtenerUsuarioPorIdUC: ObtenerUsuarioPorIdUseCase,
     private readonly cambiarPasswordUC: CambiarPasswordUseCase,
+    private readonly cerrarSesionUC: CerrarSesionUseCase,
   ) {}
 
   async login(req: FastifyRequest, reply: FastifyReply) {
     const body = LoginSchema.parse(req.body);
-    const resultado = await this.autenticarUsuarioUC.execute(body);
+    const resultado = await this.autenticarUsuarioUC.execute({
+      ...body,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    reply.header('Cache-Control', 'no-store');
+    reply.header('Pragma', 'no-cache');
 
     return reply.status(200).send({
       success: true,
@@ -29,6 +41,7 @@ export class AuthController {
   }
 
   async me(req: FastifyRequest, reply: FastifyReply) {
+    reply.header('Cache-Control', 'no-store');
     const usuarioId = req.usuario?.sub;
     if (!usuarioId) {
       return reply.status(401).send({
@@ -82,5 +95,15 @@ export class AuthController {
       error: null,
       timestamp: new Date().toISOString(),
     });
+  }
+
+  async logout(req: FastifyRequest, reply: FastifyReply) {
+    z.object({}).strict().parse(req.body ?? {});
+    const token = req.headers.authorization?.substring(7).trim();
+    if (!req.usuario || !token) throw new CredencialesInvalidasError();
+    await this.cerrarSesionUC.execute(token, req.usuario);
+    SessionInactivityService.cerrarSesion(req.usuario.jti ? `${req.usuario.sub}:${req.usuario.jti}` : req.usuario.sub);
+    reply.header('Cache-Control', 'no-store');
+    return reply.send({ success: true, data: { mensaje: 'Sesión cerrada.' }, error: null, timestamp: new Date().toISOString() });
   }
 }

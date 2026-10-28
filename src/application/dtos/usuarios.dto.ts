@@ -1,6 +1,7 @@
-import { PerfilUsuario, EstadoUsuario } from '../../core/domain/entities/usuario.entity.js';
+import { PerfilUsuario, PerfilCanonico, EstadoUsuario } from '../../core/domain/entities/usuario.entity.js';
 
 export interface CrearUsuarioInputDto {
+  nombreUsuario?: string;
   nombre: string;
   apellido: string;
   email: string;
@@ -9,7 +10,13 @@ export interface CrearUsuarioInputDto {
   fincaIds?: string[];
 }
 
+export type RegistrarUsuarioInputDto = Omit<CrearUsuarioInputDto, 'perfil' | 'nombreUsuario'> & {
+  nombreUsuario: string;
+  perfil: PerfilCanonico;
+};
+
 export interface UsuarioOutputDto {
+  nombreUsuario?: string;
   id: string;
   nombre: string;
   apellido: string;
@@ -25,12 +32,11 @@ export interface UsuarioOutputDto {
   actualizadoEn: string;
 }
 
-export interface LoginInputDto {
-  email: string;
+export type LoginInputDto = ({ email: string; nombreUsuario?: never } | { nombreUsuario: string; email?: never }) & {
   password: string;
   ip?: string;
   userAgent?: string;
-}
+};
 
 export interface LoginOutputDto {
   token: string;
@@ -39,6 +45,7 @@ export interface LoginOutputDto {
 }
 
 export interface ActualizarUsuarioInputDto {
+  nombreUsuario?: string;
   nombre?: string;
   apellido?: string;
   email?: string;

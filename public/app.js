@@ -113,7 +113,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     const icon = type === 'success' ? '✅' : '❌';
-    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    const icono = document.createElement('span');
+    icono.textContent = icon;
+    const texto = document.createElement('span');
+    texto.textContent = message;
+    toast.append(icono, document.createTextNode(' '), texto);
     toastContainer.appendChild(toast);
 
     setTimeout(() => {
@@ -3177,6 +3181,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnUsuariosRoles = document.getElementById('btn-usuarios-roles');
   const tbodyUsuariosLista = document.getElementById('tbody-usuarios-lista');
   const formCrearUsuario = document.getElementById('form-crear-usuario');
+  const formConsultarUsuarios = document.getElementById('form-consultar-usuarios');
+  const formModificarUsuario = document.getElementById('form-modificar-usuario');
   const usrAltaFincasContainer = document.getElementById('usr-alta-fincas-container');
   const checkAccesoUsuario = document.getElementById('check-acceso-usuario');
   const checkAccesoFinca = document.getElementById('check-acceso-finca');
@@ -3198,6 +3204,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let activeAuthUser = null;
 
   function actualizarBannerSesion() {
+    if (formCrearUsuario) {
+      const puedeRegistrar = activeAuthUser?.perfil === 'ADMIN_SISTEMA' && !activeAuthUser.debeCambiarPassword;
+      Array.from(formCrearUsuario.elements).forEach(control => { control.disabled = !puedeRegistrar; });
+      if (!puedeRegistrar && formModificarUsuario) formModificarUsuario.hidden = true;
+    }
     if (activeAuthToken && activeAuthUser) {
       if (userSessionInfo) userSessionInfo.style.display = 'flex';
       if (userLoginBox) userLoginBox.style.display = 'none';
@@ -3221,48 +3232,101 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function mostrarMensajeUsuarios(mensaje) {
+    const fila = document.createElement('tr');
+    const celda = document.createElement('td');
+    celda.colSpan = 7;
+    celda.className = 'text-center text-dim';
+    celda.textContent = mensaje;
+    fila.append(celda);
+    tbodyUsuariosLista.replaceChildren(fila);
+  }
+
+  formConsultarUsuarios?.addEventListener('submit', event => {
+    event.preventDefault();
+    cargarListaUsuarios();
+  });
+  document.getElementById('btn-limpiar-consulta-usuarios')?.addEventListener('click', () => {
+    formConsultarUsuarios?.reset();
+    cargarListaUsuarios();
+  });
+
   async function cargarListaUsuarios() {
     if (!tbodyUsuariosLista) return;
+    mostrarMensajeUsuarios('Cargando usuarios...');
+    checkAccesoUsuario?.replaceChildren();
+    const tokenConsulta = activeAuthToken;
     try {
       const headers = {};
       if (activeAuthToken) {
         headers['Authorization'] = `Bearer ${activeAuthToken}`;
       }
-      const res = await fetch('/api/v1/usuarios', { headers });
+      const filtros = new URLSearchParams();
+      for (const campo of ['busqueda', 'perfil', 'estado']) {
+        const valor = document.getElementById(`usr-consulta-${campo}`)?.value?.trim();
+        if (valor) filtros.set(campo, valor);
+      }
+      const res = await fetch(`/api/v1/usuarios?${filtros}`, { headers });
       const json = await res.json();
+      if (tokenConsulta !== activeAuthToken) return;
 
       if (!json.success || !Array.isArray(json.data)) {
-        tbodyUsuariosLista.innerHTML = `<tr><td colspan="7" class="text-center text-dim">${json.error?.message || 'Inicie sesión con perfil ADMINISTRADOR o ENCARGADO para listar usuarios.'}</td></tr>`;
+        mostrarMensajeUsuarios(json.error?.message || 'La sesión no tiene autorización para consultar usuarios.');
         return;
       }
 
       if (json.data.length === 0) {
-        tbodyUsuariosLista.innerHTML = '<tr><td colspan="7" class="text-center text-dim">No hay usuarios registrados en el sistema.</td></tr>';
+        mostrarMensajeUsuarios('No se encontraron usuarios con estos filtros.');
         return;
       }
 
-      tbodyUsuariosLista.innerHTML = json.data.map(u => {
-        const roleClass = `badge-role badge-role-${u.perfil.toLowerCase()}`;
-        const statusClass = u.estado === 'ACTIVO' ? 'badge-status-active' : 'badge-status-blocked';
-        const fincasStr = u.perfil === 'ADMINISTRADOR' ? '<em>Global (Todas)</em>' : (u.fincasAsignadas && u.fincasAsignadas.length > 0 ? `${u.fincasAsignadas.length} finca(s)` : '<span class="text-dim">Sin asignación</span>');
-        const ultimoAccesoStr = u.ultimoAcceso ? new Date(u.ultimoAcceso).toLocaleString('es-AR') : '<span class="text-dim">Nunca</span>';
-
-        const btnBloqueo = u.estado === 'ACTIVO'
-          ? `<button class="btn btn-xs btn-outline-danger btn-toggle-bloqueo" data-action="bloquear" data-id="${u.id}">Bloquear</button>`
-          : `<button class="btn btn-xs btn-outline-success btn-toggle-bloqueo" data-action="desbloquear" data-id="${u.id}">Desbloquear</button>`;
-
-        return `
-          <tr>
-            <td><strong>${u.nombreCompleto || u.nombre + ' ' + u.apellido}</strong></td>
-            <td><code>${u.email}</code></td>
-            <td><span class="${roleClass}">${u.perfil}</span></td>
-            <td><span class="${statusClass}">${u.estado}</span></td>
-            <td>${fincasStr}</td>
-            <td>${ultimoAccesoStr}</td>
-            <td>${btnBloqueo}</td>
-          </tr>
-        `;
-      }).join('');
+      tbodyUsuariosLista.replaceChildren(...json.data.map(u => {
+        const fila = document.createElement('tr');
+        const datos = [
+          { texto: u.nombreCompleto || `${u.nombre} ${u.apellido}` },
+          { texto: u.nombreUsuario ? `${u.nombreUsuario} · ${u.email}` : u.email },
+          { texto: u.perfil, clase: `badge-role badge-role-${u.perfil.toLowerCase()}` },
+          { texto: u.estado, clase: u.estado === 'ACTIVO' ? 'badge-status-active' : 'badge-status-blocked' },
+          { texto: u.perfil === 'ADMINISTRADOR' ? 'Global (Todas)' : `${u.fincasAsignadas?.length || 0} finca(s)` },
+          { texto: u.ultimoAcceso ? new Date(u.ultimoAcceso).toLocaleString('es-AR') : 'Nunca' },
+        ];
+        for (const dato of datos) {
+          const celda = document.createElement('td');
+          const texto = document.createElement('span');
+          texto.textContent = dato.texto;
+          if (dato.clase) texto.className = dato.clase;
+          celda.append(texto);
+          fila.append(celda);
+        }
+        const acciones = document.createElement('td');
+        const boton = document.createElement('button');
+        const bloquear = u.estado === 'ACTIVO';
+        boton.className = `btn btn-xs btn-outline-${bloquear ? 'danger' : 'success'} btn-toggle-bloqueo`;
+        boton.dataset.action = bloquear ? 'bloquear' : 'desbloquear';
+        boton.dataset.id = u.id;
+        boton.textContent = bloquear ? 'Bloquear' : 'Desbloquear';
+        const puedeModificar = activeAuthUser?.perfil === 'ADMIN_SISTEMA' && !activeAuthUser.debeCambiarPassword;
+        boton.disabled = !puedeModificar;
+        const editar = document.createElement('button');
+        editar.className = 'btn btn-xs btn-secondary';
+        editar.textContent = 'Modificar';
+        editar.disabled = !puedeModificar;
+        editar.addEventListener('click', () => {
+          if (!formModificarUsuario) return;
+          formModificarUsuario.dataset.usuarioId = u.id;
+          for (const campo of ['nombre', 'apellido', 'nombreUsuario', 'email', 'estado']) {
+            document.getElementById(`usr-editar-${campo}`).value = u[campo] ?? '';
+          }
+          const perfil = document.getElementById('usr-editar-perfil');
+          perfil.value = '';
+          perfil.options[0].textContent = `Conservar perfil actual (${u.perfil})`;
+          formModificarUsuario.hidden = false;
+        });
+        acciones.append(editar);
+        acciones.append(boton);
+        fila.append(acciones);
+        return fila;
+      }));
 
       // Adjuntar eventos de bloqueo/desbloqueo
       tbodyUsuariosLista.querySelectorAll('.btn-toggle-bloqueo').forEach(btn => {
@@ -3292,12 +3356,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Actualizar select de prueba de acceso
       if (checkAccesoUsuario) {
-        checkAccesoUsuario.innerHTML = json.data.map(u =>
-          `<option value="${u.id}">${u.nombreCompleto} (${u.perfil})</option>`
-        ).join('');
+        checkAccesoUsuario.replaceChildren(...json.data.map(u => new Option(`${u.nombreCompleto} (${u.perfil})`, u.id)));
       }
     } catch (err) {
-      tbodyUsuariosLista.innerHTML = `<tr><td colspan="7" class="text-center text-dim">Error cargando usuarios: ${err.message}</td></tr>`;
+      if (tokenConsulta === activeAuthToken) mostrarMensajeUsuarios(`Error cargando usuarios: ${err.message}`);
     }
   }
 
@@ -3394,15 +3456,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Logout
   if (btnCerrarSesion) {
-    btnCerrarSesion.addEventListener('click', () => {
+    btnCerrarSesion.addEventListener('click', async () => {
+      let cierreConfirmado = false;
+      try {
+        const respuesta = await fetch('/api/v1/auth/logout', { method: 'POST',
+          headers: { Authorization: `Bearer ${activeAuthToken}` } });
+        cierreConfirmado = respuesta.ok;
+      } catch { /* El cierre local se completa aunque no haya conexión. */ }
       activeAuthToken = null;
       activeAuthUser = null;
       localStorage.removeItem('agrul_auth_token');
       actualizarBannerSesion();
       cargarListaUsuarios();
-      showToast('Sesión finalizada.', 'info');
+      showToast(cierreConfirmado ? 'Sesión finalizada.' : 'Sesión local cerrada. No se pudo confirmar el cierre en el servidor.', 'info');
     });
   }
+
+  // Alta de Usuario
+  document.getElementById('btn-cancelar-edicion-usuario')?.addEventListener('click', () => {
+    formModificarUsuario.hidden = true;
+    formModificarUsuario.reset();
+  });
+  formModificarUsuario?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const id = formModificarUsuario.dataset.usuarioId;
+    const cambios = {};
+    for (const campo of ['nombre', 'apellido', 'nombreUsuario', 'email', 'perfil', 'estado']) {
+      const valor = document.getElementById(`usr-editar-${campo}`).value.trim();
+      if (valor) cambios[campo] = valor;
+    }
+    try {
+      const respuesta = await fetch(`/api/v1/usuarios/${encodeURIComponent(id)}`, { method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${activeAuthToken}` }, body: JSON.stringify(cambios) });
+      const resultado = await respuesta.json();
+      if (!resultado.success) { showToast(resultado.error?.message || 'No se pudo modificar el usuario.', 'error'); return; }
+      formModificarUsuario.hidden = true;
+      if (id === activeAuthUser?.id) {
+        if (resultado.data.perfil !== activeAuthUser.perfil || resultado.data.estado !== 'ACTIVO') {
+          activeAuthToken = null;
+          activeAuthUser = null;
+          localStorage.removeItem('agrul_auth_token');
+          showToast('Tus permisos cambiaron. Volvé a iniciar sesión.', 'info');
+        } else activeAuthUser = resultado.data;
+        actualizarBannerSesion();
+      }
+      showToast('Usuario modificado.', 'success');
+      cargarListaUsuarios();
+    } catch (error) { showToast(`Error de conexión: ${error.message}`, 'error'); }
+  });
 
   // Alta de Usuario
   if (formCrearUsuario) {
@@ -3410,6 +3511,7 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const nombre = document.getElementById('usr-alta-nombre')?.value?.trim();
       const apellido = document.getElementById('usr-alta-apellido')?.value?.trim();
+      const nombreUsuario = document.getElementById('usr-alta-usuario')?.value?.trim();
       const email = document.getElementById('usr-alta-email')?.value?.trim();
       const password = document.getElementById('usr-alta-password')?.value;
       const perfil = document.getElementById('usr-alta-perfil')?.value;
@@ -3429,6 +3531,7 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify({
             nombre,
             apellido,
+            nombreUsuario,
             email,
             password,
             perfil,
@@ -3441,8 +3544,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (json.success && json.data) {
           showToast(`Usuario ${json.data.nombreCompleto} creado exitosamente con rol ${json.data.perfil}.`, 'success');
           formCrearUsuario.reset();
-          const tabLista = document.querySelector('[data-usrtab="tab-lista-usuarios"]');
-          if (tabLista) tabLista.click();
+          document.querySelector('[data-usrtab="tab-lista-usuarios"]')?.click();
           cargarListaUsuarios();
         } else {
           showToast(`Error al crear usuario: ${json.error?.message || 'Verifique los datos'}`, 'error');
@@ -3660,7 +3762,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const res = await fetch('/api/v1/auditoria/simular-inactividad', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${activeAuthToken}` },
           body: JSON.stringify({ timeoutMs }),
         });
         const json = await res.json();

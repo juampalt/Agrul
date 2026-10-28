@@ -5,6 +5,8 @@ import { UsuariosRepositoryPort } from '../../core/ports/usuarios-repository.por
 import { UsuarioFincasRepositoryPort } from '../../core/ports/usuario-fincas-repository.port.js';
 import { AuditoriaSeguridadRepositoryPort } from '../../core/ports/auditoria-seguridad-repository.port.js';
 import { CryptoAuthService } from '../../infrastructure/services/crypto-auth.service.js';
+import { SesionesRepositoryPort } from '../../core/ports/sesiones-repository.port.js';
+import { UsuariosTransaccionPort } from '../../core/ports/usuarios-transaccion.port.js';
 import {
   EntidadNoEncontradaError,
   CredencialesInvalidasError,
@@ -32,6 +34,7 @@ export interface UsuariosUseCasesDependencies {
 
 export function mapUsuarioToOutput(usuario: Usuario, fincas: string[] = []): UsuarioOutputDto {
   return {
+    ...(usuario.nombreUsuario ? { nombreUsuario: usuario.nombreUsuario } : {}),
     id: usuario.id,
     nombre: usuario.nombre,
     apellido: usuario.apellido,
@@ -55,7 +58,7 @@ export class CrearUsuarioUseCase {
     private readonly auditoriaRepo?: AuditoriaSeguridadRepositoryPort,
   ) {}
 
-  async execute(input: CrearUsuarioInputDto): Promise<UsuarioOutputDto> {
+  async execute(input: CrearUsuarioInputDto, responsable?: Usuario): Promise<UsuarioOutputDto> {
     const existente = await this.usuariosRepo.buscarPorEmail(input.email);
     if (existente) {
       throw new UsuarioDuplicadoError(input.email);
@@ -65,6 +68,7 @@ export class CrearUsuarioUseCase {
     const id = crypto.randomUUID();
 
     const usuario = Usuario.crear({
+      nombreUsuario: input.nombreUsuario,
       id,
       nombre: input.nombre,
       apellido: input.apellido,
@@ -87,13 +91,14 @@ export class CrearUsuarioUseCase {
       await this.auditoriaRepo.registrar(
         AuditoriaSeguridadLog.crear({
           id: crypto.randomUUID(),
-          usuarioId: usuario.id,
-          usuarioEmail: usuario.email,
+          usuarioId: responsable?.id ?? usuario.id,
+          usuarioEmail: responsable?.email ?? usuario.email,
           accion: 'CREAR',
           entidad: 'USUARIO',
           entidadId: usuario.id,
           valorPrevioJson: null,
           valorNuevoJson: {
+            ...(usuario.nombreUsuario ? { nombreUsuario: usuario.nombreUsuario } : {}),
             nombre: usuario.nombre,
             apellido: usuario.apellido,
             email: usuario.email,
@@ -114,10 +119,31 @@ export class AutenticarUsuarioUseCase {
     private readonly usuariosRepo: UsuariosRepositoryPort,
     private readonly usuarioFincasRepo: UsuarioFincasRepositoryPort,
     private readonly auditoriaRepo?: AuditoriaSeguridadRepositoryPort,
+    private readonly sesionesRepo?: SesionesRepositoryPort,
+    private readonly transaccion?: UsuariosTransaccionPort,
   ) {}
 
   async execute(input: LoginInputDto): Promise<LoginOutputDto> {
-    const usuario = await this.usuariosRepo.buscarPorEmail(input.email);
+    if (this.transaccion) {
+      const cuenta = input.nombreUsuario !== undefined ? await this.usuariosRepo.buscarPorNombreUsuario(input.nombreUsuario)
+        : await this.usuariosRepo.buscarPorEmail(input.email);
+      if (!cuenta) throw new CredencialesInvalidasError();
+      const resultado = await this.transaccion.ejecutar([cuenta.id], async repos => {
+        try {
+          return { ok: true as const, data: await new AutenticarUsuarioUseCase(repos.usuariosRepo,
+            repos.usuarioFincasRepo, repos.auditoriaRepo, repos.sesionesRepo).execute(input) };
+        } catch (error) {
+          // Los intentos fallidos deben confirmar el contador/bloqueo aunque HTTP devuelva un rechazo.
+          if (error instanceof CredencialesInvalidasError || error instanceof UsuarioBloqueadoError) return { ok: false as const, error };
+          throw error;
+        }
+      });
+      if (!resultado.ok) throw resultado.error;
+      return resultado.data;
+    }
+    const usuario = input.nombreUsuario !== undefined
+      ? await this.usuariosRepo.buscarPorNombreUsuario(input.nombreUsuario)
+      : await this.usuariosRepo.buscarPorEmail(input.email);
     if (!usuario) {
       throw new CredencialesInvalidasError();
     }
@@ -178,6 +204,7 @@ export class AutenticarUsuarioUseCase {
     const fincas = await this.usuarioFincasRepo.obtenerFincasPorUsuario(usuario.id);
 
     const token = CryptoAuthService.generateToken({
+      versionSesion: usuario.versionSesion,
       sub: usuario.id,
       email: usuario.email,
       nombre: usuario.nombre,
@@ -186,6 +213,7 @@ export class AutenticarUsuarioUseCase {
       fincas,
       debeCambiarPassword: usuario.debeCambiarPassword,
     });
+    await this.sesionesRepo?.abrir(CryptoAuthService.hashToken(token), usuario.id, new Date(Date.now() + 86400000).toISOString());
 
     if (this.auditoriaRepo) {
       await this.auditoriaRepo.registrar(
@@ -404,12 +432,21 @@ export class CambiarPasswordUseCase {
   constructor(
     private readonly usuariosRepo: UsuariosRepositoryPort,
     private readonly auditoriaRepo?: AuditoriaSeguridadRepositoryPort,
+    private readonly transaccion?: UsuariosTransaccionPort,
   ) {}
 
   async execute(id: string, input: CambiarPasswordInputDto): Promise<void> {
+    if (this.transaccion) return this.transaccion.ejecutar([id], repos =>
+      new CambiarPasswordUseCase(repos.usuariosRepo, repos.auditoriaRepo).execute(id, input));
     const usuario = await this.usuariosRepo.buscarPorId(id);
     if (!usuario) {
       throw new EntidadNoEncontradaError('Usuario', id);
+    }
+
+    if (usuario.estaBloqueado) throw new UsuarioBloqueadoError();
+    if (!usuario.estaActivo) throw new UsuarioInactivoError();
+    if (!usuario.debeCambiarPassword && input.passwordActual === undefined) {
+      throw new CredencialesInvalidasError('Se requiere la contraseña actual para cambiar una contraseña vigente.');
     }
 
     if (input.passwordActual !== undefined) {

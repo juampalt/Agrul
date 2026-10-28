@@ -1052,7 +1052,7 @@
 
 ### `[AGRUL-053]` Módulo 8: Gestión de Usuarios, Roles y Seguridad (CU59 - CU62)
 - **GitHub Issue:** [#47](https://github.com/juampalt/Agrul/issues/47)
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 8: Seguridad y Acceso
 - **Casos de Uso:** CU59, CU60, CU61, CU62
@@ -1061,6 +1061,12 @@
 - **Skills:** [.cursor/skills/architecture.md](file:///c:/AGRUL/.cursor/skills/architecture.md), [.cursor/skills/api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
 - **Etiquetas:** `auth`, `rbac`, `cu59-cu62`, `ready-for-agent`
 - **Descripción:** Autenticación y roles formales del sistema (`ADMINISTRADOR`, `ENCARGADO_CAMPO` / `INGENIERO_AGRONOMO`, `ADMINISTRADOR_DEL_SISTEMA`) con control de acceso RBAC.
+- **Avance parcial (2026-10-28):** Etapa 1 / CU59: login por correo o nombre de usuario, validación estricta JWT y protección del timeout de sesión. Migración `0010` validada desde cero y cuatro pruebas CU59 con PostgreSQL real aprobadas. Regresión: 834/838 aprobadas; cuatro fallos de SQLSTATE también reproducidos con `origin/main`. CU60–CU62, perfiles canónicos y auditoría persistente pendientes. Ver `.scratch/agrul-053/etapa1.md`. Issue abierta; sin PR ni merge en esta etapa.
+- **Avance etapa 2 (2026-10-28):** CU60 implementado: alta exclusiva de `ADMIN_SISTEMA`, responsable activo revalidado en PostgreSQL, nombre de usuario obligatorio, perfiles canónicos, unicidad normalizada y formulario actualizado. Migraciones `0000`–`0011` desde cero; lint y build aprobados. 60 pruebas focalizadas aprobadas (27 CU60 con PostgreSQL); regresión 874/878, con los mismos cuatro fallos anteriores. CU61–CU62 y auditoría/asignaciones persistentes pendientes. Ver `.scratch/agrul-053/etapa2.md`. Issue abierta; sin PR ni merge.
+- **Avance etapa 3 (2026-10-28):** CU61 implementado: consulta con filtros combinados de perfil/estado/texto, búsqueda por nombre de usuario, detalle con control de acceso y revalidación del consultante en PostgreSQL. Interfaz con filtros y renderización de datos como texto. Lint y build aprobados; 58 pruebas focalizadas (26 con PostgreSQL); regresión 912/916, con los mismos cuatro fallos anteriores. CU62 y auditoría/asignaciones persistentes pendientes. Ver `.scratch/agrul-053/etapa3.md`. Issue abierta; sin PR ni merge.
+- **Avance etapa 4 (2026-10-28):** CU62 implementado: modificación, bloqueo y desbloqueo exclusivos de `ADMIN_SISTEMA`, responsable revalidado, auditoría y deltas inmutables en PostgreSQL, asignaciones persistentes y transacciones con rollback/concurrencia comprobados. Alta CU60 integrada a la misma unidad transaccional. Migraciones `0000`–`0012` desde cero, lint/build aprobados; 54 pruebas nuevas CU62 aprobadas (45 PostgreSQL y 9 unitarias); regresión 966/970, con los cuatro fallos anteriores. Pendiente revisión final de seguridad/sesiones y resolución de la regresión antes de PR/merge. Ver `.scratch/agrul-053/etapa4.md`.
+- **Avance etapa 5 (2026-10-28):** Validación local CU59–CU62 completada: sesiones persistidas por huella, revocación por cierre/cambio de credenciales/rol/estado, inactividad persistente, permisos y fincas revalidados, utilidad de sesión restringida y logs sin datos sensibles. Corregidas las aserciones SQLSTATE verificando también conservación de filas. **988/988 pruebas aprobadas, sin omisiones**, incluidas doce suites PostgreSQL; lint/build correctos y migraciones `0000`–`0013` desde cero. PR, controles remotos y merge pendientes tras la pausa de consumo. Ver `.scratch/agrul-053/etapa5.md`.
+- **Cierre de implementación:** [PR #56](https://github.com/juampalt/Agrul/pull/56), con referencia `Closes #47`. CU59–CU62 completos y validados localmente; GitHub comprobado sin conflictos, revisiones solicitadas ni checks obligatorios configurados. Aplicar migraciones antes del arranque y configurar secreto JWT/TLS del despliegue; no se realizó despliegue ni prueba de navegador.
 
 ### `[AGRUL-054]` Módulo 3: Actividades Agrícolas y Monitoreos (CU22 - CU33)
 - **GitHub Issue:** [#48](https://github.com/juampalt/Agrul/issues/48)

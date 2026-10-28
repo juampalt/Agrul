@@ -16,6 +16,7 @@ describe('AGRUL-038: Integration Tests — Autenticación, RBAC y Aislamiento po
   let usuarioFincasRepo: InMemoryUsuarioFincasRepository;
 
   let adminToken: string;
+  let sistemaToken: string;
   let encargadoToken: string;
   let operarioToken: string;
   let asesorToken: string;
@@ -90,6 +91,13 @@ describe('AGRUL-038: Integration Tests — Autenticación, RBAC y Aislamiento po
       perfil: 'ADMINISTRADOR',
     });
     await usuariosRepo.guardar(adminUser);
+    await usuariosRepo.guardar(Usuario.crear({
+      id: 'usr-sistema', nombre: 'Admin', apellido: 'Sistema', email: 'sistema@agrul.com',
+      passwordHash: hash, salt, perfil: 'ADMIN_SISTEMA',
+    }));
+    const rSistema = await app.inject({ method: 'POST', url: '/api/v1/auth/login',
+      payload: { email: 'sistema@agrul.com', password: 'Password1234' } });
+    sistemaToken = rSistema.json().data.token;
 
     const encargadoUser = Usuario.crear({
       id: 'usr-encargado',
@@ -104,7 +112,7 @@ describe('AGRUL-038: Integration Tests — Autenticación, RBAC y Aislamiento po
     await usuarioFincasRepo.asignarFincas('usr-encargado', [FINCA_LULES_ID]);
 
     const operarioUser = Usuario.crear({
-      id: 'usr-operario',
+      id: 'c0000000-0000-4000-8000-000000000038',
       nombre: 'Operario',
       apellido: 'Campo',
       email: 'operario@agrul.com',
@@ -113,7 +121,7 @@ describe('AGRUL-038: Integration Tests — Autenticación, RBAC y Aislamiento po
       perfil: 'OPERARIO',
     });
     await usuariosRepo.guardar(operarioUser);
-    await usuarioFincasRepo.asignarFincas('usr-operario', [FINCA_LULES_ID]);
+    await usuarioFincasRepo.asignarFincas('c0000000-0000-4000-8000-000000000038', [FINCA_LULES_ID]);
 
     const asesorUser = Usuario.crear({
       id: 'usr-asesor',
@@ -241,7 +249,7 @@ describe('AGRUL-038: Integration Tests — Autenticación, RBAC y Aislamiento po
   });
 
   describe('Control de Roles RBAC (/api/v1/usuarios)', () => {
-    it('POST /usuarios exige perfil ADMINISTRADOR y rechaza a OPERARIO con 403 Forbidden', async () => {
+    it('POST /usuarios exige ADMIN_SISTEMA y rechaza a OPERARIO con 403 Forbidden', async () => {
       const resOperario = await app.inject({
         method: 'POST',
         url: '/api/v1/usuarios',
@@ -259,17 +267,18 @@ describe('AGRUL-038: Integration Tests — Autenticación, RBAC y Aislamiento po
       expect(resOperario.json().error.code).toBe('PERMISO_INSUFICIENTE');
     });
 
-    it('POST /usuarios con perfil ADMINISTRADOR crea un nuevo usuario exitosamente (201 Created)', async () => {
+    it('POST /usuarios con ADMIN_SISTEMA crea un usuario canónico (CU60)', async () => {
       const resAdmin = await app.inject({
         method: 'POST',
         url: '/api/v1/usuarios',
-        headers: { authorization: `Bearer ${adminToken}` },
+        headers: { authorization: `Bearer ${sistemaToken}` },
         payload: {
           nombre: 'Claudio',
+          nombreUsuario: 'claudio.borges',
           apellido: 'Borges',
           email: 'claudio.borges@agrul.com',
           password: 'PasswordClaudio2026',
-          perfil: 'ENCARGADO',
+          perfil: 'ENCARGADO_CAMPO',
           fincaIds: [FINCA_LULES_ID],
         },
       });
@@ -299,11 +308,11 @@ describe('AGRUL-038: Integration Tests — Autenticación, RBAC y Aislamiento po
       expect(resOperario.statusCode).toBe(403);
     });
 
-    it('POST /usuarios/:id/bloquear permite al Administrador bloquear y desbloquear cuentas', async () => {
+    it('POST /usuarios/:id/bloquear permite al Administrador del Sistema bloquear y desbloquear cuentas', async () => {
       const resBloqueo = await app.inject({
         method: 'POST',
-        url: '/api/v1/usuarios/usr-operario/bloquear',
-        headers: { authorization: `Bearer ${adminToken}` },
+        url: '/api/v1/usuarios/c0000000-0000-4000-8000-000000000038/bloquear',
+        headers: { authorization: `Bearer ${sistemaToken}` },
         payload: { motivo: 'Suspensión preventiva por auditoría' },
       });
 
@@ -313,8 +322,8 @@ describe('AGRUL-038: Integration Tests — Autenticación, RBAC y Aislamiento po
       // Desbloquear
       const resDesbloqueo = await app.inject({
         method: 'POST',
-        url: '/api/v1/usuarios/usr-operario/desbloquear',
-        headers: { authorization: `Bearer ${adminToken}` },
+        url: '/api/v1/usuarios/c0000000-0000-4000-8000-000000000038/desbloquear',
+        headers: { authorization: `Bearer ${sistemaToken}` },
       });
       expect(resDesbloqueo.statusCode).toBe(200);
       expect(resDesbloqueo.json().data.estado).toBe('ACTIVO');
