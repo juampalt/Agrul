@@ -294,6 +294,7 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
       if (deps.authController) {
         v1.post('/auth/login', (req, rep) => deps.authController!.login(req, rep));
         v1.get('/auth/me', { preHandler: [verificarAutenticacion] }, (req, rep) => deps.authController!.me(req, rep));
+        v1.post('/auth/logout', { preHandler: [verificarAutenticacion] }, (req, rep) => deps.authController!.logout(req, rep));
         v1.post('/auth/cambiar-password', { preHandler: [verificarAutenticacion] }, (req, rep) => deps.authController!.cambiarPassword(req, rep));
       }
 
@@ -314,7 +315,7 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
       if (deps.auditoriaController) {
         v1.get('/auditoria', { preHandler: [requerirRol('ADMINISTRADOR', 'ADMIN_SISTEMA'), verificarPasswordInicial] }, (req, rep) => deps.auditoriaController!.listar(req, rep));
         v1.get('/auditoria/:id', { preHandler: [requerirRol('ADMINISTRADOR', 'ADMIN_SISTEMA'), verificarPasswordInicial] }, (req, rep) => deps.auditoriaController!.obtenerPorId(req, rep));
-        v1.post('/auditoria/simular-inactividad', (req, rep) => deps.auditoriaController!.simularInactividad(req, rep));
+        v1.post('/auditoria/simular-inactividad', { preHandler: [requerirRol('ADMIN_SISTEMA'), verificarPasswordInicial] }, (req, rep) => deps.auditoriaController!.simularInactividad(req, rep));
       }
 
       // Catálogo de Proveedores (Módulo 9 — AGRUL-041 / RF-M9-01)

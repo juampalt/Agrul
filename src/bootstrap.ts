@@ -9,6 +9,7 @@ import { DrizzleUsuariosRepository } from './infrastructure/database/repositorie
 import { DrizzleUsuarioFincasRepository } from './infrastructure/database/repositories/drizzle-usuario-fincas.repository.js';
 import { DrizzleAuditoriaSeguridadRepository } from './infrastructure/database/repositories/drizzle-auditoria-seguridad.repository.js';
 import { DrizzleUsuariosTransaccion } from './infrastructure/database/drizzle-usuarios-transaccion.js';
+import { DrizzleSesionesRepository } from './infrastructure/database/repositories/drizzle-sesiones.repository.js';
 import { DrizzleFincasRepository } from './infrastructure/database/repositories/drizzle-fincas.repository.js';
 import { DrizzleLotesTerritorialesRepository } from './infrastructure/database/repositories/drizzle-lotes-territoriales.repository.js';
 import { InMemoryEventosRepository } from '../tests/mocks/in-memory-eventos.repository.js';
@@ -34,6 +35,8 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
     usuarioFincasRepo: new DrizzleUsuarioFincasRepository(db),
     auditoriaRepo: new DrizzleAuditoriaSeguridadRepository(db),
     usuariosTransaccion: new DrizzleUsuariosTransaccion(db),
+    sesionesRepo: new DrizzleSesionesRepository(db),
+    revalidarSesiones: true,
     cultivosRepo: new DrizzleCultivosRepository(db),
     variedadesRepo: new DrizzleVariedadesRepository(db),
     plantacionesRepo: new DrizzlePlantacionesRepository(db),

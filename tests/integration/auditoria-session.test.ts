@@ -212,6 +212,7 @@ describe('AGRUL-040: Integration Tests — Bitácora de Auditoría y Seguridad d
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auditoria/simular-inactividad',
+        headers: { authorization: `Bearer ${sistemaToken}` },
         payload: {
           timeoutMs: 60000,
         },

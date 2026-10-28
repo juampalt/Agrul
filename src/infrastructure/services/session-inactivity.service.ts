@@ -4,6 +4,7 @@ export class SessionInactivityService {
   private static lastActivityByUser = new Map<string, number>();
 
   public static setTimeoutMs(ms: number): void {
+    if (!Number.isSafeInteger(ms) || ms <= 0) throw new RangeError('El timeout de sesión debe ser un entero positivo.');
     this.timeoutMs = ms;
   }
 
@@ -17,6 +18,13 @@ export class SessionInactivityService {
 
   public static obtenerUltimaActividad(usuarioId: string): number | undefined {
     return this.lastActivityByUser.get(usuarioId);
+  }
+
+  public static simularInactividadUsuario(usuarioId: string, timestamp: number): void {
+    this.registrarActividad(usuarioId, timestamp);
+    for (const clave of this.lastActivityByUser.keys()) {
+      if (clave.startsWith(`${usuarioId}:`)) this.lastActivityByUser.set(clave, timestamp);
+    }
   }
 
   public static verificarExpiracion(

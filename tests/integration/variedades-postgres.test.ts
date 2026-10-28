@@ -3,6 +3,7 @@ import { FastifyInstance } from 'fastify';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
 import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { autenticarOperadorPrueba, emitirSesionPrueba } from '../helpers/operador-postgres.fixture.js';
 import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth.service.js';
 
 const connectionString = process.env.VARIEDADES_TEST_DATABASE_URL;
@@ -10,7 +11,7 @@ const usuario = {
   sub: 'a0000000-0000-4000-8000-000000000053', email: 'admin@example.test',
   nombre: 'Admin', apellido: 'Prueba', fincas: [],
 };
-const headers = { authorization: `Bearer ${CryptoAuthService.generateToken({ ...usuario, perfil: 'ADMINISTRADOR' })}` };
+let headers = { authorization: '' };
 const inexistente = '00000000-0000-4000-8000-000000000053';
 const datos = { nombre: 'Emerald', descripcion: 'Variedad de prueba' };
 
@@ -27,6 +28,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU11-CU14 con bootstrap y PostgreS
     await runMigrations(connectionString);
     app = crearServidorProduccion({ connectionString, logger: false }).app;
     await app.ready();
+    headers = await autenticarOperadorPrueba(connection.pool, app, usuario);
   });
   beforeEach(async () => {
     await connection.pool.query('delete from variedades');
@@ -171,7 +173,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU11-CU14 con bootstrap y PostgreS
   it('reutiliza autenticación, rol Administrador y cambio de contraseña obligatorio', async () => {
     expect((await app.inject({ method: 'GET', url: '/api/v1/variedades' })).statusCode).toBe(401);
     for (const perfil of ['ENCARGADO', 'ADMINISTRADOR'] as const) {
-      const token = CryptoAuthService.generateToken({ ...usuario, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
+      const token = await emitirSesionPrueba(connection.pool, { ...usuario, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
       expect((await app.inject({ method: 'POST', url: '/api/v1/variedades', payload: { ...datos, cultivoId },
         headers: { authorization: `Bearer ${token}` } })).statusCode).toBe(403);
     }
@@ -179,7 +181,8 @@ describe.skipIf(!connectionString)('AGRUL-052 CU11-CU14 con bootstrap y PostgreS
 
   it('la base bloquea huérfanos, estados inválidos y borrado del cultivo referenciado', async () => {
     await crear();
-    await expect(connection.pool.query('delete from cultivos where id = $1', [cultivoId])).rejects.toMatchObject({ code: '23001' });
+    await expect(connection.pool.query('delete from cultivos where id = $1', [cultivoId])).rejects.toMatchObject({ code: expect.stringMatching(/^(23001|23503)$/) });
+    expect((await connection.pool.query('select id from cultivos where id=$1', [cultivoId])).rows).toHaveLength(1);
     await expect(connection.pool.query("insert into variedades(cultivo_id, nombre) values ($1, 'Huérfana')", [inexistente]))
       .rejects.toMatchObject({ code: '23503' });
     await expect(connection.pool.query("insert into variedades(cultivo_id, nombre, estado) values ($1, 'Inválida', 'OTRO')", [cultivoId]))

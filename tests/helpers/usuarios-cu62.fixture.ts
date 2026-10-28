@@ -25,14 +25,15 @@ export class UsuariosCu62Fixture {
   readonly password = 'PruebaSegura123!';
   hash = '';
   salt = '';
-  constructor(readonly connectionString?: string) {
+  constructor(readonly connectionString?: string, private readonly nombreBase = 'agrul_test_agrul_053_etapa4') {
     this.conexion = createDatabaseConnection(connectionString);
     this.repo = new DrizzleUsuariosRepository(this.conexion.db);
   }
   get app() { return this.servidor.app; }
   async preparar() {
     const { rows } = await this.conexion.pool.query('select current_database() as nombre');
-    if (rows[0].nombre !== 'agrul_test_agrul_053_etapa4') throw new Error('Base de pruebas CU62 incorrecta.');
+    if (!['agrul_test_agrul_053_etapa4', 'agrul_test_agrul_053_etapa5'].includes(this.nombreBase)
+      || rows[0].nombre !== this.nombreBase) throw new Error('Base de pruebas de seguridad incorrecta.');
     await runMigrations(this.connectionString);
     ({ hash: this.hash, salt: this.salt } = CryptoAuthService.hashPassword(this.password));
     this.servidor = crearServidorProduccion({ connectionString: this.connectionString, logger: false });

@@ -4,6 +4,9 @@ import { SessionInactivityService } from '../../services/session-inactivity.serv
 import { PerfilUsuario } from '../../../core/domain/entities/usuario.entity.js';
 
 declare module 'fastify' {
+  interface FastifyInstance {
+    validarSesionActual?: (payload: TokenPayload, token: string) => Promise<TokenPayload>;
+  }
   interface FastifyRequest {
     usuario?: TokenPayload;
   }
@@ -13,6 +16,7 @@ declare module 'fastify' {
  * Middleware para validar el encabezado Authorization con esquema Bearer token y verificar expiración por inactividad.
  */
 export async function verificarAutenticacion(request: FastifyRequest, reply: FastifyReply) {
+  if (request.usuario) return;
   const authHeader = request.headers.authorization;
   const timestamp = new Date().toISOString();
 
@@ -30,7 +34,7 @@ export async function verificarAutenticacion(request: FastifyRequest, reply: Fas
   }
 
   const token = authHeader.substring(7).trim();
-  const payload = CryptoAuthService.verifyToken(token);
+  let payload = CryptoAuthService.verifyToken(token);
 
   if (!payload) {
     return reply.status(401).send({
@@ -45,6 +49,7 @@ export async function verificarAutenticacion(request: FastifyRequest, reply: Fas
     });
   }
 
+  if (request.server.validarSesionActual) payload = await request.server.validarSesionActual(payload, token);
   // Validación de inactividad de sesión (RF-M8-09)
   const clientHeader = request.headers['x-last-activity'];
   let clientTimeMs: number | undefined;
@@ -55,7 +60,8 @@ export async function verificarAutenticacion(request: FastifyRequest, reply: Fas
     }
   }
 
-  const expirado = SessionInactivityService.verificarExpiracion(payload.sub, Date.now(), clientTimeMs);
+  const claveSesion = payload.jti ? `${payload.sub}:${payload.jti}` : payload.sub;
+  const expirado = SessionInactivityService.verificarExpiracion(claveSesion, Date.now(), clientTimeMs);
   if (expirado) {
     return reply.status(401).send({
       success: false,
@@ -78,16 +84,8 @@ export async function verificarAutenticacion(request: FastifyRequest, reply: Fas
 /**
  * Middleware que verifica autenticación opcionalmente (si se proporciona token, lo decodifica).
  */
-export async function verificarAutenticacionOpcional(request: FastifyRequest) {
-  const authHeader = request.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7).trim();
-    const payload = CryptoAuthService.verifyToken(token);
-    if (payload) {
-      request.usuario = payload;
-      SessionInactivityService.registrarActividad(payload.sub);
-    }
-  }
+export async function verificarAutenticacionOpcional(request: FastifyRequest, reply: FastifyReply) {
+  if (request.headers.authorization) await verificarAutenticacion(request, reply);
 }
 
 /**

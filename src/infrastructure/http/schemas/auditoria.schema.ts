@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const AccionAuditoriaEnum = z.enum([
+  'LOGOUT',
   'LOGIN',
   'CREAR',
   'EDITAR',
@@ -27,7 +28,7 @@ export const AuditoriaIdParamSchema = z.object({
 }).strict();
 
 export const SimularInactividadBodySchema = z.object({
-  timeoutMs: z.number().int().positive().optional(),
-  usuarioId: z.string().optional(),
-  simularSegundosInactividad: z.number().int().positive().optional(),
-});
+  timeoutMs: z.number().int().positive().max(86400000).optional(),
+  usuarioId: z.string().uuid().optional(),
+  simularSegundosInactividad: z.number().int().positive().max(86400).optional(),
+}).strict();

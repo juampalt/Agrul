@@ -126,7 +126,8 @@ describe.skipIf(!connectionString)('AGRUL-053 CU61 con HTTP y PostgreSQL reales'
 
   it('la propia ficha sigue disponible durante el cambio inicial de contraseña', async () => {
     await conexion.pool.query('update usuarios set debe_cambiar_password=true where id=$1', [sistemaId]);
-    expect((await consultar(`/usuarios/${sistemaId}`)).statusCode).toBe(200);
+    const sesionInicial = await iniciarSesion();
+    expect((await consultar(`/usuarios/${sistemaId}`, sesionInicial)).statusCode).toBe(200);
   });
 
   it.each(['?perfil=SUPERUSUARIO', '?estado=OTRO', '?rol=ADMIN_SISTEMA', '?desconocido=valor',
