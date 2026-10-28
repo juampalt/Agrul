@@ -1033,7 +1033,7 @@
 
 ### `[AGRUL-052]` Módulo 2: Catálogo de Cultivos, Variedades, Plantaciones y Ciclos (CU07 - CU21)
 - **GitHub Issue:** [#46](https://github.com/juampalt/Agrul/issues/46)
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 2: Cultivos y Ciclos
 - **Casos de Uso:** CU07 a CU21
@@ -1047,6 +1047,8 @@
   2. Lógica de negocio para plantaciones (superficie ocupada/disponible de lote) y ciclos.
   3. Contratos de casos de uso y endpoints Fastify.
   4. Suite de pruebas en Vitest.
+
+- **Validación de cierre:** CU07–CU21 implementados con repositorios PostgreSQL conectados al bootstrap; responsables existentes/activos y FK a usuarios; RN-09 persistente con rollback y control de concurrencia. Lint y build aprobados; 822 pruebas aprobadas sin omisiones, incluida regresión territorial e inmutabilidad real. Migraciones `0000`–`0009` validadas desde una base vacía descartable. La integración mínima de usuarios y pendientes reutiliza los modelos existentes y no completa las issues #47 ni #48.
 
 ### `[AGRUL-053]` Módulo 8: Gestión de Usuarios, Roles y Seguridad (CU59 - CU62)
 - **GitHub Issue:** [#47](https://github.com/juampalt/Agrul/issues/47)

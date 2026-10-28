@@ -1,5 +1,11 @@
 import { pgTable, uuid, varchar, numeric, timestamp, jsonb, index, boolean, text, integer } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+export { cultivosTable } from './cultivos.js';
+export { variedadesTable } from './variedades.js';
+export { plantacionesTable } from './plantaciones.js';
+export { actividadesProgramadasTable } from './actividades-programadas.js';
+import { ciclosProductivosTable } from './ciclos-productivos.js';
+export { ciclosProductivosTable };
 
 // TABLA FINCAS: Gestión de Fincas y Establecimientos Productivos
 export const fincasTable = pgTable('fincas', {
@@ -172,22 +178,6 @@ export const maquinariaCatalogoTable = pgTable('maquinaria_catalogo', {
 // ============================================================================
 
 // TABLA READ/WRITE MODEL: Ciclos Productivos (Módulo 2 / RF-M2-02 / RF-M3-02)
-export const ciclosProductivosTable = pgTable('ciclos_productivos', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  codigoCiclo: varchar('codigo_ciclo', { length: 60 }).notNull().unique(),
-  loteId: uuid('lote_id').notNull().references(() => lotesTable.id, { onDelete: 'restrict' }),
-  cultivo: varchar('cultivo', { length: 120 }).notNull(),
-  variedad: varchar('variedad', { length: 100 }),
-  estado: varchar('estado', { length: 30 }).notNull().default('ABIERTO'), // PLANIFICADO | ABIERTO | CERRADO
-  superficieCultivadaHa: numeric('superficie_cultivada_ha', { precision: 10, scale: 2 }).notNull(),
-  fechaInicio: varchar('fecha_inicio', { length: 30 }).notNull(),
-  fechaFin: varchar('fecha_fin', { length: 30 }),
-  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-}, (table) => [
-  index('idx_ciclos_lote_estado').on(table.loteId, table.estado),
-  index('idx_ciclos_codigo').on(table.codigoCiclo),
-]);
 
 // TABLA READ/WRITE MODEL: Actividades Agrícolas / Labores de Campo (RF-M3-02 / RN-01)
 export const actividadesAgricolasTable = pgTable('actividades_agricolas', {

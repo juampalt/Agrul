@@ -2,6 +2,14 @@ import Fastify, { FastifyInstance } from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { errorHandler } from './middlewares/error-handler.js';
 import { registerApiRoutes } from './routes/api.routes.js';
+import { registrarRutasCultivos } from './routes/cultivos.routes.js';
+import { registrarRutasVariedades } from './routes/variedades.routes.js';
+import { registrarRutasPlantaciones } from './routes/plantaciones.routes.js';
+import { registrarRutasCiclosProductivos } from './routes/ciclos-productivos.routes.js';
+import { CiclosProductivosRepositoryPort } from '../../core/ports/ciclos-productivos-repository.port.js';
+import { PlantacionesRepositoryPort } from '../../core/ports/plantaciones-repository.port.js';
+import { VariedadesRepositoryPort } from '../../core/ports/variedades-repository.port.js';
+import { CultivosRepositoryPort } from '../../core/ports/cultivos-repository.port.js';
 import { PoliticaRetencionBpaService } from '../../core/domain/services/politica-retencion-bpa.service.js';
 import { LocalizacionTucumanService } from '../../core/domain/services/localizacion-tucuman.service.js';
 import { LotesController } from './controllers/lotes.controller.js';
@@ -222,6 +230,10 @@ export interface BuildAppOptions {
   eventosRepo: EventosRepositoryPort;
   genealogiaRepo: GenealogiaRepositoryPort;
   fincasRepo?: FincasRepositoryPort;
+  cultivosRepo?: CultivosRepositoryPort;
+  variedadesRepo?: VariedadesRepositoryPort;
+  plantacionesRepo?: PlantacionesRepositoryPort;
+  ciclosProductivosRepo?: CiclosProductivosRepositoryPort;
   catalogosRepo?: CatalogosActividadesRepositoryPort;
   actividadesRepo?: ActividadesRepositoryPort;
   ciclosRepo?: CiclosRepositoryPort;
@@ -885,6 +897,12 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
 
 
   // Registro de Rutas
+  if (options.cultivosRepo) registrarRutasCultivos(app, options.cultivosRepo);
+  if (options.plantacionesRepo) registrarRutasPlantaciones(app, options.plantacionesRepo);
+  if (options.ciclosProductivosRepo) registrarRutasCiclosProductivos(app, options.ciclosProductivosRepo);
+  if (options.variedadesRepo && options.cultivosRepo) {
+    registrarRutasVariedades(app, options.variedadesRepo, options.cultivosRepo);
+  }
   registerApiRoutes(app, {
     lotesController,
     eventosController,

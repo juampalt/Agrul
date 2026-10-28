@@ -1,4 +1,8 @@
-export type EstadoCiclo = 'PLANIFICADO' | 'ABIERTO' | 'CERRADO';
+import { InvalidStateTransitionError } from '../errors/domain.error.js';
+import { CicloPlanificadoDTO, CicloProductivoInvalidoError, crearPlanificacionCiclo, DatosPlanificacionCiclo,
+  EstadoCicloPlanificado, PlanificacionCiclo, validarFechaCiclo } from '../value-objects/planificacion-ciclo.vo.js';
+
+export type EstadoCiclo = EstadoCicloPlanificado | 'ABIERTO' | 'CERRADO';
 
 export interface CicloProductivoProps {
   id: string;
@@ -16,6 +20,7 @@ export interface CicloProductivoProps {
   plantasRepuestas?: number | null;
   creadoEn: string;
   actualizadoEn: string;
+  planificacion?: PlanificacionCiclo;
 }
 
 export interface CrearCicloProductivoParams {
@@ -79,7 +84,51 @@ export class CicloProductivo {
   }
 
   public static reconstituir(props: CicloProductivoProps): CicloProductivo {
-    return new CicloProductivo({ ...props });
+    return new CicloProductivo({ ...props, ...(props.planificacion ? { planificacion: { ...props.planificacion } } : {}) });
+  }
+
+  public static planificar(datos: DatosPlanificacionCiclo & { id: string }, contexto: {
+    loteId: string; cultivo: string; variedad: string; superficieHa: number; fechaPlantacion: string; cantidadInicialPlantas: number;
+  }): CicloProductivo {
+    const { id, ...entrada } = datos;
+    const planificacion = crearPlanificacionCiclo(entrada, contexto.fechaPlantacion);
+    const ciclo = CicloProductivo.crear({ id, codigoCiclo: planificacion.nombreCodigo, loteId: contexto.loteId,
+      cultivo: contexto.cultivo, variedad: contexto.variedad, estado: 'PLANIFICADO', superficieCultivadaHa: contexto.superficieHa,
+      fechaInicio: planificacion.fechaInicioPrevista, plantasPlantadas: contexto.cantidadInicialPlantas });
+    ciclo.props.planificacion = planificacion;
+    return ciclo;
+  }
+
+  public toPlanificacionJSON(): CicloPlanificadoDTO {
+    const estado = this.props.estado;
+    if (!this.props.planificacion || (estado !== 'PLANIFICADO' && estado !== 'ACTIVO' && estado !== 'FINALIZADO')) {
+      throw new CicloProductivoInvalidoError('El ciclo debe estar vinculado a una plantación con planificación completa.');
+    }
+    return { ...this.props.planificacion, id: this.props.id, estado };
+  }
+
+  public iniciar(fecha: string, fechaPlantacion: string, hoy = new Date()): void {
+    const plan = this.toPlanificacionJSON();
+    if (plan.estado !== 'PLANIFICADO') throw new InvalidStateTransitionError(plan.estado, 'ACTIVO');
+    validarFechaCiclo(fecha, true, hoy);
+    if (fecha < fechaPlantacion) throw new CicloProductivoInvalidoError('El inicio efectivo no puede ser anterior a la plantación.');
+    this.props.planificacion = { ...this.props.planificacion!, fechaInicioEfectiva: fecha };
+    this.props.estado = 'ACTIVO';
+    this.props.fechaInicio = fecha;
+    this.props.actualizadoEn = hoy.toISOString();
+  }
+
+  public finalizar(fecha: string, hoy = new Date()): void {
+    const plan = this.toPlanificacionJSON();
+    if (plan.estado !== 'ACTIVO') throw new InvalidStateTransitionError(plan.estado, 'FINALIZADO');
+    validarFechaCiclo(fecha, true, hoy);
+    if (!plan.fechaInicioEfectiva || fecha < plan.fechaInicioEfectiva) {
+      throw new CicloProductivoInvalidoError('El fin efectivo no puede ser anterior al inicio efectivo.');
+    }
+    this.props.planificacion = { ...this.props.planificacion!, fechaFinEfectiva: fecha };
+    this.props.estado = 'FINALIZADO';
+    this.props.fechaFin = fecha;
+    this.props.actualizadoEn = hoy.toISOString();
   }
 
   public get id(): string { return this.props.id; }
@@ -104,18 +153,19 @@ export class CicloProductivo {
   public get actualizadoEn(): string { return this.props.actualizadoEn; }
 
   public estaAbierto(): boolean {
-    return this.props.estado === 'ABIERTO';
+    return this.props.estado === 'ABIERTO' || this.props.estado === 'ACTIVO';
   }
 
   public esProvisional(): boolean {
-    return this.props.estado !== 'CERRADO';
+    return !this.esCerrado();
   }
 
   public esCerrado(): boolean {
-    return this.props.estado === 'CERRADO';
+    return this.props.estado === 'CERRADO' || this.props.estado === 'FINALIZADO';
   }
 
   public cerrar(fechaFin: string): void {
+    if (this.props.planificacion) return this.finalizar(fechaFin);
     this.props.estado = 'CERRADO';
     this.props.fechaFin = fechaFin;
     this.props.actualizadoEn = new Date().toISOString();
@@ -145,6 +195,6 @@ export class CicloProductivo {
   }
 
   public toJSON(): CicloProductivoProps {
-    return { ...this.props };
+    return { ...this.props, ...(this.props.planificacion ? { planificacion: { ...this.props.planificacion } } : {}) };
   }
 }
