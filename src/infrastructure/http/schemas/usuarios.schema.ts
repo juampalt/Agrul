@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PERFILES_CANONICOS } from '../../../core/domain/entities/usuario.entity.js';
+import { PERFILES_CANONICOS, PERFILES_USUARIO } from '../../../core/domain/entities/usuario.entity.js';
 
 export const PerfilUsuarioEnum = z.enum([
   'ADMINISTRADOR',
@@ -54,14 +54,14 @@ export const AsignarFincasSchema = z.object({
 }).strict();
 
 export const ListarUsuariosQuerySchema = z.object({
-  perfil: PerfilUsuarioEnum.optional(),
+  perfil: z.enum(PERFILES_USUARIO).optional(),
   estado: EstadoUsuarioEnum.optional(),
-  busqueda: z.string().trim().optional(),
-});
+  busqueda: z.string().trim().max(255).optional(),
+}).strict();
 
 export const UsuarioIdParamSchema = z.object({
   id: z.string().trim().min(1, 'El identificador de usuario es obligatorio.'),
-});
+}).strict();
 
 export const FincaIdParamSchema = z.object({
   id: z.string().trim().min(1, 'El identificador de finca es obligatorio.'),

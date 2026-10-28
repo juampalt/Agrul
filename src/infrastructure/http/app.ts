@@ -118,6 +118,7 @@ import { InMemoryUsuarioFincasRepository } from '../../../tests/mocks/in-memory-
 import { InMemoryAuditoriaSeguridadRepository } from '../../../tests/mocks/in-memory-auditoria-seguridad.repository.js';
 import { UsuariosController } from './controllers/usuarios.controller.js';
 import { RegistrarUsuarioUseCase } from '../../application/use-cases/registrar-usuario.use-case.js';
+import { ConsultarUsuariosUseCase } from '../../application/use-cases/consultar-usuarios.use-case.js';
 import { AuthController } from './controllers/auth.controller.js';
 import { AuditoriaController } from './controllers/auditoria.controller.js';
 import {
@@ -709,8 +710,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
 
   const usuariosController = new UsuariosController(
     new RegistrarUsuarioUseCase(usuariosRepo, crearUsuarioUC),
-    listarUsuariosUC,
-    obtenerUsuarioPorIdUC,
+    new ConsultarUsuariosUseCase(usuariosRepo, listarUsuariosUC, obtenerUsuarioPorIdUC),
     actualizarUsuarioUC,
     bloquearUsuarioUC,
     desbloquearUsuarioUC,

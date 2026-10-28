@@ -300,7 +300,7 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
       // Gestión de Usuarios y Permisos RBAC (Módulo 8 — AGRUL-038 / RF-M8-01, RF-M8-02, RF-M8-04, RF-M8-05, RN-16)
       if (deps.usuariosController) {
         v1.post('/usuarios', { preHandler: [requerirRol('ADMIN_SISTEMA'), verificarPasswordInicial] }, (req, rep) => deps.usuariosController!.crear(req, rep));
-        v1.get('/usuarios', { preHandler: [requerirRol('ADMINISTRADOR', 'ENCARGADO')] }, (req, rep) => deps.usuariosController!.listar(req, rep));
+        v1.get('/usuarios', { preHandler: [verificarAutenticacion] }, (req, rep) => deps.usuariosController!.listar(req, rep));
         v1.get('/usuarios/:id', { preHandler: [verificarAutenticacion] }, (req, rep) => deps.usuariosController!.obtenerPorId(req, rep));
         v1.put('/usuarios/:id', { preHandler: [requerirRol('ADMINISTRADOR')] }, (req, rep) => deps.usuariosController!.actualizar(req, rep));
         v1.post('/usuarios/:id/bloquear', { preHandler: [requerirRol('ADMINISTRADOR')] }, (req, rep) => deps.usuariosController!.bloquear(req, rep));

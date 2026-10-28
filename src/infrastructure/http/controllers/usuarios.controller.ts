@@ -1,13 +1,12 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import {
-  ListarUsuariosUseCase,
-  ObtenerUsuarioPorIdUseCase,
   ActualizarUsuarioUseCase,
   BloquearUsuarioUseCase,
   DesbloquearUsuarioUseCase,
   VerificarAccesoFincaUseCase,
 } from '../../../application/use-cases/usuarios.use-cases.js';
 import { RegistrarUsuarioUseCase } from '../../../application/use-cases/registrar-usuario.use-case.js';
+import { ConsultarUsuariosUseCase } from '../../../application/use-cases/consultar-usuarios.use-case.js';
 import {
   CrearUsuarioSchema,
   ActualizarUsuarioSchema,
@@ -19,8 +18,7 @@ import {
 export class UsuariosController {
   constructor(
     private readonly crearUsuarioUC: RegistrarUsuarioUseCase,
-    private readonly listarUsuariosUC: ListarUsuariosUseCase,
-    private readonly obtenerUsuarioPorIdUC: ObtenerUsuarioPorIdUseCase,
+    private readonly consultarUsuariosUC: ConsultarUsuariosUseCase,
     private readonly actualizarUsuarioUC: ActualizarUsuarioUseCase,
     private readonly bloquearUsuarioUC: BloquearUsuarioUseCase,
     private readonly desbloquearUsuarioUC: DesbloquearUsuarioUseCase,
@@ -41,7 +39,8 @@ export class UsuariosController {
 
   async listar(req: FastifyRequest, reply: FastifyReply) {
     const query = ListarUsuariosQuerySchema.parse(req.query);
-    const resultado = await this.listarUsuariosUC.execute(query);
+    const resultado = await this.consultarUsuariosUC.execute(query, req.usuario?.sub);
+    reply.header('Cache-Control', 'no-store');
 
     return reply.status(200).send({
       success: true,
@@ -53,7 +52,8 @@ export class UsuariosController {
 
   async obtenerPorId(req: FastifyRequest, reply: FastifyReply) {
     const { id } = UsuarioIdParamSchema.parse(req.params);
-    const resultado = await this.obtenerUsuarioPorIdUC.execute(id);
+    const resultado = await this.consultarUsuariosUC.obtener(id, req.usuario?.sub);
+    reply.header('Cache-Control', 'no-store');
 
     return reply.status(200).send({
       success: true,

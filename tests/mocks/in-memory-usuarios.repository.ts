@@ -39,11 +39,13 @@ export class InMemoryUsuariosRepository implements UsuariosRepositoryPort {
       list = list.filter(u =>
         u.nombre.toLowerCase().includes(q) ||
         u.apellido.toLowerCase().includes(q) ||
+        (u.nombreUsuario?.toLowerCase().includes(q) ?? false) ||
         u.email.toLowerCase().includes(q)
       );
     }
 
-    return list.sort((a, b) => a.apellido.localeCompare(b.apellido));
+    return list.sort((a, b) => a.apellido.localeCompare(b.apellido)
+      || a.nombre.localeCompare(b.nombre) || a.id.localeCompare(b.id));
   }
 
   async buscarPorNombreUsuario(nombreUsuario: string): Promise<Usuario | null> {
