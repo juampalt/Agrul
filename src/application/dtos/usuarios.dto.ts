@@ -25,12 +25,11 @@ export interface UsuarioOutputDto {
   actualizadoEn: string;
 }
 
-export interface LoginInputDto {
-  email: string;
+export type LoginInputDto = ({ email: string; nombreUsuario?: never } | { nombreUsuario: string; email?: never }) & {
   password: string;
   ip?: string;
   userAgent?: string;
-}
+};
 
 export interface LoginOutputDto {
   token: string;

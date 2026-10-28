@@ -71,6 +71,13 @@
       "when": 1793149205000,
       "tag": "0009_responsables_ciclos",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793149206000,
+      "tag": "0010_login_nombre_usuario",
+      "breakpoints": true
     }
   ]
 }

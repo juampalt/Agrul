@@ -1,5 +1,5 @@
-import { pgTable, uuid, varchar, numeric, timestamp, jsonb, index, boolean, text, integer } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { pgTable, uuid, varchar, numeric, timestamp, jsonb, index, uniqueIndex, boolean, text, integer, check } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
 export { cultivosTable } from './cultivos.js';
 export { variedadesTable } from './variedades.js';
 export { plantacionesTable } from './plantaciones.js';
@@ -472,6 +472,7 @@ export const informeTrazabilidadLogTable = pgTable('informe_trazabilidad_log', {
 
 // TABLA TRANSACCIONAL: Usuarios del Sistema y Roles RBAC (RF-M8-01 / RF-M8-03 / RF-M8-04)
 export const usuariosTable = pgTable('usuarios', {
+  nombreUsuario: varchar('nombre_usuario', { length: 100 }),
   id: uuid('id').defaultRandom().primaryKey(),
   organizacionId: uuid('organizacion_id'), // Aislamiento multi-organización (RNF-16)
   nombre: varchar('nombre', { length: 100 }).notNull(),
@@ -489,6 +490,8 @@ export const usuariosTable = pgTable('usuarios', {
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
   index('idx_usuarios_email').on(table.email),
+  uniqueIndex('usuarios_nombre_usuario_unique').on(sql`lower(${table.nombreUsuario})`),
+  check('usuarios_nombre_usuario_formato', sql`${table.nombreUsuario} IS NULL OR ${table.nombreUsuario} ~ '^[a-zA-Z0-9._-]{1,100}$'`),
   index('idx_usuarios_perfil').on(table.perfil),
   index('idx_usuarios_estado').on(table.estado),
   index('idx_usuarios_organizacion').on(table.organizacionId),

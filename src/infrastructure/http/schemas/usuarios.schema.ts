@@ -22,10 +22,16 @@ export const CrearUsuarioSchema = z.object({
   fincaIds: z.array(z.string().trim()).optional(),
 }).strict();
 
-export const LoginSchema = z.object({
-  email: z.string().email('Formato de email inválido.').max(150),
-  password: z.string().min(1, 'La contraseña es obligatoria.'),
-}).strict();
+export const LoginSchema = z.union([
+  z.object({
+    email: z.string().trim().email('Formato de email inválido.').max(150),
+    password: z.string().min(1, 'La contraseña es obligatoria.'),
+  }).strict(),
+  z.object({
+    nombreUsuario: z.string().trim().regex(/^[a-zA-Z0-9._-]{1,100}$/),
+    password: z.string().min(1, 'La contraseña es obligatoria.'),
+  }).strict(),
+]);
 
 export const ActualizarUsuarioSchema = z.object({
   nombre: z.string().min(1).max(100).optional(),

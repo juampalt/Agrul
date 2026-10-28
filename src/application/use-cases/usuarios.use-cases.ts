@@ -117,7 +117,9 @@ export class AutenticarUsuarioUseCase {
   ) {}
 
   async execute(input: LoginInputDto): Promise<LoginOutputDto> {
-    const usuario = await this.usuariosRepo.buscarPorEmail(input.email);
+    const usuario = input.nombreUsuario !== undefined
+      ? await this.usuariosRepo.buscarPorNombreUsuario(input.nombreUsuario)
+      : await this.usuariosRepo.buscarPorEmail(input.email);
     if (!usuario) {
       throw new CredencialesInvalidasError();
     }

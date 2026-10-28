@@ -46,6 +46,11 @@ export class InMemoryUsuariosRepository implements UsuariosRepositoryPort {
     return list.sort((a, b) => a.apellido.localeCompare(b.apellido));
   }
 
+  async buscarPorNombreUsuario(nombreUsuario: string): Promise<Usuario | null> {
+    const normalizado = nombreUsuario.trim().toLowerCase();
+    return Array.from(this.usuarios.values()).find(u => u.nombreUsuario === normalizado) ?? null;
+  }
+
   async actualizar(usuario: Usuario): Promise<void> {
     this.usuarios.set(usuario.id, usuario);
   }

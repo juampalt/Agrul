@@ -32,6 +32,12 @@ export class DrizzleUsuariosRepository implements UsuariosRepositoryPort {
     return (await this.db.select().from(usuariosTable).where(and(...condiciones))).map((fila) => this.mapear(fila));
   }
 
+  async buscarPorNombreUsuario(nombreUsuario: string): Promise<Usuario | null> {
+    const [fila] = await this.db.select().from(usuariosTable)
+      .where(sql`lower(${usuariosTable.nombreUsuario}) = ${nombreUsuario.trim().toLowerCase()}`);
+    return fila ? this.mapear(fila) : null;
+  }
+
   private valores(usuario: Usuario) {
     const { nombreCompleto: _nombreCompleto, ...datos } = usuario.toJSON();
     return { ...datos, passwordHash: usuario.passwordHash, salt: usuario.salt };

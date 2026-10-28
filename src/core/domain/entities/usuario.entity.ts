@@ -12,6 +12,7 @@ export class UsuarioInvalidoError extends DomainError {
 }
 
 export interface UsuarioProps {
+  nombreUsuario?: string | null;
   id: string;
   nombre: string;
   apellido: string;
@@ -29,6 +30,7 @@ export interface UsuarioProps {
 }
 
 export interface CrearUsuarioParams {
+  nombreUsuario?: string;
   id: string;
   nombre: string;
   apellido: string;
@@ -59,6 +61,9 @@ export class Usuario {
   public static readonly MAX_INTENTOS_FALLIDOS = 5;
 
   public static crear(params: CrearUsuarioParams): Usuario {
+    if (params.nombreUsuario !== undefined && !/^[a-zA-Z0-9._-]{1,100}$/.test(params.nombreUsuario.trim())) {
+      throw new UsuarioInvalidoError('El nombre de usuario debe contener entre 1 y 100 letras, números, puntos, guiones o guiones bajos.');
+    }
     if (!params.nombre || params.nombre.trim().length === 0) {
       throw new UsuarioInvalidoError('El nombre del usuario es obligatorio.');
     }
@@ -82,6 +87,7 @@ export class Usuario {
     const ahora = new Date().toISOString();
 
     return new Usuario({
+      nombreUsuario: params.nombreUsuario?.trim().toLowerCase(),
       id: params.id,
       nombre: params.nombre.trim(),
       apellido: params.apellido.trim(),
@@ -113,6 +119,10 @@ export class Usuario {
 
   public get id(): string {
     return this.props.id;
+  }
+
+  public get nombreUsuario(): string | null | undefined {
+    return this.props.nombreUsuario;
   }
 
   public get nombre(): string {
@@ -269,6 +279,7 @@ export class Usuario {
 
   public toJSON() {
     return {
+      ...(this.props.nombreUsuario ? { nombreUsuario: this.props.nombreUsuario } : {}),
       id: this.props.id,
       nombre: this.props.nombre,
       apellido: this.props.apellido,

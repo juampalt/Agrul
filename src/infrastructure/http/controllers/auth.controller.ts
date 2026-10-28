@@ -18,7 +18,14 @@ export class AuthController {
 
   async login(req: FastifyRequest, reply: FastifyReply) {
     const body = LoginSchema.parse(req.body);
-    const resultado = await this.autenticarUsuarioUC.execute(body);
+    const resultado = await this.autenticarUsuarioUC.execute({
+      ...body,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    reply.header('Cache-Control', 'no-store');
+    reply.header('Pragma', 'no-cache');
 
     return reply.status(200).send({
       success: true,
