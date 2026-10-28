@@ -5,6 +5,7 @@ import { usuariosTable } from './schema/tables.js';
 import { DrizzleUsuariosRepository } from './repositories/drizzle-usuarios.repository.js';
 import { DrizzleUsuarioFincasRepository } from './repositories/drizzle-usuario-fincas.repository.js';
 import { DrizzleAuditoriaSeguridadRepository } from './repositories/drizzle-auditoria-seguridad.repository.js';
+import { DrizzleSesionesRepository } from './repositories/drizzle-sesiones.repository.js';
 
 export class DrizzleUsuariosTransaccion implements UsuariosTransaccionPort {
   constructor(private readonly db: AgrulDatabase) {}
@@ -16,6 +17,7 @@ export class DrizzleUsuariosTransaccion implements UsuariosTransaccionPort {
       if (ids.length) await tx.select({ id: usuariosTable.id }).from(usuariosTable)
         .where(inArray(usuariosTable.id, ids)).orderBy(usuariosTable.id).for('update');
       return trabajo({ usuariosRepo: new DrizzleUsuariosRepository(tx),
+        sesionesRepo: new DrizzleSesionesRepository(tx),
         usuarioFincasRepo: new DrizzleUsuarioFincasRepository(tx), auditoriaRepo: new DrizzleAuditoriaSeguridadRepository(tx) });
     });
   }

@@ -472,6 +472,7 @@ export const informeTrazabilidadLogTable = pgTable('informe_trazabilidad_log', {
 
 // TABLA TRANSACCIONAL: Usuarios del Sistema y Roles RBAC (RF-M8-01 / RF-M8-03 / RF-M8-04)
 export const usuariosTable = pgTable('usuarios', {
+  versionSesion: integer('version_sesion').notNull().default(0),
   nombreUsuario: varchar('nombre_usuario', { length: 100 }),
   id: uuid('id').defaultRandom().primaryKey(),
   organizacionId: uuid('organizacion_id'), // Aislamiento multi-organización (RNF-16)
@@ -546,6 +547,14 @@ export const registroModificacionesTable = pgTable('registro_modificaciones', {
   valorAnterior: jsonb('valor_anterior'),
   valorNuevo: jsonb('valor_nuevo'),
 }, table => [index('idx_modificaciones_usuario_fecha').on(table.usuarioAfectadoId, table.fechaHora)]);
+
+export const sesionesUsuariosTable = pgTable('sesiones_usuarios', {
+  tokenHash: varchar('token_hash', { length: 64 }).primaryKey(),
+  usuarioId: uuid('usuario_id').notNull().references(() => usuariosTable.id, { onDelete: 'restrict' }),
+  expiraEn: timestamp('expira_en', { withTimezone: true, mode: 'string' }).notNull(),
+  ultimaActividad: timestamp('ultima_actividad', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
+  revocada: boolean('revocada').notNull().default(false),
+}, table => [index('idx_sesiones_usuario').on(table.usuarioId)]);
 
 // ============================================================================
 // ÉPICA 15: MÓDULO 9 — INVENTARIO DE INSUMOS Y STOCK (AGRUL-041)

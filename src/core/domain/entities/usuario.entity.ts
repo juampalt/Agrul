@@ -16,6 +16,7 @@ export class UsuarioInvalidoError extends DomainError {
 }
 
 export interface UsuarioProps {
+  versionSesion?: number;
   nombreUsuario?: string | null;
   id: string;
   nombre: string;
@@ -117,6 +118,8 @@ export class Usuario {
   public get id(): string {
     return this.props.id;
   }
+
+  public get versionSesion(): number { return this.props.versionSesion ?? 0; }
 
   public get nombreUsuario(): string | null | undefined {
     return this.props.nombreUsuario;
@@ -284,6 +287,7 @@ export class Usuario {
 
   public toJSON() {
     return {
+      versionSesion: this.versionSesion,
       ...(this.props.nombreUsuario ? { nombreUsuario: this.props.nombreUsuario } : {}),
       id: this.props.id,
       nombre: this.props.nombre,

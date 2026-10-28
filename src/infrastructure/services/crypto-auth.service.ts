@@ -4,6 +4,7 @@ import { PasswordInseguraError } from '../../core/domain/errors/domain.error.js'
 import { PerfilUsuario, PERFILES_USUARIO } from '../../core/domain/entities/usuario.entity.js';
 
 const tokenSchema = z.object({
+  jti: z.string().uuid().optional(), versionSesion: z.number().int().nonnegative().optional(),
   sub: z.string().min(1), email: z.string().email(), nombre: z.string(), apellido: z.string(),
   perfil: z.enum(PERFILES_USUARIO),
   fincas: z.array(z.string()), organizacionId: z.string().optional(),
@@ -12,6 +13,8 @@ const tokenSchema = z.object({
 });
 
 export interface TokenPayload {
+  jti?: string;
+  versionSesion?: number;
   sub: string;
   email: string;
   nombre: string;
@@ -25,6 +28,7 @@ export interface TokenPayload {
 }
 
 export class CryptoAuthService {
+  public static hashToken(token: string): string { return crypto.createHash('sha256').update(token).digest('hex'); }
   private static readonly developmentSecret = crypto.randomBytes(48).toString('base64url');
 
   private static getSecret(): string {
@@ -95,6 +99,8 @@ export class CryptoAuthService {
     const now = Math.floor(Date.now() / 1000);
     const fullPayload: TokenPayload = {
       ...payload,
+      jti: crypto.randomUUID(),
+      versionSesion: payload.versionSesion ?? 0,
       iat: now,
       exp: now + expiresInSeconds,
     };

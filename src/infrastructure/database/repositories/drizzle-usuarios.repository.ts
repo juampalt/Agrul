@@ -41,7 +41,7 @@ export class DrizzleUsuariosRepository implements UsuariosRepositoryPort {
   }
 
   private valores(usuario: Usuario) {
-    const { nombreCompleto: _nombreCompleto, ...datos } = usuario.toJSON();
+    const { nombreCompleto: _nombreCompleto, versionSesion: _versionSesion, ...datos } = usuario.toJSON();
     return { ...datos, passwordHash: usuario.passwordHash, salt: usuario.salt };
   }
   private mapear(fila: typeof usuariosTable.$inferSelect): Usuario {
