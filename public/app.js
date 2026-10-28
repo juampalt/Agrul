@@ -3456,13 +3456,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Logout
   if (btnCerrarSesion) {
-    btnCerrarSesion.addEventListener('click', () => {
+    btnCerrarSesion.addEventListener('click', async () => {
+      let cierreConfirmado = false;
+      try {
+        const respuesta = await fetch('/api/v1/auth/logout', { method: 'POST',
+          headers: { Authorization: `Bearer ${activeAuthToken}` } });
+        cierreConfirmado = respuesta.ok;
+      } catch { /* El cierre local se completa aunque no haya conexión. */ }
       activeAuthToken = null;
       activeAuthUser = null;
       localStorage.removeItem('agrul_auth_token');
       actualizarBannerSesion();
       cargarListaUsuarios();
-      showToast('Sesión finalizada.', 'info');
+      showToast(cierreConfirmado ? 'Sesión finalizada.' : 'Sesión local cerrada. No se pudo confirmar el cierre en el servidor.', 'info');
     });
   }
 
@@ -3756,7 +3762,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const res = await fetch('/api/v1/auditoria/simular-inactividad', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${activeAuthToken}` },
           body: JSON.stringify({ timeoutMs }),
         });
         const json = await res.json();

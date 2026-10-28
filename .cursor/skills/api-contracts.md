@@ -82,6 +82,8 @@ export const SincronizarBatchOfflineSchema = z.object({
 - **DO:** Devolver `422 Unprocessable Entity` cuando una regla de negocio de trazabilidad falla (ej: lote ya cerrado o cantidad excedida).
 - **DO:** Asegurar que los errores de validación (400) retornen un array claro de campos con sus problemas (`error.details`).
 - **DO:** Validar como UUID los identificadores que llegan a columnas UUID de PostgreSQL antes de consultar o bloquear filas. Usar UUID válidos en los fixtures HTTP para verificar el contrato real y evitar errores SQL por parámetros inválidos.
+- **DO:** En rutas autenticadas, comprobar sesión persistida, estado y permisos vigentes antes de usar los claims del JWT. Rechazar tokens inválidos también cuando la autenticación sea opcional; un token inválido no convierte la solicitud en anónima.
+- **DO:** Para errores internos, registrar clasificación y request ID sin serializar el error crudo, sus causas, consultas o parámetros: PostgreSQL puede incluir una fila completa con credenciales en el detalle del error.
 - **DO:** Al mostrar datos de la API en el dashboard, crear nodos y asignar `textContent` o `new Option(texto, valor)` para nombres, correos, identificadores y errores. Reservar `innerHTML` para markup estático; los datos persistidos de usuarios también son entrada no confiable.
 
 ### DON'T
