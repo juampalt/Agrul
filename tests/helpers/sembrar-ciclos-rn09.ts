@@ -14,6 +14,8 @@ export async function sembrarCiclosRn09(pool: pg.Pool, cicloIds: string[]) {
   await pool.query("insert into variedades(id,cultivo_id,nombre) values ($1,$2,'Variedad RN09') on conflict (id) do nothing", [variedad, cultivo]);
   await pool.query("insert into plantaciones(id,lote_id,cultivo_id,variedad_id,fecha_plantacion,superficie_ha,cantidad_inicial_plantas) values ($1,$2,$3,$4,'2026-10-01',10,100) on conflict (id) do nothing", [plantacion, lote, cultivo, variedad]);
   for (let i = 0; i < cicloIds.length; i++) {
-    await pool.query("insert into ciclos_productivos(id,plantacion_id,nombre_codigo,fecha_inicio_prevista,fecha_fin_prevista,responsable_seguimiento_id) values ($1,$2,$3,'2026-10-01','2026-10-27',$4) on conflict (id) do nothing", [cicloIds[i], plantacion, `RN09-${i}`, finca]);
+    // UUID completo en 22 caracteres: único entre suites y dentro de varchar(30).
+    const codigo = `RN09-${Buffer.from(cicloIds[i].replaceAll('-', ''), 'hex').toString('base64url')}`;
+    await pool.query("insert into ciclos_productivos(id,plantacion_id,nombre_codigo,fecha_inicio_prevista,fecha_fin_prevista,responsable_seguimiento_id) values ($1,$2,$3,'2026-10-01','2026-10-27',$4) on conflict (id) do nothing", [cicloIds[i], plantacion, codigo, finca]);
   }
 }

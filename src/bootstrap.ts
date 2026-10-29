@@ -2,6 +2,11 @@ import { buildApp } from './infrastructure/http/app.js';
 import { DrizzleCultivosRepository } from './infrastructure/database/repositories/drizzle-cultivos.repository.js';
 import { DrizzleVariedadesRepository } from './infrastructure/database/repositories/drizzle-variedades.repository.js';
 import { DrizzlePlantacionesRepository } from './infrastructure/database/repositories/drizzle-plantaciones.repository.js';
+import { DrizzleTiposActividadRepository } from './infrastructure/database/repositories/drizzle-tipos-actividad.repository.js';
+import { DrizzleActividadesProgramadasRepository } from './infrastructure/database/repositories/drizzle-actividades-programadas.repository.js';
+import { DrizzleActividadesRealizadasRepository } from './infrastructure/database/repositories/drizzle-actividades-realizadas.repository.js';
+import { DrizzleMonitoreosRepository } from './infrastructure/database/repositories/drizzle-monitoreos.repository.js';
+import { DrizzleAccesoRecursosAgricolasRepository } from './infrastructure/database/repositories/drizzle-acceso-recursos-agricolas.repository.js';
 import { createDatabaseConnection } from './infrastructure/database/connection.js';
 import { DrizzleCierreCicloGuard } from './infrastructure/database/cierre-ciclo.guard.js';
 import { DrizzleCiclosProductivosRepository } from './infrastructure/database/repositories/drizzle-ciclos-productivos.repository.js';
@@ -41,6 +46,11 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
     variedadesRepo: new DrizzleVariedadesRepository(db),
     plantacionesRepo: new DrizzlePlantacionesRepository(db),
     ciclosProductivosRepo: ciclosRepo,
+    tiposActividadRepo: new DrizzleTiposActividadRepository(db),
+    actividadesProgramadasRepo: new DrizzleActividadesProgramadasRepository(db),
+    actividadesRealizadasRepo: new DrizzleActividadesRealizadasRepository(db),
+    monitoreosRepo: new DrizzleMonitoreosRepository(db),
+    accesoRecursosAgricolasRepo: new DrizzleAccesoRecursosAgricolasRepository(db),
     lotesRepo,
     fincasRepo,
     eventosRepo: new InMemoryEventosRepository(),

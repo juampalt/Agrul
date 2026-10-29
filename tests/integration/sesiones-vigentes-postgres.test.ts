@@ -1,16 +1,17 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth.service.js';
 import { SessionInactivityService } from '../../src/infrastructure/services/session-inactivity.service.js';
 import { UsuariosCu62Fixture, USUARIO_CU62, FINCA_CU62 } from '../helpers/usuarios-cu62.fixture.js';
 
-const connectionString = process.env.SESIONES_TEST_DATABASE_URL;
+const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
 describe.skipIf(!connectionString)('AGRUL-053: vigencia y revocación real de sesiones PostgreSQL', () => {
-  const f = new UsuariosCu62Fixture(connectionString, 'agrul_test_agrul_053_etapa5');
-  beforeAll(async () => { await f.preparar(); });
-  beforeEach(async () => { await f.sembrar(); });
-  afterEach(() => { SessionInactivityService.setTimeoutMs(900000); });
-  afterAll(async () => { await f.cerrar(); });
+  const f = new UsuariosCu62Fixture(connectionString);
+  beforeEach(async () => { await f.preparar(); await f.sembrar(); }, 60000);
+  afterEach(async () => {
+    SessionInactivityService.setTimeoutMs(900000);
+    await f.cerrar();
+  });
 
   const headers = (token: string) => ({ authorization: `Bearer ${token}` });
   const me = (token = f.token) => f.app.inject({ url: '/api/v1/auth/me', headers: headers(token) });
@@ -30,7 +31,7 @@ describe.skipIf(!connectionString)('AGRUL-053: vigencia y revocación real de se
   it('cierra y audita una sesión; no puede reutilizarse desde otra instancia', async () => {
     expect((await logout()).statusCode).toBe(200);
     expect((await me()).statusCode).toBe(401);
-    const otra = crearServidorProduccion({ connectionString, logger: false });
+    const otra = crearServidorProduccion({ connectionString: f.connectionString, logger: false });
     try { expect((await otra.app.inject({ url: '/api/v1/auth/me', headers: headers(f.token) })).statusCode).toBe(401); }
     finally { await otra.app.close(); }
     const { rows } = await f.conexion.pool.query("select * from auditoria_seguridad_log where accion='LOGOUT'");
@@ -92,7 +93,7 @@ describe.skipIf(!connectionString)('AGRUL-053: vigencia y revocación real de se
 
   it('la expiración por inactividad persiste entre instancias y no se evade con cabeceras o un nuevo login', async () => {
     await f.conexion.pool.query("update sesiones_usuarios set ultima_actividad=now()-interval '16 minutes' where token_hash=$1", [CryptoAuthService.hashToken(f.token)]);
-    const otra = crearServidorProduccion({ connectionString, logger: false });
+    const otra = crearServidorProduccion({ connectionString: f.connectionString, logger: false });
     try {
       const res = await otra.app.inject({ url: '/api/v1/auth/me', headers: { ...headers(f.token), 'x-last-activity': String(Date.now() + 3600000) } });
       expect(res.statusCode).toBe(401);

@@ -6,6 +6,15 @@ import { registrarRutasCultivos } from './routes/cultivos.routes.js';
 import { registrarRutasVariedades } from './routes/variedades.routes.js';
 import { registrarRutasPlantaciones } from './routes/plantaciones.routes.js';
 import { registrarRutasCiclosProductivos } from './routes/ciclos-productivos.routes.js';
+import { registrarRutasTiposActividad } from './routes/tipos-actividad.routes.js';
+import { registrarRutasActividadesProgramadas } from './routes/actividades-programadas.routes.js';
+import { registrarRutasActividadesRealizadas } from './routes/actividades-realizadas.routes.js';
+import { registrarRutasMonitoreos } from './routes/monitoreos.routes.js';
+import { MonitoreosRepositoryPort } from '../../core/ports/monitoreos-repository.port.js';
+import { AccesoRecursosAgricolasPort } from '../../core/ports/acceso-recursos-agricolas.port.js';
+import { ActividadesRealizadasGestionPort } from '../../core/ports/actividades-realizadas-repository.port.js';
+import { ActividadesProgramadasRepositoryPort } from '../../core/ports/actividades-programadas-repository.port.js';
+import { TiposActividadRepositoryPort } from '../../core/ports/tipos-actividad-repository.port.js';
 import { CiclosProductivosRepositoryPort } from '../../core/ports/ciclos-productivos-repository.port.js';
 import { PlantacionesRepositoryPort } from '../../core/ports/plantaciones-repository.port.js';
 import { VariedadesRepositoryPort } from '../../core/ports/variedades-repository.port.js';
@@ -241,6 +250,11 @@ export interface BuildAppOptions {
   variedadesRepo?: VariedadesRepositoryPort;
   plantacionesRepo?: PlantacionesRepositoryPort;
   ciclosProductivosRepo?: CiclosProductivosRepositoryPort;
+  tiposActividadRepo?: TiposActividadRepositoryPort;
+  actividadesProgramadasRepo?: ActividadesProgramadasRepositoryPort;
+  actividadesRealizadasRepo?: ActividadesRealizadasGestionPort;
+  monitoreosRepo?: MonitoreosRepositoryPort;
+  accesoRecursosAgricolasRepo?: AccesoRecursosAgricolasPort;
   catalogosRepo?: CatalogosActividadesRepositoryPort;
   actividadesRepo?: ActividadesRepositoryPort;
   ciclosRepo?: CiclosRepositoryPort;
@@ -912,6 +926,26 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   if (options.cultivosRepo) registrarRutasCultivos(app, options.cultivosRepo);
   if (options.plantacionesRepo) registrarRutasPlantaciones(app, options.plantacionesRepo);
   if (options.ciclosProductivosRepo) registrarRutasCiclosProductivos(app, options.ciclosProductivosRepo);
+  if (options.tiposActividadRepo) {
+    registrarRutasTiposActividad(app, options.tiposActividadRepo, options.cultivosRepo);
+  }
+  if (options.actividadesRealizadasRepo) registrarRutasActividadesRealizadas(app, options.actividadesRealizadasRepo, options.accesoRecursosAgricolasRepo);
+  if (options.monitoreosRepo) registrarRutasMonitoreos(app, options.monitoreosRepo, options.accesoRecursosAgricolasRepo);
+  if (
+    options.actividadesProgramadasRepo &&
+    options.ciclosProductivosRepo &&
+    options.tiposActividadRepo &&
+    options.usuariosRepo
+  ) {
+    registrarRutasActividadesProgramadas(
+      app,
+      options.actividadesProgramadasRepo,
+      options.ciclosProductivosRepo,
+      options.tiposActividadRepo,
+      options.usuariosRepo,
+      options.accesoRecursosAgricolasRepo
+    );
+  }
   if (options.variedadesRepo && options.cultivosRepo) {
     registrarRutasVariedades(app, options.variedadesRepo, options.cultivosRepo);
   }

@@ -8,6 +8,10 @@ import { runMigrations } from '../../../src/infrastructure/database/migrate.js';
 const { Pool } = pg;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const migrationsFolder = resolve(__dirname, '../../../drizzle/migrations');
+const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
+if (connectionString && connectionString !== 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054') {
+  throw new Error('La prueba de inmutabilidad solo admite la base descartable autorizada con rol exclusivo y sin contraseña en URL.');
+}
 
 describe('AGRUL-009: Migraciones SQL y Triggers de Inmutabilidad', () => {
   it('debe existir el directorio drizzle/migrations con meta/_journal.json versionado', () => {
@@ -83,20 +87,21 @@ describe('AGRUL-009: Migraciones SQL y Triggers de Inmutabilidad', () => {
     expect(territorioContent).toContain('idx_fincas_provincia_depto');
   });
 
-  it.skipIf(!process.env.INMUTABILIDAD_TEST_DATABASE_URL)('rechaza UPDATE y DELETE con el trigger PostgreSQL real', async () => {
-    const connStr = process.env.INMUTABILIDAD_TEST_DATABASE_URL;
-    const pool = new Pool({ connectionString: connStr, connectionTimeoutMillis: 1500 });
-    const client = await pool.connect();
+  it.skipIf(!connectionString)('rechaza UPDATE y DELETE con el trigger PostgreSQL real', async () => {
+    const pool = new Pool({ connectionString, connectionTimeoutMillis: 1500 });
+    let client: pg.PoolClient | undefined;
+    const loteId = crypto.randomUUID();
+    const actorId = '00000000-0000-0000-0000-000000000002';
+    const ubicacionId = '00000000-0000-0000-0000-000000000003';
+    const eventoId = crypto.randomUUID();
     try {
-      const { rows } = await client.query<{ nombre: string }>('select current_database() as nombre');
-      if (rows[0]?.nombre !== 'agrul_test_agrul_052_inmutabilidad') throw new Error('Solo se permite la base descartable de inmutabilidad.');
-      // 1. Aplicar migraciones
-      await runMigrations(connStr);
-
-      const loteId = crypto.randomUUID();
-      const actorId = '00000000-0000-0000-0000-000000000002';
-      const ubicacionId = '00000000-0000-0000-0000-000000000003';
-      const eventoId = crypto.randomUUID();
+      client = await pool.connect();
+      const { rows } = await client.query("select current_database() as db,current_user as usuario,current_setting('server_version_num')::int as version,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls from pg_roles where rolname=current_user");
+      expect(rows[0]).toMatchObject({ db: 'agrul_test_agrul_054', usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+      expect(rows[0].version).toBeGreaterThanOrEqual(180000);
+      expect(rows[0].version).toBeLessThan(190000);
+      await runMigrations(connectionString);
+      await client.query('begin');
 
       // 2. Insertar lote de prueba
       await client.query(`
@@ -110,32 +115,25 @@ describe('AGRUL-009: Migraciones SQL y Triggers de Inmutabilidad', () => {
         VALUES ($1, $2, $3, $4, 'COSECHA', now());
       `, [eventoId, loteId, actorId, ubicacionId]);
 
-      // 4. Intentar UPDATE y verificar que el trigger lo bloquea
-      let updateError: Error | null = null;
-      try {
-        await client.query(`
-          UPDATE eventos_trazabilidad SET tipo_evento = 'MUTADO' WHERE id = $1;
-        `, [eventoId]);
-      } catch (err: unknown) {
-        updateError = err as Error;
+      const original = await client.query('select * from eventos_trazabilidad where id=$1', [eventoId]);
+      for (const sentencia of [
+        "UPDATE eventos_trazabilidad SET tipo_evento = 'MUTADO' WHERE id = $1",
+        'DELETE FROM eventos_trazabilidad WHERE id = $1',
+      ]) {
+        await client.query('savepoint intento_mutacion');
+        await expect(client.query(sentencia, [eventoId])).rejects.toMatchObject({
+          code: 'P0001', message: expect.stringContaining('VIOLACION_DE_INMUTABILIDAD'),
+        });
+        await client.query('rollback to savepoint intento_mutacion');
+        expect((await client.query('select * from eventos_trazabilidad where id=$1', [eventoId])).rows).toEqual(original.rows);
+        await client.query('release savepoint intento_mutacion');
       }
-      expect(updateError).toBeDefined();
-      expect(updateError?.message).toContain('VIOLACION_DE_INMUTABILIDAD');
-
-      // 5. Intentar DELETE y verificar que el trigger lo bloquea
-      let deleteError: Error | null = null;
-      try {
-        await client.query(`
-          DELETE FROM eventos_trazabilidad WHERE id = $1;
-        `, [eventoId]);
-      } catch (err: unknown) {
-        deleteError = err as Error;
-      }
-      expect(deleteError).toBeDefined();
-      expect(deleteError?.message).toContain('VIOLACION_DE_INMUTABILIDAD');
+      await client.query('rollback');
+      expect((await client.query('select id from eventos_trazabilidad where id=$1', [eventoId])).rows).toEqual([]);
+      expect((await client.query('select id from lotes where id=$1', [loteId])).rows).toEqual([]);
     } finally {
-      client.release();
-      await pool.end();
+      try { if (client) await client.query('rollback'); }
+      finally { client?.release(); await pool.end(); }
     }
   });
 });

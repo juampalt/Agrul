@@ -43,11 +43,15 @@ En Agrul, los tests son la salvaguarda de cumplimiento normativo. Verifican mate
 ## 5. DOs and DON'Ts
 
 ### DO
+- **DO:** Al compartir una base descartable entre suites, derivar los campos únicos del identificador completo del fixture respetando el largo de la columna; limpiar solo filas propias. Ejecutar juntas las suites consumidoras para detectar colisiones y adaptar los datos nuevos a los CHECK vigentes sin relajar restricciones históricas.
+- **DO:** Si una suite requiere tablas vacías o una finca única, aislarla en un esquema temporal de la base autorizada. Conservar el DDL real y sus restricciones, redirigir todas las FK y funciones al esquema propio y conectar sin fallback a public. Verificar datos compartidos intactos y rechazar destinos no autorizados antes de crear pools. Eliminar únicamente el esquema propio al terminar.
+- **DO:** Cuando el fixture necesite reiniciar bitácoras append-only, recrear su esquema temporal entre casos en lugar de deshabilitar triggers o borrar auditoría. Mantener los controles reales activos durante toda la prueba.
 - **DO:** Usar **Vitest** como runner oficial de pruebas para máxima velocidad con TypeScript.
 - **DO:** Correr las pruebas de integración en transacciones aisladas o con base de datos limpia para evitar contaminación entre tests.
 - **DO:** Validar que los errores de negocio arrojen instancias de `DomainError` tipadas.
 - **DO:** Al probar una FK con borrado restringido, verificar un error de integridad (`23503` o `23001`) y que la fila referenciada permanezca. La garantía es el rechazo y la conservación de datos; no aceptar errores genéricos de conexión o permisos.
 - **DO:** En integración con el bootstrap productivo, crear y autenticar actores reales y sus sesiones persistidas. Reservar JWT fabricados para casos negativos explícitos, sin omitir las validaciones de vigencia del servidor.
+- **DO:** Al probar restricciones de rol o cambio inicial de contraseña, preparar también el estado persistido del actor. Si el caso altera al usuario compartido, restaurarlo y autenticarlo nuevamente al terminar para no dejar sesiones inválidas a las pruebas siguientes.
 
 ### DON'T
 - **DON'T:** No silenciar errores de base de datos dentro de los tests.

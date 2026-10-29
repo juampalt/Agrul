@@ -2,11 +2,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
-import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { crearEsquemaPostgresAislado } from '../helpers/esquema-postgres-aislado.fixture.js';
 import { autenticarOperadorPrueba, emitirSesionPrueba } from '../helpers/operador-postgres.fixture.js';
-import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth.service.js';
 
-const connectionString = process.env.CULTIVOS_TEST_DATABASE_URL;
+const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
 const datos = { nombre: 'Arándano', tipoCicloVida: 'PERENNE', descripcion: 'Cultivo de prueba' };
 const usuario = {
   sub: 'a0000000-0000-4000-8000-000000000052', email: 'admin@example.test',
@@ -16,22 +15,29 @@ let headers = { authorization: '' };
 const inexistente = '00000000-0000-4000-8000-000000000052';
 
 describe.skipIf(!connectionString)('AGRUL-052 CU07-CU10 con bootstrap y PostgreSQL reales', () => {
-  const connection = createDatabaseConnection(connectionString);
+  let aislado: Awaited<ReturnType<typeof crearEsquemaPostgresAislado>> | undefined;
+  let connection: ReturnType<typeof createDatabaseConnection>;
   let app: FastifyInstance;
+  let estadoPublico: unknown;
+  const snapshotPublico = async () => (await connection.pool.query("select md5(coalesce(jsonb_agg(to_jsonb(c) order by id)::text,'')) as cultivos from public.cultivos c")).rows;
 
   beforeAll(async () => {
-    const { rows } = await connection.pool.query<{ nombre: string }>('select current_database() as nombre');
-    if (rows[0]?.nombre !== 'agrul_test_agrul_052_etapa1') {
-      throw new Error('Esta suite solo puede modificar agrul_test_agrul_052_etapa1.');
-    }
-    await runMigrations(connectionString);
-    app = crearServidorProduccion({ connectionString, logger: false }).app;
+    if (!connectionString) throw new Error('Se requiere conexión explícita.');
+    aislado = await crearEsquemaPostgresAislado(connectionString);
+    connection = aislado.connection;
+    estadoPublico = await snapshotPublico();
+    app = crearServidorProduccion({ connectionString: aislado.connectionString, logger: false }).app;
     await app.ready();
     headers = await autenticarOperadorPrueba(connection.pool, app, usuario);
-  });
+  }, 60000);
 
   beforeEach(async () => { await connection.pool.query('delete from cultivos'); });
-  afterAll(async () => { await app?.close(); await connection.pool.end(); });
+  afterAll(async () => {
+    try {
+      await app?.close();
+      if (aislado) expect(await snapshotPublico()).toEqual(estadoPublico);
+    } finally { await aislado?.cerrar(); }
+  });
 
   async function crear(nombre = datos.nombre) {
     const response = await app.inject({ method: 'POST', url: '/api/v1/cultivos', headers, payload: { ...datos, nombre } });
@@ -102,7 +108,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU07-CU10 con bootstrap y PostgreS
 
   it('recupera los datos desde otra instancia del servidor real', async () => {
     const creado = await crear();
-    const otra = crearServidorProduccion({ connectionString, logger: false }).app;
+    const otra = crearServidorProduccion({ connectionString: aislado!.connectionString, logger: false }).app;
     try {
       const respuesta = await otra.inject({ method: 'GET', url: `/api/v1/cultivos/${creado.id}`, headers });
       expect(respuesta.statusCode).toBe(200);
@@ -136,10 +142,16 @@ describe.skipIf(!connectionString)('AGRUL-052 CU07-CU10 con bootstrap y PostgreS
   it('exige autenticación, rol Administrador y cambio de contraseña inicial', async () => {
     expect((await app.inject({ method: 'GET', url: '/api/v1/cultivos' })).statusCode).toBe(401);
     for (const perfil of ['ENCARGADO', 'ADMINISTRADOR'] as const) {
-      const token = await emitirSesionPrueba(connection.pool, { ...usuario, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
-      const respuesta = await app.inject({ method: 'POST', url: '/api/v1/cultivos', payload: datos,
-        headers: { authorization: `Bearer ${token}` } });
-      expect(respuesta.statusCode).toBe(403);
+      try {
+        await connection.pool.query('update usuarios set perfil=$1,debe_cambiar_password=$2 where id=$3', [perfil, perfil === 'ADMINISTRADOR', usuario.sub]);
+        const token = await emitirSesionPrueba(connection.pool, { ...usuario, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
+        const respuesta = await app.inject({ method: 'POST', url: '/api/v1/cultivos', payload: datos,
+          headers: { authorization: `Bearer ${token}` } });
+        expect(respuesta.statusCode).toBe(403);
+      } finally {
+        await connection.pool.query("update usuarios set perfil='ADMINISTRADOR',debe_cambiar_password=false where id=$1", [usuario.sub]);
+        headers = await autenticarOperadorPrueba(connection.pool, app, usuario);
+      }
     }
     expect((await connection.pool.query('select count(*)::int as total from cultivos')).rows[0].total).toBe(0);
   });

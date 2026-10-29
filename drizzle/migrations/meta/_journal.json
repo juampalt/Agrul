@@ -99,6 +99,34 @@
       "when": 1793149209000,
       "tag": "0013_sesiones_vigentes",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793149210000,
+      "tag": "0014_tipos_actividad_cultivos",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793149211000,
+      "tag": "0015_ampliar_actividades_programadas",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793149212000,
+      "tag": "0016_actividades_realizadas",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793149213000,
+      "tag": "0017_monitoreos",
+      "breakpoints": true
     }
   ]
 }

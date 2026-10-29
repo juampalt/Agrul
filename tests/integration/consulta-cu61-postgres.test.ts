@@ -1,14 +1,13 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
-import { runMigrations } from '../../src/infrastructure/database/migrate.js';
-import { limpiarUsuariosSeguridad } from '../helpers/limpiar-usuarios-seguridad.js';
+import { crearEsquemaPostgresAislado } from '../helpers/esquema-postgres-aislado.fixture.js';
 import { DrizzleUsuariosRepository } from '../../src/infrastructure/database/repositories/drizzle-usuarios.repository.js';
 import { PerfilUsuario, Usuario } from '../../src/core/domain/entities/usuario.entity.js';
 import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth.service.js';
 
-const connectionString = process.env.CONSULTA_TEST_DATABASE_URL;
+const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
 const sistemaId = 'a0000000-0000-4000-8000-000000000061';
 const anaId = 'b0000000-0000-4000-8000-000000000061';
 const juanId = 'c0000000-0000-4000-8000-000000000061';
@@ -16,31 +15,43 @@ const inexistente = 'd0000000-0000-4000-8000-000000000061';
 const password = 'PruebaSegura123!';
 
 describe.skipIf(!connectionString)('AGRUL-053 CU61 con HTTP y PostgreSQL reales', () => {
-  const conexion = createDatabaseConnection(connectionString);
-  const repo = new DrizzleUsuariosRepository(conexion.db);
+  let aislado: Awaited<ReturnType<typeof crearEsquemaPostgresAislado>> | undefined;
+  let conexion: ReturnType<typeof createDatabaseConnection>;
+  let repo: DrizzleUsuariosRepository;
   let app: FastifyInstance;
   let token: string;
   let hash: string;
   let salt: string;
+  let estadoPublico: unknown;
+  const snapshotPublico = async () => (await conexion.pool.query(`select
+    md5(coalesce(jsonb_agg(jsonb_build_object('id',id,'perfil',perfil,'estado',estado,'version',version_sesion) order by id)::text,'')) as usuarios,
+    (select count(*)::int from public.sesiones_usuarios) as sesiones,
+    (select count(*)::int from public.auditoria_seguridad_log) as auditoria,
+    (select count(*)::int from public.registro_modificaciones) as modificaciones from public.usuarios`)).rows;
 
-  beforeAll(async () => {
-    const { rows } = await conexion.pool.query('select current_database() as nombre');
-    if (rows[0].nombre !== 'agrul_test_agrul_053_etapa3') throw new Error('Base de pruebas CU61 incorrecta.');
-    await runMigrations(connectionString);
-    ({ hash, salt } = CryptoAuthService.hashPassword(password));
-    app = crearServidorProduccion({ connectionString, logger: false }).app;
-    await app.ready();
-  });
   beforeEach(async () => {
-    await limpiarUsuariosSeguridad(conexion.pool);
+    aislado = undefined;
+    if (!connectionString) throw new Error('Se requiere conexión explícita.');
+    aislado = await crearEsquemaPostgresAislado(connectionString);
+    conexion = aislado.connection;
+    repo = new DrizzleUsuariosRepository(conexion.db);
+    estadoPublico = await snapshotPublico();
+    ({ hash, salt } = CryptoAuthService.hashPassword(password));
+    app = crearServidorProduccion({ connectionString: aislado.connectionString, logger: false }).app;
+    await app.ready();
     for (const usuario of [
       { id: sistemaId, nombre: 'Admin', apellido: 'Sistema', nombreUsuario: 'sistema', email: 'sistema@example.test', perfil: 'ADMIN_SISTEMA' as const },
       { id: anaId, nombre: 'Ana', apellido: 'Pérez', nombreUsuario: 'huerta.norte', email: 'ana@example.test', perfil: 'ENCARGADO_CAMPO' as const, estado: 'INACTIVO' as const },
       { id: juanId, nombre: 'Juan', apellido: 'Pérez', nombreUsuario: 'huerta.sur', email: 'juan@example.test', perfil: 'ENCARGADO_CAMPO' as const },
     ]) await repo.guardar(Usuario.crear({ ...usuario, passwordHash: hash, salt }));
     token = await iniciarSesion();
+  }, 60000);
+  afterEach(async () => {
+    try {
+      await app?.close();
+      if (aislado) expect(await snapshotPublico()).toEqual(estadoPublico);
+    } finally { await aislado?.cerrar(); aislado = undefined; }
   });
-  afterAll(async () => { await app?.close(); await conexion.pool.end(); });
 
   async function iniciarSesion(nombreUsuario = 'sistema') {
     const login = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { nombreUsuario, password } });
@@ -81,7 +92,7 @@ describe.skipIf(!connectionString)('AGRUL-053 CU61 con HTTP y PostgreSQL reales'
 
   it('consulta por id después de reconstruir el servidor y no expone credenciales', async () => {
     await app.close();
-    app = crearServidorProduccion({ connectionString, logger: false }).app;
+    app = crearServidorProduccion({ connectionString: aislado!.connectionString, logger: false }).app;
     const res = await consultar(`/usuarios/${anaId}`);
     expect(res.statusCode).toBe(200);
     expect(res.json().data).toMatchObject({ id: anaId, perfil: 'ENCARGADO_CAMPO', estado: 'INACTIVO' });

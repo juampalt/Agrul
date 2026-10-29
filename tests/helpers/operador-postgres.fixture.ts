@@ -4,22 +4,28 @@ import { expect } from 'vitest';
 import { CryptoAuthService, TokenPayload } from '../../src/infrastructure/services/crypto-auth.service.js';
 
 async function verificarBase(pool: Pool) {
-  const { rows } = await pool.query('select current_database() as nombre');
-  if (![1, 2, 3, 4].map(etapa => `agrul_test_agrul_052_etapa${etapa}`).includes(rows[0].nombre)) {
-    throw new Error('Operador de pruebas permitido solo en bases descartables de AGRUL-052.');
+  const { rows } = await pool.query<{ nombre: string }>('select current_database() as nombre');
+  const basesValidas = [
+    'agrul_test_agrul_054',
+    ...[1, 2, 3, 4].map(etapa => `agrul_test_agrul_052_etapa${etapa}`),
+    ...[1, 2, 3, 4, 5].map(etapa => `agrul_test_agrul_054_etapa${etapa}`),
+  ];
+  if (!basesValidas.includes(rows[0]?.nombre)) {
+    throw new Error('Operador de pruebas permitido solo en bases descartables de AGRUL-052 o AGRUL-054.');
   }
 }
 
 export async function autenticarOperadorPrueba(pool: Pool, app: FastifyInstance,
-  datos: { sub: string; email: string; nombre: string; apellido: string }) {
+  datos: { sub: string; email: string; nombre: string; apellido: string; perfil?: string }) {
   await verificarBase(pool);
   const password = 'OperadorPrueba123!';
   const { hash, salt } = CryptoAuthService.hashPassword(password);
+  const perfil = datos.perfil ?? 'ADMINISTRADOR';
   await pool.query(`insert into usuarios(id,nombre,apellido,email,password_hash,salt,perfil,estado,debe_cambiar_password)
-    values ($1,$2,$3,$4,$5,$6,'ADMINISTRADOR','ACTIVO',false)
+    values ($1,$2,$3,$4,$5,$6,$7,'ACTIVO',false)
     on conflict(id) do update set email=excluded.email,password_hash=excluded.password_hash,salt=excluded.salt,
-      perfil='ADMINISTRADOR',estado='ACTIVO',debe_cambiar_password=false,intentos_fallidos=0`,
-  [datos.sub, datos.nombre, datos.apellido, datos.email, hash, salt]);
+      perfil=excluded.perfil,estado='ACTIVO',debe_cambiar_password=false,intentos_fallidos=0`,
+  [datos.sub, datos.nombre, datos.apellido, datos.email, hash, salt, perfil]);
   const login = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: datos.email, password } });
   expect(login.statusCode).toBe(200);
   return { authorization: `Bearer ${login.json<{ data: { token: string } }>().data.token}` };

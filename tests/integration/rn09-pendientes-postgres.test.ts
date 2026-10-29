@@ -7,6 +7,10 @@ import { CicloConActividadesPendientesError } from '../../src/application/use-ca
 import { sembrarCiclosRn09 } from '../helpers/sembrar-ciclos-rn09.js';
 
 const connectionString = process.env.RN09_TEST_DATABASE_URL;
+// Validar antes de construir pools o ejecutar cualquier consulta.
+if (connectionString && connectionString !== 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054') {
+  throw new Error('RN-09 solo admite la base descartable autorizada y el rol exclusivo, sin contraseña en URL.');
+}
 const CICLO = 'c0000000-0000-4000-8000-000000000052';
 const OTRO = 'c0000000-0000-4000-8000-000000000053';
 
@@ -23,12 +27,15 @@ describe.skipIf(!connectionString)('RN-09: consulta persistente y transacción d
     return (await connection.pool.query<{ total: number }>('select count(*)::int as total from rn09_efectos_prueba')).rows[0].total;
   }
   async function actividad(estado: string, cicloId = CICLO) {
-    await connection.pool.query('insert into actividades_programadas(ciclo_id, estado) values ($1, $2)', [cicloId, estado]);
+    await connection.pool.query('insert into actividades_programadas(ciclo_id, estado, motivo_cancelacion) values ($1, $2, $3)',
+      [cicloId, estado, estado === 'CANCELADA' ? 'Cancelación del fixture RN-09' : null]);
   }
 
   beforeAll(async () => {
-    const { rows } = await connection.pool.query<{ nombre: string }>('select current_database() as nombre');
-    if (rows[0]?.nombre !== 'agrul_test_agrul_052_rn09') throw new Error('Esta suite solo puede modificar agrul_test_agrul_052_rn09.');
+    const { rows } = await connection.pool.query("select current_database() as db, current_user as usuario, current_setting('server_version_num')::int as version, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls from pg_roles where rolname=current_user");
+    expect(rows[0]).toMatchObject({ db: 'agrul_test_agrul_054', usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+    expect(rows[0].version).toBeGreaterThanOrEqual(180000);
+    expect(rows[0].version).toBeLessThan(190000);
     await runMigrations(connectionString);
     await sembrarCiclosRn09(connection.pool, [CICLO, OTRO]);
     await connection.pool.query('create table if not exists rn09_efectos_prueba (id uuid primary key)');
@@ -38,7 +45,7 @@ describe.skipIf(!connectionString)('RN-09: consulta persistente y transacción d
     await servidor.app.ready();
   });
   beforeEach(async () => {
-    await connection.pool.query('delete from actividades_programadas');
+    await connection.pool.query('delete from actividades_programadas where ciclo_id=ANY($1::uuid[])', [[CICLO, OTRO]]);
     await connection.pool.query('delete from rn09_efectos_prueba');
   });
   afterAll(async () => { await servidor?.app.close(); await connection.pool.end(); });
@@ -59,6 +66,12 @@ describe.skipIf(!connectionString)('RN-09: consulta persistente y transacción d
   it.each(['EJECUTADA', 'CANCELADA'])('una actividad %s no bloquea RN-09', async (estado) => {
     await actividad(estado);
     await expect(servidor.cierreCicloGuard.ejecutar(CICLO, efecto)).resolves.toBe('verificado');
+  });
+
+  it.each([null, '', '   '])('mantiene la restricción de motivo para nuevas cancelaciones (%s)', async (motivo) => {
+    await expect(connection.pool.query("insert into actividades_programadas(ciclo_id,estado,motivo_cancelacion) values ($1,'CANCELADA',$2)", [CICLO, motivo]))
+      .rejects.toMatchObject({ code: '23514' });
+    expect((await connection.pool.query('select count(*)::int as total from actividades_programadas where ciclo_id=$1', [CICLO])).rows[0].total).toBe(0);
   });
 
   it('aísla pendientes por ciclo y detecta un pendiente entre actividades resueltas', async () => {

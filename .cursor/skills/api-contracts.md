@@ -86,6 +86,8 @@ export const SincronizarBatchOfflineSchema = z.object({
 - **DO:** Para errores internos, registrar clasificación y request ID sin serializar el error crudo, sus causas, consultas o parámetros: PostgreSQL puede incluir una fila completa con credenciales en el detalle del error.
 - **DO:** Al mostrar datos de la API en el dashboard, crear nodos y asignar `textContent` o `new Option(texto, valor)` para nombres, correos, identificadores y errores. Reservar `innerHTML` para markup estático; los datos persistidos de usuarios también son entrada no confiable.
 
+- **DO:** En recursos agrícolas, resolver la finca desde el ciclo/plantación/lote persistidos antes de consultar por ID o mutar; comprobar las asignaciones de la sesión revalidada, además del rol. En listados, aplicar el alcance en SQL antes de paginar y reconstruir entidades. No aceptar el alcance desde el cliente ni habilitar estas rutas sin el adaptador de autorización. Probar dos fincas, usuarios sin asignaciones y revocación con el mismo token (S1 / AGRUL-054).
+
 ### DON'T
 - **DON'T:** Nunca exponer stack traces o errores crudos de PostgreSQL al cliente.
 - **DON'T:** No permitir que clientes externos envíen `timestampServidor`; el servidor siempre asigna su propio reloj UTC de ingesta.
