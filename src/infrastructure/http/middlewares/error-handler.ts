@@ -1,5 +1,6 @@
 import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
+import { CodigoInsumoDuplicadoError } from '../../../core/domain/entities/insumo.entity.js';
 import {
   DomainError,
   EntidadNoEncontradaError,
@@ -92,6 +93,7 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
   // 5. Conflicto de unicidad (409 Conflict)
   if (
     error instanceof CodigoLoteDuplicadoError ||
+    error instanceof CodigoInsumoDuplicadoError ||
     error instanceof InsumoDuplicadoError ||
     error instanceof UsuarioDuplicadoError ||
     error instanceof ProveedorDuplicadoError ||

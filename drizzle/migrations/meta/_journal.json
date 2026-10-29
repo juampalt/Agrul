@@ -127,6 +127,13 @@
       "when": 1793149213000,
       "tag": "0017_monitoreos",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793149214000,
+      "tag": "0018_insumos_catalogo",
+      "breakpoints": true
     }
   ]
 }

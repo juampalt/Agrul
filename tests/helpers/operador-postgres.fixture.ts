@@ -7,11 +7,12 @@ async function verificarBase(pool: Pool) {
   const { rows } = await pool.query<{ nombre: string }>('select current_database() as nombre');
   const basesValidas = [
     'agrul_test_agrul_054',
+    'agrul_test_agrul_055',
     ...[1, 2, 3, 4].map(etapa => `agrul_test_agrul_052_etapa${etapa}`),
     ...[1, 2, 3, 4, 5].map(etapa => `agrul_test_agrul_054_etapa${etapa}`),
   ];
   if (!basesValidas.includes(rows[0]?.nombre)) {
-    throw new Error('Operador de pruebas permitido solo en bases descartables de AGRUL-052 o AGRUL-054.');
+    throw new Error('Operador de pruebas permitido solo en bases descartables de AGRUL-052, AGRUL-054 o AGRUL-055.');
   }
 }
 
