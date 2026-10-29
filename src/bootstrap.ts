@@ -1,5 +1,6 @@
 import { buildApp } from './infrastructure/http/app.js';
 import { DrizzleInsumosRepository } from './infrastructure/database/repositories/drizzle-insumos.repository.js';
+import { DrizzleInventarioInsumosRepository } from './infrastructure/database/repositories/drizzle-inventario-insumos.repository.js';
 import { DrizzleCultivosRepository } from './infrastructure/database/repositories/drizzle-cultivos.repository.js';
 import { DrizzleVariedadesRepository } from './infrastructure/database/repositories/drizzle-variedades.repository.js';
 import { DrizzlePlantacionesRepository } from './infrastructure/database/repositories/drizzle-plantaciones.repository.js';
@@ -38,6 +39,7 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
   const ciclosRepo = new DrizzleCiclosProductivosRepository(db, cierreCicloGuard);
   const app = buildApp({
     insumosCanonicosRepo: new DrizzleInsumosRepository(db),
+    inventarioInsumosRepo: new DrizzleInventarioInsumosRepository(db),
     usuariosRepo: new DrizzleUsuariosRepository(db),
     usuarioFincasRepo: new DrizzleUsuarioFincasRepository(db),
     auditoriaRepo: new DrizzleAuditoriaSeguridadRepository(db),

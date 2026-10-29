@@ -1,6 +1,7 @@
 import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
 import { CodigoInsumoDuplicadoError } from '../../../core/domain/entities/insumo.entity.js';
+import { OperacionInventarioDuplicadaError } from '../../../core/domain/entities/inventario-insumos.js';
 import {
   DomainError,
   EntidadNoEncontradaError,
@@ -94,6 +95,7 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
   if (
     error instanceof CodigoLoteDuplicadoError ||
     error instanceof CodigoInsumoDuplicadoError ||
+    error instanceof OperacionInventarioDuplicadaError ||
     error instanceof InsumoDuplicadoError ||
     error instanceof UsuarioDuplicadoError ||
     error instanceof ProveedorDuplicadoError ||

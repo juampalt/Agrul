@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { check, date, foreignKey, index, numeric, pgTable, text, unique, uuid, varchar } from 'drizzle-orm/pg-core';
 import { CategoriaInsumoCanonico } from '../../../core/domain/entities/insumo.entity.js';
 import { actividadesRealizadasTable } from './actividades-realizadas.js';
-import { usuariosTable } from './tables.js';
+import { fincasTable, usuariosTable } from './tables.js';
 
 export const insumosTable = pgTable('insumos', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -28,6 +28,8 @@ export const insumosTable = pgTable('insumos', {
 
 export const partidasInsumoTable = pgTable('partidas_insumo', {
   id: uuid('id').defaultRandom().primaryKey(),
+  fincaId: uuid('finca_id').references(() => fincasTable.id, { onDelete: 'restrict' }),
+  unidadMedida: varchar('unidad_medida', { length: 30 }),
   insumoId: uuid('insumo_id').notNull().references(() => insumosTable.id, { onDelete: 'restrict' }),
   fechaIngreso: date('fecha_ingreso', { mode: 'string' }).notNull(),
   cantidadInicial: numeric('cantidad_inicial', { precision: 10, scale: 2 }).notNull(),
@@ -36,6 +38,8 @@ export const partidasInsumoTable = pgTable('partidas_insumo', {
   fechaVencimiento: date('fecha_vencimiento', { mode: 'string' }),
 }, t => [
   unique().on(t.id, t.insumoId),
+  unique('partidas_id_insumo_finca_unique').on(t.id, t.insumoId, t.fincaId),
+  index('idx_partidas_finca_insumo').on(t.fincaId, t.insumoId),
   index('idx_partidas_insumo_vencimiento').on(t.insumoId, t.fechaVencimiento, t.fechaIngreso, t.id),
   check('partidas_insumo_cantidad_inicial_check', sql`${t.cantidadInicial} > 0 AND ${t.cantidadInicial} <> 'NaN'::numeric`),
   check('partidas_insumo_cantidad_disponible_check', sql`${t.cantidadDisponible} >= 0 AND ${t.cantidadDisponible} <> 'NaN'::numeric`),

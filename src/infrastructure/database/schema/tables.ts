@@ -7,6 +7,7 @@ export { actividadesProgramadasTable } from './actividades-programadas.js';
 export { actividadesRealizadasTable } from './actividades-realizadas.js';
 export { monitoreosTable } from './monitoreos.js';
 export { insumosTable, partidasInsumoTable, aplicacionesInsumoTable, aplicacionesInsumoItemsTable } from './insumos.js';
+export { movimientosInventarioTable } from './movimientos-inventario.js';
 import { ciclosProductivosTable } from './ciclos-productivos.js';
 export { ciclosProductivosTable };
 

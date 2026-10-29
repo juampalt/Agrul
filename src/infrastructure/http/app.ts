@@ -3,6 +3,8 @@ import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod
 import { errorHandler } from './middlewares/error-handler.js';
 import { registerApiRoutes } from './routes/api.routes.js';
 import { registrarRutasInsumos } from './routes/insumos.routes.js';
+import { registrarRutasInventarioInsumos } from './routes/inventario-insumos.routes.js';
+import { InventarioInsumosRepositoryPort } from '../../core/ports/inventario-insumos-repository.port.js';
 import { InsumosRepositoryPort } from '../../core/ports/insumos-repository.port.js';
 import { registrarRutasCultivos } from './routes/cultivos.routes.js';
 import { registrarRutasVariedades } from './routes/variedades.routes.js';
@@ -263,6 +265,7 @@ export interface BuildAppOptions {
   observacionesRepo?: ObservacionesMonitoreoRepositoryPort;
   insumosRepo?: InsumosCatalogoRepository;
   insumosCanonicosRepo?: InsumosRepositoryPort;
+  inventarioInsumosRepo?: InventarioInsumosRepositoryPort;
   aplicacionesRepo?: AplicacionesRepositoryPort;
   cosechasRepo?: CosechasRepositoryPort;
   destinatariosRepo?: DestinatariosRepositoryPort;
@@ -927,6 +930,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
 
   // Registro de Rutas
   if (options.insumosCanonicosRepo) registrarRutasInsumos(app, options.insumosCanonicosRepo);
+  if (options.inventarioInsumosRepo) registrarRutasInventarioInsumos(app, options.inventarioInsumosRepo);
   if (options.cultivosRepo) registrarRutasCultivos(app, options.cultivosRepo);
   if (options.plantacionesRepo) registrarRutasPlantaciones(app, options.plantacionesRepo);
   if (options.ciclosProductivosRepo) registrarRutasCiclosProductivos(app, options.ciclosProductivosRepo);

@@ -52,10 +52,12 @@ export class InsumosPostgresFixture {
     expect(res.statusCode).toBe(201); return res.json().data.id as string;
   }
   async partida(insumoId: string) {
-    const id = randomUUID();
-    await this.pool.query(`insert into partidas_insumo(id,insumo_id,fecha_ingreso,cantidad_inicial,cantidad_disponible,proveedor)
-      values($1,$2,'2026-10-01',10,10,'Proveedor de prueba')`, [id, insumoId]);
-    return id;
+    const { rows } = await this.pool.query<{ finca_id: string }>('select l.finca_id from actividades_realizadas a join lotes l on l.id=a.lote_id where a.id=$1', [this.actividadId]);
+    const ingreso = await this.app.inject({ method: 'POST', url: '/api/v1/inventario/ingresos', headers: this.admin,
+      payload: { operacionId: randomUUID(), fincaId: rows[0].finca_id, insumoId, fechaIngreso: '2026-10-01',
+        cantidad: 10, unidadMedida: 'kg', proveedor: 'Proveedor de prueba', tipoMovimiento: 'INGRESO', motivo: 'Fixture' } });
+    expect(ingreso.statusCode).toBe(201);
+    return ingreso.json().data.partidaId as string;
   }
   async aplicacion() {
     const id = randomUUID();

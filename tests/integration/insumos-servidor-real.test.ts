@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { spawn, ChildProcess } from 'node:child_process';
 import { once } from 'node:events';
 import { randomBytes } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:net';
 import { resolve } from 'node:path';
 import { z } from 'zod';
@@ -58,5 +59,15 @@ describe.skipIf(!url)('AGRUL-055: entrada compilada de npm start y HTTP real', (
     expect((await fetch(`${direccion}/api/v1/insumos/${id}`, { headers })).status).toBe(200);
     expect((await f.pool.query('select codigo from insumos where id=$1', [id])).rows[0].codigo).toBe('CU34-START');
     expect((await fetch(`${direccion}/api/v1/insumos/${id}`)).status).toBe(401);
+    const finca = (await f.pool.query<{ finca_id: string }>('select l.finca_id from actividades_realizadas a join lotes l on l.id=a.lote_id where a.id=$1', [f.actividadId])).rows[0].finca_id;
+    const ingreso = await fetch(`${direccion}/api/v1/inventario/ingresos`, { method: 'POST', headers,
+      body: JSON.stringify({ operacionId: randomUUID(), fincaId: finca, insumoId: id, cantidad: 3, unidadMedida: 'kg',
+        tipoMovimiento: 'INGRESO', fechaIngreso: '2026-10-29', proveedor: 'Prueba HTTP', motivo: 'Ingreso real' }) });
+    expect(ingreso.status).toBe(201);
+    const { data: { partidaId } } = z.object({ data: z.object({ partidaId: z.string().uuid() }) }).parse(await ingreso.json());
+    expect((await f.pool.query('select cantidad_disponible from partidas_insumo where id=$1', [partidaId])).rows[0].cantidad_disponible).toBe('3.00');
+    const existencias = await fetch(`${direccion}/api/v1/inventario/existencias?insumoId=${id}`, { headers });
+    expect(existencias.status).toBe(200);
+    expect(await existencias.json()).toMatchObject({ data: [expect.objectContaining({ stockFisico: '3.00', stockUtilizable: '3.00' })] });
   });
 });

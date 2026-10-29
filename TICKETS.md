@@ -1084,8 +1084,9 @@
 
 ### `[AGRUL-055]` Módulos 4 & 9: Insumos, Inventario y Aplicaciones FIFO (CU34 - CU40, CU63 - CU66)
 - **GitHub Issue:** [#49](https://github.com/juampalt/Agrul/issues/49)
-- **Estado:** `IN_PROGRESS` — Etapa 1 CU34–CU37 implementada; resto de la issue pendiente.
+- **Estado:** `IN_PROGRESS` — Catálogo e inventario canónicos implementados; aplicaciones FIFO y correcciones pendientes.
 - **Validación etapa 1:** 54 pruebas nuevas aprobadas (32 PostgreSQL/HTTP y 22 de dominio). Regresión: 944 aprobadas, 342 omitidas, 0 fallidas. Lint y build aprobados. Detalle: [.scratch/agrul-055/etapa1.md](.scratch/agrul-055/etapa1.md).
+- **Validación etapa 2:** Ingresos, movimientos inmutables, devoluciones de sobrantes, existencias, alertas y autorización por finca. 44 pruebas nuevas aprobadas; regresión: 988 aprobadas, 342 omitidas, 0 fallidas. Lint y build aprobados. Detalle: [.scratch/agrul-055/etapa2.md](.scratch/agrul-055/etapa2.md).
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulos 4 & 9: Insumos y Stock
 - **Casos de Uso:** CU34 a CU40, CU63 a CU66
