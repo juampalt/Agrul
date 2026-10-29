@@ -2,11 +2,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
-import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { crearEsquemaPostgresAislado } from '../helpers/esquema-postgres-aislado.fixture.js';
 import { autenticarOperadorPrueba, emitirSesionPrueba } from '../helpers/operador-postgres.fixture.js';
-import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth.service.js';
 
-const connectionString = process.env.VARIEDADES_TEST_DATABASE_URL;
+const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
 const usuario = {
   sub: 'a0000000-0000-4000-8000-000000000053', email: 'admin@example.test',
   nombre: 'Admin', apellido: 'Prueba', fincas: [],
@@ -16,26 +15,35 @@ const inexistente = '00000000-0000-4000-8000-000000000053';
 const datos = { nombre: 'Emerald', descripcion: 'Variedad de prueba' };
 
 describe.skipIf(!connectionString)('AGRUL-052 CU11-CU14 con bootstrap y PostgreSQL reales', () => {
-  const connection = createDatabaseConnection(connectionString);
+  let aislado: Awaited<ReturnType<typeof crearEsquemaPostgresAislado>> | undefined;
+  let connection: ReturnType<typeof createDatabaseConnection>;
   let app: FastifyInstance;
   let cultivoId: string;
+  let estadoPublico: unknown;
+  const snapshotPublico = async () => (await connection.pool.query(`select
+    md5(coalesce((select jsonb_agg(to_jsonb(c) order by id)::text from public.cultivos c),'')) as cultivos,
+    md5(coalesce((select jsonb_agg(to_jsonb(v) order by id)::text from public.variedades v),'')) as variedades`)).rows;
 
   beforeAll(async () => {
-    const { rows } = await connection.pool.query<{ nombre: string }>('select current_database() as nombre');
-    if (rows[0]?.nombre !== 'agrul_test_agrul_052_etapa2') {
-      throw new Error('Esta suite solo puede modificar agrul_test_agrul_052_etapa2.');
-    }
-    await runMigrations(connectionString);
-    app = crearServidorProduccion({ connectionString, logger: false }).app;
+    if (!connectionString) throw new Error('Se requiere conexión explícita.');
+    aislado = await crearEsquemaPostgresAislado(connectionString);
+    connection = aislado.connection;
+    estadoPublico = await snapshotPublico();
+    app = crearServidorProduccion({ connectionString: aislado.connectionString, logger: false }).app;
     await app.ready();
     headers = await autenticarOperadorPrueba(connection.pool, app, usuario);
-  });
+  }, 60000);
   beforeEach(async () => {
     await connection.pool.query('delete from variedades');
     await connection.pool.query('delete from cultivos');
     cultivoId = await crearCultivo('Arándano');
   });
-  afterAll(async () => { await app?.close(); await connection.pool.end(); });
+  afterAll(async () => {
+    try {
+      await app?.close();
+      if (aislado) expect(await snapshotPublico()).toEqual(estadoPublico);
+    } finally { await aislado?.cerrar(); }
+  });
 
   async function crearCultivo(nombre: string) {
     const respuesta = await app.inject({ method: 'POST', url: '/api/v1/cultivos', headers,
@@ -132,7 +140,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU11-CU14 con bootstrap y PostgreS
     const { rows } = await connection.pool.query(
       'select v.cultivo_id, v.estado as variedad_estado, c.estado as cultivo_estado from variedades v join cultivos c on c.id = v.cultivo_id where v.id = $1', [creada.id]);
     expect(rows[0]).toEqual({ cultivo_id: cultivoId, variedad_estado: 'INACTIVO', cultivo_estado: 'INACTIVO' });
-    const otra = crearServidorProduccion({ connectionString, logger: false }).app;
+    const otra = crearServidorProduccion({ connectionString: aislado!.connectionString, logger: false }).app;
     try {
       const consulta = await otra.inject({ method: 'GET', url: `/api/v1/variedades/${creada.id}`, headers });
       expect(consulta.statusCode).toBe(200);
@@ -173,9 +181,15 @@ describe.skipIf(!connectionString)('AGRUL-052 CU11-CU14 con bootstrap y PostgreS
   it('reutiliza autenticación, rol Administrador y cambio de contraseña obligatorio', async () => {
     expect((await app.inject({ method: 'GET', url: '/api/v1/variedades' })).statusCode).toBe(401);
     for (const perfil of ['ENCARGADO', 'ADMINISTRADOR'] as const) {
-      const token = await emitirSesionPrueba(connection.pool, { ...usuario, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
-      expect((await app.inject({ method: 'POST', url: '/api/v1/variedades', payload: { ...datos, cultivoId },
-        headers: { authorization: `Bearer ${token}` } })).statusCode).toBe(403);
+      try {
+        await connection.pool.query('update usuarios set perfil=$1,debe_cambiar_password=$2 where id=$3', [perfil, perfil === 'ADMINISTRADOR', usuario.sub]);
+        const token = await emitirSesionPrueba(connection.pool, { ...usuario, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
+        expect((await app.inject({ method: 'POST', url: '/api/v1/variedades', payload: { ...datos, cultivoId },
+          headers: { authorization: `Bearer ${token}` } })).statusCode).toBe(403);
+      } finally {
+        await connection.pool.query("update usuarios set perfil='ADMINISTRADOR',debe_cambiar_password=false where id=$1", [usuario.sub]);
+        headers = await autenticarOperadorPrueba(connection.pool, app, usuario);
+      }
     }
   });
 

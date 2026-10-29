@@ -50,6 +50,7 @@ En Agrul, los tests son la salvaguarda de cumplimiento normativo. Verifican mate
 - **DO:** Validar que los errores de negocio arrojen instancias de `DomainError` tipadas.
 - **DO:** Al probar una FK con borrado restringido, verificar un error de integridad (`23503` o `23001`) y que la fila referenciada permanezca. La garantía es el rechazo y la conservación de datos; no aceptar errores genéricos de conexión o permisos.
 - **DO:** En integración con el bootstrap productivo, crear y autenticar actores reales y sus sesiones persistidas. Reservar JWT fabricados para casos negativos explícitos, sin omitir las validaciones de vigencia del servidor.
+- **DO:** Al probar restricciones de rol o cambio inicial de contraseña, preparar también el estado persistido del actor. Si el caso altera al usuario compartido, restaurarlo y autenticarlo nuevamente al terminar para no dejar sesiones inválidas a las pruebas siguientes.
 
 ### DON'T
 - **DON'T:** No silenciar errores de base de datos dentro de los tests.
