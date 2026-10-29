@@ -1,36 +1,47 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
-import { runMigrations } from '../../src/infrastructure/database/migrate.js';
-import { limpiarUsuariosSeguridad } from '../helpers/limpiar-usuarios-seguridad.js';
+import { crearEsquemaPostgresAislado } from '../helpers/esquema-postgres-aislado.fixture.js';
 import { DrizzleUsuariosRepository } from '../../src/infrastructure/database/repositories/drizzle-usuarios.repository.js';
 import { Usuario } from '../../src/core/domain/entities/usuario.entity.js';
 import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth.service.js';
 
-const connectionString = process.env.SEGURIDAD_TEST_DATABASE_URL;
+const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
 const id = 'a0000000-0000-4000-8000-000000000053';
 const password = 'Password1234';
 
 describe.skipIf(!connectionString)('AGRUL-053 CU59 con PostgreSQL y bootstrap reales', () => {
-  const conexion = createDatabaseConnection(connectionString);
-  const repo = new DrizzleUsuariosRepository(conexion.db);
+  let aislado: Awaited<ReturnType<typeof crearEsquemaPostgresAislado>> | undefined;
+  let conexion: ReturnType<typeof createDatabaseConnection>;
+  let repo: DrizzleUsuariosRepository;
   let app: FastifyInstance;
+  let estadoPublico: unknown;
+  const snapshotPublico = async () => (await conexion.pool.query(`select
+    md5(coalesce(jsonb_agg(jsonb_build_object('id',id,'perfil',perfil,'estado',estado,'version',version_sesion) order by id)::text,'')) as usuarios,
+    (select count(*)::int from public.sesiones_usuarios) as sesiones,
+    (select count(*)::int from public.auditoria_seguridad_log) as auditoria,
+    (select count(*)::int from public.registro_modificaciones) as modificaciones from public.usuarios`)).rows;
 
-  beforeAll(async () => {
-    const { rows } = await conexion.pool.query('select current_database() as nombre');
-    if (rows[0].nombre !== 'agrul_test_agrul_053_etapa1') throw new Error('Base de pruebas CU59 incorrecta.');
-    await runMigrations(connectionString);
-    app = crearServidorProduccion({ connectionString, logger: false }).app;
-    await app.ready();
-  });
   beforeEach(async () => {
-    await limpiarUsuariosSeguridad(conexion.pool);
+    aislado = undefined;
+    if (!connectionString) throw new Error('Se requiere conexión explícita.');
+    aislado = await crearEsquemaPostgresAislado(connectionString);
+    conexion = aislado.connection;
+    repo = new DrizzleUsuariosRepository(conexion.db);
+    estadoPublico = await snapshotPublico();
+    app = crearServidorProduccion({ connectionString: aislado.connectionString, logger: false }).app;
+    await app.ready();
     const { hash, salt } = CryptoAuthService.hashPassword(password);
     await repo.guardar(Usuario.crear({ id, nombre: 'Ana', apellido: 'Prueba', email: 'ana@example.test',
       nombreUsuario: 'Ana.Campo', perfil: 'ENCARGADO', passwordHash: hash, salt }));
+  }, 60000);
+  afterEach(async () => {
+    try {
+      await app?.close();
+      if (aislado) expect(await snapshotPublico()).toEqual(estadoPublico);
+    } finally { await aislado?.cerrar(); aislado = undefined; }
   });
-  afterAll(async () => { await app?.close(); await conexion.pool.end(); });
 
   function login(identificador: object, clave = password) {
     return app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { ...identificador, password: clave } });
@@ -38,7 +49,7 @@ describe.skipIf(!connectionString)('AGRUL-053 CU59 con PostgreSQL y bootstrap re
 
   it('persiste credenciales protegidas y autentica por ambos identificadores tras reconstruir el servidor', async () => {
     await app.close();
-    app = crearServidorProduccion({ connectionString, logger: false }).app;
+    app = crearServidorProduccion({ connectionString: aislado!.connectionString, logger: false }).app;
     await app.ready();
     for (const identificador of [{ nombreUsuario: ' ANA.CAMPO ' }, { email: 'ana@example.test' }]) {
       const respuesta = await login(identificador);
