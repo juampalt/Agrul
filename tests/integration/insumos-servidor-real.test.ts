@@ -77,5 +77,16 @@ describe.skipIf(!url)('AGRUL-055: entrada compilada de npm start y HTTP real', (
     expect((await fetch(`${direccion}/api/v1/aplicaciones-insumos/${aplicacionId}`, { headers })).status).toBe(200);
     expect((await f.pool.query('select cantidad_disponible from partidas_insumo where id=$1', [partidaId])).rows[0].cantidad_disponible).toBe('2.00');
     expect((await f.pool.query("select count(*)::int as total from eventos_trazabilidad where payload_especifico->>'aplicacionId'=$1", [aplicacionId])).rows[0].total).toBe(1);
+    const correccionId = randomUUID();
+    const correccion = await fetch(`${direccion}/api/v1/aplicaciones-insumos/${aplicacionId}/correcciones`, { method: 'POST', headers,
+      body: JSON.stringify({ operacionId: correccionId, motivoCorreccion: 'Cantidad real verificada', nuevaAplicacion: {
+        actividadRealizadaId: f.actividadId, superficieTratada: 1, metodoAplicacion: 'Manual', motivoAplicacion: 'Prueba HTTP corregida',
+        items: [{ insumoId: id, cantidad: 2, unidadMedida: 'kg', dosis: 2 }] } }) });
+    expect(correccion.status).toBe(201);
+    const version = z.object({ data: z.object({ aplicacionNuevaId: z.string().uuid() }) }).parse(await correccion.json());
+    expect((await fetch(`${direccion}/api/v1/aplicaciones-insumos/${version.data.aplicacionNuevaId}`, { headers })).status).toBe(200);
+    expect((await fetch(`${direccion}/api/v1/aplicaciones-insumos/${aplicacionId}/correcciones`, { headers })).status).toBe(200);
+    expect((await f.pool.query('select cantidad_disponible from partidas_insumo where id=$1', [partidaId])).rows[0].cantidad_disponible).toBe('1.00');
+    expect((await f.pool.query('select cantidad_aplicada from aplicaciones_insumo_items where aplicacion_id=$1', [aplicacionId])).rows[0].cantidad_aplicada).toBe('1.00');
   });
 });

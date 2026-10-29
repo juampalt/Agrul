@@ -8,9 +8,11 @@ export interface AplicacionInsumos {
   id: string; actividadRealizadaId: string; superficieTratada: string; metodoAplicacion: string;
   motivoAplicacion: string; responsableId: string; observaciones: string | null;
   registradoEn: string | null; items: AplicacionInsumosItem[];
+  versionAnteriorId: string | null; versionSiguienteId: string | null;
 }
 export interface FiltrosAplicacionesInsumos {
   actividadRealizadaId?: string; fincaId?: string; insumoId?: string; limit: number; offset: number;
+  incluirHistoricas?: boolean;
 }
 export interface AplicacionesInsumosRepositoryPort {
   registrar(datos: RegistrarAplicacionInsumos, actor: ActorInventario): Promise<AplicacionInsumos>;

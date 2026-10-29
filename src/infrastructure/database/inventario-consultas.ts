@@ -11,6 +11,7 @@ function alcance(columna: AnyPgColumn, actor: ActorInventario) {
   return actor.fincaIds === undefined ? undefined : actor.fincaIds.length ? inArray(columna, [...actor.fincaIds]) : sql`false`;
 }
 export const camposMovimiento = { id: m.id, partidaId: m.partidaId, fincaId: m.fincaId, insumoId: m.insumoId,
+  aplicacionItemId: m.aplicacionItemId, correccionId: m.correccionId, movimientoCompensadoId: m.movimientoCompensadoId,
   cantidad: m.cantidad, unidadMedida: m.unidadMedida, tipoMovimiento: m.tipoMovimiento,
   fechaMovimiento: m.fechaMovimiento, motivo: m.motivo, responsableId: m.responsableId };
 

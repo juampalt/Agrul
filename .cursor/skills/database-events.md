@@ -94,6 +94,7 @@ FOR EACH ROW EXECUTE FUNCTION rechazar_mutacion_evento_trazabilidad();
 ## 5. DOs and DON'Ts
 
 ### DO
+- **DO:** En subconsultas correlacionadas dentro de una selección Drizzle de una sola tabla, encapsular la columna externa en un fragmento `sql` propio y usar ese fragmento en la subconsulta, como en `conciliar-inventario-correccion.ts`. Verificar con PostgreSQL un saldo conocido distinto de cero: el dialecto puede quitar el prefijo de columnas interpoladas directamente y resolver `id` contra la tabla interna, produciendo una conciliación falsa (CU40 / AGRUL-055).
 - **DO:** Usar `db.transaction()` de Drizzle para asegurar que el write model y el read model permanezcan 100% consistentes.
 - **DO:** Usar `ON DELETE RESTRICT` en todas las referencias foráneas de trazabilidad.
 - **DO:** Probar en tests de integración que el trigger de Postgres cancele cualquier intento de `db.delete(eventosTrazabilidad)`.

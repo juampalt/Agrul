@@ -3,9 +3,12 @@ import { check, date, foreignKey, index, jsonb, numeric, pgTable, text, uuid, va
 import { TipoMovimientoInventario } from '../../../core/domain/entities/inventario-insumos.js';
 import { aplicacionesInsumoItemsTable, insumosTable, partidasInsumoTable } from './insumos.js';
 import { fincasTable, usuariosTable } from './tables.js';
+import { correccionesAplicacionesTable } from './correcciones-aplicaciones.js';
 
 export const movimientosInventarioTable = pgTable('movimientos_inventario', {
   id: uuid('id').defaultRandom().primaryKey(),
+  correccionId: uuid('correccion_id').references(() => correccionesAplicacionesTable.id, { onDelete: 'restrict' }),
+  movimientoCompensadoId: uuid('movimiento_compensado_id').unique(),
   aplicacionItemId: uuid('aplicacion_item_id').unique().references(() => aplicacionesInsumoItemsTable.id, { onDelete: 'restrict' }),
   insumoId: uuid('insumo_id').notNull().references(() => insumosTable.id, { onDelete: 'restrict' }),
   fincaId: uuid('finca_id').notNull().references(() => fincasTable.id, { onDelete: 'restrict' }),
@@ -18,6 +21,8 @@ export const movimientosInventarioTable = pgTable('movimientos_inventario', {
   responsableId: uuid('responsable_id').notNull(),
   solicitud: jsonb('solicitud').$type<Record<string, unknown>>().notNull(),
 }, t => [
+  foreignKey({ columns: [t.movimientoCompensadoId], foreignColumns: [t.id] }).onDelete('restrict'),
+  index('idx_movimientos_correccion').on(t.correccionId),
   foreignKey({ columns: [t.responsableId], foreignColumns: [usuariosTable.id] }).onDelete('restrict'),
   foreignKey({ columns: [t.partidaId, t.insumoId, t.fincaId], foreignColumns: [partidasInsumoTable.id, partidasInsumoTable.insumoId, partidasInsumoTable.fincaId] }).onDelete('restrict'),
   index('idx_movimientos_inventario_finca_fecha').on(t.fincaId, t.fechaMovimiento, t.id),

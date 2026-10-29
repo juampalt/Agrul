@@ -13,11 +13,7 @@ import { eventosTrazabilidadTable as eventos, lotesTable as l } from './schema/t
 /** Conserva una única implementación del consumo dentro de la transacción del llamador. */
 export async function registrarAplicacionEnTransaccion(tx: AgrulTransaction, datos: RegistrarAplicacionInsumos, actor: ActorInventario) {
   validarAplicacionInsumos(datos);
-  const [labor] = await tx.select({ fincaId: l.fincaId, loteId: r.loteId }).from(r)
-    .innerJoin(l, eq(r.loteId, l.id)).where(eq(r.id, datos.actividadRealizadaId)).for('share');
-  if (!labor) throw new EntidadNoEncontradaError('Actividad realizada', datos.actividadRealizadaId);
-  if (!labor.fincaId) throw new AplicacionInsumosInvalidaError('La labor debe pertenecer a una finca.');
-  if (actor.fincaIds !== undefined && !actor.fincaIds.includes(labor.fincaId)) throw new AccesoDenegadoFincaError(labor.fincaId);
+  const labor = await cargarLaborAplicacion(tx, datos.actividadRealizadaId, actor);
   await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${'aplicacion:' + datos.operacionId},0))`);
   const solicitud = { ...datos, responsableId: actor.usuarioId };
   const [existente] = await tx.select({ solicitud: a.solicitud }).from(a).where(eq(a.id, datos.operacionId));
@@ -50,4 +46,13 @@ export async function registrarAplicacionEnTransaccion(tx: AgrulTransaction, dat
     timestampServidor: sql`CURRENT_TIMESTAMP`, payloadEspecifico: { aplicacionId: salida.id,
       actividadRealizadaId: salida.actividadRealizadaId, items: salida.items } });
   return salida;
+}
+
+export async function cargarLaborAplicacion(tx: AgrulTransaction, id: string, actor: ActorInventario) {
+  const [labor] = await tx.select({ fincaId: l.fincaId, loteId: r.loteId }).from(r)
+    .innerJoin(l, eq(r.loteId, l.id)).where(eq(r.id, id)).for('share');
+  if (!labor) throw new EntidadNoEncontradaError('Actividad realizada', id);
+  if (!labor.fincaId) throw new AplicacionInsumosInvalidaError('La labor debe pertenecer a una finca.');
+  if (actor.fincaIds !== undefined && !actor.fincaIds.includes(labor.fincaId)) throw new AccesoDenegadoFincaError(labor.fincaId);
+  return { ...labor, fincaId: labor.fincaId };
 }

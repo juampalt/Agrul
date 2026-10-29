@@ -5,6 +5,8 @@ import { registerApiRoutes } from './routes/api.routes.js';
 import { registrarRutasInsumos } from './routes/insumos.routes.js';
 import { registrarRutasInventarioInsumos } from './routes/inventario-insumos.routes.js';
 import { registrarRutasAplicacionesInsumos } from './routes/aplicaciones-insumos.routes.js';
+import { registrarRutasCorreccionesAplicaciones } from './routes/correcciones-aplicaciones.routes.js';
+import { CorreccionesAplicacionesRepositoryPort } from '../../core/ports/correcciones-aplicaciones-repository.port.js';
 import { AplicacionesInsumosRepositoryPort } from '../../core/ports/aplicaciones-insumos-repository.port.js';
 import { InventarioInsumosRepositoryPort } from '../../core/ports/inventario-insumos-repository.port.js';
 import { InsumosRepositoryPort } from '../../core/ports/insumos-repository.port.js';
@@ -269,6 +271,7 @@ export interface BuildAppOptions {
   insumosCanonicosRepo?: InsumosRepositoryPort;
   inventarioInsumosRepo?: InventarioInsumosRepositoryPort;
   aplicacionesInsumosRepo?: AplicacionesInsumosRepositoryPort;
+  correccionesAplicacionesRepo?: CorreccionesAplicacionesRepositoryPort;
   aplicacionesRepo?: AplicacionesRepositoryPort;
   cosechasRepo?: CosechasRepositoryPort;
   destinatariosRepo?: DestinatariosRepositoryPort;
@@ -935,6 +938,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   if (options.insumosCanonicosRepo) registrarRutasInsumos(app, options.insumosCanonicosRepo);
   if (options.inventarioInsumosRepo) registrarRutasInventarioInsumos(app, options.inventarioInsumosRepo);
   if (options.aplicacionesInsumosRepo) registrarRutasAplicacionesInsumos(app, options.aplicacionesInsumosRepo);
+  if (options.correccionesAplicacionesRepo) registrarRutasCorreccionesAplicaciones(app, options.correccionesAplicacionesRepo);
   if (options.cultivosRepo) registrarRutasCultivos(app, options.cultivosRepo);
   if (options.plantacionesRepo) registrarRutasPlantaciones(app, options.plantacionesRepo);
   if (options.ciclosProductivosRepo) registrarRutasCiclosProductivos(app, options.ciclosProductivosRepo);

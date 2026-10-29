@@ -57,10 +57,10 @@ export class DrizzleInventarioInsumosRepository extends ConsultasInventario impl
   private async repetido(tx: AgrulTransaction, id: string, solicitud: Record<string, unknown>) {
     // La clave serializa reintentos idénticos incluso antes de crear la partida.
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${'inventario:' + id},0))`);
-    const [existente] = await tx.select().from(m).where(eq(m.id, id));
+    const [existente] = await tx.select({ ...camposMovimiento, solicitud: m.solicitud }).from(m).where(eq(m.id, id));
     if (!existente) return null;
     if (!isDeepStrictEqual(existente.solicitud, solicitud)) throw new OperacionInventarioDuplicadaError();
-    const { solicitud: _privada, aplicacionItemId: _referencia, ...salida } = existente;
+    const { solicitud: _privada, ...salida } = existente;
     return salida;
   }
   private async transaccion<T>(accion: (tx: AgrulTransaction) => Promise<T>): Promise<T> {

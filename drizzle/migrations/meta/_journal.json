@@ -155,6 +155,13 @@
       "when": 1793149217000,
       "tag": "0021_aplicaciones_consumo_trazable",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793149218000,
+      "tag": "0022_correcciones_aplicaciones",
+      "breakpoints": true
     }
   ]
 }

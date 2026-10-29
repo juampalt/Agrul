@@ -6,13 +6,17 @@ import { aplicacionesInsumoTable as a, aplicacionesInsumoItemsTable as item } fr
 import { movimientosInventarioTable as m } from './schema/movimientos-inventario.js';
 import { actividadesRealizadasTable as r } from './schema/actividades-realizadas.js';
 import { lotesTable as l } from './schema/tables.js';
+import { correccionesAplicacionesTable as c } from './schema/correcciones-aplicaciones.js';
 
 export async function consultarAplicacionesInsumos(db: AgrulDatabase | AgrulTransaction, filtros: FiltrosAplicacionesInsumos, actor: ActorInventario, id?: string): Promise<AplicacionInsumos[]> {
   const cabeceras = await db.select({ id: a.id, actividadRealizadaId: a.actividadRealizadaId,
     superficieTratada: a.superficieTratada, metodoAplicacion: a.metodoAplicacion, motivoAplicacion: a.motivoAplicacion,
     responsableId: a.responsableId, observaciones: a.observaciones, registradoEn: a.registradoEn,
+    versionAnteriorId: sql<string | null>`(SELECT ${c.aplicacionAnteriorId} FROM ${c} WHERE ${c.aplicacionNuevaId}=${a.id})`,
+    versionSiguienteId: sql<string | null>`(SELECT ${c.aplicacionNuevaId} FROM ${c} WHERE ${c.aplicacionAnteriorId}=${a.id})`,
   }).from(a).innerJoin(r, eq(a.actividadRealizadaId, r.id)).innerJoin(l, eq(r.loteId, l.id))
     .where(and(id ? eq(a.id, id) : undefined,
+      id || filtros.incluirHistoricas ? undefined : sql`NOT EXISTS (SELECT 1 FROM ${c} WHERE ${c.aplicacionAnteriorId}=${a.id})`,
       actor.fincaIds === undefined ? undefined : actor.fincaIds.length ? inArray(l.fincaId, [...actor.fincaIds]) : sql`false`,
       filtros.fincaId ? eq(l.fincaId, filtros.fincaId) : undefined,
       filtros.actividadRealizadaId ? eq(a.actividadRealizadaId, filtros.actividadRealizadaId) : undefined,

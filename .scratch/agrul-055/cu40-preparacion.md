@@ -19,8 +19,8 @@ Se consultaron nuevamente la issue #49 y las cinco skills del router JIT.
 - Tres pruebas PostgreSQL verifican procedencia real, denegación fuera del
   alcance y rechazo de históricos incompletos. No modifican stock ni hechos.
 
-Esta preparación no habilita CU40 ni incorpora endpoints o migraciones de
-corrección. CU40 continúa pendiente; no se declara la issue terminada.
+Este avance preparatorio aún no habilitaba CU40 ni incorporaba endpoints o
+migraciones de corrección. Su implementación posterior se documenta en etapa4.md.
 
 ## Decisión de negocio requerida
 
@@ -32,9 +32,9 @@ cómo reconciliar las partidas consumidas. Se solicitó al usuario elegir entre:
    ambas versiones y permitiendo sustituir cada versión una sola vez.
 2. Ajustar las cantidades sobre las partidas originales.
 
-La respuesta está pendiente. No se toma el silencio como aprobación ni se
-implementa una de esas reglas por suposición. Lo dependiente de esa definición
-se retoma después de la respuesta y de la revisión de cupo solicitada.
+La definición quedó resuelta después de este avance: el usuario autorizó
+compensar y reaplicar FIFO/FEFO con nueve condiciones explícitas. La implementación
+y sus verificaciones están en [etapa4.md](etapa4.md).
 
 ## Validación
 

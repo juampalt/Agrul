@@ -17,6 +17,7 @@ describe.skipIf(!url)('AGRUL-055: cadena SQL desde cero y actualización de part
   const esquema = `agrul055_upgrade_${randomUUID().replaceAll('-', '')}`;
   const insumoId = randomUUID(); const partidaId = randomUUID();
   const aplicacionHistoricaId = randomUUID();
+  const insumoDudoso = randomUUID(); const partidaDudosa = randomUUID(); const aplicacionDudosa = randomUUID();
   let admin = { authorization: '' }; let encargado = { authorization: '' };
   let historico: unknown; let publico: unknown;
   async function estadoPublico() {
@@ -58,6 +59,24 @@ describe.skipIf(!url)('AGRUL-055: cadena SQL desde cero y actualización de part
         await aislada.pool.query(`insert into aplicaciones_insumo_items(aplicacion_id,insumo_id,partida_insumo_id,cantidad_aplicada,dosis)
           values($1,$2,$3,1,1)`, [aplicacionHistoricaId, insumoId, partidaId]);
       }
+      if (entrada.idx === 21) {
+        const responsable = 'f0000000-0000-4000-8000-000000000059';
+        await aislada.pool.query("insert into insumos(id,codigo,nombre,categoria,unidad_medida,nivel_minimo) values($1,'HIST-DUDOSO','Sin conciliar','OTRO','kg',0)", [insumoDudoso]);
+        await aislada.pool.query(`insert into partidas_insumo(id,insumo_id,finca_id,unidad_medida,fecha_ingreso,cantidad_inicial,cantidad_disponible,proveedor)
+          values($1,$2,$3,'kg','2026-10-01',10,0,'Histórico')`, [partidaDudosa, insumoDudoso, responsable]);
+        await aislada.pool.query(`insert into movimientos_inventario(insumo_id,finca_id,partida_id,tipo_movimiento,cantidad,unidad_medida,fecha_movimiento,motivo,responsable_id,solicitud)
+          values($1,$2,$3,'INGRESO',10,'kg','2026-10-01','Origen',$2,'{}')`, [insumoDudoso, responsable, partidaDudosa]);
+        await aislada.pool.query(`insert into aplicaciones_insumo(id,actividad_realizada_id,superficie_tratada,metodo_aplicacion,motivo_aplicacion,responsable_id,solicitud,registrado_en)
+          select $1,actividad_realizada_id,1,'Manual','Origen conocido',responsable_id,'{}',now() from aplicaciones_insumo where id=$2`, [aplicacionDudosa, aplicacionHistoricaId]);
+        await aislada.pool.query(`insert into aplicaciones_insumo_items(aplicacion_id,insumo_id,partida_insumo_id,cantidad_aplicada,dosis)
+          values($1,$2,$3,1,1)`, [aplicacionDudosa, insumoDudoso, partidaDudosa]);
+        await aislada.pool.query(`insert into eventos_trazabilidad(lote_id,actor_id,ubicacion_id,tipo_evento,timestamp_captura_local,timestamp_servidor,payload_especifico)
+          select r.lote_id,a.responsable_id,$2,'APLICACION_INSUMOS',now(),now(),jsonb_build_object('aplicacionId',a.id)
+          from aplicaciones_insumo a join actividades_realizadas r on r.id=a.actividad_realizada_id where a.id=$1`, [aplicacionDudosa, responsable]);
+        // Movimiento legado permitido antes de 0022: no conocemos qué egreso compensó.
+        await aislada.pool.query(`insert into movimientos_inventario(insumo_id,finca_id,partida_id,tipo_movimiento,cantidad,unidad_medida,fecha_movimiento,motivo,responsable_id,solicitud)
+          values($1,$2,$3,'REGULARIZACION_CORRECCION',1,'kg','2026-10-20','Regularización sin vínculo',$2,'{}')`, [insumoDudoso, responsable, partidaDudosa]);
+      }
     }
     servidor = crearServidorProduccion({ connectionString: scoped.toString(), logger: false }); await servidor.app.ready();
     admin = await autenticarOperadorPrueba(aislada.pool, servidor.app, { sub: randomUUID(), nombre: 'Admin', apellido: 'Histórico', email: 'admin-upgrade@example.test' });
@@ -91,5 +110,15 @@ describe.skipIf(!url)('AGRUL-055: cadena SQL desde cero y actualización de part
       items: [expect.objectContaining({ cantidadAplicada: '1.00', movimientoId: null })] });
     expect((await aislada!.pool.query('select solicitud from aplicaciones_insumo where id=$1', [aplicacionHistoricaId])).rows[0].solicitud).toBeNull();
     expect((await aislada!.pool.query('select cantidad_disponible from partidas_insumo where id=$1', [partidaId])).rows[0].cantidad_disponible).toBe('5.00');
+  });
+  it('exige conciliación explícita si una regularización histórica podría haber devuelto ya el consumo', async () => {
+    const { rows } = await aislada!.pool.query<{ actividad_realizada_id: string }>('select actividad_realizada_id from aplicaciones_insumo where id=$1', [aplicacionDudosa]);
+    const res = await servidor!.app.inject({ method: 'POST', url: `/api/v1/aplicaciones-insumos/${aplicacionDudosa}/correcciones`, headers: admin,
+      payload: { operacionId: randomUUID(), motivoCorreccion: 'Intento sobre saldo no verificable', nuevaAplicacion: {
+        actividadRealizadaId: rows[0].actividad_realizada_id, superficieTratada: 1, metodoAplicacion: 'Manual', motivoAplicacion: 'Prueba',
+        items: [{ insumoId: insumoDudoso, cantidad: 1, unidadMedida: 'kg', dosis: 1 }] } } });
+    expect(res.statusCode).toBe(422); expect(res.json().error.code).toBe('CONCILIACION_INVENTARIO_REQUERIDA');
+    expect((await aislada!.pool.query('select cantidad_disponible from partidas_insumo where id=$1', [partidaDudosa])).rows[0].cantidad_disponible).toBe('10.00');
+    expect((await aislada!.pool.query('select id from correcciones_aplicaciones_insumo where aplicacion_anterior_id=$1', [aplicacionDudosa])).rows).toEqual([]);
   });
 });
