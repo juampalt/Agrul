@@ -1,9 +1,8 @@
 import { expect } from 'vitest';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
-import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { crearEsquemaPostgresAislado } from './esquema-postgres-aislado.fixture.js';
 import { DrizzleFincasRepository } from '../../src/infrastructure/database/repositories/drizzle-fincas.repository.js';
-import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth.service.js';
 import { Finca } from '../../src/core/domain/entities/finca.entity.js';
 import { autenticarOperadorPrueba } from './operador-postgres.fixture.js';
 
@@ -13,21 +12,26 @@ export let HEADERS_CICLOS = { authorization: '' };
 export const INEXISTENTE_CICLO = '00000000-0000-4000-8000-000000000058';
 
 export class CiclosPostgresFixture {
-  readonly conexion;
+  conexion!: ReturnType<typeof createDatabaseConnection>;
+  private aislado?: Awaited<ReturnType<typeof crearEsquemaPostgresAislado>>;
+  private estadoPublico: unknown;
+  connectionString = '';
   servidor!: ReturnType<typeof crearServidorProduccion>;
   loteId = '';
   plantacionId = '';
   cultivoId = '';
   variedadId = '';
-  constructor(readonly connectionString?: string) { this.conexion = createDatabaseConnection(connectionString); }
+  constructor(private readonly urlBase?: string) {}
   get app() { return this.servidor.app; }
   get datos() { return { plantacionId: this.plantacionId, nombreCodigo: 'CICLO-2026-A', fechaInicioPrevista: '2026-10-10',
     fechaFinPrevista: '2026-10-27', responsableSeguimientoId: USUARIO_CICLOS.sub, observaciones: null }; }
 
   async preparar() {
-    const { rows } = await this.conexion.pool.query<{ nombre: string }>('select current_database() as nombre');
-    if (rows[0]?.nombre !== 'agrul_test_agrul_052_etapa4') throw new Error('Esta suite solo puede modificar agrul_test_agrul_052_etapa4.');
-    await runMigrations(this.connectionString);
+    if (!this.urlBase) throw new Error('Se requiere conexión explícita.');
+    this.aislado = await crearEsquemaPostgresAislado(this.urlBase);
+    this.conexion = this.aislado.connection;
+    this.connectionString = this.aislado.connectionString;
+    this.estadoPublico = await this.snapshotPublico();
     await this.conexion.pool.query("insert into usuarios(id,nombre,apellido,email,password_hash,salt,perfil) values ($1,'Responsable','Prueba','responsable-ciclos@example.test','hash-exclusivo-fixture','salt-fixture','ENCARGADO') on conflict (id) do update set estado='ACTIVO'", [USUARIO_CICLOS.sub]);
     this.servidor = crearServidorProduccion({ connectionString: this.connectionString, logger: false });
     await this.app.ready();
@@ -59,5 +63,21 @@ export class CiclosPostgresFixture {
     return this.app.inject({ method: 'PATCH', url: `/api/v1/ciclos-productivos/${id}/finalizar`, headers: HEADERS_CICLOS, payload: { fechaFinEfectiva } });
   }
   async estadoLote() { return (await this.conexion.pool.query('select estado_territorial from lotes where id=$1', [this.loteId])).rows[0].estado_territorial; }
-  async cerrar() { await this.servidor?.app.close(); await this.conexion.pool.end(); }
+  private async snapshotPublico() {
+    const estados = [];
+    for (const tabla of ['actividades_programadas', 'ciclos_productivos', 'plantaciones', 'variedades', 'cultivos', 'lotes', 'fincas']) {
+      estados.push((await this.conexion.pool.query(`select md5(coalesce(jsonb_agg(to_jsonb(t) order by id)::text,'')) as estado from public.${tabla} t`)).rows);
+    }
+    return estados;
+  }
+  async restaurarOperador() {
+    await this.conexion.pool.query("update usuarios set perfil='ADMINISTRADOR',debe_cambiar_password=false where id=$1", [OPERADOR_CICLOS.sub]);
+    HEADERS_CICLOS = await autenticarOperadorPrueba(this.conexion.pool, this.app, OPERADOR_CICLOS);
+  }
+  async cerrar() {
+    try {
+      await this.servidor?.app.close();
+      if (this.aislado) expect(await this.snapshotPublico()).toEqual(this.estadoPublico);
+    } finally { await this.aislado?.cerrar(); }
+  }
 }

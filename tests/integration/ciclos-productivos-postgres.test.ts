@@ -4,10 +4,10 @@ import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth
 import { emitirSesionPrueba } from '../helpers/operador-postgres.fixture.js';
 import { CiclosPostgresFixture, HEADERS_CICLOS as headers, INEXISTENTE_CICLO as inexistente, USUARIO_CICLOS, OPERADOR_CICLOS } from '../helpers/ciclos-postgres.fixture.js';
 
-const connectionString = process.env.CICLOS_TEST_DATABASE_URL;
+const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
 describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreSQL reales', () => {
   const f = new CiclosPostgresFixture(connectionString);
-  beforeAll(async () => { await f.preparar(); });
+  beforeAll(async () => { await f.preparar(); }, 60000);
   beforeEach(async () => { await f.sembrar(); });
   afterAll(async () => { await f.cerrar(); });
   const registrar = (extra: object = {}) => f.app.inject({ method: 'POST', url: '/api/v1/ciclos-productivos', headers, payload: { ...f.datos, ...extra } });
@@ -54,7 +54,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
     expect(respuesta.statusCode).toBe(200);
     expect(respuesta.json().data).toMatchObject({ estado: 'ACTIVO', fechaInicioEfectiva: '2026-10-10', fechaInicioPrevista: '2026-10-10' });
     expect(await f.estadoLote()).toBe('EN_PRODUCCION');
-    const otra = crearServidorProduccion({ connectionString, logger: false });
+    const otra = crearServidorProduccion({ connectionString: f.connectionString, logger: false });
     try {
       expect((await otra.app.inject({ method: 'GET', url: `/api/v1/ciclos-productivos/${id}`, headers })).json().data.estado).toBe('ACTIVO');
     } finally { await otra.app.close(); }
@@ -64,7 +64,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
     const id = await f.crear();
     await f.iniciar(id);
     await f.conexion.pool.query("insert into actividades_programadas(ciclo_id,estado) values ($1,'PENDIENTE')", [id]);
-    const otra = crearServidorProduccion({ connectionString, logger: false });
+    const otra = crearServidorProduccion({ connectionString: f.connectionString, logger: false });
     try {
       const bloqueado = await otra.app.inject({ method: 'PATCH', url: `/api/v1/ciclos-productivos/${id}/finalizar`, headers,
         payload: { fechaFinEfectiva: '2026-10-27' } });
@@ -83,7 +83,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
   it('una actividad cancelada no bloquea el cierre ni permite reabrir pendientes después', async () => {
     const id = await f.crear();
     await f.iniciar(id);
-    await f.conexion.pool.query("insert into actividades_programadas(ciclo_id,estado) values ($1,'CANCELADA')", [id]);
+    await f.conexion.pool.query("insert into actividades_programadas(ciclo_id,estado,motivo_cancelacion) values ($1,'CANCELADA','Cancelación del fixture de cierre')", [id]);
     expect((await f.finalizar(id)).statusCode).toBe(200);
     await expect(f.conexion.pool.query("insert into actividades_programadas(ciclo_id,estado) values ($1,'PENDIENTE')", [id]))
       .rejects.toMatchObject({ code: '23514' });
@@ -194,9 +194,12 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
   it('exige autenticación, rol Administrador y cambio de contraseña inicial', async () => {
     expect((await f.app.inject({ method: 'GET', url: '/api/v1/ciclos-productivos' })).statusCode).toBe(401);
     for (const perfil of ['ENCARGADO', 'ADMINISTRADOR'] as const) {
-      const token = await emitirSesionPrueba(f.conexion.pool, { ...OPERADOR_CICLOS, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
-      expect((await f.app.inject({ method: 'POST', url: '/api/v1/ciclos-productivos', payload: f.datos,
-        headers: { authorization: `Bearer ${token}` } })).statusCode).toBe(403);
+      try {
+        await f.conexion.pool.query('update usuarios set perfil=$1,debe_cambiar_password=$2 where id=$3', [perfil, perfil === 'ADMINISTRADOR', OPERADOR_CICLOS.sub]);
+        const token = await emitirSesionPrueba(f.conexion.pool, { ...OPERADOR_CICLOS, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
+        expect((await f.app.inject({ method: 'POST', url: '/api/v1/ciclos-productivos', payload: f.datos,
+          headers: { authorization: `Bearer ${token}` } })).statusCode).toBe(403);
+      } finally { await f.restaurarOperador(); }
     }
   });
   it('SQL mantiene las referencias históricas y restringe estados inconsistentes', async () => {
@@ -234,7 +237,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
         password: 'PruebaSegura123!', perfil: 'ENCARGADO_CAMPO' } });
     expect(creado.statusCode).toBe(201);
     const responsableId = creado.json().data.id;
-    const otra = crearServidorProduccion({ connectionString, logger: false });
+    const otra = crearServidorProduccion({ connectionString: f.connectionString, logger: false });
     try {
       const login = await otra.app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email, password: 'PruebaSegura123!' } });
       expect(login.statusCode).toBe(200);

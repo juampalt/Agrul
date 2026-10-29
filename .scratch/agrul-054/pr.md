@@ -35,7 +35,9 @@ Validación territorial posterior: las siete pruebas antiguas se ejecutan en un 
 
 Validación posterior de cultivos y variedades: ambas suites usan esquemas temporales de la misma base y verifican la conservación de datos compartidos. Los casos negativos preparan el usuario persistido y restauran su sesión. Pasaron **186 pruebas en dieciséis archivos, incluidas 159 PostgreSQL**, sin omisiones; lint y build aprobados. Las 46 omisiones de estas suites quedan resueltas. Detalle: `.scratch/agrul-054/cultivos-variedades-base-autorizada.md`.
 
-**Pendiente de aceptación:** el criterio de la issue «100% de tests unitarios y de integración pasando en verde» todavía no está acreditado. Siguen pendientes 183 pruebas omitidas de siete suites (plantaciones, ciclos y cinco de seguridad de usuarios) de la corrida global original. Este PR permanece en borrador. No se repitió toda la suite global ni se utilizaron bases ajenas a la autorizada.
+Validación posterior de plantaciones y ciclos: las 64 pruebas pendientes se ejecutan en esquemas temporales de la misma base, incluidas las instancias adicionales del servidor. Los fixtures preservan las tablas compartidas, preparan permisos persistidos y registran motivo en cancelaciones nuevas. Pasaron **294 pruebas en veintiún archivos, incluidas 223 PostgreSQL**, sin omisiones; lint y build aprobados. Detalle: `.scratch/agrul-054/plantaciones-ciclos-base-autorizada.md`.
+
+**Pendiente de aceptación:** el criterio de la issue «100% de tests unitarios y de integración pasando en verde» todavía no está acreditado. Siguen pendientes 119 pruebas omitidas de cinco suites de seguridad de usuarios (login, registro, consulta, modificación y sesiones) de la corrida global original. Este PR permanece en borrador. No se repitió toda la suite global ni se utilizaron bases ajenas a la autorizada.
 
 ## Merge Danger
 

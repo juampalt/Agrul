@@ -2,36 +2,44 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
-import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { crearEsquemaPostgresAislado } from '../helpers/esquema-postgres-aislado.fixture.js';
 import { autenticarOperadorPrueba, emitirSesionPrueba } from '../helpers/operador-postgres.fixture.js';
-import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth.service.js';
 import { Finca } from '../../src/core/domain/entities/finca.entity.js';
 import { DrizzleFincasRepository } from '../../src/infrastructure/database/repositories/drizzle-fincas.repository.js';
 
-const connectionString = process.env.PLANTACIONES_TEST_DATABASE_URL;
+const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
 const usuario = { sub: 'a0000000-0000-4000-8000-000000000054', email: 'admin@example.test', nombre: 'Admin', apellido: 'Prueba', fincas: [] };
 let headers = { authorization: '' };
 const inexistente = '00000000-0000-4000-8000-000000000054';
 const datos = { fechaPlantacion: '2026-10-01', superficieHa: 4, cantidadInicialPlantas: 1000, procedencia: 'Vivero de prueba' };
 
 describe.skipIf(!connectionString)('AGRUL-052 CU15-CU17 con bootstrap y PostgreSQL reales', () => {
-  const connection = createDatabaseConnection(connectionString);
+  let aislado: Awaited<ReturnType<typeof crearEsquemaPostgresAislado>> | undefined;
+  let connection: ReturnType<typeof createDatabaseConnection>;
   let app: FastifyInstance;
   let loteId: string;
   let cultivoId: string;
   let variedadId: string;
+  let estadoPublico: unknown;
+  const snapshotPublico = async () => (await connection.pool.query(`select
+    md5(coalesce((select jsonb_agg(to_jsonb(p) order by id)::text from public.plantaciones p),'')) as plantaciones,
+    md5(coalesce((select jsonb_agg(to_jsonb(c) order by id)::text from public.cultivos c),'')) as cultivos,
+    md5(coalesce((select jsonb_agg(to_jsonb(v) order by id)::text from public.variedades v),'')) as variedades,
+    md5(coalesce((select jsonb_agg(to_jsonb(l) order by id)::text from public.lotes l),'')) as lotes,
+    md5(coalesce((select jsonb_agg(to_jsonb(f) order by id)::text from public.fincas f),'')) as fincas`)).rows;
 
   beforeAll(async () => {
-    const { rows } = await connection.pool.query<{ nombre: string }>('select current_database() as nombre');
-    if (rows[0]?.nombre !== 'agrul_test_agrul_052_etapa3') throw new Error('Esta suite solo puede modificar agrul_test_agrul_052_etapa3.');
-    await runMigrations(connectionString);
-    app = crearServidorProduccion({ connectionString, logger: false }).app;
+    if (!connectionString) throw new Error('Se requiere conexión explícita.');
+    aislado = await crearEsquemaPostgresAislado(connectionString);
+    connection = aislado.connection;
+    estadoPublico = await snapshotPublico();
+    app = crearServidorProduccion({ connectionString: aislado.connectionString, logger: false }).app;
     await app.ready();
     headers = await autenticarOperadorPrueba(connection.pool, app, usuario);
-  });
+  }, 60000);
   beforeEach(async () => {
     for (const tabla of ['plantaciones', 'variedades', 'cultivos', 'lotes', 'fincas']) {
-      // Nombres constantes, únicamente en la base descartable verificada arriba.
+      // Nombres constantes; solo tablas del esquema propio, sin fallback a public.
       await connection.pool.query(`delete from ${tabla}`);
     }
     await new DrizzleFincasRepository(connection.db).guardar(Finca.crear({ id: inexistente, nombre: 'Finca de prueba',
@@ -40,7 +48,12 @@ describe.skipIf(!connectionString)('AGRUL-052 CU15-CU17 con bootstrap y PostgreS
     cultivoId = await alta('/cultivos', { nombre: 'Arándano', tipoCicloVida: 'PERENNE' });
     variedadId = await alta('/variedades', { cultivoId, nombre: 'Emerald' });
   });
-  afterAll(async () => { await app?.close(); await connection.pool.end(); });
+  afterAll(async () => {
+    try {
+      await app?.close();
+      if (aislado) expect(await snapshotPublico()).toEqual(estadoPublico);
+    } finally { await aislado?.cerrar(); }
+  });
 
   async function alta(ruta: string, payload: object) {
     const respuesta = await app.inject({ method: 'POST', url: `/api/v1${ruta}`, headers, payload });
@@ -122,7 +135,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU15-CU17 con bootstrap y PostgreS
     for (const [ruta, catalogoId] of [['cultivos', cultivoId], ['variedades', variedadId]]) {
       expect((await app.inject({ method: 'PATCH', url: `/api/v1/${ruta}/${catalogoId}/desactivar`, headers })).statusCode).toBe(200);
     }
-    const otra = crearServidorProduccion({ connectionString, logger: false }).app;
+    const otra = crearServidorProduccion({ connectionString: aislado!.connectionString, logger: false }).app;
     try {
       const consulta = await otra.inject({ method: 'GET', url: `/api/v1/plantaciones/${id}`, headers });
       expect(consulta.statusCode).toBe(200);
@@ -183,9 +196,15 @@ describe.skipIf(!connectionString)('AGRUL-052 CU15-CU17 con bootstrap y PostgreS
   it('exige autenticación y permisos y bloquea el borrado físico', async () => {
     expect((await app.inject({ method: 'GET', url: '/api/v1/plantaciones' })).statusCode).toBe(401);
     for (const perfil of ['ENCARGADO', 'ADMINISTRADOR'] as const) {
-      const token = await emitirSesionPrueba(connection.pool, { ...usuario, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
-      expect((await app.inject({ method: 'POST', url: '/api/v1/plantaciones', payload: { ...datos, loteId, cultivoId, variedadId },
-        headers: { authorization: `Bearer ${token}` } })).statusCode).toBe(403);
+      try {
+        await connection.pool.query('update usuarios set perfil=$1,debe_cambiar_password=$2 where id=$3', [perfil, perfil === 'ADMINISTRADOR', usuario.sub]);
+        const token = await emitirSesionPrueba(connection.pool, { ...usuario, perfil, debeCambiarPassword: perfil === 'ADMINISTRADOR' });
+        expect((await app.inject({ method: 'POST', url: '/api/v1/plantaciones', payload: { ...datos, loteId, cultivoId, variedadId },
+          headers: { authorization: `Bearer ${token}` } })).statusCode).toBe(403);
+      } finally {
+        await connection.pool.query("update usuarios set perfil='ADMINISTRADOR',debe_cambiar_password=false where id=$1", [usuario.sub]);
+        headers = await autenticarOperadorPrueba(connection.pool, app, usuario);
+      }
     }
     const id = (await registrar()).json().data.id;
     expect((await app.inject({ method: 'DELETE', url: `/api/v1/plantaciones/${id}`, headers })).statusCode).toBe(405);
