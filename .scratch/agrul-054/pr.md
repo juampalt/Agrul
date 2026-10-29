@@ -29,7 +29,9 @@ Ejecución global posterior sobre ec552d8: **982 pruebas aprobadas, 244 omitidas
 
 Consolidación posterior del catálogo: CU22–CU25 usa la misma base autorizada mediante ACTIVIDADES_TEST_DATABASE_URL; la limpieza solo elimina fixtures propios. Pasaron **109 pruebas en nueve archivos, sin omisiones**, incluidas ocho PostgreSQL de catálogo (las siete anteriores y una nueva de conservación de datos), las demás suites PostgreSQL del módulo y cinco unitarias del catálogo. Lint y build aprobados. Detalle: `.scratch/agrul-054/consolidacion-base-pruebas.md`. No se borraron bases antiguas.
 
-**Pendiente de aceptación:** el criterio de la issue «100% de tests unitarios y de integración pasando en verde» todavía no está acreditado. Las siete omisiones de catálogo ya tienen validación específica, pero siguen pendientes las otras 237 pruebas omitidas de otros módulos/inmutabilidad de la corrida global anterior. Este PR permanece en borrador. No se repitió toda la suite global ni se utilizaron bases ajenas a la autorizada.
+Validación posterior de inmutabilidad: la prueba PostgreSQL usa la misma base autorizada, verifica el rechazo de UPDATE/DELETE y la conservación del evento, y revierte sus datos por transacción. Pasaron **110 pruebas en nueve archivos, sin omisiones**, incluidas 105 PostgreSQL y cinco estáticas de migraciones; lint y build aprobados. Detalle: `.scratch/agrul-054/inmutabilidad-base-autorizada.md`.
+
+**Pendiente de aceptación:** el criterio de la issue «100% de tests unitarios y de integración pasando en verde» todavía no está acreditado. Las siete omisiones de catálogo y la de inmutabilidad ya tienen validación específica, pero siguen pendientes las otras 236 pruebas omitidas de diez suites de otros módulos en la corrida global anterior. Este PR permanece en borrador. No se repitió toda la suite global ni se utilizaron bases ajenas a la autorizada.
 
 ## Merge Danger
 
