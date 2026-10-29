@@ -1,9 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { FastifyInstance } from 'fastify';
+import { randomUUID } from 'node:crypto';
 import { buildApp } from '../../src/infrastructure/http/app.js';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
-import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { crearEsquemaPostgresAislado } from '../helpers/esquema-postgres-aislado.fixture.js';
+import { autenticarOperadorPrueba } from '../helpers/operador-postgres.fixture.js';
 import { DrizzleFincasRepository } from '../../src/infrastructure/database/repositories/drizzle-fincas.repository.js';
 import { DrizzleLotesTerritorialesRepository } from '../../src/infrastructure/database/repositories/drizzle-lotes-territoriales.repository.js';
 import { Finca } from '../../src/core/domain/entities/finca.entity.js';
@@ -12,20 +14,31 @@ import { InMemoryEventosRepository } from '../mocks/in-memory-eventos.repository
 import { InMemoryGenealogiaRepository } from '../mocks/in-memory-genealogia.repository.js';
 import { InMemoryCiclosRepository } from '../mocks/in-memory-ciclos.repository.js';
 
-const connectionString = process.env.TEST_DATABASE_URL;
+const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
+if (connectionString && connectionString !== 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054') {
+  throw new Error('Territorio solo admite la base descartable autorizada, con rol exclusivo y sin contraseña en URL.');
+}
 const FINCA_ID = 'f0000000-0000-4000-8000-000000000151';
 
 describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)', () => {
-  const connection = createDatabaseConnection(connectionString);
-  const fincas = new DrizzleFincasRepository(connection.db);
-  const lotes = new DrizzleLotesTerritorialesRepository(connection.db);
+  let aislado: Awaited<ReturnType<typeof crearEsquemaPostgresAislado>> | undefined;
+  let connection: ReturnType<typeof createDatabaseConnection>;
+  let fincas: DrizzleFincasRepository;
+  let lotes: DrizzleLotesTerritorialesRepository;
   const ciclos = new InMemoryCiclosRepository();
   let app: FastifyInstance;
+  let estadoPublico: unknown;
+  const snapshotPublico = async () => (await connection.pool.query(`select
+    md5(coalesce((select jsonb_agg(to_jsonb(f) order by id)::text from public.fincas f),'')) as fincas,
+    md5(coalesce((select jsonb_agg(to_jsonb(l) order by id)::text from public.lotes l),'')) as lotes`)).rows;
 
   beforeAll(async () => {
-    const { rows } = await connection.pool.query<{ current_database: string }>('select current_database()');
-    expect(rows[0]?.current_database).toBe('agrul_test_agrul_0511');
-    await runMigrations(connectionString);
+    if (!connectionString) throw new Error('Se requiere conexión explícita.');
+    aislado = await crearEsquemaPostgresAislado(connectionString);
+    connection = aislado.connection;
+    fincas = new DrizzleFincasRepository(connection.db);
+    lotes = new DrizzleLotesTerritorialesRepository(connection.db);
+    estadoPublico = await snapshotPublico();
 
     app = buildApp({
       fincasRepo: fincas,
@@ -36,9 +49,10 @@ describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)',
       logger: false,
     });
     await app.ready();
-  });
+  }, 60000);
 
   beforeEach(async () => {
+    // Solo tablas del esquema temporal; la conexión no tiene fallback a public.
     await connection.pool.query('delete from lotes');
     await connection.pool.query('delete from fincas');
     await fincas.guardar(Finca.crear({
@@ -53,8 +67,10 @@ describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)',
   });
 
   afterAll(async () => {
-    await app?.close();
-    await connection.pool.end();
+    try {
+      await app?.close();
+      if (aislado) expect(await snapshotPublico()).toEqual(estadoPublico);
+    } finally { await aislado?.cerrar(); }
   });
 
   async function registrar(codigo: string, nombre: string, superficieHa: number, estado = 'DISPONIBLE') {
@@ -137,11 +153,26 @@ describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)',
   });
 
   it('el bootstrap real usa los repositorios Drizzle sobre la base de prueba', async () => {
-    const production = crearServidorProduccion({ connectionString, logger: false });
-    await production.app.ready();
-    const response = await production.app.inject({ method: 'GET', url: '/api/v1/finca' });
-    expect(response.statusCode).toBe(200);
-    expect(response.json().data.id).toBe(FINCA_ID);
-    await production.app.close();
+    if (!aislado) throw new Error('Falta el esquema temporal.');
+    const production = crearServidorProduccion({ connectionString: aislado.connectionString, logger: false });
+    try {
+      await production.app.ready();
+      const headers = await autenticarOperadorPrueba(connection.pool, production.app, {
+        sub: randomUUID(), email: `territorio-${randomUUID()}@example.test`, nombre: 'Prueba', apellido: 'Territorio',
+      });
+      const response = await production.app.inject({ method: 'GET', url: '/api/v1/finca', headers });
+      expect(response.statusCode).toBe(200);
+      expect(response.json().data.id).toBe(FINCA_ID);
+    } finally { await production.app.close(); }
+  });
+
+  it('mantiene las claves foráneas dentro del esquema propio y conserva public', async () => {
+    const { rows } = await connection.pool.query(`select destino.relnamespace::regnamespace::text as esquema
+      from pg_constraint c join pg_class origen on origen.oid=c.conrelid
+      join pg_class destino on destino.oid=c.confrelid
+      where c.contype='f' and origen.relnamespace=current_schema()::regnamespace`);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every(fila => fila.esquema === aislado?.esquema)).toBe(true);
+    expect(await snapshotPublico()).toEqual(estadoPublico);
   });
 });

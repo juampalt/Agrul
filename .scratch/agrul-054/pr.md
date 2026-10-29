@@ -31,7 +31,9 @@ Consolidación posterior del catálogo: CU22–CU25 usa la misma base autorizada
 
 Validación posterior de inmutabilidad: la prueba PostgreSQL usa la misma base autorizada, verifica el rechazo de UPDATE/DELETE y la conservación del evento, y revierte sus datos por transacción. Pasaron **110 pruebas en nueve archivos, sin omisiones**, incluidas 105 PostgreSQL y cinco estáticas de migraciones; lint y build aprobados. Detalle: `.scratch/agrul-054/inmutabilidad-base-autorizada.md`.
 
-**Pendiente de aceptación:** el criterio de la issue «100% de tests unitarios y de integración pasando en verde» todavía no está acreditado. Las siete omisiones de catálogo y la de inmutabilidad ya tienen validación específica, pero siguen pendientes las otras 236 pruebas omitidas de diez suites de otros módulos en la corrida global anterior. Este PR permanece en borrador. No se repitió toda la suite global ni se utilizaron bases ajenas a la autorizada.
+Validación territorial posterior: las siete pruebas antiguas se ejecutan en un esquema temporal de la misma base autorizada, con DDL real, FK locales y sin fallback a public. Se agrega una prueba de aislamiento y cuatro de rechazo de destinos no autorizados. Pasaron **129 pruebas en doce archivos, incluidas 113 PostgreSQL**, sin omisiones; lint y build aprobados. Se conservan las filas compartidas y se elimina únicamente el esquema temporal. Detalle: `.scratch/agrul-054/territorio-base-autorizada.md`.
+
+**Pendiente de aceptación:** el criterio de la issue «100% de tests unitarios y de integración pasando en verde» todavía no está acreditado. Las omisiones de catálogo, inmutabilidad y territorio ya tienen validación específica, pero siguen pendientes las otras 229 pruebas omitidas de nueve suites de otros módulos en la corrida global anterior. Este PR permanece en borrador. No se repitió toda la suite global ni se utilizaron bases ajenas a la autorizada.
 
 ## Merge Danger
 
