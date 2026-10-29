@@ -25,7 +25,9 @@ Reutiliza actividades_programadas, integra los repositorios Drizzle en el bootst
 - PostgreSQL se ejecutó exclusivamente sobre agrul_test_agrul_054, en PostgreSQL 18, con agrul_test_user sin privilegios administrativos.
 - Detalle y límites: informes .scratch/agrul-054/correccion-{s1,p1,p2,s2,p3}.md y cierre-validacion.md.
 
-**Pendiente de aceptación:** no se ejecutó la suite global completa. El criterio de la issue «100% de tests unitarios y de integración pasando en verde» todavía no está acreditado. Este PR permanece en borrador hasta completar esa validación con aislamiento seguro de PostgreSQL. No se repitieron suites sin cambios posteriores.
+Ejecución global posterior sobre ec552d8: **982 pruebas aprobadas, 244 omitidas, 0 fallos**, en 114 archivos (103 aprobados y 11 omitidos completamente). Se habilitó PostgreSQL solo para siete suites autorizadas; las suites que exigen bases antiguas quedaron omitidas. El detalle exacto figura en `.scratch/agrul-054/validacion-global.md`.
+
+**Pendiente de aceptación:** el criterio de la issue «100% de tests unitarios y de integración pasando en verde» todavía no está acreditado por las 244 omisiones. Este PR permanece en borrador. El próximo bloque acotado es adaptar las siete pruebas CU22–CU25 a la base autorizada y una limpieza limitada a sus fixtures; después quedan las suites PostgreSQL de otros módulos y la prueba real de inmutabilidad. No se utilizaron bases ajenas a la autorizada.
 
 ## Merge Danger
 
