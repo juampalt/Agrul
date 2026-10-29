@@ -43,6 +43,7 @@ En Agrul, los tests son la salvaguarda de cumplimiento normativo. Verifican mate
 ## 5. DOs and DON'Ts
 
 ### DO
+- **DO:** Al compartir una base descartable entre suites, derivar los campos únicos del identificador completo del fixture respetando el largo de la columna; limpiar solo filas propias. Ejecutar juntas las suites consumidoras para detectar colisiones y adaptar los datos nuevos a los CHECK vigentes sin relajar restricciones históricas.
 - **DO:** Usar **Vitest** como runner oficial de pruebas para máxima velocidad con TypeScript.
 - **DO:** Correr las pruebas de integración en transacciones aisladas o con base de datos limpia para evitar contaminación entre tests.
 - **DO:** Validar que los errores de negocio arrojen instancias de `DomainError` tipadas.
