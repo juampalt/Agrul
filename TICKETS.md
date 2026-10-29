@@ -1070,7 +1070,9 @@
 
 ### `[AGRUL-054]` Módulo 3: Actividades Agrícolas y Monitoreos (CU22 - CU33)
 - **GitHub Issue:** [#48](https://github.com/juampalt/Agrul/issues/48)
-- **Estado:** `TODO` 📌
+- **Estado:** `EN_REVISIÓN`
+- **Pull Request:** [#57](https://github.com/juampalt/Agrul/pull/57), sin merge ni cierre de la issue.
+- **Validación:** 1232 pruebas aprobadas en 115 archivos, sin fallos ni omisiones; incluye 342 PostgreSQL en la base descartable autorizada. Lint y build aprobados. Detalle: `.scratch/agrul-054/validacion-final.md`.
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulo 3: Actividades
 - **Casos de Uso:** CU22 a CU33

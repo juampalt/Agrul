@@ -1,14 +1,13 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { UsuariosCu62Fixture, FINCA_CU62, INEXISTENTE_CU62, SISTEMA_CU62, USUARIO_CU62 } from '../helpers/usuarios-cu62.fixture.js';
 
-const connectionString = process.env.MODIFICACION_TEST_DATABASE_URL;
+const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
 
 describe.skipIf(!connectionString)('AGRUL-053 CU62: modificación y auditoría transaccionales en PostgreSQL', () => {
   const f = new UsuariosCu62Fixture(connectionString);
-  beforeAll(async () => { await f.preparar(); });
-  beforeEach(async () => { await f.sembrar(); });
-  afterAll(async () => { await f.cerrar(); });
+  beforeEach(async () => { await f.preparar(); await f.sembrar(); }, 60000);
+  afterEach(async () => { await f.cerrar(); });
 
   it('persiste los datos, rol, estado y fincas junto con los deltas, fecha y responsable real', async () => {
     const res = await f.modificar({ nombre: ' Ana María ', apellido: ' Pérez ', nombreUsuario: ' ANA.NUEVA ',
@@ -45,7 +44,7 @@ describe.skipIf(!connectionString)('AGRUL-053 CU62: modificación y auditoría t
 
   it('conserva las asignaciones y el historial al abrir otra instancia y desasigna sin borrar el vínculo', async () => {
     expect((await f.modificar({ fincaIds: [FINCA_CU62, FINCA_CU62] })).statusCode).toBe(200);
-    const otra = crearServidorProduccion({ connectionString, logger: false });
+    const otra = crearServidorProduccion({ connectionString: f.connectionString, logger: false });
     try {
       const res = await otra.app.inject({ url: `/api/v1/usuarios/${USUARIO_CU62}`, headers: { authorization: `Bearer ${f.token}` } });
       expect(res.json().data.fincasAsignadas).toEqual([FINCA_CU62]);

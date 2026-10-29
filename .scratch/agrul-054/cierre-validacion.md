@@ -1,41 +1,31 @@
-# AGRUL-054 — Contraste de aceptación y preparación de PR
+# AGRUL-054 — Criterios de aceptación verificados
 
-Fuente: issue #48 de juampalt/Agrul, consultada mediante API de GitHub el
-2026-10-28. La issue continúa abierta. Contraste con HEAD b65d2d9.
+Fecha: 2026-10-29. Fuente: issue #48 de juampalt/Agrul, verificada mediante API
+de GitHub. PR #57 hacia main desde feat/agrul-054-actividades-monitoreos.
 
-| Criterio de GitHub | Evidencia | Estado |
+| Criterio de GitHub | Evidencia | Resultado |
 | --- | --- | --- |
-| RN-10: labores planificadas o directas | ejecutar-programada-postgres.test.ts: ejecución desde programación y registro NO_PROGRAMADA | Cubierto por pruebas específicas |
-| RN-11: lote, ciclo activo, fecha no futura y responsable | Misma suite: rechazos de ciclos no activos, fechas fuera de ciclo/futuras y responsables inválidos | Cubierto por pruebas específicas |
-| RN-12: historial y motivo de cancelación | actividades-programadas-postgres.test.ts, actividades-historicas-postgres.test.ts y rn09-pendientes-postgres.test.ts | Cubierto; históricos sin motivo se conservan, altas nuevas lo exigen |
-| RN-13: recomendaciones sin aplicaciones ni actividades ficticias | monitoreos-postgres.test.ts: inspecciones desacopladas | Cubierto por pruebas específicas |
-| 100% de tests unitarios e integración en verde | Ejecución global posterior: 982 aprobadas, 244 omitidas, 0 fallos; detalle en validacion-global.md | Pendiente por las omisiones PostgreSQL |
+| RN-10: labores planificadas o directas | ejecutar-programada-postgres.test.ts: ejecución transaccional y registro NO_PROGRAMADA | Aprobado |
+| RN-11: lote, ciclo activo, fecha no futura y responsable | Misma suite: vínculos, rechazos de estados, fechas y responsables inválidos | Aprobado |
+| RN-12: historial y motivo de cancelación | Programación, históricos y RN-09; nuevas cancelaciones justificadas, nulos históricos conservados | Aprobado |
+| RN-13: recomendaciones sin aplicaciones ni actividades ficticias | monitoreos-postgres.test.ts: inspecciones desacopladas | Aprobado |
+| 100% de tests unitarios e integración en verde | Corrida global: 1232 aprobadas en 115 archivos, 0 fallos, 0 omisiones, 0 pendientes | Aprobado |
 
-Se verificaron las tareas técnicas de la issue: catálogo CU22–CU25, programación
-CU26–CU29, labores CU30/CU31, monitoreos CU32/CU33, puertos/repositores y endpoints
-integrados en bootstrap. Se reutiliza la tabla actividades_programadas.
+Lint y build aprobados. Las 342 pruebas PostgreSQL se ejecutaron exclusivamente
+en agrul_test_agrul_054 como agrul_test_user en PostgreSQL 18; las otras 890 no
+requieren conexión real. No se utilizaron las bases antiguas ni PostgreSQL 17.
+Verificación posterior: cero esquemas temporales de las suites remanentes.
 
-Los cinco hallazgos S1/P1/P2/S2/P3 tienen correcciones publicadas y una revisión
-estática posterior sin bloqueantes nuevos identificados. Esa revisión no reemplaza
-la ejecución de la suite global ni certifica componentes ajenos al alcance revisado.
+Los cinco hallazgos de auditoría S1/P1/P2/S2/P3 tienen correcciones publicadas.
+Se verificaron catálogo CU22–CU25, programación CU26–CU29, labores CU30/CU31,
+monitoreos CU32/CU33 y su bootstrap real. Las antiguas 244 omisiones quedan
+resueltas; los informes de bloques previos se conservan como registro histórico.
 
-La evidencia del catálogo CU22–CU25 proviene del trabajo previo de Gemini; no se
-repitieron esas pruebas en este bloque ni se conecta su antigua base de pruebas.
-El informe local etapa1.md se conserva fuera de Git por ser un cambio preexistente.
+El detalle de la ejecución final está en validacion-final.md. No se modificó
+código después de esa ejecución: los últimos cambios son documentación.
 
-El bloque original solo agregó documentación de aceptación y el cuerpo del PR. No cambió
-código, migraciones ni datos. Se conservan los resultados previos de lint y build;
-no se ejecutan pruebas nuevas por estos archivos Markdown.
+## Pendiente de decisión humana
 
-## Pendiente para salir de borrador
-
-1. Continuar la adaptación de las suites de otros módulos identificadas en
-   validacion-global.md. El catálogo CU22–CU25 ya se adaptó y validó en
-   consolidacion-base-pruebas.md, sin limpiar datos de otras suites.
-2. Completar las pruebas omitidas exclusivamente en la base descartable autorizada;
-   registrar resultados sin declarar aprobadas pruebas no ejecutadas.
-3. Revisión humana y autorización expresa antes de merge o cierre de la issue.
-
-No se modifica TICKETS.md a completado mientras siga pendiente el criterio global.
-La creación del borrador no autoriza despliegue ni cambios de producción.
-Se detiene el trabajo al finalizar este bloque para revisión manual del cupo.
+Revisión del PR y autorización de merge. La validación técnica está completa;
+no se realiza merge, despliegue ni cierre de #48. TICKETS.md queda en revisión,
+no completado. Se detiene el trabajo para revisión del cupo.
