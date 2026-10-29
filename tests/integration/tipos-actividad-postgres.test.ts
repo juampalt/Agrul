@@ -1,23 +1,29 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { FastifyInstance } from 'fastify';
+import { randomUUID } from 'node:crypto';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
 import { runMigrations } from '../../src/infrastructure/database/migrate.js';
 import { autenticarOperadorPrueba } from '../helpers/operador-postgres.fixture.js';
 
-const connectionString = process.env.TIPOS_ACTIVIDAD_TEST_DATABASE_URL;
+const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
+if (connectionString && connectionString !== 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054') {
+  throw new Error('El catÃ¡logo solo admite la base descartable autorizada con el rol exclusivo y sin contraseÃ±a en URL.');
+}
+const marca = Buffer.from(randomUUID().replaceAll('-', ''), 'hex').toString('base64url');
+const nombrePrueba = (nombre: string) => `${nombre.trim().slice(0, 17)} ${marca}`;
 
 const usuarioAdmin = {
-  sub: 'a0000000-0000-4000-8000-000000000054',
-  email: 'admin.actividades@example.test',
+  sub: randomUUID(),
+  email: `admin-${marca}@example.test`,
   nombre: 'Admin',
   apellido: 'Actividades',
   fincas: [],
 };
 
 const usuarioEncargado = {
-  sub: 'b0000000-0000-4000-8000-000000000054',
-  email: 'encargado.actividades@example.test',
+  sub: randomUUID(),
+  email: `encargado-${marca}@example.test`,
   nombre: 'Encargado',
   apellido: 'Campo',
   perfil: 'ENCARGADO_CAMPO',
@@ -31,41 +37,44 @@ describe.skipIf(!connectionString)('AGRUL-054 CU22-CU25: Tipos de Actividad AgrÃ
   const connection = createDatabaseConnection(connectionString);
   let app: FastifyInstance;
   let cultivoArandanoId: string;
+  const tiposCreados: string[] = [];
+  async function limpiarTiposPropios() {
+    if (!tiposCreados.length) return;
+    await connection.pool.query('delete from tipos_actividad_cultivos where tipo_actividad_id=ANY($1::uuid[])', [tiposCreados]);
+    await connection.pool.query('delete from tipos_actividad where id=ANY($1::uuid[])', [tiposCreados]);
+    tiposCreados.length = 0;
+  }
 
   beforeAll(async () => {
-    const { rows } = await connection.pool.query<{ nombre: string }>('select current_database() as nombre');
-    if (rows[0]?.nombre !== 'agrul_test_agrul_054_etapa1') {
-      throw new Error('Esta suite solo puede modificar agrul_test_agrul_054_etapa1.');
-    }
+    const { rows } = await connection.pool.query("select current_database() as db,current_user as usuario,current_setting('server_version_num')::int as version,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls from pg_roles where rolname=current_user");
+    expect(rows[0]).toMatchObject({ db: 'agrul_test_agrul_054', usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+    expect(rows[0].version).toBeGreaterThanOrEqual(180000);
+    expect(rows[0].version).toBeLessThan(190000);
     await runMigrations(connectionString);
     app = crearServidorProduccion({ connectionString, logger: false }).app;
     await app.ready();
     headersAdmin = await autenticarOperadorPrueba(connection.pool, app, usuarioAdmin);
     headersEncargado = await autenticarOperadorPrueba(connection.pool, app, usuarioEncargado);
 
-    await connection.pool.query('delete from tipos_actividad_cultivos');
-    await connection.pool.query('delete from tipos_actividad');
-    await connection.pool.query('delete from cultivos');
-
     // Crear un cultivo previo para pruebas de vinculaciÃ³n N:M
     const resCultivo = await app.inject({
       method: 'POST',
       url: '/api/v1/cultivos',
       headers: headersAdmin,
-      payload: { nombre: 'ArÃ¡ndano Duke', tipoCicloVida: 'PERENNE', descripcion: 'Variedad Duke' },
+      payload: { nombre: nombrePrueba('ArÃ¡ndano Duke'), tipoCicloVida: 'PERENNE', descripcion: 'Variedad Duke' },
     });
     expect(resCultivo.statusCode).toBe(201);
     cultivoArandanoId = resCultivo.json().data.id;
   });
 
-  beforeEach(async () => {
-    await connection.pool.query('delete from tipos_actividad_cultivos');
-    await connection.pool.query('delete from tipos_actividad');
-  });
+  beforeEach(limpiarTiposPropios);
 
   afterAll(async () => {
-    await app?.close();
-    await connection.pool.end();
+    try {
+      await app?.close();
+      await limpiarTiposPropios();
+      if (cultivoArandanoId) await connection.pool.query('delete from cultivos where id=$1', [cultivoArandanoId]);
+    } finally { await connection.pool.end(); }
   });
 
   async function crearTipo(payload: {
@@ -78,8 +87,9 @@ describe.skipIf(!connectionString)('AGRUL-054 CU22-CU25: Tipos de Actividad AgrÃ
       method: 'POST',
       url: '/api/v1/tipos-actividad',
       headers: headersAdmin,
-      payload,
+      payload: { ...payload, nombre: ` ${nombrePrueba(payload.nombre)} ` },
     });
+    if (res.statusCode === 201) tiposCreados.push(res.json().data.id);
     return res;
   }
 
@@ -93,7 +103,7 @@ describe.skipIf(!connectionString)('AGRUL-054 CU22-CU25: Tipos de Actividad AgrÃ
 
     expect(res.statusCode).toBe(201);
     const data = res.json().data;
-    expect(data.nombre).toBe('Poda de FormaciÃ³n');
+    expect(data.nombre).toBe(nombrePrueba('Poda de FormaciÃ³n'));
     expect(data.categoria).toBe('MANTENIMIENTO');
     expect(data.estado).toBe('ACTIVA');
     expect(data.cultivoIds).toEqual([cultivoArandanoId]);
@@ -101,7 +111,7 @@ describe.skipIf(!connectionString)('AGRUL-054 CU22-CU25: Tipos de Actividad AgrÃ
     const { rows } = await connection.pool.query('select * from tipos_actividad where id = $1', [data.id]);
     expect(rows[0]).toMatchObject({
       id: data.id,
-      nombre: 'Poda de FormaciÃ³n',
+      nombre: nombrePrueba('Poda de FormaciÃ³n'),
       categoria: 'MANTENIMIENTO',
       estado: 'ACTIVA',
     });
@@ -143,6 +153,8 @@ describe.skipIf(!connectionString)('AGRUL-054 CU22-CU25: Tipos de Actividad AgrÃ
       nombre: 'Control Fitosanitario Mosca',
       categoria: 'CONTROL_SANITARIO',
     });
+    const otraCategoria = await crearTipo({ nombre: 'Riego de prueba', categoria: 'RIEGO', cultivoIds: [cultivoArandanoId] });
+    expect(otraCategoria.statusCode).toBe(201);
 
     const id1 = res1.json().data.id;
     const id2 = res2.json().data.id;
@@ -154,12 +166,12 @@ describe.skipIf(!connectionString)('AGRUL-054 CU22-CU25: Tipos de Actividad AgrÃ
       headers: headersEncargado, // Encargado puede consultar
     });
     expect(resConsultaId.statusCode).toBe(200);
-    expect(resConsultaId.json().data.nombre).toBe('FertilizaciÃ³n Foliar');
+    expect(resConsultaId.json().data.nombre).toBe(nombrePrueba('FertilizaciÃ³n Foliar'));
 
     // Listar filtrando por categorÃ­a
     const resFiltroCat = await app.inject({
       method: 'GET',
-      url: '/api/v1/tipos-actividad?categoria=FERTILIZACION',
+      url: `/api/v1/tipos-actividad?categoria=FERTILIZACION&cultivoId=${cultivoArandanoId}`,
       headers: headersEncargado,
     });
     expect(resFiltroCat.statusCode).toBe(200);
@@ -173,8 +185,18 @@ describe.skipIf(!connectionString)('AGRUL-054 CU22-CU25: Tipos de Actividad AgrÃ
       headers: headersEncargado,
     });
     expect(resFiltroCultivo.statusCode).toBe(200);
-    expect(resFiltroCultivo.json().data).toHaveLength(1);
-    expect(resFiltroCultivo.json().data[0].id).toBe(id1);
+    expect(resFiltroCultivo.json().data).toHaveLength(2);
+    expect(resFiltroCultivo.json().data.map((tipo: { id: string }) => tipo.id)).toEqual(expect.arrayContaining([id1, otraCategoria.json().data.id]));
+    expect(resFiltroCultivo.json().data.map((tipo: { id: string }) => tipo.id)).not.toContain(id2);
+  });
+
+  it('la limpieza elimina solo tipos propios y conserva los catÃ¡logos preexistentes', async () => {
+    const anteriores = await connection.pool.query('select row_to_json(t) as fila from tipos_actividad t order by id');
+    const creado = await crearTipo({ nombre: 'Temporal propio', categoria: 'OTRO', cultivoIds: [cultivoArandanoId] });
+    expect(creado.statusCode).toBe(201);
+    await limpiarTiposPropios();
+    expect((await connection.pool.query('select row_to_json(t) as fila from tipos_actividad t order by id')).rows).toEqual(anteriores.rows);
+    expect((await connection.pool.query('select * from tipos_actividad_cultivos where tipo_actividad_id=$1', [creado.json().data.id])).rows).toEqual([]);
   });
 
   it('CU24 modifica nombre, categorÃ­a y cultivos asociados', async () => {
@@ -189,7 +211,7 @@ describe.skipIf(!connectionString)('AGRUL-054 CU22-CU25: Tipos de Actividad AgrÃ
       url: `/api/v1/tipos-actividad/${id}`,
       headers: headersAdmin,
       payload: {
-        nombre: 'Siembra Directa',
+        nombre: nombrePrueba('Siembra Directa'),
         categoria: 'PLANTACION',
         descripcion: 'Siembra en camellÃ³n',
         cultivoIds: [cultivoArandanoId],
@@ -197,11 +219,11 @@ describe.skipIf(!connectionString)('AGRUL-054 CU22-CU25: Tipos de Actividad AgrÃ
     });
 
     expect(resModif.statusCode).toBe(200);
-    expect(resModif.json().data.nombre).toBe('Siembra Directa');
+    expect(resModif.json().data.nombre).toBe(nombrePrueba('Siembra Directa'));
     expect(resModif.json().data.cultivoIds).toEqual([cultivoArandanoId]);
 
     const { rows } = await connection.pool.query('select nombre from tipos_actividad where id = $1', [id]);
-    expect(rows[0].nombre).toBe('Siembra Directa');
+    expect(rows[0].nombre).toBe(nombrePrueba('Siembra Directa'));
   });
 
   it('CU25 desactiva lÃ³gicamente el tipo de actividad (RN-26)', async () => {

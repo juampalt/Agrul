@@ -29,8 +29,9 @@ no se ejecutan pruebas nuevas por estos archivos Markdown.
 
 ## Pendiente para salir de borrador
 
-1. Adaptar las suites identificadas en validacion-global.md a aislamiento seguro,
-   comenzando por el catálogo CU22–CU25, sin limpiar datos de otras suites.
+1. Continuar la adaptación de las suites de otros módulos identificadas en
+   validacion-global.md. El catálogo CU22–CU25 ya se adaptó y validó en
+   consolidacion-base-pruebas.md, sin limpiar datos de otras suites.
 2. Completar las pruebas omitidas exclusivamente en la base descartable autorizada;
    registrar resultados sin declarar aprobadas pruebas no ejecutadas.
 3. Revisión humana y autorización expresa antes de merge o cierre de la issue.

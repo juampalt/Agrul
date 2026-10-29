@@ -27,7 +27,9 @@ Reutiliza actividades_programadas, integra los repositorios Drizzle en el bootst
 
 Ejecución global posterior sobre ec552d8: **982 pruebas aprobadas, 244 omitidas, 0 fallos**, en 114 archivos (103 aprobados y 11 omitidos completamente). Se habilitó PostgreSQL solo para siete suites autorizadas; las suites que exigen bases antiguas quedaron omitidas. El detalle exacto figura en `.scratch/agrul-054/validacion-global.md`.
 
-**Pendiente de aceptación:** el criterio de la issue «100% de tests unitarios y de integración pasando en verde» todavía no está acreditado por las 244 omisiones. Este PR permanece en borrador. El próximo bloque acotado es adaptar las siete pruebas CU22–CU25 a la base autorizada y una limpieza limitada a sus fixtures; después quedan las suites PostgreSQL de otros módulos y la prueba real de inmutabilidad. No se utilizaron bases ajenas a la autorizada.
+Consolidación posterior del catálogo: CU22–CU25 usa la misma base autorizada mediante ACTIVIDADES_TEST_DATABASE_URL; la limpieza solo elimina fixtures propios. Pasaron **109 pruebas en nueve archivos, sin omisiones**, incluidas ocho PostgreSQL de catálogo (las siete anteriores y una nueva de conservación de datos), las demás suites PostgreSQL del módulo y cinco unitarias del catálogo. Lint y build aprobados. Detalle: `.scratch/agrul-054/consolidacion-base-pruebas.md`. No se borraron bases antiguas.
+
+**Pendiente de aceptación:** el criterio de la issue «100% de tests unitarios y de integración pasando en verde» todavía no está acreditado. Las siete omisiones de catálogo ya tienen validación específica, pero siguen pendientes las otras 237 pruebas omitidas de otros módulos/inmutabilidad de la corrida global anterior. Este PR permanece en borrador. No se repitió toda la suite global ni se utilizaron bases ajenas a la autorizada.
 
 ## Merge Danger
 
