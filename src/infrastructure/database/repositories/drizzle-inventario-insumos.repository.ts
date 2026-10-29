@@ -60,7 +60,7 @@ export class DrizzleInventarioInsumosRepository extends ConsultasInventario impl
     const [existente] = await tx.select().from(m).where(eq(m.id, id));
     if (!existente) return null;
     if (!isDeepStrictEqual(existente.solicitud, solicitud)) throw new OperacionInventarioDuplicadaError();
-    const { solicitud: _privada, ...salida } = existente;
+    const { solicitud: _privada, aplicacionItemId: _referencia, ...salida } = existente;
     return salida;
   }
   private async transaccion<T>(accion: (tx: AgrulTransaction) => Promise<T>): Promise<T> {

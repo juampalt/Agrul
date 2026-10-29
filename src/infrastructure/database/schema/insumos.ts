@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { check, date, foreignKey, index, numeric, pgTable, text, unique, uuid, varchar } from 'drizzle-orm/pg-core';
+import { check, date, foreignKey, index, jsonb, numeric, pgTable, text, timestamp, unique, uuid, varchar } from 'drizzle-orm/pg-core';
 import { CategoriaInsumoCanonico } from '../../../core/domain/entities/insumo.entity.js';
 import { actividadesRealizadasTable } from './actividades-realizadas.js';
 import { fincasTable, usuariosTable } from './tables.js';
@@ -47,6 +47,8 @@ export const partidasInsumoTable = pgTable('partidas_insumo', {
 
 export const aplicacionesInsumoTable = pgTable('aplicaciones_insumo', {
   id: uuid('id').defaultRandom().primaryKey(),
+  solicitud: jsonb('solicitud').$type<Record<string, unknown>>(),
+  registradoEn: timestamp('registrado_en', { withTimezone: true, mode: 'string' }),
   actividadRealizadaId: uuid('actividad_realizada_id').notNull().references(() => actividadesRealizadasTable.id, { onDelete: 'restrict' }),
   superficieTratada: numeric('superficie_tratada', { precision: 8, scale: 2 }).notNull(),
   metodoAplicacion: text('metodo_aplicacion').notNull(),

@@ -1,11 +1,12 @@
 import { sql } from 'drizzle-orm';
 import { check, date, foreignKey, index, jsonb, numeric, pgTable, text, uuid, varchar } from 'drizzle-orm/pg-core';
 import { TipoMovimientoInventario } from '../../../core/domain/entities/inventario-insumos.js';
-import { insumosTable, partidasInsumoTable } from './insumos.js';
+import { aplicacionesInsumoItemsTable, insumosTable, partidasInsumoTable } from './insumos.js';
 import { fincasTable, usuariosTable } from './tables.js';
 
 export const movimientosInventarioTable = pgTable('movimientos_inventario', {
   id: uuid('id').defaultRandom().primaryKey(),
+  aplicacionItemId: uuid('aplicacion_item_id').unique().references(() => aplicacionesInsumoItemsTable.id, { onDelete: 'restrict' }),
   insumoId: uuid('insumo_id').notNull().references(() => insumosTable.id, { onDelete: 'restrict' }),
   fincaId: uuid('finca_id').notNull().references(() => fincasTable.id, { onDelete: 'restrict' }),
   partidaId: uuid('partida_id'),

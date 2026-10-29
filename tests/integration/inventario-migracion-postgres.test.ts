@@ -6,6 +6,7 @@ import { createDatabaseConnection } from '../../src/infrastructure/database/conn
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { autenticarOperadorPrueba } from '../helpers/operador-postgres.fixture.js';
 import { URL_INSUMOS } from '../helpers/insumos-postgres.fixture.js';
+import { sembrarCiclosRn09 } from '../helpers/sembrar-ciclos-rn09.js';
 
 const url = process.env.INSUMOS_TEST_DATABASE_URL;
 if (url && url !== URL_INSUMOS) throw new Error('Destino de migración no autorizado.');
@@ -15,6 +16,7 @@ describe.skipIf(!url)('AGRUL-055: cadena SQL desde cero y actualización de part
   let servidor: ReturnType<typeof crearServidorProduccion> | undefined;
   const esquema = `agrul055_upgrade_${randomUUID().replaceAll('-', '')}`;
   const insumoId = randomUUID(); const partidaId = randomUUID();
+  const aplicacionHistoricaId = randomUUID();
   let admin = { authorization: '' }; let encargado = { authorization: '' };
   let historico: unknown; let publico: unknown;
   async function estadoPublico() {
@@ -44,6 +46,18 @@ describe.skipIf(!url)('AGRUL-055: cadena SQL desde cero y actualización de part
           values($1,$2,'2026-10-01',5,5,'Proveedor histórico')`, [partidaId, insumoId]);
         historico = (await aislada.pool.query('select row_to_json(p) as fila from partidas_insumo p where id=$1', [partidaId])).rows[0].fila;
       }
+      if (entrada.idx === 20) {
+        const ciclo = randomUUID(); const tipo = randomUUID(); const labor = randomUUID();
+        await sembrarCiclosRn09(aislada.pool, [ciclo]);
+        await aislada.pool.query("update ciclos_productivos set estado='ACTIVO',fecha_inicio_efectiva='2026-10-01' where id=$1", [ciclo]);
+        await aislada.pool.query("insert into tipos_actividad(id,nombre,categoria) values($1,'Histórico de aplicación','FERTILIZACION')", [tipo]);
+        await aislada.pool.query(`insert into actividades_realizadas(id,ciclo_id,lote_id,tipo_actividad_id,fecha_ejecucion,responsable_id,superficie_trabajada)
+          select $1,$2,p.lote_id,$3,'2026-10-15',c.responsable_seguimiento_id,1 from ciclos_productivos c join plantaciones p on p.id=c.plantacion_id where c.id=$2`, [labor, ciclo, tipo]);
+        await aislada.pool.query(`insert into aplicaciones_insumo(id,actividad_realizada_id,superficie_tratada,metodo_aplicacion,motivo_aplicacion,responsable_id)
+          select $1,id,1,'Manual','Histórico',responsable_id from actividades_realizadas where id=$2`, [aplicacionHistoricaId, labor]);
+        await aislada.pool.query(`insert into aplicaciones_insumo_items(aplicacion_id,insumo_id,partida_insumo_id,cantidad_aplicada,dosis)
+          values($1,$2,$3,1,1)`, [aplicacionHistoricaId, insumoId, partidaId]);
+      }
     }
     servidor = crearServidorProduccion({ connectionString: scoped.toString(), logger: false }); await servidor.app.ready();
     admin = await autenticarOperadorPrueba(aislada.pool, servidor.app, { sub: randomUUID(), nombre: 'Admin', apellido: 'Histórico', email: 'admin-upgrade@example.test' });
@@ -70,5 +84,12 @@ describe.skipIf(!url)('AGRUL-055: cadena SQL desde cero y actualización de part
     expect(detalle.statusCode).toBe(404);
     const lista = await servidor!.app.inject({ method: 'GET', url: '/api/v1/inventario/partidas', headers: encargado });
     expect(lista.json().data).toEqual([]);
+  });
+  it('no vuelve a consumir una aplicación histórica ni inventa solicitudes, movimientos o fechas al migrar', async () => {
+    const res = await servidor!.app.inject({ method: 'GET', url: `/api/v1/aplicaciones-insumos/${aplicacionHistoricaId}`, headers: admin });
+    expect(res.statusCode).toBe(200); expect(res.json().data).toMatchObject({ registradoEn: null,
+      items: [expect.objectContaining({ cantidadAplicada: '1.00', movimientoId: null })] });
+    expect((await aislada!.pool.query('select solicitud from aplicaciones_insumo where id=$1', [aplicacionHistoricaId])).rows[0].solicitud).toBeNull();
+    expect((await aislada!.pool.query('select cantidad_disponible from partidas_insumo where id=$1', [partidaId])).rows[0].cantidad_disponible).toBe('5.00');
   });
 });

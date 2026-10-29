@@ -32,16 +32,20 @@ describe.skipIf(!url)('AGRUL-055 RN-15: concurrencia y rollback PostgreSQL', () 
       expect((await f.pool.query('select unidad_medida from insumos where id=$1', [id])).rows[0].unidad_medida).toBe('kg');
     } finally { await a.query('rollback'); a.release(); b.release(); }
   });
-  it('una aplicación espera un cambio de unidad anterior y luego bloquea cambios posteriores', async () => {
+  it('una aplicación espera un cambio de unidad anterior y rechaza la partida cuya unidad quedó obsoleta', async () => {
     const id = await f.crear(); const partida = await f.partida(id); const aplicacion = await f.aplicacion();
     const a = await f.pool.connect(); const b = await f.pool.connect();
     try {
       await a.query('begin'); await a.query("update insumos set unidad_medida='L' where id=$1", [id]);
       const pid = (await b.query<{ pid: number }>('select pg_backend_pid() as pid')).rows[0].pid;
-      const registro = b.query(insertar, [aplicacion, id, partida]);
-      await esperarBloqueo(pid); await a.query('commit'); await registro;
-      await expect(f.pool.query("update insumos set unidad_medida='kg' where id=$1", [id])).rejects.toMatchObject({ code: '23514' });
-      expect((await f.pool.query('select unidad_medida from insumos where id=$1', [id])).rows[0].unidad_medida).toBe('L');
+      const registro = b.query(insertar, [aplicacion, id, partida]).then(() => null, (error: unknown) => error);
+      await esperarBloqueo(pid); await a.query('commit');
+      expect(await registro).toMatchObject({ code: '23514', constraint: 'inventario_referencia_invalida' });
+      expect((await f.pool.query('select id from aplicaciones_insumo_items where insumo_id=$1', [id])).rows).toEqual([]);
+      await f.pool.query("update insumos set unidad_medida='kg' where id=$1", [id]);
+      await b.query(insertar, [aplicacion, id, partida]);
+      await expect(f.pool.query("update insumos set unidad_medida='L' where id=$1", [id])).rejects.toMatchObject({ code: '23514' });
+      expect((await f.pool.query('select unidad_medida from insumos where id=$1', [id])).rows[0].unidad_medida).toBe('kg');
     } finally { await a.query('rollback'); a.release(); b.release(); }
   });
   it('el rollback de un registro fallido libera el bloqueo y no deja aplicaciones ficticias', async () => {

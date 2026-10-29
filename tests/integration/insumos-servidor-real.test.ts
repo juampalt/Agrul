@@ -69,5 +69,13 @@ describe.skipIf(!url)('AGRUL-055: entrada compilada de npm start y HTTP real', (
     const existencias = await fetch(`${direccion}/api/v1/inventario/existencias?insumoId=${id}`, { headers });
     expect(existencias.status).toBe(200);
     expect(await existencias.json()).toMatchObject({ data: [expect.objectContaining({ stockFisico: '3.00', stockUtilizable: '3.00' })] });
+    const aplicacionId = randomUUID();
+    const aplicacion = await fetch(`${direccion}/api/v1/aplicaciones-insumos`, { method: 'POST', headers,
+      body: JSON.stringify({ operacionId: aplicacionId, actividadRealizadaId: f.actividadId, superficieTratada: 1,
+        metodoAplicacion: 'Manual', motivoAplicacion: 'Prueba HTTP real', items: [{ insumoId: id, cantidad: 1, unidadMedida: 'kg', dosis: 1 }] }) });
+    expect(aplicacion.status).toBe(201);
+    expect((await fetch(`${direccion}/api/v1/aplicaciones-insumos/${aplicacionId}`, { headers })).status).toBe(200);
+    expect((await f.pool.query('select cantidad_disponible from partidas_insumo where id=$1', [partidaId])).rows[0].cantidad_disponible).toBe('2.00');
+    expect((await f.pool.query("select count(*)::int as total from eventos_trazabilidad where payload_especifico->>'aplicacionId'=$1", [aplicacionId])).rows[0].total).toBe(1);
   });
 });
