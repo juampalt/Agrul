@@ -2,6 +2,7 @@ import { and, asc, eq, inArray } from 'drizzle-orm';
 import {
   TipoActividad,
   TipoActividadDuplicadoError,
+  TipoActividadInvalidoError,
   DatosTipoActividad,
 } from '../../../core/domain/entities/tipo-actividad-canonico.entity.js';
 import {
@@ -124,10 +125,15 @@ export class DrizzleTiposActividadRepository implements TiposActividadRepository
             categoria: datos.categoria,
             descripcion: datos.descripcion,
           })
-          .where(eq(tiposActividadTable.id, id))
+          .where(and(eq(tiposActividadTable.id, id), eq(tiposActividadTable.estado, 'ACTIVA')))
           .returning();
 
-        if (!fila) return null;
+        if (!fila) {
+          const [existente] = await tx.select({ id: tiposActividadTable.id }).from(tiposActividadTable)
+            .where(eq(tiposActividadTable.id, id));
+          if (existente) throw new TipoActividadInvalidoError('Solo pueden modificarse tipos de actividad activos.');
+          return null;
+        }
 
         if (datos.cultivoIds !== undefined) {
           await tx
@@ -165,10 +171,15 @@ export class DrizzleTiposActividadRepository implements TiposActividadRepository
     const [fila] = await this.db
       .update(tiposActividadTable)
       .set({ estado: 'INACTIVA' })
-      .where(eq(tiposActividadTable.id, id))
+      .where(and(eq(tiposActividadTable.id, id), eq(tiposActividadTable.estado, 'ACTIVA')))
       .returning();
 
-    if (!fila) return null;
+    if (!fila) {
+      const [existente] = await this.db.select({ id: tiposActividadTable.id }).from(tiposActividadTable)
+        .where(eq(tiposActividadTable.id, id));
+      if (existente) throw new TipoActividadInvalidoError('El tipo de actividad ya se encuentra inactivo.');
+      return null;
+    }
 
     const relaciones = await this.db
       .select({ cultivoId: tiposActividadCultivosTable.cultivoId })
@@ -194,7 +205,7 @@ export class DrizzleTiposActividadRepository implements TiposActividadRepository
         'code' in error &&
         error.code === '23505' &&
         'constraint' in error &&
-        error.constraint === 'tipos_actividad_nombre_unique'
+        ['tipos_actividad_nombre_unique', 'tipos_actividad_nombre_ci_unique'].includes(String(error.constraint))
       ) {
         throw new TipoActividadDuplicadoError(nombre);
       }

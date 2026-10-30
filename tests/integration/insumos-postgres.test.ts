@@ -43,15 +43,15 @@ describe.skipIf(!url)('AGRUL-055 CU34–CU37: PostgreSQL y bootstrap real', () =
     expect(vacio.json().data).toEqual([]);
   });
   it('CU36 modifica todos los campos y admite cambiar unidad antes de una aplicación', async () => {
-    const id = await f.crear();
-    const datos = { ...f.datos('CU36-NUEVO'), nombre: 'Nuevo nombre', categoria: 'OTRO' as const, unidadMedida: 'L', nivelMinimo: 0 };
+    const original = f.datos('CU36-NUEVO'); const id = await f.crear(original);
+    const datos = { ...original, nombre: 'Nuevo nombre', categoria: 'OTRO' as const, unidadMedida: 'L', nivelMinimo: 0 };
     const res = await modificar(id, datos);
     expect(res.statusCode).toBe(200); expect((await consultar(id)).json().data).toEqual({ ...datos, id, estado: 'ACTIVO' });
   });
   it('CU36 RN-15 rechaza cambiar unidad tras aplicación y revierte todos los campos', async () => {
     const id = await f.crear(); await f.aplicar(id);
     const antes = (await consultar(id)).json().data;
-    const res = await modificar(id, { ...f.datos(), unidadMedida: 'L' });
+    const res = await modificar(id, { ...antes, id: undefined, estado: undefined, unidadMedida: 'L' });
     expect(res.statusCode).toBe(422); expect(res.json().error.code).toBe('UNIDAD_INSUMO_INMUTABLE');
     expect((await consultar(id)).json().data).toEqual(antes);
     expect((await modificar(id, { ...antes, id: undefined, estado: undefined, nombre: 'Nombre corregido' })).statusCode).toBe(200);
@@ -74,10 +74,13 @@ describe.skipIf(!url)('AGRUL-055 CU34–CU37: PostgreSQL y bootstrap real', () =
     await expect(f.pool.query('delete from insumos where id=$1', [id])).rejects.toMatchObject({ code: expect.stringMatching(/^(23503|23001)$/) });
     expect((await consultar(id)).json().data.estado).toBe('INACTIVO');
   });
-  it('CU36 un código duplicado revierte la modificación completa', async () => {
-    const a = f.datos('CU36-UNICO-A'); await f.crear(a); const id = await f.crear(f.datos('CU36-UNICO-B'));
+  it('CU36 el código es invariable: la modificación se rechaza completa y SQL directo también', async () => {
+    const original = f.datos('CU36-UNICO-B'); const id = await f.crear(original);
     const antes = (await consultar(id)).json().data;
-    expect((await modificar(id, a)).statusCode).toBe(409); expect((await consultar(id)).json().data).toEqual(antes);
+    const res = await modificar(id, { ...original, codigo: 'CU36-OTRO', nombre: 'No debe guardarse' });
+    expect(res.statusCode).toBe(422); expect(res.json().error.code).toBe('CODIGO_INSUMO_INMUTABLE');
+    expect((await consultar(id)).json().data).toEqual(antes);
+    await expect(f.pool.query("update insumos set codigo='CU36-SQL' where id=$1", [id])).rejects.toMatchObject({ code: '23514', constraint: 'insumos_codigo_inmutable' });
   });
   it.each([-1, 0.001, 1e-10, 100000000])('rechaza nivel mínimo inválido %s sin insertar', async nivelMinimo => {
     const datos = { ...f.datos(), nivelMinimo };

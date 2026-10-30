@@ -85,6 +85,16 @@ describe.skipIf(!url)('CU32/CU33: monitoreos con PostgreSQL y bootstrap reales',
     expect(res.statusCode).toBe(201); expect(res.json().data).toMatchObject({ accionRecomendada: null, problemaDetectado: null, sectorObservado: null });
   });
 
+  it('CU32 admite omitir la etapa fenológica y CU33 filtra por existencia de problemas', async () => {
+    const con = await registrar();
+    const sin = await registrar({ etapaFenologica: undefined, problemaDetectado: undefined, accionRecomendada: 'Seguir monitoreando' });
+    expect(sin.statusCode).toBe(201); expect(sin.json().data).toMatchObject({ etapaFenologica: null, problemaDetectado: null });
+    const ids = async (q: string) => (await listar(q)).json().data.map((m: { id: string }) => m.id);
+    expect(await ids('&conProblema=true')).toEqual([con.json().data.id]);
+    expect(await ids('&conProblema=false')).toEqual([sin.json().data.id]);
+    expect((await listar('&conProblema=quizas')).statusCode).toBe(400);
+  });
+
   it('filtra por lote, responsable, etapa, estado, tipo y fechas y pagina con orden estable', async () => {
     const primero = (await registrar()).json().data.id;
     const segundo = (await registrar({ fechaInspeccion: '2026-10-16' })).json().data.id;

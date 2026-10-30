@@ -45,7 +45,7 @@ describe.skipIf(!url)('P2: conflictos reales entre escrituras de programaciones'
     encargado = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: ENCARGADO, email: `p2-${ENCARGADO}@example.test`, perfil: 'ENCARGADO_CAMPO' });
     await new DrizzleUsuarioFincasRepository(connection.db).asignarFincas(ENCARGADO, ['f0000000-0000-4000-8000-000000000059']);
     const tipo = await servidor.app.inject({ method: 'POST', url: '/api/v1/tipos-actividad', headers: admin,
-      payload: { nombre: `Riego P2 ${randomUUID().slice(0, 8)}`, categoria: 'RIEGO' } });
+      payload: { nombre: `Riego P2 ${randomUUID().slice(0, 8)}`, categoria: 'RIEGO', cultivoIds: ['b0000000-0000-4000-8000-000000000059'] } });
     expect(tipo.statusCode).toBe(201); tipoId = tipo.json().data.id;
   }, 30000);
 
@@ -54,7 +54,7 @@ describe.skipIf(!url)('P2: conflictos reales entre escrituras de programaciones'
     await connection.pool.query(`insert into ciclos_productivos(id,plantacion_id,nombre_codigo,fecha_inicio_prevista,fecha_fin_prevista,fecha_inicio_efectiva,responsable_seguimiento_id,estado)
       select $1,plantacion_id,$2,'2026-10-01','2026-10-27','2026-10-01',$3,'ACTIVO' from ciclos_productivos where id=$4`, [cicloId, `P2-${cicloId.slice(0, 20)}`, ADMIN, BASE]);
     const creada = await servidor.app.inject({ method: 'POST', url: '/api/v1/actividades-programadas', headers: encargado,
-      payload: { cicloId, tipoActividadId: tipoId, responsableId: ENCARGADO, fechaProgramada: '2026-10-15', descripcion: 'Descripción original' } });
+      payload: { cicloId, tipoActividadId: tipoId, responsableId: ENCARGADO, fechaProgramada: '2030-10-15', descripcion: 'Descripción original' } });
     expect(creada.statusCode).toBe(201); id = creada.json().data.id;
   });
   afterAll(async () => {
@@ -64,7 +64,7 @@ describe.skipIf(!url)('P2: conflictos reales entre escrituras de programaciones'
         await connection.pool.query('delete from actividades_programadas where ciclo_id=ANY($1::uuid[])', [ciclos]);
         await connection.pool.query('delete from ciclos_productivos where id=ANY($1::uuid[])', [ciclos]);
       }
-      if (tipoId) await connection.pool.query('delete from tipos_actividad where id=$1', [tipoId]);
+      if (tipoId) { await connection.pool.query('delete from tipos_actividad_cultivos where tipo_actividad_id=$1', [tipoId]); await connection.pool.query('delete from tipos_actividad where id=$1', [tipoId]); }
     } finally { await servidor?.app.close(); await connection.pool.end(); await otra.pool.end(); }
   });
 
@@ -89,32 +89,32 @@ describe.skipIf(!url)('P2: conflictos reales entre escrituras de programaciones'
     if (!segunda) throw new Error('Falta la segunda lectura.');
     expect(primera.versionPersistida).toBeDefined(); expect(segunda.versionPersistida).toBe(primera.versionPersistida);
     const resultados = await Promise.allSettled([
-      repo.actualizar(primera.reprogramar({ fechaProgramada: '2026-10-17' })),
-      otroRepo.actualizar(segunda.reprogramar({ fechaProgramada: '2026-10-20', responsableId: ADMIN })),
+      repo.actualizar(primera.reprogramar({ fechaProgramada: '2030-10-17' })),
+      otroRepo.actualizar(segunda.reprogramar({ fechaProgramada: '2030-10-20', responsableId: ADMIN })),
     ]);
     expect(resultados.filter(r => r.status === 'fulfilled')).toHaveLength(1);
     const fallida = resultados.find(r => r.status === 'rejected');
     expect(fallida?.status === 'rejected' && fallida.reason).toBeInstanceOf(ConflictoActividadProgramadaError);
     const actual = await leer(); expect(actual.versionPersistida).not.toBe(primera.versionPersistida);
     expect(actual.toJSON()).toMatchObject(resultados[0].status === 'fulfilled'
-      ? { fechaProgramada: '2026-10-17', responsableId: ENCARGADO }
-      : { fechaProgramada: '2026-10-20', responsableId: ADMIN });
+      ? { fechaProgramada: '2030-10-17', responsableId: ENCARGADO }
+      : { fechaProgramada: '2030-10-20', responsableId: ADMIN });
   });
 
   it('una cancelación obsoleta no restaura fecha o responsable; releer permite cancelar el estado actual', async () => {
     const obsoleta = await leer();
     const fresca = await otroRepo.buscarPorId(id); if (!fresca) throw new Error('Falta la actividad.');
-    await otroRepo.actualizar(fresca.reprogramar({ fechaProgramada: '2026-10-20', responsableId: ADMIN }));
+    await otroRepo.actualizar(fresca.reprogramar({ fechaProgramada: '2030-10-20', responsableId: ADMIN }));
     await expect(repo.actualizar(obsoleta.cancelar('Lluvia'))).rejects.toBeInstanceOf(ConflictoActividadProgramadaError);
-    expect((await leer()).toJSON()).toMatchObject({ estado: 'PENDIENTE', fechaProgramada: '2026-10-20', responsableId: ADMIN, motivoCancelacion: null });
+    expect((await leer()).toJSON()).toMatchObject({ estado: 'PENDIENTE', fechaProgramada: '2030-10-20', responsableId: ADMIN, motivoCancelacion: null });
     const cancelada = await solicitud('cancelar', { motivoCancelacion: 'Lluvia' });
-    expect(cancelada.statusCode).toBe(200); expect(cancelada.json().data).toMatchObject({ estado: 'CANCELADA', fechaProgramada: '2026-10-20', responsableId: ADMIN });
+    expect(cancelada.statusCode).toBe(200); expect(cancelada.json().data).toMatchObject({ estado: 'CANCELADA', fechaProgramada: '2030-10-20', responsableId: ADMIN });
   });
 
   it('dos reprogramaciones HTTP simultáneas devuelven 200 y 409 sin éxito ficticio', async () => {
     const respuestas = await competirHttp([
-      { accion: 'reprogramar', payload: { fechaProgramada: '2026-10-17' } },
-      { accion: 'reprogramar', payload: { fechaProgramada: '2026-10-20', responsableId: ADMIN } },
+      { accion: 'reprogramar', payload: { fechaProgramada: '2030-10-17' } },
+      { accion: 'reprogramar', payload: { fechaProgramada: '2030-10-20', responsableId: ADMIN } },
     ]);
     expect(respuestas.map(r => r.statusCode).sort()).toEqual([200, 409]);
     expect(respuestas.find(r => r.statusCode === 409)?.json().error.code).toBe('ACTIVIDAD_PROGRAMADA_DESACTUALIZADA');
@@ -125,15 +125,15 @@ describe.skipIf(!url)('P2: conflictos reales entre escrituras de programaciones'
   it('cancelación y reprogramación HTTP sobre la misma lectura conservan solo la decisión ganadora', async () => {
     const respuestas = await competirHttp([
       { accion: 'cancelar', payload: { motivoCancelacion: 'Lluvia' } },
-      { accion: 'reprogramar', payload: { fechaProgramada: '2026-10-20', responsableId: ADMIN } },
+      { accion: 'reprogramar', payload: { fechaProgramada: '2030-10-20', responsableId: ADMIN } },
     ]);
     expect(respuestas.map(r => r.statusCode).sort()).toEqual([200, 409]);
     const actual = (await leer()).toJSON();
     const ganadora = respuestas.find(r => r.statusCode === 200); if (!ganadora) throw new Error('Falta respuesta exitosa.');
     expect(normalizarInstantes(actual)).toEqual(normalizarInstantes(ganadora.json<{ data: ActividadProgramadaProps }>().data));
     expect(actual).toMatchObject(actual.estado === 'CANCELADA'
-      ? { fechaProgramada: '2026-10-15', responsableId: ENCARGADO, motivoCancelacion: 'Lluvia' }
-      : { fechaProgramada: '2026-10-20', responsableId: ADMIN, motivoCancelacion: null });
+      ? { fechaProgramada: '2030-10-15', responsableId: ENCARGADO, motivoCancelacion: 'Lluvia' }
+      : { fechaProgramada: '2030-10-20', responsableId: ADMIN, motivoCancelacion: null });
     expect(actual.descripcion).toBe('Descripción original');
   }, 10000);
 
@@ -141,8 +141,8 @@ describe.skipIf(!url)('P2: conflictos reales entre escrituras de programaciones'
     const obsoleta = await leer();
     await otra.pool.query('update actividades_programadas set descripcion=$1 where id=$2', ['Cambio confirmado', id]);
     expect((await leer()).actualizadoEn).toBe(obsoleta.actualizadoEn);
-    await expect(repo.actualizar(obsoleta.reprogramar({ fechaProgramada: '2026-10-20' }))).rejects.toBeInstanceOf(ConflictoActividadProgramadaError);
-    expect((await leer()).toJSON()).toMatchObject({ descripcion: 'Cambio confirmado', fechaProgramada: '2026-10-15' });
+    await expect(repo.actualizar(obsoleta.reprogramar({ fechaProgramada: '2030-10-20' }))).rejects.toBeInstanceOf(ConflictoActividadProgramadaError);
+    expect((await leer()).toJSON()).toMatchObject({ descripcion: 'Cambio confirmado', fechaProgramada: '2030-10-15' });
   });
 
   it('un rollback no invalida la versión del último estado confirmado', async () => {
@@ -152,7 +152,7 @@ describe.skipIf(!url)('P2: conflictos reales entre escrituras de programaciones'
       await escritor.query('begin'); await escritor.query('update actividades_programadas set descripcion=$1 where id=$2', ['Cambio revertido', id]);
     } finally { await escritor.query('rollback'); escritor.release(); }
     expect((await leer()).versionPersistida).toBe(original.versionPersistida);
-    await expect(repo.actualizar(original.reprogramar({ fechaProgramada: '2026-10-20' }))).resolves.toBeUndefined();
-    expect((await leer()).toJSON()).toMatchObject({ descripcion: 'Descripción original', fechaProgramada: '2026-10-20' });
+    await expect(repo.actualizar(original.reprogramar({ fechaProgramada: '2030-10-20' }))).resolves.toBeUndefined();
+    expect((await leer()).toJSON()).toMatchObject({ descripcion: 'Descripción original', fechaProgramada: '2030-10-20' });
   });
 });

@@ -5,7 +5,7 @@ import { ConsultarInventarioUseCase, RegistrarIngresoInsumosUseCase, RegistrarMo
 import { fincasVisiblesAgricolas } from '../../../application/use-cases/autorizar-recurso-agricola.use-case.js';
 import { CredencialesInvalidasError } from '../../../core/domain/errors/domain.error.js';
 import { requerirRol, verificarPasswordInicial } from '../middlewares/auth.middleware.js';
-import { ConsultarExistenciasSchema, ConsultarInventarioSchema, IngresoInsumosSchema, InventarioIdSchema, InventarioVacioSchema, MovimientoInventarioSchema } from '../schemas/inventario-insumos.schema.js';
+import { ConsultarExistenciasSchema, ConsultarInventarioSchema, ConsultarMovimientosInventarioSchema, IngresoInsumosSchema, InventarioIdSchema, InventarioVacioSchema, MovimientoInventarioSchema } from '../schemas/inventario-insumos.schema.js';
 
 export function registrarRutasInventarioInsumos(app: FastifyInstance, repo: InventarioInsumosRepositoryPort) {
   const ingreso = new RegistrarIngresoInsumosUseCase(repo);
@@ -30,7 +30,7 @@ export function registrarRutasInventarioInsumos(app: FastifyInstance, repo: Inve
     InventarioVacioSchema.parse(req.query);
     return respuesta(await consultar.partida(InventarioIdSchema.parse(req.params).id, actor(req)));
   });
-  app.get('/api/v1/inventario/movimientos', permisos, async req => respuesta(await consultar.movimientos(ConsultarInventarioSchema.parse(req.query), actor(req))));
+  app.get('/api/v1/inventario/movimientos', permisos, async req => respuesta(await consultar.movimientos(ConsultarMovimientosInventarioSchema.parse(req.query), actor(req))));
   app.get('/api/v1/inventario/movimientos/:id', permisos, async req => {
     InventarioVacioSchema.parse(req.query);
     return respuesta(await consultar.movimiento(InventarioIdSchema.parse(req.params).id, actor(req)));

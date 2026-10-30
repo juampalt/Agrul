@@ -93,9 +93,24 @@ describe.skipIf(!url)('AGRUL-055: ingresos, movimientos, saldos y alertas Postgr
     await f.alta({ insumoId, cantidad: 5 });
     expect((await f.consultar(ruta)).json().data[0].alertaStockMinimo).toBe(true);
   });
+  it('CU65 filtra el historial de movimientos por tipo y período sin alterar las existencias', async () => {
+    const { insumoId } = await f.alta();
+    const base = `movimientos?insumoId=${insumoId}&fincaId=${f.fincaId}`;
+    const todos = (await f.consultar(base)).json().data;
+    expect(todos.length).toBeGreaterThan(0);
+    const ingresos = (await f.consultar(`${base}&tipoMovimiento=INGRESO`)).json().data;
+    expect(ingresos.length).toBeGreaterThan(0);
+    expect(ingresos.every((m: { tipoMovimiento: string }) => m.tipoMovimiento === 'INGRESO')).toBe(true);
+    expect((await f.consultar(`${base}&tipoMovimiento=PERDIDA`)).json().data).toEqual([]);
+    expect((await f.consultar(`${base}&desde=2999-01-01`)).json().data).toEqual([]);
+    expect((await f.consultar(`${base}&desde=2020-01-01&hasta=2999-01-01`)).json().data).toHaveLength(todos.length);
+    expect((await f.consultar(`${base}&desde=2026-02-01&hasta=2026-01-01`)).statusCode).toBe(400);
+    const existencias = (await f.consultar(`existencias?insumoId=${insumoId}&fincaId=${f.fincaId}`)).json().data;
+    expect(existencias[0].stockFisico).toBe('10.00');
+  });
   it('no mezcla unidades cuando cambia el catálogo antes de aplicaciones', async () => {
     const { insumoId, partidaId } = await f.alta();
-    const datos = f.datos(); const cambio = await f.app.inject({ method: 'PUT', url: `/api/v1/insumos/${insumoId}`, headers: f.admin, payload: { ...datos, unidadMedida: 'L' } });
+    const datos = { ...f.datos(), codigo: (await f.pool.query('select codigo from insumos where id=$1', [insumoId])).rows[0].codigo }; const cambio = await f.app.inject({ method: 'PUT', url: `/api/v1/insumos/${insumoId}`, headers: f.admin, payload: { ...datos, unidadMedida: 'L' } });
     expect(cambio.statusCode).toBe(200);
     await f.alta({ insumoId, cantidad: 2, unidadMedida: 'L' });
     const lista = (await f.consultar(`existencias?insumoId=${insumoId}&fincaId=${f.fincaId}`)).json().data;
@@ -105,8 +120,9 @@ describe.skipIf(!url)('AGRUL-055: ingresos, movimientos, saldos y alertas Postgr
   });
   it('alerta falta de stock en la unidad vigente aunque solo queden partidas en otra unidad', async () => {
     const { insumoId } = await f.alta();
+    const codigo = (await f.pool.query('select codigo from insumos where id=$1', [insumoId])).rows[0].codigo;
     const cambio = await f.app.inject({ method: 'PUT', url: `/api/v1/insumos/${insumoId}`, headers: f.admin,
-      payload: { ...f.datos(), unidadMedida: 'L', nivelMinimo: 5 } });
+      payload: { ...f.datos(), codigo, unidadMedida: 'L', nivelMinimo: 5 } });
     expect(cambio.statusCode).toBe(200);
     const ruta = `?insumoId=${insumoId}&fincaId=${f.fincaId}`;
     const existencias = (await f.consultar(`existencias${ruta}`)).json().data;

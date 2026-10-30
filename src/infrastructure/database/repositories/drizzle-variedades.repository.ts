@@ -1,24 +1,23 @@
-import { and, asc, eq } from 'drizzle-orm';
-import { DatosVariedad, Variedad, VariedadDuplicadaError } from '../../../core/domain/entities/variedad.entity.js';
+import { and, asc, eq, ne } from 'drizzle-orm';
+import { DatosVariedad, Variedad, VariedadDuplicadaError, VariedadInvalidaError } from '../../../core/domain/entities/variedad.entity.js';
 import { EntidadNoEncontradaError } from '../../../core/domain/errors/domain.error.js';
 import { FiltrosVariedades, VariedadesRepositoryPort } from '../../../core/ports/variedades-repository.port.js';
 import { AgrulDatabase } from '../connection.js';
 import { variedadesTable } from '../schema/variedades.js';
+import { ciclosProductivosTable, cultivosTable, plantacionesTable } from '../schema/tables.js';
 
 export class DrizzleVariedadesRepository implements VariedadesRepositoryPort {
   constructor(private readonly db: AgrulDatabase) {}
 
   async guardar(variedad: Variedad): Promise<void> {
     const datos = variedad.toJSON();
-    try {
-      await this.conUnicidad(datos.nombre, () => this.db.insert(variedadesTable).values(datos));
-    } catch (error) {
-      if (error instanceof Error && 'code' in error && error.code === '23503'
-        && 'constraint' in error && error.constraint === 'variedades_cultivo_id_cultivos_id_fk') {
-        throw new EntidadNoEncontradaError('Cultivo', datos.cultivoId);
-      }
-      throw error;
-    }
+    await this.conUnicidad(datos.nombre, () => this.db.transaction(async (tx) => {
+      const [cultivo] = await tx.select({ estado: cultivosTable.estado }).from(cultivosTable)
+        .where(eq(cultivosTable.id, datos.cultivoId)).for('share');
+      if (!cultivo) throw new EntidadNoEncontradaError('Cultivo', datos.cultivoId);
+      if (cultivo.estado !== 'ACTIVO') throw new VariedadInvalidaError('Solo pueden registrarse variedades en cultivos activos.');
+      await tx.insert(variedadesTable).values(datos);
+    }));
   }
 
   async buscarPorId(id: string): Promise<Variedad | null> {
@@ -36,16 +35,32 @@ export class DrizzleVariedadesRepository implements VariedadesRepositoryPort {
   }
 
   async modificar(id: string, datos: DatosVariedad): Promise<Variedad | null> {
-    const [fila] = await this.conUnicidad(datos.nombre, () => this.db.update(variedadesTable)
-      .set({ nombre: datos.nombre, descripcion: datos.descripcion })
-      .where(eq(variedadesTable.id, id)).returning());
-    return fila ? Variedad.reconstituir(fila) : null;
+    return this.conUnicidad(datos.nombre, () => this.db.transaction(async (tx) => {
+      const [actual] = await tx.select().from(variedadesTable).where(eq(variedadesTable.id, id)).for('update');
+      if (!actual) return null;
+      const [cultivo] = await tx.select({ estado: cultivosTable.estado }).from(cultivosTable)
+        .where(eq(cultivosTable.id, actual.cultivoId)).for('share');
+      if (actual.estado !== 'ACTIVO' || cultivo?.estado !== 'ACTIVO') {
+        throw new VariedadInvalidaError('Solo pueden modificarse variedades activas de cultivos activos.');
+      }
+      const [fila] = await tx.update(variedadesTable).set({ nombre: datos.nombre, descripcion: datos.descripcion })
+        .where(eq(variedadesTable.id, id)).returning();
+      return Variedad.reconstituir(fila);
+    }));
   }
 
   async desactivar(id: string): Promise<Variedad | null> {
-    const [fila] = await this.db.update(variedadesTable).set({ estado: 'INACTIVO' })
-      .where(eq(variedadesTable.id, id)).returning();
-    return fila ? Variedad.reconstituir(fila) : null;
+    return this.db.transaction(async (tx) => {
+      const [actual] = await tx.select().from(variedadesTable).where(eq(variedadesTable.id, id)).for('update');
+      if (!actual) return null;
+      if (actual.estado !== 'ACTIVO') throw new VariedadInvalidaError('La variedad ya se encuentra inactiva.');
+      const [enCurso] = await tx.select({ id: ciclosProductivosTable.id }).from(ciclosProductivosTable)
+        .innerJoin(plantacionesTable, eq(ciclosProductivosTable.plantacionId, plantacionesTable.id))
+        .where(and(eq(plantacionesTable.variedadId, id), ne(ciclosProductivosTable.estado, 'FINALIZADO'))).limit(1);
+      if (enCurso) throw new VariedadInvalidaError('La variedad tiene ciclos productivos sin finalizar; deben concluir antes de desactivarla.');
+      const [fila] = await tx.update(variedadesTable).set({ estado: 'INACTIVO' }).where(eq(variedadesTable.id, id)).returning();
+      return Variedad.reconstituir(fila);
+    });
   }
 
   private async conUnicidad<T>(nombre: string, operacion: () => PromiseLike<T>): Promise<T> {
@@ -53,7 +68,7 @@ export class DrizzleVariedadesRepository implements VariedadesRepositoryPort {
       return await operacion();
     } catch (error) {
       if (error instanceof Error && 'code' in error && error.code === '23505'
-        && 'constraint' in error && error.constraint === 'variedades_cultivo_nombre_unique') {
+        && 'constraint' in error && ['variedades_cultivo_nombre_unique', 'variedades_cultivo_nombre_ci_unique'].includes(String(error.constraint))) {
         throw new VariedadDuplicadaError(nombre);
       }
       throw error;

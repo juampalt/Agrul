@@ -14,7 +14,7 @@ export const EjecutarProgramadaSchema = z.object({
   fechaEjecucion: z.string().refine(esFechaProgramadaValida, 'La fecha debe existir y tener formato YYYY-MM-DD.'),
   superficieTrabajadaHa: z.number().finite().positive().max(999999.99),
   duracionHoras: z.number().finite().positive().max(999.99).nullable().optional(),
-  descripcionTrabajo: z.string().trim().nullable().optional(),
+  descripcionTrabajo: z.string().trim().min(1, 'La descripción del trabajo realizado es obligatoria.'),
   datosEspecificos: z.record(z.unknown()).optional(),
 }).strict();
 

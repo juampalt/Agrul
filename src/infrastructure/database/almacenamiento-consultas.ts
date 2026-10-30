@@ -4,6 +4,7 @@ import { CamaraProduccion, DestinoProduccion, MovimientoAlmacenamiento, SaldoCam
 import { FiltrosAlmacenamiento } from '../../core/ports/poscosecha-almacenamiento-repository.port.js';
 import { FiltrosDestinosProduccion } from '../../core/ports/destinos-repository.port.js';
 import { AgrulDatabase, AgrulTransaction } from './connection.js';
+import { condicionesOrigen } from './filtros-origen.js';
 import { camarasSectorTable as cam, movimientosAlmacenamientoTable as m, destinosProduccionTable as d } from './schema/almacenamiento-produccion.js';
 import { partidasProduccionTable as p, clasificacionesTable as c } from './schema/poscosecha.js';
 import { cosechasTable as h, lotesTable as l } from './schema/tables.js';
@@ -25,7 +26,7 @@ export async function consultarMovimientosAlmacenamiento(db: Consulta, f: Filtro
       f.fincaId ? eq(l.fincaId, f.fincaId) : undefined, f.camaraSectorId ? eq(m.camaraSectorId, f.camaraSectorId) : undefined,
       f.partidaProduccionId ? eq(m.partidaProduccionId, f.partidaProduccionId) : undefined, f.cosechaId ? eq(c.cosechaId, f.cosechaId) : undefined,
       f.tipoMovimiento ? eq(m.tipoMovimiento, f.tipoMovimiento) : undefined,
-      f.desde ? gte(m.fechaMovimiento, f.desde) : undefined, f.hasta ? lte(m.fechaMovimiento, f.hasta) : undefined))
+      f.desde ? gte(m.fechaMovimiento, f.desde) : undefined, f.hasta ? lte(m.fechaMovimiento, f.hasta) : undefined, ...condicionesOrigen(f)))
     .orderBy(desc(m.fechaMovimiento), asc(m.id)).limit(f.limit).offset(f.offset);
   return filas.map(({ movimiento: { solicitud: _solicitud, ...fila } }) => ({ ...fila, cantidadKg: Number(fila.cantidadKg) }));
 }
@@ -35,7 +36,7 @@ export async function consultarDestinos(db: Consulta, f: FiltrosDestinosProducci
     .where(and(alcanceLote(actor), id ? eq(d.id, id) : undefined, f.fincaId ? eq(l.fincaId, f.fincaId) : undefined,
       f.partidaProduccionId ? eq(d.partidaProduccionId, f.partidaProduccionId) : undefined, f.cosechaId ? eq(c.cosechaId, f.cosechaId) : undefined,
       f.tipoDestino ? eq(d.tipoDestino, f.tipoDestino) : undefined,
-      f.desde ? gte(d.fechaDestino, f.desde) : undefined, f.hasta ? lte(d.fechaDestino, f.hasta) : undefined))
+      f.desde ? gte(d.fechaDestino, f.desde) : undefined, f.hasta ? lte(d.fechaDestino, f.hasta) : undefined, ...condicionesOrigen(f)))
     .orderBy(desc(d.fechaDestino), asc(d.id)).limit(f.limit).offset(f.offset);
   return filas.map(({ destino: { solicitud: _solicitud, ...fila } }) => ({ ...fila, cantidadDestinadaKg: Number(fila.cantidadDestinadaKg) }));
 }
@@ -48,8 +49,22 @@ export async function consultarSaldosCamaras(db: Consulta, f: FiltrosAlmacenamie
     .where(and(alcanceLote(actor), f.fincaId ? eq(l.fincaId, f.fincaId) : undefined,
       f.camaraSectorId ? eq(m.camaraSectorId, f.camaraSectorId) : undefined,
       f.partidaProduccionId ? eq(m.partidaProduccionId, f.partidaProduccionId) : undefined,
-      f.cosechaId ? eq(c.cosechaId, f.cosechaId) : undefined))
+      f.cosechaId ? eq(c.cosechaId, f.cosechaId) : undefined, ...condicionesOrigen(f)))
     .groupBy(m.camaraSectorId, m.partidaProduccionId, c.id, c.cosechaId, h.loteId)
     .orderBy(asc(m.camaraSectorId), asc(m.partidaProduccionId)).limit(f.limit).offset(f.offset);
   return filas.map(fila => ({ ...fila, cantidadKg: Number(fila.cantidadKg) }));
+}
+
+/** CU54: kg destinados agrupados por tipo de destino; no se suman a la producción cosechada. */
+export async function totalesDestinosPorTipo(db: Consulta, f: FiltrosDestinosProduccion, actor: ActorCosechas) {
+  const filas = await db.select({ tipoDestino: d.tipoDestino, cantidadDestinos: sql<string>`count(*)`, totalKg: sql<string>`sum(${d.cantidadDestinadaKg})::text` })
+    .from(d).innerJoin(p, eq(d.partidaProduccionId, p.id)).innerJoin(c, eq(p.clasificacionId, c.id))
+    .innerJoin(h, eq(c.cosechaId, h.id)).innerJoin(l, eq(h.loteId, l.id))
+    .where(and(alcanceLote(actor), f.fincaId ? eq(l.fincaId, f.fincaId) : undefined,
+      f.partidaProduccionId ? eq(d.partidaProduccionId, f.partidaProduccionId) : undefined, f.cosechaId ? eq(c.cosechaId, f.cosechaId) : undefined,
+      f.tipoDestino ? eq(d.tipoDestino, f.tipoDestino) : undefined,
+      f.desde ? gte(d.fechaDestino, f.desde) : undefined, f.hasta ? lte(d.fechaDestino, f.hasta) : undefined, ...condicionesOrigen(f)))
+    .groupBy(d.tipoDestino).orderBy(asc(d.tipoDestino));
+  const porTipo = filas.map(x => ({ tipoDestino: x.tipoDestino, cantidadDestinos: Number(x.cantidadDestinos), totalKg: Number(x.totalKg) }));
+  return { porTipo, totalDestinadoKg: porTipo.reduce((suma, x) => suma + x.totalKg, 0) };
 }

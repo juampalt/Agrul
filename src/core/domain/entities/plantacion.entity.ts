@@ -10,8 +10,10 @@ export interface DatosPlantacion {
   superficieHa: number;
   cantidadInicialPlantas: number;
   procedencia: string | null;
+  observaciones?: string | null;
 }
 export interface PlantacionProps extends DatosPlantacion {
+  observaciones: string | null;
   id: string;
   estado: EstadoPlantacion;
   fechaFinalizacion: string | null;
@@ -41,7 +43,7 @@ export class Plantacion {
       || datos.cantidadInicialPlantas > 2147483647) {
       throw new PlantacionInvalidaError('La cantidad inicial de plantas debe ser un entero positivo válido.');
     }
-    return new Plantacion({ ...datos, estado: 'ACTIVA', fechaFinalizacion: null });
+    return new Plantacion({ ...datos, observaciones: datos.observaciones?.trim() || null, estado: 'ACTIVA', fechaFinalizacion: null });
   }
 
   static reconstituir(props: PlantacionProps): Plantacion { return new Plantacion({ ...props }); }

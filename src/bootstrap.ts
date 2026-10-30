@@ -18,6 +18,7 @@ import { DrizzleAccesoRecursosAgricolasRepository } from './infrastructure/datab
 import { createDatabaseConnection } from './infrastructure/database/connection.js';
 import { DrizzleCierreCicloGuard } from './infrastructure/database/cierre-ciclo.guard.js';
 import { DrizzleCiclosProductivosRepository } from './infrastructure/database/repositories/drizzle-ciclos-productivos.repository.js';
+import { DrizzleRegistroCambiosRepository } from './infrastructure/database/repositories/drizzle-registro-cambios.repository.js';
 import { DrizzleUsuariosRepository } from './infrastructure/database/repositories/drizzle-usuarios.repository.js';
 import { DrizzleUsuarioFincasRepository } from './infrastructure/database/repositories/drizzle-usuario-fincas.repository.js';
 import { DrizzleAuditoriaSeguridadRepository } from './infrastructure/database/repositories/drizzle-auditoria-seguridad.repository.js';
@@ -56,6 +57,7 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
     usuariosTransaccion: new DrizzleUsuariosTransaccion(db),
     sesionesRepo: new DrizzleSesionesRepository(db),
     revalidarSesiones: true,
+    registroCambiosRepo: new DrizzleRegistroCambiosRepository(db),
     cultivosRepo: new DrizzleCultivosRepository(db),
     variedadesRepo: new DrizzleVariedadesRepository(db),
     plantacionesRepo: new DrizzlePlantacionesRepository(db),

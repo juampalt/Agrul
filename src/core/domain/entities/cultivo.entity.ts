@@ -31,7 +31,7 @@ export class Cultivo {
   }
 
   static reconstituir(props: CultivoProps): Cultivo {
-    const nombre = props.nombre.trim();
+    const nombre = props.nombre.trim().replace(/\s+/g, ' ');
     if (!nombre || nombre.length > 40) {
       throw new CultivoInvalidoError('El nombre del cultivo debe tener entre 1 y 40 caracteres.');
     }

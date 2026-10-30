@@ -218,6 +218,34 @@
       "when": 1793149226000,
       "tag": "0030_auditoria_capturas_produccion",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793149227000,
+      "tag": "0031_unicidad_ci_ciclos_codigo_insumo",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793149228000,
+      "tag": "0032_etapa_fenologica_opcional",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793149229000,
+      "tag": "0033_observaciones_plantaciones",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793149230000,
+      "tag": "0034_registro_cambios",
+      "breakpoints": true
     }
   ]
 }

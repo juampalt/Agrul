@@ -259,7 +259,12 @@ import {
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { RegistroCambiosPort } from '../../core/ports/registro-cambios.port.js';
+import { registrarAuditoriaCambios } from './auditoria-cambios.js';
+
 export interface BuildAppOptions {
+  /** Trazabilidad de cambios (fecha, responsable, valores anteriores y nuevos). */
+  registroCambiosRepo?: RegistroCambiosPort;
   lotesRepo: LotesRepositoryPort;
   eventosRepo: EventosRepositoryPort;
   genealogiaRepo: GenealogiaRepositoryPort;
@@ -380,6 +385,8 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       });
     }
   });
+
+  if (options.registroCambiosRepo) registrarAuditoriaCambios(app, options.registroCambiosRepo);
 
   // RNF-12: Inyección de encabezados oficiales de localización y zona horaria legal (Tucumán UTC-3)
   app.addHook('onSend', async (_request, reply, payload) => {

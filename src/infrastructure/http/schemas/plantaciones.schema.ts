@@ -8,6 +8,7 @@ export const RegistrarPlantacionSchema = z.object({
   superficieHa: z.number().positive().max(999999.99).multipleOf(0.01),
   cantidadInicialPlantas: z.number().int().positive().max(2147483647),
   procedencia: z.string().nullable().default(null),
+  observaciones: z.string().trim().nullable().default(null),
 }).strict();
 export const FinalizarPlantacionSchema = z.object({ fechaFinalizacion: z.string().date() }).strict();
 export const PlantacionIdSchema = z.object({ id: z.string().uuid() }).strict();

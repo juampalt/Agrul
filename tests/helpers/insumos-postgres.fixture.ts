@@ -38,11 +38,11 @@ export class InsumosPostgresFixture {
     await sembrarCiclosRn09(this.pool, [cicloId]);
     await this.pool.query("update ciclos_productivos set estado='ACTIVO',fecha_inicio_efectiva='2026-10-01' where id=$1", [cicloId]);
     const tipo = await this.app.inject({ method: 'POST', url: '/api/v1/tipos-actividad', headers: this.admin,
-      payload: { nombre: 'Fertilización CU34', categoria: 'FERTILIZACION' } });
+      payload: { nombre: 'Fertilización CU34', categoria: 'FERTILIZACION', cultivoIds: ['b0000000-0000-4000-8000-000000000059'] } });
     expect(tipo.statusCode).toBe(201);
     const labor = await this.app.inject({ method: 'POST', url: '/api/v1/actividades-realizadas', headers: this.admin,
       payload: { origen: 'NO_PROGRAMADA', cicloId, tipoActividadId: tipo.json().data.id, responsableId: this.adminId,
-        fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1 } });
+        fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1, descripcionTrabajo: 'Labor de prueba' } });
     expect(labor.statusCode).toBe(201); this.actividadId = labor.json().data.id;
     this.direccion = await this.app.listen({ host: '127.0.0.1', port: 0 });
   }

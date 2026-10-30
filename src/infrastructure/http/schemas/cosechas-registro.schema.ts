@@ -19,6 +19,7 @@ export const CosechaRegistroIdSchema = z.object({ id: uuid }).strict();
 export const CosechaRegistroVacioSchema = z.object({}).strict();
 export const ConsultarCosechasVigentesSchema = z.object({
   cicloId: uuid.optional(), loteId: uuid.optional(), origen: z.enum(['PROGRAMADA','NO_PROGRAMADA']).optional(),
+  cultivoId: uuid.optional(), variedadId: uuid.optional(), cosechaId: uuid.optional(),
   numeroPasada: z.coerce.number().int().min(1).max(2147483647).optional(),
   desde: fecha.optional(), hasta: fecha.optional(),
   limit: z.coerce.number().int().min(1).max(100).default(100),

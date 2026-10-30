@@ -30,7 +30,7 @@ export class Variedad {
   }
 
   static reconstituir(props: VariedadProps): Variedad {
-    const nombre = props.nombre.trim();
+    const nombre = props.nombre.trim().replace(/\s+/g, ' ');
     if (!nombre || nombre.length > 40) {
       throw new VariedadInvalidaError('El nombre de la variedad debe tener entre 1 y 40 caracteres.');
     }

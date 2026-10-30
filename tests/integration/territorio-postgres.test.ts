@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { randomUUID } from 'node:crypto';
+import { CryptoAuthService } from '../../src/infrastructure/services/crypto-auth.service.js';
 import { buildApp } from '../../src/infrastructure/http/app.js';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
@@ -21,6 +22,10 @@ if (connectionString && ![
 ].includes(connectionString)) {
   throw new Error('Territorio solo admite la base descartable autorizada, con rol exclusivo y sin contraseña en URL.');
 }
+const H = { authorization: `Bearer ${CryptoAuthService.generateToken({
+  sub: 'a0000000-0000-4000-8000-000000000151', email: 'admin@agrul.test', nombre: 'Admin', apellido: 'Prueba',
+  perfil: 'ADMINISTRADOR', fincas: [], debeCambiarPassword: false,
+})}` };
 const FINCA_ID = 'f0000000-0000-4000-8000-000000000151';
 
 describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)', () => {
@@ -77,7 +82,7 @@ describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)',
   });
 
   async function registrar(codigo: string, nombre: string, superficieHa: number, estado = 'DISPONIBLE') {
-    return app.inject({
+    return app.inject({ headers: H,
       method: 'POST',
       url: '/api/v1/lotes-territorio',
       payload: { codigo, nombre, superficieHa, ubicacionSector: 'Norte', estado },
@@ -85,20 +90,20 @@ describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)',
   }
 
   it('CU01 consulta la finca persistida', async () => {
-    const response = await app.inject({ method: 'GET', url: '/api/v1/finca' });
+    const response = await app.inject({ headers: H, method: 'GET', url: '/api/v1/finca' });
     expect(response.statusCode).toBe(200);
     expect(response.json().data).toMatchObject({ id: FINCA_ID, superficieTotalHa: 100 });
   });
 
   it('CU02 modifica la finca y conserva la validación de superficie', async () => {
     expect((await registrar('LOT-2026-15101', 'Lote Norte', 40)).statusCode).toBe(201);
-    const invalida = await app.inject({
+    const invalida = await app.inject({ headers: H,
       method: 'PUT', url: '/api/v1/finca',
       payload: { nombre: 'Finca PostgreSQL AGRUL-0511', provincia: 'Tucumán', departamento: 'Lules', localidad: 'San Pablo', superficieTotalHa: 30 },
     });
     expect(invalida.statusCode).toBe(422);
 
-    const valida = await app.inject({
+    const valida = await app.inject({ headers: H,
       method: 'PUT', url: '/api/v1/finca',
       payload: { nombre: 'Finca PostgreSQL Actualizada', provincia: 'Tucumán', departamento: 'Lules', localidad: 'San Pablo', superficieTotalHa: 80 },
     });
@@ -118,7 +123,7 @@ describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)',
   it('CU04 combina filtros territoriales', async () => {
     await registrar('LOT-2026-15104', 'Norte Productivo', 10, 'EN_PRODUCCION');
     await registrar('LOT-2026-15105', 'Sur Disponible', 10);
-    const response = await app.inject({
+    const response = await app.inject({ headers: H,
       method: 'GET', url: '/api/v1/lotes-territorio?codigo=15104&nombre=Norte&sector=Norte&estado=EN_PRODUCCION',
     });
     expect(response.statusCode).toBe(200);
@@ -128,7 +133,7 @@ describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)',
 
   it('CU05 modifica el lote conservando código y finca', async () => {
     const created = (await registrar('LOT-2026-15106', 'Original', 20)).json().data;
-    const response = await app.inject({
+    const response = await app.inject({ headers: H,
       method: 'PUT', url: `/api/v1/lotes-territorio/${created.id}`,
       payload: { nombre: 'Modificado', superficieHa: 25, ubicacionSector: 'Oeste', tipoSuelo: 'Franco' },
     });
@@ -139,7 +144,7 @@ describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)',
 
   it('CU06 desactiva solo lotes disponibles sin ciclos abiertos', async () => {
     const available = (await registrar('LOT-2026-15107', 'Disponible', 30)).json().data;
-    const deactivated = await app.inject({ method: 'PATCH', url: `/api/v1/lotes-territorio/${available.id}/desactivar` });
+    const deactivated = await app.inject({ headers: H, method: 'PATCH', url: `/api/v1/lotes-territorio/${available.id}/desactivar` });
     expect(deactivated.statusCode).toBe(200);
     expect(deactivated.json().data.estadoTerritorial).toBe('INACTIVO');
 
@@ -149,7 +154,7 @@ describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)',
       loteId: withCycle.id, cultivo: 'Arándano', superficieCultivadaHa: 10,
       fechaInicio: '2026-10-27', estado: 'ABIERTO',
     }));
-    const blocked = await app.inject({ method: 'PATCH', url: `/api/v1/lotes-territorio/${withCycle.id}/desactivar` });
+    const blocked = await app.inject({ headers: H, method: 'PATCH', url: `/api/v1/lotes-territorio/${withCycle.id}/desactivar` });
     expect(blocked.statusCode).toBe(422);
     const persisted = await connection.pool.query('select estado_territorial from lotes where id = $1', [withCycle.id]);
     expect(persisted.rows[0].estado_territorial).toBe('DISPONIBLE');

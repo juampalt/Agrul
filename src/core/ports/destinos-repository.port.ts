@@ -9,4 +9,5 @@ export interface DestinosRepositoryPort {
   registrarDestino(datos: RegistrarDestinoProduccion, actor: ActorCosechas): Promise<DestinoProduccion>;
   listarDestinos(filtros: FiltrosDestinosProduccion, actor: ActorCosechas): Promise<DestinoProduccion[]>;
   obtenerDestino(id: string, actor: ActorCosechas): Promise<DestinoProduccion | null>;
+  totalesDestinos(filtros: FiltrosDestinosProduccion, actor: ActorCosechas): Promise<{ porTipo: { tipoDestino: string; cantidadDestinos: number; totalKg: number }[]; totalDestinadoKg: number }>;
 }

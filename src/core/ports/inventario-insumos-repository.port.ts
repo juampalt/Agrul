@@ -2,6 +2,8 @@ import { ActorInventario, IngresoInsumos, MovimientoInventario, MovimientoManual
 
 export interface FiltrosInventario {
   fincaId?: string; insumoId?: string; partidaId?: string; limit: number; offset: number;
+  /** Solo aplican al historial de movimientos; no alteran las existencias actuales. */
+  desde?: string; hasta?: string; tipoMovimiento?: string;
 }
 export interface PartidaInventario {
   id: string; fincaId: string | null; insumoId: string; unidadMedida: string | null;

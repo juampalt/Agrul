@@ -60,6 +60,10 @@ export const ListarUsuariosQuerySchema = z.object({
   perfil: z.enum(PERFILES_USUARIO).optional(),
   estado: EstadoUsuarioEnum.optional(),
   busqueda: z.string().trim().max(255).optional(),
+  nombre: z.string().trim().max(100).optional(),
+  apellido: z.string().trim().max(100).optional(),
+  nombreUsuario: z.string().trim().max(100).optional(),
+  email: z.string().trim().max(150).optional(),
 }).strict();
 
 export const UsuarioIdParamSchema = z.object({

@@ -28,10 +28,10 @@ describe.skipIf(!url)('CU30/CU31: labores realizadas con PostgreSQL y bootstrap 
   let cicloId: string;
   let programadaId: string;
   const datos = () => ({ actividadProgramadaId: programadaId, responsableId: RESPONSABLE,
-    fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1.25, duracionHoras: 2.5 });
+    fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1.25, duracionHoras: 2.5, descripcionTrabajo: 'Labor de prueba' });
   const ejecutar = (body = datos()) => servidor.app.inject({ method: 'POST', url: '/api/v1/actividades-realizadas', headers: encargado, payload: body });
   const datosDirectos = () => ({ origen: 'NO_PROGRAMADA', cicloId, tipoActividadId: tipoId,
-    responsableId: RESPONSABLE, fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1.25 });
+    responsableId: RESPONSABLE, fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1.25, descripcionTrabajo: 'Labor de prueba' });
   const directa = (cambios: Partial<ReturnType<typeof datosDirectos>> = {}) => servidor.app.inject({
     method: 'POST', url: '/api/v1/actividades-realizadas', headers: encargado, payload: { ...datosDirectos(), ...cambios },
   });
@@ -53,7 +53,7 @@ describe.skipIf(!url)('CU30/CU31: labores realizadas con PostgreSQL y bootstrap 
     encargado = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: RESPONSABLE, email: 'encargado-cu30@example.test', perfil: 'ENCARGADO_CAMPO' });
     lector = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: LECTOR, email: 'operario-cu30@example.test', perfil: 'OPERARIO' });
     await new DrizzleUsuarioFincasRepository(connection.db).asignarFincas(RESPONSABLE, ['f0000000-0000-4000-8000-000000000059']);
-    const tipo = await servidor.app.inject({ method: 'POST', url: '/api/v1/tipos-actividad', headers: admin, payload: { nombre: `Riego CU30 ${randomUUID().slice(0, 8)}`, categoria: 'RIEGO' } });
+    const tipo = await servidor.app.inject({ method: 'POST', url: '/api/v1/tipos-actividad', headers: admin, payload: { nombre: `Riego CU30 ${randomUUID().slice(0, 8)}`, categoria: 'RIEGO', cultivoIds: ['b0000000-0000-4000-8000-000000000059'] } });
     expect(tipo.statusCode).toBe(201); tipoId = tipo.json().data.id;
   }, 30000);
 
@@ -63,10 +63,17 @@ describe.skipIf(!url)('CU30/CU31: labores realizadas con PostgreSQL y bootstrap 
       select $1,plantacion_id,$2,'2026-10-01','2026-10-27','2026-10-01',$3,'ACTIVO' from ciclos_productivos where id=$4`,
     [cicloId, `CU30-${cicloId.slice(0, 20)}`, RESPONSABLE, BASE]);
     const res = await servidor.app.inject({ method: 'POST', url: '/api/v1/actividades-programadas', headers: encargado,
-      payload: { cicloId, tipoActividadId: tipoId, responsableId: RESPONSABLE, fechaProgramada: '2026-10-15' } });
+      payload: { cicloId, tipoActividadId: tipoId, responsableId: RESPONSABLE, fechaProgramada: '2030-10-15' } });
     expect(res.statusCode).toBe(201); programadaId = res.json().data.id;
   });
   afterAll(async () => { await servidor?.app.close(); await connection.pool.end(); });
+
+  it('CU30 exige la descripción del trabajo realizado', async () => {
+    const { descripcionTrabajo: _omitida, ...sinDescripcion } = datos();
+    const res = await ejecutar(sinDescripcion as ReturnType<typeof datos>);
+    expect(res.statusCode).toBe(400);
+    expect((await ejecutar({ ...datos(), descripcionTrabajo: '   ' })).statusCode).toBe(400);
+  });
 
   it('persiste el hecho y marca EJECUTADA, liberando RN-09', async () => {
     await expect(servidor.cierreCicloGuard.ejecutar(cicloId, async () => true)).rejects.toBeInstanceOf(CicloConActividadesPendientesError);

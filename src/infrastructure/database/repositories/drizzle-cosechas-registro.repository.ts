@@ -84,14 +84,29 @@ export class DrizzleCosechasRegistroRepository implements CosechasRegistroReposi
     autorizar(fila.fincaId, actor);
     return mapear(fila.cosecha); // Reconstruir historia no aplica validaciones nuevas.
   }
-  async listar(filtros: FiltrosCosechasRegistro, actor: ActorCosechas) {
+  private condiciones(filtros: FiltrosCosechasRegistro, actor: ActorCosechas) {
     const condiciones = [alcanceFincasPorLote(this.db, cosechas.loteId, actor.fincaIds)];
+    if (filtros.cosechaId) condiciones.push(eq(cosechas.id, filtros.cosechaId));
+    if (filtros.cultivoId || filtros.variedadId) {
+      condiciones.push(sql`${cosechas.cicloId} IN (SELECT c.id FROM ciclos_productivos c JOIN plantaciones p ON p.id = c.plantacion_id WHERE true
+        ${filtros.cultivoId ? sql`AND p.cultivo_id = ${filtros.cultivoId}` : sql``}
+        ${filtros.variedadId ? sql`AND p.variedad_id = ${filtros.variedadId}` : sql``})`);
+    }
     if (filtros.cicloId) condiciones.push(eq(cosechas.cicloId, filtros.cicloId));
     if (filtros.loteId) condiciones.push(eq(cosechas.loteId, filtros.loteId));
     if (filtros.origen) condiciones.push(eq(cosechas.origen, filtros.origen));
     if (filtros.numeroPasada) condiciones.push(eq(cosechas.numeroPasada, filtros.numeroPasada));
     if (filtros.desde) condiciones.push(gte(cosechas.fecha, filtros.desde));
     if (filtros.hasta) condiciones.push(lte(cosechas.fecha, filtros.hasta));
+    return condiciones;
+  }
+  async totalizar(filtros: FiltrosCosechasRegistro, actor: ActorCosechas) {
+    const [fila] = await this.db.select({ cantidad: sql<string>`count(*)`, total: sql<string>`coalesce(sum(${cosechas.cantidadCosechadaKg}), 0)` })
+      .from(cosechas).where(and(...this.condiciones(filtros, actor)));
+    return { cantidadCosechas: Number(fila?.cantidad ?? 0), totalCosechadoKg: Number(fila?.total ?? 0) };
+  }
+  async listar(filtros: FiltrosCosechasRegistro, actor: ActorCosechas) {
+    const condiciones = this.condiciones(filtros, actor);
     return (await this.db.select().from(cosechas).where(and(...condiciones))
       .orderBy(desc(cosechas.fecha), desc(cosechas.id)).limit(filtros.limit).offset(filtros.offset)).map(mapear);
   }

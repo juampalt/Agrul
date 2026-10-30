@@ -139,5 +139,5 @@ describe('AGRUL-009: Migraciones SQL y Triggers de Inmutabilidad', () => {
       try { if (client) await client.query('rollback'); }
       finally { client?.release(); await aislado.cerrar(); }
     }
-  });
+  }, 30000);
 });

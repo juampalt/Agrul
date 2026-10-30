@@ -108,12 +108,14 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
       }
 
       if (deps.territorioController) {
-        v1.get('/finca', (req, rep) => deps.territorioController!.obtenerFinca(req, rep));
-        v1.put('/finca', (req, rep) => deps.territorioController!.actualizarFinca(req, rep));
-        v1.post('/lotes-territorio', (req, rep) => deps.territorioController!.crearLote(req, rep));
-        v1.get('/lotes-territorio', (req, rep) => deps.territorioController!.listarLotes(req, rep));
-        v1.put('/lotes-territorio/:id', (req, rep) => deps.territorioController!.actualizarLote(req, rep));
-        v1.patch('/lotes-territorio/:id/desactivar', (req, rep) => deps.territorioController!.desactivar(req, rep));
+        // CU01-CU06: solo el Administrador autenticado (contraseña inicial ya cambiada).
+        const permisosTerritorio = { preHandler: [requerirRol('ADMINISTRADOR'), verificarPasswordInicial] };
+        v1.get('/finca', permisosTerritorio, (req, rep) => deps.territorioController!.obtenerFinca(req, rep));
+        v1.put('/finca', permisosTerritorio, (req, rep) => deps.territorioController!.actualizarFinca(req, rep));
+        v1.post('/lotes-territorio', permisosTerritorio, (req, rep) => deps.territorioController!.crearLote(req, rep));
+        v1.get('/lotes-territorio', permisosTerritorio, (req, rep) => deps.territorioController!.listarLotes(req, rep));
+        v1.put('/lotes-territorio/:id', permisosTerritorio, (req, rep) => deps.territorioController!.actualizarLote(req, rep));
+        v1.patch('/lotes-territorio/:id/desactivar', permisosTerritorio, (req, rep) => deps.territorioController!.desactivar(req, rep));
       }
 
       // Lotes

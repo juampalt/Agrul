@@ -10,6 +10,21 @@ import { DrizzleCierreCicloGuard } from '../cierre-ciclo.guard.js';
 import { ciclosProductivosTable as ciclos, cultivosTable, lotesTable, plantacionesTable, usuariosTable, variedadesTable } from '../schema/tables.js';
 import { consultaCiclos, mapearCiclo } from './ciclos-productivos.mapping.js';
 
+/**
+ * CU18/CU20: dos ciclos de la misma plantación no pueden superponerse. Se compara el período vigente de cada ciclo:
+ * fechas efectivas cuando existen y, si no, las previstas.
+ */
+async function validarSinSuperposicion(tx: AgrulTransaction, plantacionId: string, inicio: string, fin: string, excluirId?: string) {
+  const condiciones = [eq(ciclos.plantacionId, plantacionId),
+    sql`coalesce(${ciclos.fechaInicioEfectiva}, ${ciclos.fechaInicioPrevista}) <= ${fin}::date`,
+    sql`coalesce(${ciclos.fechaFinEfectiva}, ${ciclos.fechaFinPrevista}) >= ${inicio}::date`];
+  if (excluirId) condiciones.push(ne(ciclos.id, excluirId));
+  const [conflicto] = await tx.select({ nombre: ciclos.nombreCodigo }).from(ciclos).where(and(...condiciones)).limit(1);
+  if (conflicto) {
+    throw new CicloProductivoInvalidoError(`El período se superpone con el ciclo '${conflicto.nombre}' de la misma plantación.`);
+  }
+}
+
 export class DrizzleCiclosProductivosRepository implements CiclosProductivosRepositoryPort {
   constructor(private readonly db: AgrulDatabase, private readonly cierre: DrizzleCierreCicloGuard) {}
 
@@ -27,8 +42,12 @@ export class DrizzleCiclosProductivosRepository implements CiclosProductivosRepo
         if (!plantacion || plantacion.estado !== 'ACTIVA' || !lote || lote.estadoTerritorial === 'INACTIVO') {
           throw new CicloProductivoInvalidoError('El ciclo requiere una plantación activa en un lote no inactivo.');
         }
-        const [cultivo] = await tx.select().from(cultivosTable).where(eq(cultivosTable.id, plantacion.cultivoId));
-        const [variedad] = await tx.select().from(variedadesTable).where(eq(variedadesTable.id, plantacion.variedadId));
+        const [cultivo] = await tx.select().from(cultivosTable).where(eq(cultivosTable.id, plantacion.cultivoId)).for('share');
+        const [variedad] = await tx.select().from(variedadesTable).where(eq(variedadesTable.id, plantacion.variedadId)).for('share');
+        const [repetido] = await tx.select({ id: ciclos.id }).from(ciclos).where(and(eq(ciclos.plantacionId, plantacion.id),
+          sql`lower(${ciclos.nombreCodigo}) = lower(${datos.nombreCodigo.trim()})`)).limit(1);
+        if (repetido) throw new CodigoCicloDuplicadoError();
+        await validarSinSuperposicion(tx, plantacion.id, datos.fechaInicioPrevista, datos.fechaFinPrevista);
         const ciclo = CicloProductivo.planificar(datos, { loteId: lote.id, cultivo: cultivo.nombre, variedad: variedad.nombre,
           superficieHa: Number(plantacion.superficieHa), fechaPlantacion: plantacion.fechaPlantacion,
           cantidadInicialPlantas: plantacion.cantidadInicialPlantas });
@@ -37,7 +56,7 @@ export class DrizzleCiclosProductivosRepository implements CiclosProductivosRepo
       });
     } catch (error) {
       if (error instanceof Error && 'code' in error && error.code === '23505'
-        && 'constraint' in error && error.constraint === 'ciclos_productivos_nombre_codigo_unique') throw new CodigoCicloDuplicadoError();
+        && 'constraint' in error && ['ciclos_productivos_nombre_codigo_unique', 'ciclos_plantacion_codigo_ci_unique'].includes(String(error.constraint))) throw new CodigoCicloDuplicadoError();
       throw error;
     }
   }
@@ -102,7 +121,14 @@ export class DrizzleCiclosProductivosRepository implements CiclosProductivosRepo
       if (plantacion.estado !== 'ACTIVA' || lote.estadoTerritorial === 'INACTIVO') {
         throw new CicloProductivoInvalidoError('El inicio requiere plantación activa y lote no inactivo.');
       }
+      const [activo] = await tx.select({ nombre: ciclos.nombreCodigo }).from(ciclos)
+        .where(and(eq(ciclos.plantacionId, plantacion.id), eq(ciclos.estado, 'ACTIVO'), ne(ciclos.id, id))).limit(1);
+      if (activo) {
+        throw new CicloProductivoInvalidoError(`La plantación ya tiene un ciclo activo ('${activo.nombre}'); debe finalizarse antes de iniciar otro.`);
+      }
       ciclo.iniciar(fecha, plantacion.fechaPlantacion);
+      const finPrevisto = ciclo.toPlanificacionJSON().fechaFinPrevista;
+      await validarSinSuperposicion(tx, plantacion.id, fecha, finPrevisto > fecha ? finPrevisto : fecha, id);
     } else ciclo.finalizar(fecha);
     const dto = ciclo.toPlanificacionJSON();
     await tx.update(ciclos).set({ estado: dto.estado, fechaInicioEfectiva: dto.fechaInicioEfectiva,

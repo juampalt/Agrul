@@ -4,6 +4,7 @@ export interface FiltrosActividadesProgramadas {
   /** Alcance interno derivado de la sesión; no forma parte del contrato HTTP. */
   fincaIds?: readonly string[];
   cicloId?: string;
+  loteId?: string;
   tipoActividadId?: string;
   responsableId?: string;
   estado?: EstadoActividadProgramada;

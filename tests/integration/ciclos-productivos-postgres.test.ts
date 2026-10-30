@@ -37,7 +37,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
 
   it('CU19 consulta por id, filtros y paginación', async () => {
     const id = await f.crear();
-    await f.crear('CICLO-2026-B');
+    await f.crear('CICLO-2026-B', { fechaInicioPrevista: '2026-11-01', fechaFinPrevista: '2026-11-30' });
     const respuesta = await consultar(id);
     expect(respuesta.statusCode).toBe(200);
     expect(respuesta.json()).toMatchObject({ success: true, error: null, timestamp: expect.any(String), data: { id, estado: 'PLANIFICADO' } });
@@ -46,6 +46,26 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
     expect(lista.statusCode).toBe(200);
     expect(lista.json().data).toMatchObject([{ nombreCodigo: 'CICLO-2026-B' }]);
     expect((await f.app.inject({ method: 'GET', url: '/api/v1/ciclos-productivos?estado=ACTIVO', headers })).json().data).toEqual([]);
+  });
+
+  it('CU18 rechaza períodos superpuestos y códigos repetidos (sin distinguir mayúsculas) en la misma plantación', async () => {
+    await f.crear();
+    expect((await registrar({ nombreCodigo: 'otro', fechaInicioPrevista: '2026-10-20', fechaFinPrevista: '2026-11-20' })).statusCode).toBe(422);
+    const repetido = await registrar({ nombreCodigo: 'ciclo-2026-a', fechaInicioPrevista: '2027-01-01', fechaFinPrevista: '2027-02-01' });
+    expect(repetido.statusCode).toBe(409);
+    expect(repetido.json().error.code).toBe('CODIGO_CICLO_DUPLICADO');
+    // Un período contiguo pero sin solapamiento es compatible, incluso con otro ciclo activo.
+    expect((await registrar({ nombreCodigo: 'CICLO-2026-B', fechaInicioPrevista: '2026-10-28', fechaFinPrevista: '2026-11-30' })).statusCode).toBe(201);
+  });
+
+  it('CU20 impide dos ciclos activos en una misma plantación y el mismo código en otra plantación es válido', async () => {
+    const a = await f.crear();
+    const b = await f.crear('CICLO-2026-B', { fechaInicioPrevista: '2026-11-01', fechaFinPrevista: '2026-11-30' });
+    expect((await f.iniciar(a)).statusCode).toBe(200);
+    expect((await f.iniciar(b, '2026-11-01')).statusCode).toBe(422);
+    expect(await f.estadoLote()).toBe('EN_PRODUCCION');
+    const p2 = await f.segundaPlantacion();
+    expect((await f.crear('CICLO-2026-A', { plantacionId: p2 })).length).toBeGreaterThan(0);
   });
 
   it('CU20 inicia y actualiza el lote a EN_PRODUCCION de forma persistente', async () => {
@@ -92,7 +112,8 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
   });
 
   it('conserva la plantación perenne y mantiene el lote en producción hasta cerrar su último ciclo activo', async () => {
-    const a = await f.crear(); const b = await f.crear('CICLO-2026-B');
+    const a = await f.crear(); const p2 = await f.segundaPlantacion();
+    const b = await f.crear('CICLO-2026-B', { plantacionId: p2 });
     expect((await f.iniciar(a)).statusCode).toBe(200);
     expect((await f.iniciar(b)).statusCode).toBe(200);
     expect((await f.finalizar(a)).statusCode).toBe(200);
@@ -104,7 +125,8 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
   });
 
   it('serializa el cierre de un ciclo con el inicio concurrente de otro en el mismo lote', async () => {
-    const a = await f.crear(); const b = await f.crear('CICLO-2026-B');
+    const a = await f.crear(); const p2 = await f.segundaPlantacion();
+    const b = await f.crear('CICLO-2026-B', { plantacionId: p2 });
     await f.iniciar(a);
     const respuestas = await Promise.all([f.finalizar(a), f.iniciar(b)]);
     expect(respuestas.map((r) => r.statusCode)).toEqual([200, 200]);

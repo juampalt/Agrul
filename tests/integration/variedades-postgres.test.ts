@@ -100,15 +100,31 @@ describe.skipIf(!connectionString)('AGRUL-052 CU11-CU14 con bootstrap y PostgreS
     expect(lista.json().data).toMatchObject([{ nombre: 'Snowchaser', cultivoId }]);
   });
 
-  it('CU13 modifica datos sin cambiar identidad, cultivo ni estado inactivo', async () => {
+  it('CU13 modifica una variedad activa y rechaza modificar una inactiva o de un cultivo inactivo', async () => {
     const creada = await crear();
+    const activa = await app.inject({ method: 'PUT', url: `/api/v1/variedades/${creada.id}`, headers,
+      payload: { nombre: ' Snow   chaser ', descripcion: null } });
+    expect(activa.statusCode).toBe(200);
+    expect(activa.json().data).toEqual({ id: creada.id, cultivoId, nombre: 'Snow chaser', descripcion: null, estado: 'ACTIVO' });
     await app.inject({ method: 'PATCH', url: `/api/v1/variedades/${creada.id}/desactivar`, headers });
-    const respuesta = await app.inject({ method: 'PUT', url: `/api/v1/variedades/${creada.id}`, headers,
-      payload: { nombre: 'Snowchaser', descripcion: null } });
-    expect(respuesta.statusCode).toBe(200);
-    expect(respuesta.json().data).toEqual({ id: creada.id, cultivoId, nombre: 'Snowchaser', descripcion: null, estado: 'INACTIVO' });
+    const inactiva = await app.inject({ method: 'PUT', url: `/api/v1/variedades/${creada.id}`, headers,
+      payload: { nombre: 'Otra', descripcion: null } });
+    expect(inactiva.statusCode).toBe(422);
     expect((await connection.pool.query('select nombre, cultivo_id, estado from variedades where id = $1', [creada.id])).rows[0])
-      .toEqual({ nombre: 'Snowchaser', cultivo_id: cultivoId, estado: 'INACTIVO' });
+      .toEqual({ nombre: 'Snow chaser', cultivo_id: cultivoId, estado: 'INACTIVO' });
+    const otra = await crear('Duke');
+    await app.inject({ method: 'PATCH', url: `/api/v1/cultivos/${cultivoId}/desactivar`, headers });
+    expect((await app.inject({ method: 'PUT', url: `/api/v1/variedades/${otra.id}`, headers,
+      payload: { nombre: 'Duke 2', descripcion: null } })).statusCode).toBe(422);
+  });
+
+  it('CU11 no registra variedades en un cultivo inactivo y el nombre no distingue mayúsculas dentro del cultivo', async () => {
+    await crear('Emerald');
+    expect((await app.inject({ method: 'POST', url: '/api/v1/variedades', headers,
+      payload: { ...datos, cultivoId, nombre: 'EMERALD' } })).statusCode).toBe(409);
+    await app.inject({ method: 'PATCH', url: `/api/v1/cultivos/${cultivoId}/desactivar`, headers });
+    expect((await app.inject({ method: 'POST', url: '/api/v1/variedades', headers,
+      payload: { ...datos, cultivoId, nombre: 'Nueva' } })).statusCode).toBe(422);
   });
 
   it('rechaza renombrar a una variedad existente sin modificar el registro', async () => {
@@ -122,11 +138,10 @@ describe.skipIf(!connectionString)('AGRUL-052 CU11-CU14 con bootstrap y PostgreS
 
   it('CU14 desactiva sin borrar y mantiene la unicidad entre inactivos', async () => {
     const creada = await crear();
-    for (const intento of [1, 2]) {
-      const respuesta = await app.inject({ method: 'PATCH', url: `/api/v1/variedades/${creada.id}/desactivar`, headers });
-      expect(respuesta.statusCode, `desactivación ${intento}`).toBe(200);
-      expect(respuesta.json().data).toMatchObject({ ...datos, id: creada.id, cultivoId, estado: 'INACTIVO' });
-    }
+    const respuesta = await app.inject({ method: 'PATCH', url: `/api/v1/variedades/${creada.id}/desactivar`, headers });
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.json().data).toMatchObject({ ...datos, id: creada.id, cultivoId, estado: 'INACTIVO' });
+    expect((await app.inject({ method: 'PATCH', url: `/api/v1/variedades/${creada.id}/desactivar`, headers })).statusCode).toBe(422);
     expect((await app.inject({ method: 'GET', url: '/api/v1/variedades?estado=ACTIVO', headers })).json().data).toEqual([]);
     expect((await app.inject({ method: 'GET', url: '/api/v1/variedades?estado=INACTIVO', headers })).json().data).toHaveLength(1);
     expect((await app.inject({ method: 'POST', url: '/api/v1/variedades', headers, payload: { ...datos, cultivoId } })).statusCode).toBe(409);

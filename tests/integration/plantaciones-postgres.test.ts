@@ -68,6 +68,15 @@ describe.skipIf(!connectionString)('AGRUL-052 CU15-CU17 con bootstrap y PostgreS
     return app.inject({ method: 'PATCH', url: `/api/v1/plantaciones/${id}/finalizar`, headers, payload: { fechaFinalizacion } });
   }
 
+  it('CU15 conserva las observaciones opcionales de la plantación', async () => {
+    const con = await registrar({ observaciones: '  Plantines certificados  ' });
+    expect(con.statusCode).toBe(201);
+    expect(con.json().data.observaciones).toBe('Plantines certificados');
+    const sin = await registrar({ superficieHa: 1 });
+    expect(sin.statusCode).toBe(201);
+    expect(sin.json().data.observaciones).toBeNull();
+  });
+
   it('CU15 registra una plantación con superficie, plantas y vínculos persistidos', async () => {
     const respuesta = await registrar();
     expect(respuesta.statusCode).toBe(201);

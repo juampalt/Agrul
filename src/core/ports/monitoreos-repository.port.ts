@@ -9,6 +9,8 @@ export interface FiltrosMonitoreos {
   etapaFenologica?: string;
   estadoGeneralCultivo?: string;
   tipoObservacion?: string;
+  /** true: solo con problema detectado; false: solo inspecciones sin problema. */
+  conProblema?: boolean;
   desde?: string;
   hasta?: string;
   limit: number;

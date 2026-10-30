@@ -11,7 +11,9 @@ export interface PoscosechaAlmacenamientoRepositoryPort {
   obtenerPartida(id: string, actor: ActorCosechas): Promise<PartidaProduccion | null>;
 }
 
-export interface FiltrosAlmacenamiento {
+import { FiltrosOrigenProductivo } from './filtros-origen-productivo.js';
+
+export interface FiltrosAlmacenamiento extends FiltrosOrigenProductivo {
   fincaId?: string; camaraSectorId?: string; partidaProduccionId?: string; cosechaId?: string;
   tipoMovimiento?: 'INGRESO' | 'SALIDA'; desde?: string; hasta?: string; limit: number; offset: number;
 }

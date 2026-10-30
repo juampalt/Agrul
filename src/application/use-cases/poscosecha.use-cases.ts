@@ -15,6 +15,7 @@ export class RegistrarAcondicionamientoUseCase {
 export class ConsultarPoscosechaUseCase {
   constructor(private readonly clasificaciones: ClasificacionesRepositoryPort, private readonly poscosecha: PoscosechaAlmacenamientoRepositoryPort) {}
   listarClasificaciones(f: FiltrosPoscosecha, actor: ActorCosechas) { return this.clasificaciones.listarClasificaciones(f, actor); }
+  totalesClasificaciones(f: FiltrosPoscosecha, actor: ActorCosechas) { return this.clasificaciones.totalesClasificaciones(f, actor); }
   listarAcondicionamientos(f: FiltrosPoscosecha, actor: ActorCosechas) { return this.poscosecha.listarAcondicionamientos(f, actor); }
   listarPartidas(f: FiltrosPoscosecha, actor: ActorCosechas) { return this.poscosecha.listarPartidas(f, actor); }
   obtenerClasificacion(id: string, actor: ActorCosechas) { return this.exigir(this.clasificaciones.obtenerClasificacion(id, actor), 'Clasificación', id); }

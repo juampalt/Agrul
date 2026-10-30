@@ -44,7 +44,7 @@ describe('Plantación (AGRUL-052)', () => {
   it('finaliza con fecha local sin modificar el registro original', () => {
     const plantacion = Plantacion.crear(datos, hoy);
     const finalizada = plantacion.finalizar('2026-10-27', hoy);
-    expect(finalizada.toJSON()).toEqual({ ...datos, estado: 'FINALIZADA', fechaFinalizacion: '2026-10-27' });
+    expect(finalizada.toJSON()).toEqual({ ...datos, observaciones: null, estado: 'FINALIZADA', fechaFinalizacion: '2026-10-27' });
     expect(plantacion.toJSON().estado).toBe('ACTIVA');
     expect(() => finalizada.finalizar('2026-10-27', hoy)).toThrow(InvalidStateTransitionError);
   });

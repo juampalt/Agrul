@@ -72,15 +72,46 @@ describe.skipIf(!connectionString)('AGRUL-052 CU07-CU10 con bootstrap y PostgreS
     expect(lista.json().data).toMatchObject([{ nombre: 'Maíz' }]);
   });
 
-  it('CU09 modifica datos sin cambiar identidad ni reactivar un inactivo', async () => {
+  it('CU09 modifica un cultivo activo conservando su identidad y rechaza modificar uno inactivo', async () => {
     const creado = await crear();
+    const activo = await app.inject({ method: 'PUT', url: `/api/v1/cultivos/${creado.id}`, headers,
+      payload: { nombre: '  Maíz   dulce ', tipoCicloVida: 'ANUAL', descripcion: null } });
+    expect(activo.statusCode).toBe(200);
+    expect(activo.json().data).toEqual({ id: creado.id, nombre: 'Maíz dulce', tipoCicloVida: 'ANUAL', descripcion: null, estado: 'ACTIVO' });
     await app.inject({ method: 'PATCH', url: `/api/v1/cultivos/${creado.id}/desactivar`, headers });
-    const respuesta = await app.inject({ method: 'PUT', url: `/api/v1/cultivos/${creado.id}`, headers,
-      payload: { nombre: 'Maíz', tipoCicloVida: 'ANUAL', descripcion: null } });
-    expect(respuesta.statusCode).toBe(200);
-    expect(respuesta.json().data).toEqual({ id: creado.id, nombre: 'Maíz', tipoCicloVida: 'ANUAL', descripcion: null, estado: 'INACTIVO' });
+    const inactivo = await app.inject({ method: 'PUT', url: `/api/v1/cultivos/${creado.id}`, headers,
+      payload: { nombre: 'Otro', tipoCicloVida: 'ANUAL', descripcion: null } });
+    expect(inactivo.statusCode).toBe(422);
     expect((await connection.pool.query('select nombre, estado from cultivos where id = $1', [creado.id])).rows[0])
-      .toEqual({ nombre: 'Maíz', estado: 'INACTIVO' });
+      .toEqual({ nombre: 'Maíz dulce', estado: 'INACTIVO' });
+  });
+
+  it('el nombre es único sin distinguir mayúsculas ni espacios sobrantes, incluso entre inactivos (CU07/CU09)', async () => {
+    const creado = await crear('Frutilla');
+    for (const nombre of ['frutilla', 'FRUTILLA', ' Frutilla ']) {
+      expect((await app.inject({ method: 'POST', url: '/api/v1/cultivos', headers, payload: { ...datos, nombre } })).statusCode, nombre).toBe(409);
+    }
+    await app.inject({ method: 'PATCH', url: `/api/v1/cultivos/${creado.id}/desactivar`, headers });
+    expect((await app.inject({ method: 'POST', url: '/api/v1/cultivos', headers, payload: { ...datos, nombre: 'fRuTiLlA' } })).statusCode).toBe(409);
+  });
+
+  it('conserva responsable, fecha y valores anteriores/nuevos de cada cambio (CU07, CU09, CU10)', async () => {
+    const creado = await crear('Frutilla');
+    await app.inject({ method: 'PUT', url: `/api/v1/cultivos/${creado.id}`, headers,
+      payload: { nombre: 'Frutilla Albion', tipoCicloVida: 'ANUAL', descripcion: null } });
+    await app.inject({ method: 'PATCH', url: `/api/v1/cultivos/${creado.id}/desactivar`, headers });
+    const { rows } = await connection.pool.query(
+      "select accion, usuario_id, valor_previo, valor_nuevo, creado_en from registro_cambios where entidad='CULTIVO' and entidad_id=$1 order by creado_en, id", [creado.id]);
+    expect(rows.map(r => r.accion).sort()).toEqual(['DESACTIVAR', 'MODIFICAR', 'REGISTRAR']);
+    expect(rows.every(r => r.usuario_id === usuario.sub && r.creado_en instanceof Date)).toBe(true);
+    const modificar = rows.find(r => r.accion === 'MODIFICAR');
+    expect(modificar.valor_previo).toMatchObject({ nombre: 'Frutilla', estado: 'ACTIVO' });
+    expect(modificar.valor_nuevo).toMatchObject({ nombre: 'Frutilla Albion', estado: 'ACTIVO' });
+    const desactivar = rows.find(r => r.accion === 'DESACTIVAR');
+    expect(desactivar.valor_previo).toMatchObject({ estado: 'ACTIVO' });
+    expect(desactivar.valor_nuevo).toMatchObject({ estado: 'INACTIVO' });
+    expect(rows.find(r => r.accion === 'REGISTRAR').valor_previo).toBeNull();
+    await expect(connection.pool.query("update registro_cambios set accion='X' where entidad_id=$1", [creado.id])).rejects.toThrow('VIOLACION_DE_INMUTABILIDAD');
   });
 
   it('rechaza renombrar a un nombre ocupado sin alterar los datos', async () => {
@@ -94,11 +125,11 @@ describe.skipIf(!connectionString)('AGRUL-052 CU07-CU10 con bootstrap y PostgreS
 
   it('CU10 desactiva sin borrar, permite consultar el histórico y conserva la unicidad', async () => {
     const creado = await crear();
-    for (const intento of [1, 2]) {
-      const respuesta = await app.inject({ method: 'PATCH', url: `/api/v1/cultivos/${creado.id}/desactivar`, headers });
-      expect(respuesta.statusCode, `desactivación ${intento}`).toBe(200);
-      expect(respuesta.json().data).toMatchObject({ ...datos, id: creado.id, estado: 'INACTIVO' });
-    }
+    const respuesta = await app.inject({ method: 'PATCH', url: `/api/v1/cultivos/${creado.id}/desactivar`, headers });
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.json().data).toMatchObject({ ...datos, id: creado.id, estado: 'INACTIVO' });
+    // Una segunda desactivación se informa como operación inválida y no altera el registro.
+    expect((await app.inject({ method: 'PATCH', url: `/api/v1/cultivos/${creado.id}/desactivar`, headers })).statusCode).toBe(422);
     expect((await app.inject({ method: 'GET', url: '/api/v1/cultivos?estado=ACTIVO', headers })).json().data).toEqual([]);
     expect((await app.inject({ method: 'GET', url: '/api/v1/cultivos?estado=INACTIVO', headers })).json().data).toHaveLength(1);
     expect((await app.inject({ method: 'POST', url: '/api/v1/cultivos', headers, payload: datos })).statusCode).toBe(409);

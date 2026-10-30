@@ -55,7 +55,17 @@ export class CiclosPostgresFixture {
     expect(respuesta.statusCode).toBe(201);
     return respuesta.json<{ data: { id: string } }>().data.id;
   }
-  async crear(nombreCodigo = 'CICLO-2026-A') { return this.alta('/ciclos-productivos', { ...this.datos, nombreCodigo }); }
+  async crear(nombreCodigo = 'CICLO-2026-A', periodo: Partial<{ fechaInicioPrevista: string; fechaFinPrevista: string; plantacionId: string }> = {}) {
+    return this.alta('/ciclos-productivos', { ...this.datos, nombreCodigo, ...periodo });
+  }
+  /** Amplía el lote y registra otra plantación activa en él, para tener dos ciclos activos en un mismo lote. */
+  async segundaPlantacion() {
+    const ampliado = await this.app.inject({ method: 'PUT', url: `/api/v1/lotes-territorio/${this.loteId}`, headers: HEADERS_CICLOS,
+      payload: { nombre: 'Lote ciclos', superficieHa: 20, ubicacionSector: 'Norte' } });
+    expect(ampliado.statusCode).toBe(200);
+    return this.alta('/plantaciones', { loteId: this.loteId, cultivoId: this.cultivoId, variedadId: this.variedadId,
+      fechaPlantacion: '2026-10-01', superficieHa: 5, cantidadInicialPlantas: 50 });
+  }
   iniciar(id: string, fechaInicioEfectiva = '2026-10-10') {
     return this.app.inject({ method: 'PATCH', url: `/api/v1/ciclos-productivos/${id}/iniciar`, headers: HEADERS_CICLOS, payload: { fechaInicioEfectiva } });
   }
