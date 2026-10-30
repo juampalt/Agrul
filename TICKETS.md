@@ -1104,9 +1104,10 @@
 
 ### `[AGRUL-056]` Módulos 5 & 11: Cosechas, Clasificación, Acondicionamiento y Cámaras (CU41 - CU54)
 - **GitHub Issue:** [#50](https://github.com/juampalt/Agrul/issues/50)
-- **Estado:** `IN_PROGRESS` — planificación y registro de cosechas implementados; pendiente CU47–CU54 y auditoría final.
+- **Estado:** `IN_PROGRESS` — cosechas, clasificación y acondicionamiento implementados; pendiente CU50–CU54 y auditoría final.
 - **Etapa 1:** Programación, consulta, reprogramación, cancelación e historial inmutable; migración 0024, autorización por finca y control concurrente de versiones. [Informe y matriz parcial](.scratch/agrul-056/etapa1.md). Pausa después de validar y publicar este bloque; sin cierre de #50 ni merge.
 - **Etapa 2:** Registro directo/programado con pasadas y kg reales, evento y ejecución atómicos, migración 0025 compatible con cosechas heredadas y autorización por finca. [Informe y matriz acumulada](.scratch/agrul-056/etapa2.md). Pausa tras validar y publicar; clasificación requiere nueva autorización.
+- **Etapa 3:** Clasificación tripartita exacta y parcial, descarte con causas aislado de partidas, acondicionamiento sin duplicar masa física; migraciones 0026/0027, linaje, control concurrente y permisos por finca. [Informe y matriz acumulada](.scratch/agrul-056/etapa3.md). Pausa tras validar y publicar; cámaras y destinos requieren nueva autorización.
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulos 5 & 11: Cosecha y Poscosecha
 - **Casos de Uso:** CU41 a CU46, CU47 a CU52, CU53 a CU54

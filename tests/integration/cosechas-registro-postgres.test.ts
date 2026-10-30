@@ -101,6 +101,9 @@ describe.skipIf(!url)('AGRUL-056: registro de cosechas y pasadas reales', () => 
     const datos = f.datosCosecha(); await f.registrar(datos);
     await expect(f.pool.query('update cosechas set cantidad_cosechada_kg=20 where id=$1', [datos.operacionId])).rejects.toMatchObject({ code: '23514' });
     await expect(f.pool.query('delete from cosechas where id=$1', [datos.operacionId])).rejects.toMatchObject({ code: '23514' });
-    await expect(f.pool.query('truncate cosechas')).rejects.toMatchObject({ code: '23514' });
+    // CASCADE alcanza los triggers aun después de incorporar FK de poscosecha;
+    // sin él PostgreSQL rechaza antes con 0A000 y no ejercita la inmutabilidad.
+    await expect(f.pool.query('truncate cosechas cascade')).rejects.toMatchObject({ code: '23514' });
+    expect((await f.pool.query('select cantidad_cosechada_kg from cosechas where id=$1', [datos.operacionId])).rows[0].cantidad_cosechada_kg).toBe('10.2500');
   });
 });

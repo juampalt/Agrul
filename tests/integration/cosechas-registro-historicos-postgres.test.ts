@@ -83,4 +83,18 @@ describe.skipIf(!url)('AGRUL-056: migración de cosechas heredadas sin inventar 
     await expect(nueva!.pool.query('delete from cosechas where id=$1', [cosechaId])).rejects.toMatchObject({ code: '23514' });
     expect((await nueva!.pool.query('select cantidad_cosechada_kg from cosechas where id=$1', [cosechaId])).rows[0].cantidad_cosechada_kg).toBe('12.3456');
   });
+  it('las migraciones de poscosecha no fabrican clasificaciones ni partidas históricas', async () => {
+    expect((await nueva!.pool.query('select count(*)::int as n from clasificaciones')).rows[0].n).toBe(0);
+    expect((await nueva!.pool.query('select count(*)::int as n from partidas_produccion')).rows[0].n).toBe(0);
+    expect((await nueva!.pool.query('select count(*)::int as n from acondicionamientos')).rows[0].n).toBe(0);
+  });
+  it('no vuelve a clasificar una cosecha anterior con saldos comerciales sin conciliar', async () => {
+    const res = await servidor!.app.inject({ method: 'POST', url: '/api/v1/clasificaciones', headers,
+      payload: { operacionId: randomUUID(), cosechaId, fechaClasificacion: '2026-10-16', cantidadRecibidaKg: 1,
+        kgFresco: 1, kgIndustria: 0, kgDescarte: 0, motivosDescarte: [], responsableId: f.adminId } });
+    expect(res.statusCode).toBe(422);
+    expect((await nueva!.pool.query('select count(*)::int as n from partidas_produccion')).rows[0].n).toBe(0);
+    expect((await nueva!.pool.query('select cantidad_comercializable_kg,cantidad_descarte_kg from cosechas where id=$1', [cosechaId])).rows[0])
+      .toEqual({ cantidad_comercializable_kg: '8.1111', cantidad_descarte_kg: '4.2345' });
+  });
 });

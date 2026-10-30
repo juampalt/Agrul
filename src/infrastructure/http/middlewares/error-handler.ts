@@ -26,6 +26,7 @@ import { TipoActividadDuplicadoError } from '../../../core/domain/entities/tipo-
 import { ConflictoActividadProgramadaError } from '../../../core/domain/entities/actividad-programada.entity.js';
 import { ConflictoProgramacionCosechaError } from '../../../core/domain/entities/cosecha-programada.entity.js';
 import { ConflictoRegistroCosechaError } from '../../../core/domain/entities/cosecha-registrada.js';
+import { ConflictoPoscosechaError } from '../../../core/domain/entities/poscosecha.js';
 
 export function errorHandler(error: FastifyError | Error, request: FastifyRequest, reply: FastifyReply) {
   const timestamp = new Date().toISOString();
@@ -111,6 +112,7 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
     error instanceof TipoActividadDuplicadoError ||
     error instanceof ConflictoProgramacionCosechaError ||
     error instanceof ConflictoRegistroCosechaError ||
+    error instanceof ConflictoPoscosechaError ||
     error instanceof ConflictoActividadProgramadaError
   ) {
     return reply.status(409).send({
