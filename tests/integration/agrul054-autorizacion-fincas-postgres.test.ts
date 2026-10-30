@@ -2,12 +2,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
-import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { crearEsquemaPostgresAislado } from '../helpers/esquema-postgres-aislado.fixture.js';
 import { DrizzleUsuarioFincasRepository } from '../../src/infrastructure/database/repositories/drizzle-usuario-fincas.repository.js';
 import { autenticarOperadorPrueba } from '../helpers/operador-postgres.fixture.js';
 import { sembrarCiclosRn09 } from '../helpers/sembrar-ciclos-rn09.js';
 
 const url = process.env.ACTIVIDADES_TEST_DATABASE_URL;
+const aislado = url ? await crearEsquemaPostgresAislado(url) : undefined;
+const urlAislada = aislado?.connectionString;
+afterAll(async () => { await aislado?.cerrar(); });
+const baseEsperada = url ? new URL(url).pathname.slice(1) : '';
 const BASE = 'c0000000-0000-4000-8000-000000000054';
 const usuarios = Array.from({ length: 4 }, () => randomUUID());
 type Recurso = { fincaId: string; loteId: string; plantacionId: string; cicloId: string; programadaId: string; realizadaId: string; monitoreoId: string };
@@ -15,7 +19,7 @@ const rutas = ['actividades-programadas', 'actividades-realizadas', 'monitoreos'
 const campoId = { 'actividades-programadas': 'programadaId', 'actividades-realizadas': 'realizadaId', monitoreos: 'monitoreoId' } as const;
 
 describe.skipIf(!url)('S1: aislamiento por finca desde bootstrap y sesiones reales', () => {
-  const connection = createDatabaseConnection(url);
+  const connection = createDatabaseConnection(urlAislada);
   const asignaciones = new DrizzleUsuarioFincasRepository(connection.db);
   let servidor: ReturnType<typeof crearServidorProduccion>;
   let headers: { authorization: string }[];
@@ -30,12 +34,12 @@ describe.skipIf(!url)('S1: aislamiento por finca desde bootstrap y sesiones real
     etapaFenologica: 'Floración', estadoGeneralCultivo: 'Bueno', tipoObservacion: 'Sanitaria', descripcionHallazgos: 'Sin síntomas' });
 
   beforeAll(async () => {
-    if (url !== 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054') throw new Error('Solo se admite la base y rol autorizados sin contraseña en URL.');
+    if (!['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055'].includes(url ?? '')) throw new Error('Solo se admite la base y rol autorizados sin contraseña en URL.');
     const { rows } = await connection.pool.query("select current_database() as db,current_user as usuario,current_setting('server_version_num')::int as version,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls from pg_roles where rolname=current_user");
-    expect(rows[0]).toMatchObject({ db: 'agrul_test_agrul_054', usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+    expect(rows[0]).toMatchObject({ db: baseEsperada, usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
     expect(rows[0].version).toBeGreaterThanOrEqual(180000); expect(rows[0].version).toBeLessThan(190000);
-    await runMigrations(url); await sembrarCiclosRn09(connection.pool, [BASE]);
-    servidor = crearServidorProduccion({ connectionString: url, logger: false }); await servidor.app.ready();
+    await sembrarCiclosRn09(connection.pool, [BASE]);
+    servidor = crearServidorProduccion({ connectionString: urlAislada, logger: false }); await servidor.app.ready();
     headers = [];
     for (let i = 0; i < usuarios.length; i++) headers.push(await autenticarOperadorPrueba(connection.pool, servidor.app,
       { sub: usuarios[i], nombre: 'Prueba', apellido: 'S1', email: `s1-${usuarios[i]}@example.test`, perfil: i === 0 ? 'ADMINISTRADOR' : 'ENCARGADO_CAMPO' }));

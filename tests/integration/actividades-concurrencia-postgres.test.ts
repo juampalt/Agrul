@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
-import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { crearEsquemaPostgresAislado } from '../helpers/esquema-postgres-aislado.fixture.js';
 import { DrizzleActividadesProgramadasRepository } from '../../src/infrastructure/database/repositories/drizzle-actividades-programadas.repository.js';
 import { DrizzleUsuarioFincasRepository } from '../../src/infrastructure/database/repositories/drizzle-usuario-fincas.repository.js';
 import { ActividadProgramadaProps, ConflictoActividadProgramadaError } from '../../src/core/domain/entities/actividad-programada.entity.js';
@@ -10,12 +10,16 @@ import { autenticarOperadorPrueba } from '../helpers/operador-postgres.fixture.j
 import { sembrarCiclosRn09 } from '../helpers/sembrar-ciclos-rn09.js';
 
 const url = process.env.ACTIVIDADES_TEST_DATABASE_URL;
+const aislado = url ? await crearEsquemaPostgresAislado(url) : undefined;
+const urlAislada = aislado?.connectionString;
+afterAll(async () => { await aislado?.cerrar(); });
+const baseEsperada = url ? new URL(url).pathname.slice(1) : '';
 const BASE = 'c0000000-0000-4000-8000-000000000054';
 const ADMIN = randomUUID(), ENCARGADO = randomUUID();
 
 describe.skipIf(!url)('P2: conflictos reales entre escrituras de programaciones', () => {
-  const connection = createDatabaseConnection(url);
-  const otra = createDatabaseConnection(url);
+  const connection = createDatabaseConnection(urlAislada);
+  const otra = createDatabaseConnection(urlAislada);
   const repo = new DrizzleActividadesProgramadasRepository(connection.db);
   const otroRepo = new DrizzleActividadesProgramadasRepository(otra.db);
   let servidor: ReturnType<typeof crearServidorProduccion>;
@@ -30,12 +34,12 @@ describe.skipIf(!url)('P2: conflictos reales entre escrituras de programaciones'
     creadoEn: new Date(a.creadoEn).toISOString(), actualizadoEn: new Date(a.actualizadoEn).toISOString() });
 
   beforeAll(async () => {
-    if (url !== 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054') throw new Error('Solo se admite la base y el rol autorizados, sin contraseña en URL.');
+    if (!['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055'].includes(url ?? '')) throw new Error('Solo se admite la base y el rol autorizados, sin contraseña en URL.');
     const { rows } = await connection.pool.query("select current_database() as db,current_user as usuario,current_setting('server_version_num')::int as version,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls from pg_roles where rolname=current_user");
-    expect(rows[0]).toMatchObject({ db: 'agrul_test_agrul_054', usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+    expect(rows[0]).toMatchObject({ db: baseEsperada, usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
     expect(rows[0].version).toBeGreaterThanOrEqual(180000); expect(rows[0].version).toBeLessThan(190000);
-    await runMigrations(url); await sembrarCiclosRn09(connection.pool, [BASE]);
-    servidor = crearServidorProduccion({ connectionString: url, logger: false }); await servidor.app.ready();
+    await sembrarCiclosRn09(connection.pool, [BASE]);
+    servidor = crearServidorProduccion({ connectionString: urlAislada, logger: false }); await servidor.app.ready();
     const actor = { nombre: 'Prueba', apellido: 'P2' };
     admin = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: ADMIN, email: `p2-${ADMIN}@example.test` });
     encargado = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: ENCARGADO, email: `p2-${ENCARGADO}@example.test`, perfil: 'ENCARGADO_CAMPO' });

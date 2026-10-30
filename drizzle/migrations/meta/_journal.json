@@ -127,6 +127,48 @@
       "when": 1793149213000,
       "tag": "0017_monitoreos",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793149214000,
+      "tag": "0018_insumos_catalogo",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793149215000,
+      "tag": "0019_inventario_movimientos",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793149216000,
+      "tag": "0020_devolucion_insumos_sin_usar",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793149217000,
+      "tag": "0021_aplicaciones_consumo_trazable",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793149218000,
+      "tag": "0022_correcciones_aplicaciones",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793149219000,
+      "tag": "0023_congelar_items_confirmados",
+      "breakpoints": true
     }
   ]
 }

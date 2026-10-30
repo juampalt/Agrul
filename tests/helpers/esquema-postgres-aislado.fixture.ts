@@ -6,26 +6,28 @@ import { runMigrations } from '../../src/infrastructure/database/migrate.js';
 
 const ejecutar = promisify(execFile);
 const urlAutorizada = 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054';
+const urlInsumos = 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055';
 
 /** Copia solo DDL al esquema temporal: conserva FK, índices y triggers reales. */
 export async function crearEsquemaPostgresAislado(url: string) {
-  if (url !== urlAutorizada) throw new Error('Solo se admite la base descartable autorizada sin contraseña en URL.');
-  const esquema = `agrul054_aislado_${randomUUID().replaceAll('-', '')}`;
-  if (!/^agrul054_aislado_[a-f0-9]{32}$/.test(esquema)) throw new Error('Esquema de prueba inválido.');
+  if (![urlAutorizada, urlInsumos].includes(url)) throw new Error('Solo se admite la base descartable autorizada sin contraseña en URL.');
+  const nombreBase = url === urlInsumos ? 'agrul_test_agrul_055' : 'agrul_test_agrul_054';
+  const esquema = `agrul${url === urlInsumos ? '055' : '054'}_aislado_${randomUUID().replaceAll('-', '')}`;
+  if (!/^agrul05[45]_aislado_[a-f0-9]{32}$/.test(esquema)) throw new Error('Esquema de prueba inválido.');
   const base = createDatabaseConnection(url);
   let creado = false;
   let aislada: ReturnType<typeof createDatabaseConnection> | undefined;
   try {
     const { rows } = await base.pool.query("select current_database() as db,current_user as usuario,current_setting('server_version_num')::int as version,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls from pg_roles where rolname=current_user");
     const rol = rows[0];
-    if (rol?.db !== 'agrul_test_agrul_054' || rol.usuario !== 'agrul_test_user' || rol.version < 180000 || rol.version >= 190000 ||
+    if (rol?.db !== nombreBase || rol.usuario !== 'agrul_test_user' || rol.version < 180000 || rol.version >= 190000 ||
       rol.rolsuper || rol.rolcreatedb || rol.rolcreaterole || rol.rolreplication || rol.rolbypassrls) {
       throw new Error('Se requiere PostgreSQL 18 y el rol de pruebas sin privilegios administrativos.');
     }
     await runMigrations(url);
     // pg_dump usa pgpass por su mecanismo habitual; nunca se captura su contenido.
     const { stdout } = await ejecutar('C:/Program Files/PostgreSQL/18/bin/pg_dump.exe', [
-      '--host=127.0.0.1', '--port=5432', '--username=agrul_test_user', '--dbname=agrul_test_agrul_054',
+      '--host=127.0.0.1', '--port=5432', '--username=agrul_test_user', `--dbname=${nombreBase}`,
       '--no-password', '--schema-only', '--schema=public', '--no-owner', '--no-privileges', '--no-comments', '--quote-all-identifiers',
     ], { maxBuffer: 8 * 1024 * 1024, timeout: 30000 });
     // El DDL no se imprime ni se persiste. Todas las referencias a public se

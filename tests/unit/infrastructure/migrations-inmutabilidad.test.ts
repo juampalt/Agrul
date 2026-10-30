@@ -3,13 +3,15 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
-import { runMigrations } from '../../../src/infrastructure/database/migrate.js';
+import { crearEsquemaPostgresAislado } from '../../helpers/esquema-postgres-aislado.fixture.js';
 
-const { Pool } = pg;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const migrationsFolder = resolve(__dirname, '../../../drizzle/migrations');
 const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
-if (connectionString && connectionString !== 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054') {
+if (connectionString && ![
+  'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054',
+  'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055',
+].includes(connectionString)) {
   throw new Error('La prueba de inmutabilidad solo admite la base descartable autorizada con rol exclusivo y sin contraseña en URL.');
 }
 
@@ -88,7 +90,9 @@ describe('AGRUL-009: Migraciones SQL y Triggers de Inmutabilidad', () => {
   });
 
   it.skipIf(!connectionString)('rechaza UPDATE y DELETE con el trigger PostgreSQL real', async () => {
-    const pool = new Pool({ connectionString, connectionTimeoutMillis: 1500 });
+    if (!connectionString) throw new Error('Se requiere conexión explícita.');
+    const aislado = await crearEsquemaPostgresAislado(connectionString);
+    const pool = aislado.connection.pool;
     let client: pg.PoolClient | undefined;
     const loteId = crypto.randomUUID();
     const actorId = '00000000-0000-0000-0000-000000000002';
@@ -97,10 +101,9 @@ describe('AGRUL-009: Migraciones SQL y Triggers de Inmutabilidad', () => {
     try {
       client = await pool.connect();
       const { rows } = await client.query("select current_database() as db,current_user as usuario,current_setting('server_version_num')::int as version,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls from pg_roles where rolname=current_user");
-      expect(rows[0]).toMatchObject({ db: 'agrul_test_agrul_054', usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+      expect(rows[0]).toMatchObject({ db: new URL(connectionString).pathname.slice(1), usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
       expect(rows[0].version).toBeGreaterThanOrEqual(180000);
       expect(rows[0].version).toBeLessThan(190000);
-      await runMigrations(connectionString);
       await client.query('begin');
 
       // 2. Insertar lote de prueba
@@ -133,7 +136,7 @@ describe('AGRUL-009: Migraciones SQL y Triggers de Inmutabilidad', () => {
       expect((await client.query('select id from lotes where id=$1', [loteId])).rows).toEqual([]);
     } finally {
       try { if (client) await client.query('rollback'); }
-      finally { client?.release(); await pool.end(); }
+      finally { client?.release(); await aislado.cerrar(); }
     }
   });
 });

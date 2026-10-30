@@ -2,6 +2,14 @@ import Fastify, { FastifyInstance } from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { errorHandler } from './middlewares/error-handler.js';
 import { registerApiRoutes } from './routes/api.routes.js';
+import { registrarRutasInsumos } from './routes/insumos.routes.js';
+import { registrarRutasInventarioInsumos } from './routes/inventario-insumos.routes.js';
+import { registrarRutasAplicacionesInsumos } from './routes/aplicaciones-insumos.routes.js';
+import { registrarRutasCorreccionesAplicaciones } from './routes/correcciones-aplicaciones.routes.js';
+import { CorreccionesAplicacionesRepositoryPort } from '../../core/ports/correcciones-aplicaciones-repository.port.js';
+import { AplicacionesInsumosRepositoryPort } from '../../core/ports/aplicaciones-insumos-repository.port.js';
+import { InventarioInsumosRepositoryPort } from '../../core/ports/inventario-insumos-repository.port.js';
+import { InsumosRepositoryPort } from '../../core/ports/insumos-repository.port.js';
 import { registrarRutasCultivos } from './routes/cultivos.routes.js';
 import { registrarRutasVariedades } from './routes/variedades.routes.js';
 import { registrarRutasPlantaciones } from './routes/plantaciones.routes.js';
@@ -260,6 +268,10 @@ export interface BuildAppOptions {
   ciclosRepo?: CiclosRepositoryPort;
   observacionesRepo?: ObservacionesMonitoreoRepositoryPort;
   insumosRepo?: InsumosCatalogoRepository;
+  insumosCanonicosRepo?: InsumosRepositoryPort;
+  inventarioInsumosRepo?: InventarioInsumosRepositoryPort;
+  aplicacionesInsumosRepo?: AplicacionesInsumosRepositoryPort;
+  correccionesAplicacionesRepo?: CorreccionesAplicacionesRepositoryPort;
   aplicacionesRepo?: AplicacionesRepositoryPort;
   cosechasRepo?: CosechasRepositoryPort;
   destinatariosRepo?: DestinatariosRepositoryPort;
@@ -462,7 +474,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   }
 
   let insumosController: InsumosController | undefined;
-  if (options.insumosRepo) {
+  if (options.insumosRepo && !options.insumosCanonicosRepo) {
     const registrarInsumoUseCase = new RegistrarInsumoCatalogoUseCase(options.insumosRepo);
     const listarInsumosUseCase = new ListarInsumosCatalogoUseCase(options.insumosRepo);
     const obtenerInsumoUseCase = new ObtenerInsumoPorIdUseCase(options.insumosRepo);
@@ -923,6 +935,10 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
 
 
   // Registro de Rutas
+  if (options.insumosCanonicosRepo) registrarRutasInsumos(app, options.insumosCanonicosRepo);
+  if (options.inventarioInsumosRepo) registrarRutasInventarioInsumos(app, options.inventarioInsumosRepo);
+  if (options.aplicacionesInsumosRepo) registrarRutasAplicacionesInsumos(app, options.aplicacionesInsumosRepo);
+  if (options.correccionesAplicacionesRepo) registrarRutasCorreccionesAplicaciones(app, options.correccionesAplicacionesRepo);
   if (options.cultivosRepo) registrarRutasCultivos(app, options.cultivosRepo);
   if (options.plantacionesRepo) registrarRutasPlantaciones(app, options.plantacionesRepo);
   if (options.ciclosProductivosRepo) registrarRutasCiclosProductivos(app, options.ciclosProductivosRepo);

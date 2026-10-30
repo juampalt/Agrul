@@ -15,7 +15,10 @@ import { InMemoryGenealogiaRepository } from '../mocks/in-memory-genealogia.repo
 import { InMemoryCiclosRepository } from '../mocks/in-memory-ciclos.repository.js';
 
 const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
-if (connectionString && connectionString !== 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054') {
+if (connectionString && ![
+  'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054',
+  'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055',
+].includes(connectionString)) {
   throw new Error('Territorio solo admite la base descartable autorizada, con rol exclusivo y sin contraseña en URL.');
 }
 const FINCA_ID = 'f0000000-0000-4000-8000-000000000151';
