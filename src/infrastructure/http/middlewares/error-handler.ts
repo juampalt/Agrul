@@ -1,5 +1,6 @@
 import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
+import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod';
 import { CodigoInsumoDuplicadoError } from '../../../core/domain/entities/insumo.entity.js';
 import { OperacionInventarioDuplicadaError } from '../../../core/domain/entities/inventario-insumos.js';
 import { AplicacionInsumosDuplicadaError } from '../../../core/domain/entities/aplicacion-insumos.js';
@@ -24,19 +25,23 @@ import { VariedadDuplicadaError } from '../../../core/domain/entities/variedad.e
 import { CodigoCicloDuplicadoError } from '../../../core/domain/value-objects/planificacion-ciclo.vo.js';
 import { TipoActividadDuplicadoError } from '../../../core/domain/entities/tipo-actividad-canonico.entity.js';
 import { ConflictoActividadProgramadaError } from '../../../core/domain/entities/actividad-programada.entity.js';
+import { ConflictoProgramacionCosechaError } from '../../../core/domain/entities/cosecha-programada.entity.js';
+import { ConflictoRegistroCosechaError } from '../../../core/domain/entities/cosecha-registrada.js';
+import { ConflictoPoscosechaError } from '../../../core/domain/entities/poscosecha.js';
 
 export function errorHandler(error: FastifyError | Error, request: FastifyRequest, reply: FastifyReply) {
   const timestamp = new Date().toISOString();
 
   // 1. Error de validación Zod (400 Bad Request)
-  if (error instanceof ZodError) {
+  if (error instanceof ZodError || hasZodFastifySchemaValidationErrors(error)) {
+    const issues = error instanceof ZodError ? error.issues : error.validation.map(validation => validation.params.issue);
     return reply.status(400).send({
       success: false,
       data: null,
       error: {
         code: 'VALIDATION_ERROR',
         message: 'Los datos enviados no superaron la validación sintáctica.',
-        details: error.issues.map(issue => ({
+        details: issues.map(issue => ({
           field: issue.path.join('.'),
           message: issue.message,
         })),
@@ -107,6 +112,9 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
     error instanceof VariedadDuplicadaError ||
     error instanceof CodigoCicloDuplicadoError ||
     error instanceof TipoActividadDuplicadoError ||
+    error instanceof ConflictoProgramacionCosechaError ||
+    error instanceof ConflictoRegistroCosechaError ||
+    error instanceof ConflictoPoscosechaError ||
     error instanceof ConflictoActividadProgramadaError
   ) {
     return reply.status(409).send({

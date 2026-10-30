@@ -34,7 +34,7 @@ describe.skipIf(!url)('CU32/CU33: monitoreos con PostgreSQL y bootstrap reales',
   const listar = (query = '') => servidor.app.inject({ method: 'GET', url: `/api/v1/monitoreos?cicloId=${cicloId}${query}`, headers: encargado });
 
   beforeAll(async () => {
-    if (!['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055'].includes(url ?? '')) throw new Error('Se requiere la URL autorizada sin contraseña.');
+    if (!['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_056'].includes(url ?? '')) throw new Error('Se requiere la URL autorizada sin contraseña.');
     const { rows } = await connection.pool.query("select current_database() as db,current_user as usuario,current_setting('server_version_num')::int as version,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls from pg_roles where rolname=current_user");
     expect(rows[0]).toMatchObject({ db: baseEsperada, usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
     expect(rows[0].version).toBeGreaterThanOrEqual(180000); expect(rows[0].version).toBeLessThan(190000);

@@ -73,6 +73,7 @@ erDiagram
 ## 4. DOs and DON'Ts
 
 ### DO
+- **DO:** Al generar eventos desde hechos productivos, conservar la captura original y marcar `PENDIENTE_AUDITORIA_OFFLINE` si antecede a la transacción de ingesta. Esta política conservadora acompaña al ingreso offline existente mientras no exista una ventana canónica; aplicarla a nuevas inserciones mediante migraciones incrementales, preservando eventos históricos. Probar captura diferida y captura del servidor.
 - **DO:** Al hacer un **Split**, verificar que la suma de las cantidades asignadas a los lotes hijos no supere la cantidad disponible del lote padre.
 - **DO:** Al hacer un **Merge**, registrar un evento de tipo `FUSION_ORIGEN` en cada lote padre y un evento `FUSION_RECEPCION` en el lote hijo, linkeados mediante `LoteGenealogia`.
 - **DO:** Validar que los actores tengan roles activos y permisos para el tipo de evento en la ubicación especificada.

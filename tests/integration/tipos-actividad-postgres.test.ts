@@ -11,7 +11,7 @@ const aislado = connectionString ? await crearEsquemaPostgresAislado(connectionS
 const urlAislada = aislado?.connectionString;
 afterAll(async () => { await aislado?.cerrar(); });
 const baseEsperada = connectionString ? new URL(connectionString).pathname.slice(1) : '';
-if (connectionString && !['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055'].includes(connectionString ?? '')) {
+if (connectionString && !['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_056'].includes(connectionString ?? '')) {
   throw new Error('El catálogo solo admite la base descartable autorizada con el rol exclusivo y sin contraseña en URL.');
 }
 const marca = Buffer.from(randomUUID().replaceAll('-', ''), 'hex').toString('base64url');

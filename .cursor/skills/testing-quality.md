@@ -43,6 +43,7 @@ En Agrul, los tests son la salvaguarda de cumplimiento normativo. Verifican mate
 ## 5. DOs and DON'Ts
 
 ### DO
+- **DO:** Generar credenciales de fixtures al ejecutar y compartirlas explícitamente con el proceso de servidor real que las necesite, sin registrarlas ni duplicar contraseñas literales. Al habilitar una regresión en otra base autorizada, revisar las allowlists en todo `tests/`, incluidas las suites SQL ubicadas bajo unit/.
 - **DO:** Al compartir una base descartable entre suites, derivar los campos únicos del identificador completo del fixture respetando el largo de la columna; limpiar solo filas propias. Ejecutar juntas las suites consumidoras para detectar colisiones y adaptar los datos nuevos a los CHECK vigentes sin relajar restricciones históricas.
 - **DO:** Si una suite requiere tablas vacías o una finca única, aislarla en un esquema temporal de la base autorizada. Conservar el DDL real y sus restricciones, redirigir todas las FK y funciones al esquema propio y conectar sin fallback a public. Verificar datos compartidos intactos y rechazar destinos no autorizados antes de crear pools. Eliminar únicamente el esquema propio al terminar.
 - **DO:** Cuando el fixture necesite reiniciar bitácoras append-only, recrear su esquema temporal entre casos en lugar de deshabilitar triggers o borrar auditoría. Mantener los controles reales activos durante toda la prueba.

@@ -64,7 +64,7 @@ describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
   beforeAll(async () => {
     if (!url) throw new Error('Falta conexión explícita.');
     const target = new URL(url);
-    if (target.hostname !== '127.0.0.1' || target.port !== '5432' || !['/agrul_test_agrul_054', '/agrul_test_agrul_055'].includes(target.pathname) || target.username !== 'agrul_test_user' || target.password || target.search) {
+    if (target.hostname !== '127.0.0.1' || target.port !== '5432' || !['/agrul_test_agrul_054', '/agrul_test_agrul_055', '/agrul_test_agrul_056'].includes(target.pathname) || target.username !== 'agrul_test_user' || target.password || target.search) {
       throw new Error('Solo se admite el rol y la base descartable autorizados, sin contraseña ni parámetros en URL.');
     }
     const { rows } = await connection.pool.query("select current_database() as db, current_user as usuario, current_setting('server_version_num')::int as version, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls from pg_roles where rolname=current_user");

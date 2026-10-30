@@ -7,13 +7,15 @@ import { runMigrations } from '../../src/infrastructure/database/migrate.js';
 const ejecutar = promisify(execFile);
 const urlAutorizada = 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054';
 const urlInsumos = 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055';
+const urlCosechas = 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_056';
 
 /** Copia solo DDL al esquema temporal: conserva FK, índices y triggers reales. */
 export async function crearEsquemaPostgresAislado(url: string) {
-  if (![urlAutorizada, urlInsumos].includes(url)) throw new Error('Solo se admite la base descartable autorizada sin contraseña en URL.');
-  const nombreBase = url === urlInsumos ? 'agrul_test_agrul_055' : 'agrul_test_agrul_054';
-  const esquema = `agrul${url === urlInsumos ? '055' : '054'}_aislado_${randomUUID().replaceAll('-', '')}`;
-  if (!/^agrul05[45]_aislado_[a-f0-9]{32}$/.test(esquema)) throw new Error('Esquema de prueba inválido.');
+  if (![urlAutorizada, urlInsumos, urlCosechas].includes(url)) throw new Error('Solo se admite la base descartable autorizada sin contraseña en URL.');
+  const numero = url === urlCosechas ? '056' : url === urlInsumos ? '055' : '054';
+  const nombreBase = `agrul_test_agrul_${numero}`;
+  const esquema = `agrul${numero}_aislado_${randomUUID().replaceAll('-', '')}`;
+  if (!/^agrul05[456]_aislado_[a-f0-9]{32}$/.test(esquema)) throw new Error('Esquema de prueba inválido.');
   const base = createDatabaseConnection(url);
   let creado = false;
   let aislada: ReturnType<typeof createDatabaseConnection> | undefined;

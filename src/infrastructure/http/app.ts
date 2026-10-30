@@ -16,6 +16,16 @@ import { registrarRutasPlantaciones } from './routes/plantaciones.routes.js';
 import { registrarRutasCiclosProductivos } from './routes/ciclos-productivos.routes.js';
 import { registrarRutasTiposActividad } from './routes/tipos-actividad.routes.js';
 import { registrarRutasActividadesProgramadas } from './routes/actividades-programadas.routes.js';
+import { registrarRutasCosechasProgramadas } from './routes/cosechas-programadas.routes.js';
+import { registrarRutasCosechasRegistro } from './routes/cosechas-registro.routes.js';
+import { registrarRutasPoscosecha } from './routes/poscosecha.routes.js';
+import { registrarRutasAlmacenamientoProduccion } from './routes/almacenamiento-produccion.routes.js';
+import { AlmacenamientoProduccionRepositoryPort } from '../../core/ports/poscosecha-almacenamiento-repository.port.js';
+import { DestinosRepositoryPort } from '../../core/ports/destinos-repository.port.js';
+import { ClasificacionesRepositoryPort } from '../../core/ports/clasificaciones-repository.port.js';
+import { PoscosechaAlmacenamientoRepositoryPort } from '../../core/ports/poscosecha-almacenamiento-repository.port.js';
+import { CosechasRegistroRepositoryPort } from '../../core/ports/cosechas-registro-repository.port.js';
+import { CosechasProgramadasRepositoryPort } from '../../core/ports/cosechas-programadas-repository.port.js';
 import { registrarRutasActividadesRealizadas } from './routes/actividades-realizadas.routes.js';
 import { registrarRutasMonitoreos } from './routes/monitoreos.routes.js';
 import { MonitoreosRepositoryPort } from '../../core/ports/monitoreos-repository.port.js';
@@ -260,6 +270,12 @@ export interface BuildAppOptions {
   ciclosProductivosRepo?: CiclosProductivosRepositoryPort;
   tiposActividadRepo?: TiposActividadRepositoryPort;
   actividadesProgramadasRepo?: ActividadesProgramadasRepositoryPort;
+  cosechasProgramadasRepo?: CosechasProgramadasRepositoryPort;
+  cosechasRegistroRepo?: CosechasRegistroRepositoryPort;
+  clasificacionesRepo?: ClasificacionesRepositoryPort;
+  poscosechaRepo?: PoscosechaAlmacenamientoRepositoryPort;
+  almacenamientoRepo?: AlmacenamientoProduccionRepositoryPort;
+  destinosProduccionRepo?: DestinosRepositoryPort;
   actividadesRealizadasRepo?: ActividadesRealizadasGestionPort;
   monitoreosRepo?: MonitoreosRepositoryPort;
   accesoRecursosAgricolasRepo?: AccesoRecursosAgricolasPort;
@@ -525,6 +541,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     );
   }
 
+  if (options.cosechasRepo && options.cosechasRegistroRepo) throw new Error('No se pueden habilitar simultáneamente los contratos heredado y vigente de cosechas.');
   let cosechasController: CosechasController | undefined;
   if (options.cosechasRepo && options.ciclosRepo) {
     const registrarCosechaUseCase = new RegistrarCosechaUseCase(
@@ -946,6 +963,10 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     registrarRutasTiposActividad(app, options.tiposActividadRepo, options.cultivosRepo);
   }
   if (options.actividadesRealizadasRepo) registrarRutasActividadesRealizadas(app, options.actividadesRealizadasRepo, options.accesoRecursosAgricolasRepo);
+  if (options.cosechasProgramadasRepo) registrarRutasCosechasProgramadas(app, options.cosechasProgramadasRepo, options.accesoRecursosAgricolasRepo);
+  if (options.cosechasRegistroRepo) registrarRutasCosechasRegistro(app, options.cosechasRegistroRepo);
+  if (options.clasificacionesRepo && options.poscosechaRepo) registrarRutasPoscosecha(app, options.clasificacionesRepo, options.poscosechaRepo);
+  if (options.almacenamientoRepo && options.destinosProduccionRepo) registrarRutasAlmacenamientoProduccion(app, options.almacenamientoRepo, options.destinosProduccionRepo);
   if (options.monitoreosRepo) registrarRutasMonitoreos(app, options.monitoreosRepo, options.accesoRecursosAgricolasRepo);
   if (
     options.actividadesProgramadasRepo &&

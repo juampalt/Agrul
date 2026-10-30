@@ -34,7 +34,7 @@ describe.skipIf(!url)('P2: conflictos reales entre escrituras de programaciones'
     creadoEn: new Date(a.creadoEn).toISOString(), actualizadoEn: new Date(a.actualizadoEn).toISOString() });
 
   beforeAll(async () => {
-    if (!['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055'].includes(url ?? '')) throw new Error('Solo se admite la base y el rol autorizados, sin contraseña en URL.');
+    if (!['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_056'].includes(url ?? '')) throw new Error('Solo se admite la base y el rol autorizados, sin contraseña en URL.');
     const { rows } = await connection.pool.query("select current_database() as db,current_user as usuario,current_setting('server_version_num')::int as version,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls from pg_roles where rolname=current_user");
     expect(rows[0]).toMatchObject({ db: baseEsperada, usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
     expect(rows[0].version).toBeGreaterThanOrEqual(180000); expect(rows[0].version).toBeLessThan(190000);

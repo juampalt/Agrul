@@ -8,6 +8,10 @@ import { DrizzleVariedadesRepository } from './infrastructure/database/repositor
 import { DrizzlePlantacionesRepository } from './infrastructure/database/repositories/drizzle-plantaciones.repository.js';
 import { DrizzleTiposActividadRepository } from './infrastructure/database/repositories/drizzle-tipos-actividad.repository.js';
 import { DrizzleActividadesProgramadasRepository } from './infrastructure/database/repositories/drizzle-actividades-programadas.repository.js';
+import { DrizzleCosechasProgramadasRepository } from './infrastructure/database/repositories/drizzle-cosechas-programadas.repository.js';
+import { DrizzleCosechasRegistroRepository } from './infrastructure/database/repositories/drizzle-cosechas-registro.repository.js';
+import { DrizzlePoscosechaRepository } from './infrastructure/database/repositories/drizzle-poscosecha.repository.js';
+import { DrizzleAlmacenamientoProduccionRepository } from './infrastructure/database/repositories/drizzle-almacenamiento-produccion.repository.js';
 import { DrizzleActividadesRealizadasRepository } from './infrastructure/database/repositories/drizzle-actividades-realizadas.repository.js';
 import { DrizzleMonitoreosRepository } from './infrastructure/database/repositories/drizzle-monitoreos.repository.js';
 import { DrizzleAccesoRecursosAgricolasRepository } from './infrastructure/database/repositories/drizzle-acceso-recursos-agricolas.repository.js';
@@ -39,6 +43,8 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
   const fincasRepo = new DrizzleFincasRepository(db);
   const cierreCicloGuard = new DrizzleCierreCicloGuard(db);
   const ciclosRepo = new DrizzleCiclosProductivosRepository(db, cierreCicloGuard);
+  const poscosechaRepo = new DrizzlePoscosechaRepository(db);
+  const almacenamientoRepo = new DrizzleAlmacenamientoProduccionRepository(db);
   const app = buildApp({
     insumosCanonicosRepo: new DrizzleInsumosRepository(db),
     inventarioInsumosRepo: new DrizzleInventarioInsumosRepository(db),
@@ -56,6 +62,12 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
     ciclosProductivosRepo: ciclosRepo,
     tiposActividadRepo: new DrizzleTiposActividadRepository(db),
     actividadesProgramadasRepo: new DrizzleActividadesProgramadasRepository(db),
+    cosechasProgramadasRepo: new DrizzleCosechasProgramadasRepository(db),
+    cosechasRegistroRepo: new DrizzleCosechasRegistroRepository(db),
+    clasificacionesRepo: poscosechaRepo,
+    poscosechaRepo,
+    almacenamientoRepo,
+    destinosProduccionRepo: almacenamientoRepo,
     actividadesRealizadasRepo: new DrizzleActividadesRealizadasRepository(db),
     monitoreosRepo: new DrizzleMonitoreosRepository(db),
     accesoRecursosAgricolasRepo: new DrizzleAccesoRecursosAgricolasRepository(db),

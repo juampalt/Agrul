@@ -39,7 +39,7 @@ describe.skipIf(!url)('CU30/CU31: labores realizadas con PostgreSQL y bootstrap 
   const cantidad = async () => (await connection.pool.query('select count(*)::int as total from actividades_realizadas where actividad_programada_id=$1', [programadaId])).rows[0].total;
 
   beforeAll(async () => {
-    if (!['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055'].includes(url ?? '')) throw new Error('Se requiere la URL explícita autorizada sin contraseña.');
+    if (!['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_056'].includes(url ?? '')) throw new Error('Se requiere la URL explícita autorizada sin contraseña.');
     const { rows } = await connection.pool.query("select current_database() as db,current_user as usuario,current_setting('server_version_num')::int as version,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls from pg_roles where rolname=current_user");
     expect(rows[0]).toMatchObject({ db: baseEsperada, usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
     expect(rows[0].version).toBeGreaterThanOrEqual(180000);

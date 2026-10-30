@@ -39,7 +39,7 @@ describe.skipIf(!url)('P1: históricos reales anteriores a 0015 desde bootstrap'
   const snapshot = async (id: string) => (await historico.pool.query('select row_to_json(a) as fila from actividades_programadas a where id=$1', [id])).rows[0].fila;
 
   beforeAll(async () => {
-    if (!['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055'].includes(url ?? '')) throw new Error('Solo se admite la base autorizada con rol exclusivo y sin contraseña en URL.');
+    if (!['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_056'].includes(url ?? '')) throw new Error('Solo se admite la base autorizada con rol exclusivo y sin contraseña en URL.');
     expect(esquema).toMatch(/^agrul054_p1_[a-f0-9]{32}$/);
     const { rows } = await base.pool.query("select current_database() as db,current_user as usuario,current_setting('server_version_num')::int as version,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls from pg_roles where rolname=current_user");
     expect(rows[0]).toMatchObject({ db: baseEsperada, usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
