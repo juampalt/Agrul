@@ -45,19 +45,25 @@ export class ConsultasInventario {
     const vencido = sql`coalesce(sum(${p.cantidadDisponible}) FILTER (WHERE ${p.fechaVencimiento} < ${hoy}),0)`;
     // Nunca sumar cantidades expresadas en unidades diferentes ni inventar la
     // unidad de partidas históricas. El mínimo solo aplica a la unidad vigente.
-    const unidad = sql<string | null>`CASE WHEN count(${p.id})=0 THEN ${i.unidadMedida} ELSE ${p.unidadMedida} END`;
+    // La unidad vigente debe existir también con saldo cero cuando todas las
+    // partidas conservan una unidad anterior. UNION evita duplicar esa fila.
+    const unidades = sql`LATERAL (SELECT ${i.unidadMedida} AS unidad
+      UNION SELECT ${p.unidadMedida} FROM ${p}
+      WHERE ${p.insumoId}=${i.id} AND ${p.fincaId}=${f.id}) AS unidades`;
+    const unidad = sql<string | null>`unidades.unidad`;
     const minimo = sql<boolean>`((${unidad}) = ${i.unidadMedida} AND ${utilizable} <= ${i.nivelMinimo})`;
     return this.db.select({ fincaId: f.id, insumoId: i.id, codigo: i.codigo, nombre: i.nombre,
       unidadMedida: unidad, nivelMinimo: i.nivelMinimo,
       stockFisico: sql<string>`coalesce(sum(${p.cantidadDisponible}),0)::text`,
       stockUtilizable: sql<string>`${utilizable}::text`, stockVencido: sql<string>`${vencido}::text`,
       alertaStockMinimo: sql<boolean>`coalesce(${minimo},false)`, alertaVencimiento: sql<boolean>`${vencido} > 0`,
-    }).from(i).innerJoin(f, sql`true`).leftJoin(p, and(eq(p.insumoId, i.id), eq(p.fincaId, f.id)))
+    }).from(i).innerJoin(f, sql`true`).innerJoin(unidades, sql`true`)
+      .leftJoin(p, and(eq(p.insumoId, i.id), eq(p.fincaId, f.id), sql`${p.unidadMedida} IS NOT DISTINCT FROM ${unidad}`))
       .where(and(alcance(f.id, actor), filtros.fincaId ? eq(f.id, filtros.fincaId) : undefined,
         filtros.insumoId ? eq(i.id, filtros.insumoId) : undefined,
         soloAlertas ? eq(i.estado, 'ACTIVO') : undefined))
-      .groupBy(f.id, i.id, p.unidadMedida)
+      .groupBy(f.id, i.id, unidad)
       .having(soloAlertas ? sql`${minimo} OR ${vencido} > 0` : undefined)
-      .orderBy(asc(f.id), asc(i.codigo), asc(p.unidadMedida)).limit(filtros.limit).offset(filtros.offset);
+      .orderBy(asc(f.id), asc(i.codigo), asc(unidad)).limit(filtros.limit).offset(filtros.offset);
   }
 }

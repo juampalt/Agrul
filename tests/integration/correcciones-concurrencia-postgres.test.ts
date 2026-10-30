@@ -18,6 +18,24 @@ describe.skipIf(!url)('AGRUL-055 CU40: concurrencia, idempotencia y protección 
     expect(Number(await f.saldo(partidaId))).toBe(10 - Number(nueva.items[0].cantidadAplicada));
     expect((await f.pool.query('select id from correcciones_aplicaciones_insumo where aplicacion_anterior_id=$1', [aplicacion.id])).rows).toHaveLength(1);
   });
+  it('SQL directo no agrega consumos a versiones confirmadas ni sustituidas, incluso durante una corrección', async () => {
+    const { aplicacion, insumoId, partidaId } = await f.original();
+    const agregar = () => f.pool.query(`insert into aplicaciones_insumo_items
+      (aplicacion_id,insumo_id,partida_insumo_id,cantidad_aplicada,dosis) values($1,$2,$3,1,1)`,
+    [aplicacion.id, insumoId, partidaId]);
+    const antes = await f.hechos(aplicacion.id);
+    await expect(agregar()).rejects.toMatchObject({ code: '23514', constraint: 'aplicacion_items_confirmados' });
+    expect(await f.saldo(partidaId)).toBe('6.00');
+    const [correccion, intento] = await Promise.all([
+      f.corregir(aplicacion.id, f.datosCorreccion(insumoId, 2)),
+      agregar().then(() => null, (error: unknown) => error),
+    ]);
+    expect(correccion.statusCode).toBe(201);
+    expect(intento).toMatchObject({ code: '23514', constraint: 'aplicacion_items_confirmados' });
+    await expect(agregar()).rejects.toMatchObject({ code: '23514', constraint: 'aplicacion_items_confirmados' });
+    expect(await f.hechos(aplicacion.id)).toEqual(antes);
+    expect(await f.saldo(partidaId)).toBe('8.00');
+  });
   it('dos reintentos idénticos compensan y reaplican una sola vez', async () => {
     const { aplicacion, insumoId, partidaId } = await f.original(); const datos = f.datosCorreccion(insumoId, 2);
     const res = await Promise.all([f.corregir(aplicacion.id, datos), f.corregir(aplicacion.id, datos)]);

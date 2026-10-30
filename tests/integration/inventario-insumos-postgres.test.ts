@@ -103,6 +103,23 @@ describe.skipIf(!url)('AGRUL-055: ingresos, movimientos, saldos y alertas Postgr
     expect(lista.find((e: { unidadMedida: string }) => e.unidadMedida === 'kg').stockUtilizable).toBe('0');
     expect((await f.mover(partidaId, { unidadMedida: 'L' })).statusCode).toBe(422);
   });
+  it('alerta falta de stock en la unidad vigente aunque solo queden partidas en otra unidad', async () => {
+    const { insumoId } = await f.alta();
+    const cambio = await f.app.inject({ method: 'PUT', url: `/api/v1/insumos/${insumoId}`, headers: f.admin,
+      payload: { ...f.datos(), unidadMedida: 'L', nivelMinimo: 5 } });
+    expect(cambio.statusCode).toBe(200);
+    const ruta = `?insumoId=${insumoId}&fincaId=${f.fincaId}`;
+    const existencias = (await f.consultar(`existencias${ruta}`)).json().data;
+    expect(existencias).toEqual(expect.arrayContaining([
+      expect.objectContaining({ unidadMedida: 'kg', stockFisico: '10.00', stockUtilizable: '0', alertaStockMinimo: false }),
+      expect.objectContaining({ unidadMedida: 'L', stockFisico: '0', stockUtilizable: '0', alertaStockMinimo: true }),
+    ]));
+    expect((await f.consultar(`alertas${ruta}`)).json().data).toEqual([
+      expect.objectContaining({ unidadMedida: 'L', stockFisico: '0', alertaStockMinimo: true }),
+    ]);
+    await f.alta({ insumoId, cantidad: 6, unidadMedida: 'L' });
+    expect((await f.consultar(`alertas${ruta}`)).json().data).toEqual([]);
+  });
   it('RN-16 bloquea UPDATE, DELETE y TRUNCATE del historial y cambios directos de saldo/origen', async () => {
     const { partidaId, movimientoId } = await f.alta();
     for (const sentencia of ['update movimientos_inventario set cantidad=2 where id=$1', 'delete from movimientos_inventario where id=$1']) {

@@ -162,6 +162,13 @@
       "when": 1793149218000,
       "tag": "0022_correcciones_aplicaciones",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793149219000,
+      "tag": "0023_congelar_items_confirmados",
+      "breakpoints": true
     }
   ]
 }

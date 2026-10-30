@@ -117,3 +117,7 @@ Las correcciones sin procedencia demostrable exigen conciliación explícita.
 El informe reúne evidencia de requisitos y regresión; no sustituye una revisión
 independiente del diff completo antes de integrar. Este bloque se publica en la
 rama de trabajo y se detiene para revisión del cupo. No cierra #49 ni hace merge.
+
+La revisión posterior identificó y corrigió dos fallos adicionales de integridad
+y alertas. Sus arreglos, migración 0023 y regresión de 1404 casos están documentados
+en [revision-integracion.md](revision-integracion.md), que amplía este informe.
