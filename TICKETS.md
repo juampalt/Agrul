@@ -1092,6 +1092,7 @@
 - **Validación etapa 4 / CU40:** Compensación exacta y versión reemplazante en una transacción según definición aprobada; conciliación, consumos posteriores, sustitución única, historial y rollback verificados. 27 pruebas nuevas; regresión: 1060 aprobadas, 342 omitidas, 0 fallidas. Lint y build aprobados. Detalle: [.scratch/agrul-055/etapa4.md](.scratch/agrul-055/etapa4.md).
 - **Auditoría y regresión completa:** Matriz de los once CU respetando los grupos documentados; aislamiento de las suites anteriores en la base autorizada. **1402 aprobadas, 0 omitidas, 0 fallidas**, 131 archivos; lint y build aprobados. Detalle: [.scratch/agrul-055/auditoria.md](.scratch/agrul-055/auditoria.md). Sin PR ni merge en este bloque; pausa para revisión del cupo.
 - **Revisión de integración:** Revisión independiente por estándares y especificación; corregidos INSERT tardíos de items confirmados (migración 0023) y alerta de mínimo tras cambiar unidad. **1404 aprobadas, 0 omitidas, 0 fallidas**; lint y build aprobados, sin hallazgos pendientes. [Informe](.scratch/agrul-055/revision-integracion.md) y [cuerpo del PR](.scratch/agrul-055/pr.md). El bloque publica el PR y se detiene antes del merge para revisión del cupo.
+- **Pull Request:** [#58](https://github.com/juampalt/Agrul/pull/58), abierto hacia main con `Closes #49`. Sin merge en este bloque.
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulos 4 & 9: Insumos y Stock
 - **Casos de Uso:** CU34 a CU40, CU63 a CU66

@@ -70,3 +70,7 @@ se detalla por separado a continuación.
 Se prepara un PR hacia main con el título pedido, matriz de once CU, reglas,
 migraciones, evidencia y riesgos. No se hace merge dentro de este bloque:
 se detiene tras publicar para que el usuario revise su cupo.
+
+PR publicado: [#58](https://github.com/juampalt/Agrul/pull/58), abierto, no draft,
+con ae449d1 como commit productivo validado y `Closes #49`. El enlace se registra
+en un commit posterior de documentación; no modifica el código probado.
