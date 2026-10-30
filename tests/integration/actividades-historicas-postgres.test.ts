@@ -3,13 +3,17 @@ import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
-import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { crearEsquemaPostgresAislado } from '../helpers/esquema-postgres-aislado.fixture.js';
 import { DrizzleUsuarioFincasRepository } from '../../src/infrastructure/database/repositories/drizzle-usuario-fincas.repository.js';
 import { CicloConActividadesPendientesError } from '../../src/application/use-cases/verificar-cierre-ciclo.use-case.js';
 import { autenticarOperadorPrueba } from '../helpers/operador-postgres.fixture.js';
 import { sembrarCiclosRn09 } from '../helpers/sembrar-ciclos-rn09.js';
 
 const url = process.env.ACTIVIDADES_TEST_DATABASE_URL;
+const aislado = url ? await crearEsquemaPostgresAislado(url) : undefined;
+const esquemaBase = aislado?.esquema;
+afterAll(async () => { await aislado?.cerrar(); });
+const baseEsperada = url ? new URL(url).pathname.slice(1) : '';
 const BASE = 'c0000000-0000-4000-8000-000000000054';
 const FINCA = 'f0000000-0000-4000-8000-000000000059';
 const esquema = `agrul054_p1_${randomUUID().replaceAll('-', '')}`;
@@ -20,7 +24,7 @@ const desconocidos = { tipoActividadId: null, fechaProgramada: null, responsable
   superficiePrevista: null, descripcion: null, motivoCancelacion: null };
 
 describe.skipIf(!url)('P1: históricos reales anteriores a 0015 desde bootstrap', () => {
-  const base = createDatabaseConnection(url);
+  const base = createDatabaseConnection(aislado?.connectionString);
   let historico: ReturnType<typeof createDatabaseConnection>;
   let servidor: ReturnType<typeof crearServidorProduccion>;
   let headers: { authorization: string }[];
@@ -35,13 +39,13 @@ describe.skipIf(!url)('P1: históricos reales anteriores a 0015 desde bootstrap'
   const snapshot = async (id: string) => (await historico.pool.query('select row_to_json(a) as fila from actividades_programadas a where id=$1', [id])).rows[0].fila;
 
   beforeAll(async () => {
-    if (url !== 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054') throw new Error('Solo se admite la base autorizada con rol exclusivo y sin contraseña en URL.');
+    if (!['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055'].includes(url ?? '')) throw new Error('Solo se admite la base autorizada con rol exclusivo y sin contraseña en URL.');
     expect(esquema).toMatch(/^agrul054_p1_[a-f0-9]{32}$/);
     const { rows } = await base.pool.query("select current_database() as db,current_user as usuario,current_setting('server_version_num')::int as version,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls from pg_roles where rolname=current_user");
-    expect(rows[0]).toMatchObject({ db: 'agrul_test_agrul_054', usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+    expect(rows[0]).toMatchObject({ db: baseEsperada, usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
     expect(rows[0].version).toBeGreaterThanOrEqual(180000); expect(rows[0].version).toBeLessThan(190000);
-    await runMigrations(url); await sembrarCiclosRn09(base.pool, [BASE]);
-    totalPublico = (await base.pool.query('select count(*)::int as total from public.actividades_programadas')).rows[0].total;
+    await sembrarCiclosRn09(base.pool, [BASE]);
+    totalPublico = (await base.pool.query(`select count(*)::int as total from "${esquemaBase}".actividades_programadas`)).rows[0].total;
     ciclosCreados = true;
     for (const id of ciclos) await base.pool.query(`insert into ciclos_productivos(id,plantacion_id,nombre_codigo,fecha_inicio_prevista,fecha_fin_prevista,fecha_inicio_efectiva,responsable_seguimiento_id,estado)
       select $1,plantacion_id,$2,'2026-10-01','2026-10-27','2026-10-01',responsable_seguimiento_id,'ACTIVO' from ciclos_productivos where id=$3`, [id, `P1-${id.slice(0, 20)}`, BASE]);
@@ -49,10 +53,10 @@ describe.skipIf(!url)('P1: históricos reales anteriores a 0015 desde bootstrap'
     try {
       await client.query('begin');
       await client.query(`create schema "${esquema}"`);
-      await client.query(`set local search_path to "${esquema}", public`);
+      await client.query(`set local search_path to "${esquema}", "${esquemaBase}", pg_catalog`);
       await client.query(readFileSync(new URL('../../drizzle/migrations/0007_pendientes_cierre_ciclo.sql', import.meta.url), 'utf8'));
-      await client.query('alter table actividades_programadas add constraint p1_ciclo_fk foreign key(ciclo_id) references public.ciclos_productivos(id) on delete restrict');
-      await client.query('create trigger trg_pendiente_ciclo_abierto before insert or update of ciclo_id, estado on actividades_programadas for each row execute function public.validar_pendiente_ciclo_abierto()');
+      await client.query(`alter table actividades_programadas add constraint p1_ciclo_fk foreign key(ciclo_id) references "${esquemaBase}".ciclos_productivos(id) on delete restrict`);
+      await client.query(`create trigger trg_pendiente_ciclo_abierto before insert or update of ciclo_id, estado on actividades_programadas for each row execute function "${esquemaBase}".validar_pendiente_ciclo_abierto()`);
       await client.query(`insert into actividades_programadas(id,ciclo_id,estado) values
         ($1,$6,'PENDIENTE'),($2,$6,'CANCELADA'),($3,$6,'EJECUTADA'),($4,$7,'PENDIENTE'),($5,$8,'PENDIENTE')`, [...filas, ...ciclos]);
       // Se aplica el SQL real sobre filas ya existentes, sin relajar ningún CHECK.
@@ -60,11 +64,12 @@ describe.skipIf(!url)('P1: históricos reales anteriores a 0015 desde bootstrap'
       await client.query('commit'); esquemaCreado = true;
     } catch (error) { await client.query('rollback'); throw error; }
     finally { client.release(); }
+    if (!url) throw new Error('Se requiere conexión explícita.');
     const scopedUrl = new URL(url);
-    scopedUrl.searchParams.set('options', `-c search_path=${esquema},public`);
+    scopedUrl.searchParams.set('options', `-c search_path=${esquema},${esquemaBase},pg_catalog`);
     historico = createDatabaseConnection(scopedUrl.toString());
     expect((await historico.pool.query('select current_schema() as esquema,current_database() as db')).rows[0])
-      .toEqual({ esquema, db: 'agrul_test_agrul_054' });
+      .toEqual({ esquema, db: baseEsperada });
     servidor = crearServidorProduccion({ connectionString: scopedUrl.toString(), logger: false }); await servidor.app.ready();
     headers = [];
     for (let i = 0; i < usuarios.length; i++) headers.push(await autenticarOperadorPrueba(base.pool, servidor.app,
@@ -139,6 +144,6 @@ describe.skipIf(!url)('P1: históricos reales anteriores a 0015 desde bootstrap'
     expect((await request(2, 'GET', `/${filas[1]}`)).statusCode).toBe(403);
     const lista = await request(2, 'GET', ''); expect(lista.statusCode).toBe(200); expect(lista.json().data).toEqual([]);
     expect((await request(2, 'PATCH', `/${filas[0]}/cancelar`, { motivoCancelacion: 'Sin permiso' })).statusCode).toBe(403);
-    expect((await base.pool.query('select count(*)::int as total from public.actividades_programadas')).rows[0].total).toBe(totalPublico);
+    expect((await base.pool.query(`select count(*)::int as total from "${esquemaBase}".actividades_programadas`)).rows[0].total).toBe(totalPublico);
   });
 });

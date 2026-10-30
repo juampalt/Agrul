@@ -2,20 +2,24 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { AgrulTransaction, createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
-import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { crearEsquemaPostgresAislado } from '../helpers/esquema-postgres-aislado.fixture.js';
 import { CicloConActividadesPendientesError } from '../../src/application/use-cases/verificar-cierre-ciclo.use-case.js';
 import { sembrarCiclosRn09 } from '../helpers/sembrar-ciclos-rn09.js';
 
 const connectionString = process.env.RN09_TEST_DATABASE_URL;
+const aislado = connectionString ? await crearEsquemaPostgresAislado(connectionString) : undefined;
+const urlAislada = aislado?.connectionString;
+afterAll(async () => { await aislado?.cerrar(); });
+const baseEsperada = connectionString ? new URL(connectionString).pathname.slice(1) : '';
 // Validar antes de construir pools o ejecutar cualquier consulta.
-if (connectionString && connectionString !== 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054') {
+if (connectionString && !['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055'].includes(connectionString ?? '')) {
   throw new Error('RN-09 solo admite la base descartable autorizada y el rol exclusivo, sin contraseña en URL.');
 }
 const CICLO = 'c0000000-0000-4000-8000-000000000052';
 const OTRO = 'c0000000-0000-4000-8000-000000000053';
 
 describe.skipIf(!connectionString)('RN-09: consulta persistente y transacción de cierre', () => {
-  const connection = createDatabaseConnection(connectionString);
+  const connection = createDatabaseConnection(urlAislada);
   let servidor: ReturnType<typeof crearServidorProduccion>;
 
   // Representa un efecto SQL de la futura operación CU21; no implementa un ciclo ni un endpoint productivo.
@@ -33,13 +37,13 @@ describe.skipIf(!connectionString)('RN-09: consulta persistente y transacción d
 
   beforeAll(async () => {
     const { rows } = await connection.pool.query("select current_database() as db, current_user as usuario, current_setting('server_version_num')::int as version, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls from pg_roles where rolname=current_user");
-    expect(rows[0]).toMatchObject({ db: 'agrul_test_agrul_054', usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+    expect(rows[0]).toMatchObject({ db: baseEsperada, usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
     expect(rows[0].version).toBeGreaterThanOrEqual(180000);
     expect(rows[0].version).toBeLessThan(190000);
-    await runMigrations(connectionString);
+
     await sembrarCiclosRn09(connection.pool, [CICLO, OTRO]);
     await connection.pool.query('create table if not exists rn09_efectos_prueba (id uuid primary key)');
-    servidor = crearServidorProduccion({ connectionString, logger: false });
+    servidor = crearServidorProduccion({ connectionString: urlAislada, logger: false });
     // Ruta exclusiva de la prueba para verificar el errorHandler real sin desarrollar CU21.
     servidor.app.post('/__test/rn09', async () => servidor.cierreCicloGuard.ejecutar(CICLO, efecto));
     await servidor.app.ready();
@@ -85,7 +89,7 @@ describe.skipIf(!connectionString)('RN-09: consulta persistente y transacción d
 
   it('consulta el mismo pendiente desde otra instancia del bootstrap', async () => {
     await actividad('PENDIENTE');
-    const otra = crearServidorProduccion({ connectionString, logger: false });
+    const otra = crearServidorProduccion({ connectionString: urlAislada, logger: false });
     try {
       await expect(otra.cierreCicloGuard.ejecutar(CICLO, efecto)).rejects.toBeInstanceOf(CicloConActividadesPendientesError);
       expect(await cantidadEfectos()).toBe(0);

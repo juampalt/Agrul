@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
-import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { crearEsquemaPostgresAislado } from '../helpers/esquema-postgres-aislado.fixture.js';
 import { DrizzleUsuarioFincasRepository } from '../../src/infrastructure/database/repositories/drizzle-usuario-fincas.repository.js';
 import { DrizzleActividadesProgramadasRepository } from '../../src/infrastructure/database/repositories/drizzle-actividades-programadas.repository.js';
 import { ConflictoActividadProgramadaError } from '../../src/core/domain/entities/actividad-programada.entity.js';
@@ -12,6 +12,10 @@ import { autenticarOperadorPrueba } from '../helpers/operador-postgres.fixture.j
 import { sembrarCiclosRn09 } from '../helpers/sembrar-ciclos-rn09.js';
 
 const url = process.env.ACTIVIDADES_TEST_DATABASE_URL;
+const aislado = url ? await crearEsquemaPostgresAislado(url) : undefined;
+const urlAislada = aislado?.connectionString;
+afterAll(async () => { await aislado?.cerrar(); });
+const baseEsperada = url ? new URL(url).pathname.slice(1) : '';
 const CICLO = 'c0000000-0000-4000-8000-000000000054';
 const OTRO = 'c0000000-0000-4000-8000-000000000055';
 const ADMIN = 'a0000000-0000-4000-8000-000000000054';
@@ -19,7 +23,7 @@ const ENCARGADO = 'b0000000-0000-4000-8000-000000000054';
 const LECTOR = 'd0000000-0000-4000-8000-000000000054';
 
 describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
-  const connection = createDatabaseConnection(url);
+  const connection = createDatabaseConnection(urlAislada);
   const repo = new DrizzleActividadesProgramadasRepository(connection.db);
   let servidor: ReturnType<typeof crearServidorProduccion>;
   let admin: { authorization: string };
@@ -60,16 +64,16 @@ describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
   beforeAll(async () => {
     if (!url) throw new Error('Falta conexión explícita.');
     const target = new URL(url);
-    if (target.hostname !== '127.0.0.1' || target.port !== '5432' || target.pathname !== '/agrul_test_agrul_054' || target.username !== 'agrul_test_user' || target.password || target.search) {
+    if (target.hostname !== '127.0.0.1' || target.port !== '5432' || !['/agrul_test_agrul_054', '/agrul_test_agrul_055'].includes(target.pathname) || target.username !== 'agrul_test_user' || target.password || target.search) {
       throw new Error('Solo se admite el rol y la base descartable autorizados, sin contraseña ni parámetros en URL.');
     }
     const { rows } = await connection.pool.query("select current_database() as db, current_user as usuario, current_setting('server_version_num')::int as version, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls from pg_roles where rolname=current_user");
-    expect(rows[0]).toMatchObject({ db: 'agrul_test_agrul_054', usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+    expect(rows[0]).toMatchObject({ db: baseEsperada, usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
     expect(rows[0].version).toBeGreaterThanOrEqual(180000);
     expect(rows[0].version).toBeLessThan(190000);
-    await runMigrations(url);
+
     await sembrarCiclosRn09(connection.pool, [CICLO, OTRO]);
-    servidor = crearServidorProduccion({ connectionString: url, logger: false });
+    servidor = crearServidorProduccion({ connectionString: urlAislada, logger: false });
     await servidor.app.ready();
     const actor = { nombre: 'Prueba', apellido: 'Actividades' };
     admin = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: ADMIN, email: 'admin054@example.test' });

@@ -1084,12 +1084,13 @@
 
 ### `[AGRUL-055]` Módulos 4 & 9: Insumos, Inventario y Aplicaciones FIFO (CU34 - CU40, CU63 - CU66)
 - **GitHub Issue:** [#49](https://github.com/juampalt/Agrul/issues/49)
-- **Estado:** `IN_PROGRESS` — Catálogo, inventario, aplicaciones FIFO y correcciones canónicas implementados; auditoría final y regresión PostgreSQL anterior pendientes.
+- **Estado:** `IN_PROGRESS` — Catálogo, inventario, aplicaciones FIFO y correcciones canónicas implementados; matriz auditada y regresión completa aprobada. Revisión de integración y PR pendientes.
 - **Validación etapa 1:** 54 pruebas nuevas aprobadas (32 PostgreSQL/HTTP y 22 de dominio). Regresión: 944 aprobadas, 342 omitidas, 0 fallidas. Lint y build aprobados. Detalle: [.scratch/agrul-055/etapa1.md](.scratch/agrul-055/etapa1.md).
 - **Validación etapa 2:** Ingresos, movimientos inmutables, devoluciones de sobrantes, existencias, alertas y autorización por finca. 44 pruebas nuevas aprobadas; regresión: 988 aprobadas, 342 omitidas, 0 fallidas. Lint y build aprobados. Detalle: [.scratch/agrul-055/etapa2.md](.scratch/agrul-055/etapa2.md).
 - **Validación etapa 3:** Aplicaciones vinculadas a labores realizadas, consumo FEFO/FIFO trazable, idempotencia y transacción con stock y evento. 42 pruebas nuevas aprobadas; regresión: 1030 aprobadas, 342 omitidas, 0 fallidas. Lint y build aprobados. Detalle: [.scratch/agrul-055/etapa3.md](.scratch/agrul-055/etapa3.md).
 - **Preparación CU40:** Consumo reutilizable dentro de transacciones y verificación de procedencia/permisos. Tres pruebas nuevas; regresión: 1033 aprobadas, 342 omitidas, 0 fallidas. Lint y build aprobados. La definición estaba pendiente al cerrar ese avance y quedó resuelta en la etapa 4. Detalle: [.scratch/agrul-055/cu40-preparacion.md](.scratch/agrul-055/cu40-preparacion.md).
 - **Validación etapa 4 / CU40:** Compensación exacta y versión reemplazante en una transacción según definición aprobada; conciliación, consumos posteriores, sustitución única, historial y rollback verificados. 27 pruebas nuevas; regresión: 1060 aprobadas, 342 omitidas, 0 fallidas. Lint y build aprobados. Detalle: [.scratch/agrul-055/etapa4.md](.scratch/agrul-055/etapa4.md).
+- **Auditoría y regresión completa:** Matriz de los once CU respetando los grupos documentados; aislamiento de las suites anteriores en la base autorizada. **1402 aprobadas, 0 omitidas, 0 fallidas**, 131 archivos; lint y build aprobados. Detalle: [.scratch/agrul-055/auditoria.md](.scratch/agrul-055/auditoria.md). Sin PR ni merge en este bloque; pausa para revisión del cupo.
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulos 4 & 9: Insumos y Stock
 - **Casos de Uso:** CU34 a CU40, CU63 a CU66

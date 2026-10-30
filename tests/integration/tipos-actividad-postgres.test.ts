@@ -3,11 +3,15 @@ import { FastifyInstance } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { crearServidorProduccion } from '../../src/bootstrap.js';
 import { createDatabaseConnection } from '../../src/infrastructure/database/connection.js';
-import { runMigrations } from '../../src/infrastructure/database/migrate.js';
+import { crearEsquemaPostgresAislado } from '../helpers/esquema-postgres-aislado.fixture.js';
 import { autenticarOperadorPrueba } from '../helpers/operador-postgres.fixture.js';
 
 const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
-if (connectionString && connectionString !== 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054') {
+const aislado = connectionString ? await crearEsquemaPostgresAislado(connectionString) : undefined;
+const urlAislada = aislado?.connectionString;
+afterAll(async () => { await aislado?.cerrar(); });
+const baseEsperada = connectionString ? new URL(connectionString).pathname.slice(1) : '';
+if (connectionString && !['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055'].includes(connectionString ?? '')) {
   throw new Error('El catálogo solo admite la base descartable autorizada con el rol exclusivo y sin contraseña en URL.');
 }
 const marca = Buffer.from(randomUUID().replaceAll('-', ''), 'hex').toString('base64url');
@@ -34,7 +38,7 @@ let headersAdmin = { authorization: '' };
 let headersEncargado = { authorization: '' };
 
 describe.skipIf(!connectionString)('AGRUL-054 CU22-CU25: Tipos de Actividad Agrícola con PostgreSQL y bootstrap reales', () => {
-  const connection = createDatabaseConnection(connectionString);
+  const connection = createDatabaseConnection(urlAislada);
   let app: FastifyInstance;
   let cultivoArandanoId: string;
   const tiposCreados: string[] = [];
@@ -47,11 +51,11 @@ describe.skipIf(!connectionString)('AGRUL-054 CU22-CU25: Tipos de Actividad Agr�
 
   beforeAll(async () => {
     const { rows } = await connection.pool.query("select current_database() as db,current_user as usuario,current_setting('server_version_num')::int as version,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls from pg_roles where rolname=current_user");
-    expect(rows[0]).toMatchObject({ db: 'agrul_test_agrul_054', usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+    expect(rows[0]).toMatchObject({ db: baseEsperada, usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
     expect(rows[0].version).toBeGreaterThanOrEqual(180000);
     expect(rows[0].version).toBeLessThan(190000);
-    await runMigrations(connectionString);
-    app = crearServidorProduccion({ connectionString, logger: false }).app;
+
+    app = crearServidorProduccion({ connectionString: urlAislada, logger: false }).app;
     await app.ready();
     headersAdmin = await autenticarOperadorPrueba(connection.pool, app, usuarioAdmin);
     headersEncargado = await autenticarOperadorPrueba(connection.pool, app, usuarioEncargado);
