@@ -94,6 +94,7 @@ FOR EACH ROW EXECUTE FUNCTION rechazar_mutacion_evento_trazabilidad();
 ## 5. DOs and DON'Ts
 
 ### DO
+- **DO:** En altas idempotentes, bloquear la clave y consultar la solicitud existente antes de intentar INSERT. Los triggers BEFORE INSERT se ejecutan aun con ON CONFLICT DO NOTHING: un replay autorizado debe recuperar el hecho original aunque el ciclo o responsable ya no admitan altas nuevas. Conservar la autorización vigente y rechazar contenido/actor diferente.
 - **DO:** Al confirmar un agregado con cabecera e items, proteger también el conjunto de hijos: impedir UPDATE/DELETE de filas no alcanza si un INSERT posterior puede cambiar el contenido confirmado. Usar el evento inmutable de confirmación y el bloqueo de cabecera compartido con correcciones; probar inserciones SQL tardías y concurrentes sin alterar el historial (AGRUL-055).
 - **DO:** En subconsultas correlacionadas dentro de una selección Drizzle de una sola tabla, encapsular la columna externa en un fragmento `sql` propio y usar ese fragmento en la subconsulta, como en `conciliar-inventario-correccion.ts`. Verificar con PostgreSQL un saldo conocido distinto de cero: el dialecto puede quitar el prefijo de columnas interpoladas directamente y resolver `id` contra la tabla interna, produciendo una conciliación falsa (CU40 / AGRUL-055).
 - **DO:** Usar `db.transaction()` de Drizzle para asegurar que el write model y el read model permanezcan 100% consistentes.

@@ -211,6 +211,13 @@
       "when": 1793149225000,
       "tag": "0029_saldos_produccion_trazables",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1793149226000,
+      "tag": "0030_auditoria_capturas_produccion",
+      "breakpoints": true
     }
   ]
 }

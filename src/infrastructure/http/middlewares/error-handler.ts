@@ -1,5 +1,6 @@
 import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
+import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod';
 import { CodigoInsumoDuplicadoError } from '../../../core/domain/entities/insumo.entity.js';
 import { OperacionInventarioDuplicadaError } from '../../../core/domain/entities/inventario-insumos.js';
 import { AplicacionInsumosDuplicadaError } from '../../../core/domain/entities/aplicacion-insumos.js';
@@ -32,14 +33,15 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
   const timestamp = new Date().toISOString();
 
   // 1. Error de validación Zod (400 Bad Request)
-  if (error instanceof ZodError) {
+  if (error instanceof ZodError || hasZodFastifySchemaValidationErrors(error)) {
+    const issues = error instanceof ZodError ? error.issues : error.validation.map(validation => validation.params.issue);
     return reply.status(400).send({
       success: false,
       data: null,
       error: {
         code: 'VALIDATION_ERROR',
         message: 'Los datos enviados no superaron la validación sintáctica.',
-        details: error.issues.map(issue => ({
+        details: issues.map(issue => ({
           field: issue.path.join('.'),
           message: issue.message,
         })),

@@ -78,6 +78,8 @@ export const SincronizarBatchOfflineSchema = z.object({
 ## 5. DOs and DON'Ts
 
 ### DO
+- **DO:** Registrar los schemas con `withTypeProvider<ZodTypeProvider>()` e inferir `body`, `query` y `params` desde cada ruta. Si los guards deben preceder a la validación, usar `attachValidation` y rechazar su error después de autenticación/rol/password. Normalizar los errores del provider al mismo envelope y detalles de Zod; comprobar ambos caminos con HTTP real.
+- **DO:** Normalizar UUID a minúsculas antes de comparar snapshots de solicitudes idempotentes, también en el adaptador para llamadas al puerto. Probar reintentos con UUID de distinta capitalización.
 - **DO:** Usar `fastify-type-provider-zod` para inferir tipos de Typescript directamente de los schemas Zod sin duplicar interfaces.
 - **DO:** Devolver `422 Unprocessable Entity` cuando una regla de negocio de trazabilidad falla (ej: lote ya cerrado o cantidad excedida).
 - **DO:** Asegurar que los errores de validación (400) retornen un array claro de campos con sus problemas (`error.details`).

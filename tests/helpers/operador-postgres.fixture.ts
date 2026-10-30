@@ -8,18 +8,19 @@ async function verificarBase(pool: Pool) {
   const basesValidas = [
     'agrul_test_agrul_054',
     'agrul_test_agrul_055',
+    'agrul_test_agrul_056',
     ...[1, 2, 3, 4].map(etapa => `agrul_test_agrul_052_etapa${etapa}`),
     ...[1, 2, 3, 4, 5].map(etapa => `agrul_test_agrul_054_etapa${etapa}`),
   ];
   if (!basesValidas.includes(rows[0]?.nombre)) {
-    throw new Error('Operador de pruebas permitido solo en bases descartables de AGRUL-052, AGRUL-054 o AGRUL-055.');
+    throw new Error('Operador de pruebas permitido solo en bases descartables de AGRUL-052, AGRUL-054, AGRUL-055 o AGRUL-056.');
   }
 }
 
 export async function autenticarOperadorPrueba(pool: Pool, app: FastifyInstance,
-  datos: { sub: string; email: string; nombre: string; apellido: string; perfil?: string }) {
+  datos: { sub: string; email: string; nombre: string; apellido: string; perfil?: string; password?: string }) {
   await verificarBase(pool);
-  const password = 'OperadorPrueba123!';
+  const password = datos.password ?? crypto.randomUUID() + 'aA1!';
   const { hash, salt } = CryptoAuthService.hashPassword(password);
   const perfil = datos.perfil ?? 'ADMINISTRADOR';
   await pool.query(`insert into usuarios(id,nombre,apellido,email,password_hash,salt,perfil,estado,debe_cambiar_password)

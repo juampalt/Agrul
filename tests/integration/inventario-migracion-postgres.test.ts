@@ -28,7 +28,7 @@ describe.skipIf(!url)('AGRUL-055: cadena SQL desde cero y actualización de part
   beforeAll(async () => {
     base = createDatabaseConnection(url);
     const { rows } = await base.pool.query("select current_database() as db,current_user as usuario,current_setting('server_version_num')::int as version,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls from pg_roles where rolname=current_user");
-    expect(rows[0]).toMatchObject({ db: 'agrul_test_agrul_055', usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+    expect(rows[0]).toMatchObject({ db: new URL(URL_INSUMOS).pathname.slice(1), usuario: 'agrul_test_user', rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
     expect(rows[0].version).toBeGreaterThanOrEqual(180000); expect(rows[0].version).toBeLessThan(190000);
     publico = await estadoPublico();
     if (!/^agrul055_upgrade_[a-f0-9]{32}$/.test(esquema)) throw new Error('Esquema inválido.');

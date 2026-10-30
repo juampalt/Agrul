@@ -17,11 +17,17 @@ export class DrizzleCosechasProgramadasRepository implements CosechasProgramadas
 
   async programar(id: string, datos: DatosProgramacionCosecha, actorId: string): Promise<JornadaCosecha> {
     const validos = validarProgramacionCosecha(datos);
+    id = id.toLowerCase();
+    actorId = actorId.toLowerCase();
     return this.conErrores(() => this.db.transaction(async tx => {
-      const [creada] = await tx.insert(jornadas).values({
-        ...validos, id, cantidadEstimadaKg: validos.cantidadEstimadaKg.toFixed(2), actualizadoPor: actorId,
-      }).onConflictDoNothing({ target: jornadas.id }).returning();
-      if (creada) return reconstruir(creada);
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${id}, 0))`);
+      const [actual] = await tx.select().from(jornadas).where(eq(jornadas.id, id));
+      if (!actual) {
+        const [creada] = await tx.insert(jornadas).values({
+          ...validos, id, cantidadEstimadaKg: validos.cantidadEstimadaKg.toFixed(2), actualizadoPor: actorId,
+        }).returning();
+        return reconstruir(creada);
+      }
       // La clave identifica la solicitud original, incluso si luego fue
       // reprogramada. No genera otra jornada ni otro evento de auditoría.
       const [original] = await tx.select().from(historial).where(and(eq(historial.jornadaId, id), eq(historial.operacion, 'PROGRAMACION')));
@@ -31,7 +37,6 @@ export class DrizzleCosechasProgramadasRepository implements CosechasProgramadas
           previo.sector !== validos.sector || Number(previo.cantidad_estimada_kg) !== validos.cantidadEstimadaKg) {
         throw new ConflictoProgramacionCosechaError();
       }
-      const [actual] = await tx.select().from(jornadas).where(eq(jornadas.id, id));
       return reconstruir(actual);
     }));
   }
@@ -78,7 +83,7 @@ export class DrizzleCosechasProgramadasRepository implements CosechasProgramadas
       if (error instanceof Error && 'code' in error) {
         if (error.code === '23503') throw new EntidadNoEncontradaError('Referencia de jornada', 'ciclo o usuario');
         if (error.code === '23514') throw new ProgramacionCosechaInvalidaError('Ciclo finalizado, usuario inactivo o transición de jornada inválida.');
-        if (error.code === '40001' || error.code === '40P01') throw new ConflictoProgramacionCosechaError();
+        if (error.code === '23505' || error.code === '40001' || error.code === '40P01') throw new ConflictoProgramacionCosechaError();
       }
       throw error;
     }

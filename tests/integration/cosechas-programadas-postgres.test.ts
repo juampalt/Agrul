@@ -62,6 +62,16 @@ describe.skipIf(!url)('AGRUL-056: programación persistente desde bootstrap', ()
     expect((await f.crear({ ...datos, cantidadEstimadaKg: 101 })).statusCode).toBe(409);
     expect((await f.crear(datos, f.admin)).statusCode).toBe(409);
   });
+  it('reintenta UUID en mayúsculas sin duplicar la programación ni su historial', async () => {
+    const datos = f.datos();
+    const mayusculas = { ...datos, operacionId: datos.operacionId.toUpperCase(),
+      cicloId: datos.cicloId.toUpperCase(), responsableId: datos.responsableId.toUpperCase() };
+    for (let intento = 0; intento < 2; intento++) {
+      expect((await f.app.inject({ method: 'POST', url: ruta, headers: f.campo, payload: mayusculas })).statusCode).toBe(201);
+    }
+    expect((await f.crear(datos)).statusCode).toBe(201);
+    expect((await f.pool.query('select count(*)::int as n from cosechas_programadas_historial where jornada_id=$1', [datos.operacionId])).rows[0].n).toBe(1);
+  });
   it.each([0, 0.01, 0.29, 99999999.99])('persiste exactamente %s kg estimados', async cantidadEstimadaKg => {
     const datos = { ...f.datos(), cantidadEstimadaKg };
     expect((await f.crear(datos)).statusCode).toBe(201);
@@ -93,6 +103,8 @@ describe.skipIf(!url)('AGRUL-056: programación persistente desde bootstrap', ()
     const datos = { ...f.datos(), cicloId: ciclo };
     expect((await f.crear(datos)).statusCode).toBe(201);
     await f.pool.query("update ciclos_productivos set estado='FINALIZADO',fecha_inicio_efectiva='2026-10-01',fecha_fin_efectiva='2026-10-27' where id=$1", [ciclo]);
+    expect((await f.crear(datos)).statusCode).toBe(201);
+    expect((await f.pool.query('select count(*)::int as n from cosechas_programadas_historial where jornada_id=$1', [datos.operacionId])).rows[0].n).toBe(1);
     expect((await f.crear({ ...datos, operacionId: randomUUID() })).statusCode).toBe(422);
     expect((await f.app.inject({ method: 'PATCH', url: `${ruta}/${datos.operacionId}/reprogramar`, headers: f.campo,
       payload: { version: 1, fechaPrevista: '2026-11-21' } })).statusCode).toBe(422);

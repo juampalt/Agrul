@@ -12,7 +12,7 @@ const urlAislada = aislado?.connectionString;
 afterAll(async () => { await aislado?.cerrar(); });
 const baseEsperada = connectionString ? new URL(connectionString).pathname.slice(1) : '';
 // Validar antes de construir pools o ejecutar cualquier consulta.
-if (connectionString && !['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055'].includes(connectionString ?? '')) {
+if (connectionString && !['postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055', 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_056'].includes(connectionString ?? '')) {
   throw new Error('RN-09 solo admite la base descartable autorizada y el rol exclusivo, sin contraseña en URL.');
 }
 const CICLO = 'c0000000-0000-4000-8000-000000000052';

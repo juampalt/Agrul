@@ -38,13 +38,12 @@ export function validarProgramacionCosecha(datos: DatosProgramacionCosecha): Dat
       !datos.sector.trim() || !esEstimacionKgValida(datos.cantidadEstimadaKg)) {
     throw new ProgramacionCosechaInvalidaError('Se requieren ciclo, responsable, sector, fecha válida y kg estimados no negativos con hasta dos decimales.');
   }
-  return { ...datos, sector: datos.sector.trim() };
+  return { ...datos, cicloId: datos.cicloId.toLowerCase(), responsableId: datos.responsableId.toLowerCase(), sector: datos.sector.trim() };
 }
 export function reprogramarCosecha(jornada: JornadaCosecha, datos: { fechaPrevista: string; responsableId?: string }): JornadaCosecha {
   exigirPendiente(jornada);
   const nueva = { ...jornada, ...datos };
-  validarProgramacionCosecha(nueva);
-  return nueva;
+  return { ...nueva, ...validarProgramacionCosecha(nueva) };
 }
 export function cancelarJornadaCosecha(jornada: JornadaCosecha, motivo: string): JornadaCosecha {
   exigirPendiente(jornada);

@@ -6,7 +6,9 @@ import { crearEsquemaPostgresAislado } from './esquema-postgres-aislado.fixture.
 import { autenticarOperadorPrueba } from './operador-postgres.fixture.js';
 import { sembrarCiclosRn09 } from './sembrar-ciclos-rn09.js';
 
-export const URL_INSUMOS = 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055';
+export const URL_INSUMOS = process.env.INSUMOS_TEST_DATABASE_URL === 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_056'
+  ? 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_056'
+  : 'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055';
 export class InsumosPostgresFixture {
   aislado!: Awaited<ReturnType<typeof crearEsquemaPostgresAislado>>;
   servidor!: ReturnType<typeof crearServidorProduccion>;
@@ -16,17 +18,18 @@ export class InsumosPostgresFixture {
   adminId = randomUUID();
   encargadoId = randomUUID();
   sistemaId = randomUUID();
+  readonly password = randomUUID() + 'aA1!';
   actividadId = '';
   direccion = '';
   get app() { return this.servidor.app; }
   get pool() { return this.aislado.connection.pool; }
   async preparar(url: string) {
-    if (url !== URL_INSUMOS) throw new Error('Solo se permite la base exclusiva AGRUL-055.');
+    if (url !== URL_INSUMOS) throw new Error('Solo se permite la base exclusiva AGRUL-055 o la regresión autorizada AGRUL-056.');
     this.aislado = await crearEsquemaPostgresAislado(url);
     this.servidor = crearServidorProduccion({ connectionString: this.aislado.connectionString, logger: false });
     await this.app.ready();
     this.admin = await autenticarOperadorPrueba(this.pool, this.app,
-      { sub: this.adminId, nombre: 'Admin', apellido: 'Insumos', email: 'admin-055@example.test' });
+      { sub: this.adminId, nombre: 'Admin', apellido: 'Insumos', email: 'admin-055@example.test', password: this.password });
     this.encargado = await autenticarOperadorPrueba(this.pool, this.app,
       { sub: this.encargadoId, nombre: 'Campo', apellido: 'Insumos', email: 'campo-055@example.test', perfil: 'ENCARGADO_CAMPO' });
     this.sistema = await autenticarOperadorPrueba(this.pool, this.app,

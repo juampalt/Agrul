@@ -11,6 +11,7 @@ const connectionString = process.env.ACTIVIDADES_TEST_DATABASE_URL;
 if (connectionString && ![
   'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_054',
   'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_055',
+  'postgresql://agrul_test_user@127.0.0.1:5432/agrul_test_agrul_056',
 ].includes(connectionString)) {
   throw new Error('La prueba de inmutabilidad solo admite la base descartable autorizada con rol exclusivo y sin contraseña en URL.');
 }

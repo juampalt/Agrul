@@ -48,7 +48,7 @@ describe.skipIf(!url)('AGRUL-055: entrada compilada de npm start y HTTP real', (
   });
   it('autentica, registra, consulta y persiste desde el entrypoint normal de producción', async () => {
     const login = await fetch(`${direccion}/api/v1/auth/login`, { method: 'POST',
-      headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'admin-055@example.test', password: 'OperadorPrueba123!' }) });
+      headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'admin-055@example.test', password: f.password }) });
     expect(login.status).toBe(200);
     const { data: { token } } = z.object({ data: z.object({ token: z.string() }) }).parse(await login.json());
     const headers = { authorization: `Bearer ${token}`, 'content-type': 'application/json' };

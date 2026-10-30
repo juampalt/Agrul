@@ -26,6 +26,33 @@ describe.skipIf(!url)('AGRUL-056: concurrencia y atomicidad PostgreSQL', () => {
     expect((await f.pool.query('select fecha_prevista::text,version from cosechas_programadas where id=$1', [id])).rows[0]).toEqual({ fecha_prevista: ganadora.fechaPrevista, version: 2 });
     expect(await historia(id)).toHaveLength(2);
   });
+  it.each([true, false])('alta SQL externa con la misma clave conserva un solo hecho, commit=%s', async confirmar => {
+    const datos = f.datos();
+    const writer = await f.pool.connect();
+    let resultado: Promise<Awaited<ReturnType<typeof f.crear>>> | undefined;
+    try {
+      await writer.query('begin');
+      const pid = (await writer.query('select pg_backend_pid() as pid')).rows[0].pid;
+      await writer.query(`insert into cosechas_programadas(id,ciclo_id,fecha_prevista,responsable_id,sector,cantidad_estimada_kg,actualizado_por)
+        values($1,$2,$3,$4,$5,$6,$4)`, [datos.operacionId, datos.cicloId, datos.fechaPrevista, datos.responsableId, datos.sector, datos.cantidadEstimadaKg]);
+      resultado = Promise.resolve(f.crear(datos));
+      let bloqueada = false;
+      const inicio = Date.now();
+      while (Date.now() - inicio < 3000) {
+        bloqueada = (await f.pool.query('select 1 from pg_stat_activity where datname=current_database() and $1=any(pg_blocking_pids(pid))', [pid])).rows.length > 0;
+        if (bloqueada) break;
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      expect(bloqueada).toBe(true);
+      await writer.query(confirmar ? 'commit' : 'rollback');
+      expect((await resultado).statusCode).toBe(confirmar ? 409 : 201);
+      expect(await historia(datos.operacionId)).toHaveLength(1);
+      expect((await f.crear(datos)).statusCode).toBe(201);
+    } finally {
+      await writer.query('rollback'); writer.release();
+      await resultado;
+    }
+  });
   it('cancelación y reprogramación concurrentes no pierden ni pisan cambios', async () => {
     const id = (await f.crear()).json().data.id;
     const resultados = await Promise.all([
