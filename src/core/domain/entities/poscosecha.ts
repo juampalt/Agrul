@@ -16,6 +16,7 @@ export interface PartidaProduccion {
   id: string; clasificacionId: string; cosechaId: string; loteId: string; cicloId: string;
   categoria: 'FRESCO' | 'INDUSTRIA'; cantidadInicialKg: number; cantidadDisponibleKg: number;
   cantidadAcondicionadaKg: number; cantidadSinAcondicionarKg: number;
+  cantidadEnCamaraKg: number; cantidadDestinadaKg: number; cantidadFisicaKg: number; cantidadAcondicionableKg: number;
 }
 export interface ClasificacionProduccion extends Omit<RegistrarClasificacion, 'operacionId' | 'timestampCapturaLocal'> {
   id: string; registradoPor: string; creadoEn: string; timestampCapturaLocal: string; partidas: PartidaProduccion[];

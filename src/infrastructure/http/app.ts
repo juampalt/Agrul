@@ -19,6 +19,9 @@ import { registrarRutasActividadesProgramadas } from './routes/actividades-progr
 import { registrarRutasCosechasProgramadas } from './routes/cosechas-programadas.routes.js';
 import { registrarRutasCosechasRegistro } from './routes/cosechas-registro.routes.js';
 import { registrarRutasPoscosecha } from './routes/poscosecha.routes.js';
+import { registrarRutasAlmacenamientoProduccion } from './routes/almacenamiento-produccion.routes.js';
+import { AlmacenamientoProduccionRepositoryPort } from '../../core/ports/poscosecha-almacenamiento-repository.port.js';
+import { DestinosRepositoryPort } from '../../core/ports/destinos-repository.port.js';
 import { ClasificacionesRepositoryPort } from '../../core/ports/clasificaciones-repository.port.js';
 import { PoscosechaAlmacenamientoRepositoryPort } from '../../core/ports/poscosecha-almacenamiento-repository.port.js';
 import { CosechasRegistroRepositoryPort } from '../../core/ports/cosechas-registro-repository.port.js';
@@ -271,6 +274,8 @@ export interface BuildAppOptions {
   cosechasRegistroRepo?: CosechasRegistroRepositoryPort;
   clasificacionesRepo?: ClasificacionesRepositoryPort;
   poscosechaRepo?: PoscosechaAlmacenamientoRepositoryPort;
+  almacenamientoRepo?: AlmacenamientoProduccionRepositoryPort;
+  destinosProduccionRepo?: DestinosRepositoryPort;
   actividadesRealizadasRepo?: ActividadesRealizadasGestionPort;
   monitoreosRepo?: MonitoreosRepositoryPort;
   accesoRecursosAgricolasRepo?: AccesoRecursosAgricolasPort;
@@ -961,6 +966,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   if (options.cosechasProgramadasRepo) registrarRutasCosechasProgramadas(app, options.cosechasProgramadasRepo, options.accesoRecursosAgricolasRepo);
   if (options.cosechasRegistroRepo) registrarRutasCosechasRegistro(app, options.cosechasRegistroRepo);
   if (options.clasificacionesRepo && options.poscosechaRepo) registrarRutasPoscosecha(app, options.clasificacionesRepo, options.poscosechaRepo);
+  if (options.almacenamientoRepo && options.destinosProduccionRepo) registrarRutasAlmacenamientoProduccion(app, options.almacenamientoRepo, options.destinosProduccionRepo);
   if (options.monitoreosRepo) registrarRutasMonitoreos(app, options.monitoreosRepo, options.accesoRecursosAgricolasRepo);
   if (
     options.actividadesProgramadasRepo &&

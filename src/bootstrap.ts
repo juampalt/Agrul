@@ -11,6 +11,7 @@ import { DrizzleActividadesProgramadasRepository } from './infrastructure/databa
 import { DrizzleCosechasProgramadasRepository } from './infrastructure/database/repositories/drizzle-cosechas-programadas.repository.js';
 import { DrizzleCosechasRegistroRepository } from './infrastructure/database/repositories/drizzle-cosechas-registro.repository.js';
 import { DrizzlePoscosechaRepository } from './infrastructure/database/repositories/drizzle-poscosecha.repository.js';
+import { DrizzleAlmacenamientoProduccionRepository } from './infrastructure/database/repositories/drizzle-almacenamiento-produccion.repository.js';
 import { DrizzleActividadesRealizadasRepository } from './infrastructure/database/repositories/drizzle-actividades-realizadas.repository.js';
 import { DrizzleMonitoreosRepository } from './infrastructure/database/repositories/drizzle-monitoreos.repository.js';
 import { DrizzleAccesoRecursosAgricolasRepository } from './infrastructure/database/repositories/drizzle-acceso-recursos-agricolas.repository.js';
@@ -43,6 +44,7 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
   const cierreCicloGuard = new DrizzleCierreCicloGuard(db);
   const ciclosRepo = new DrizzleCiclosProductivosRepository(db, cierreCicloGuard);
   const poscosechaRepo = new DrizzlePoscosechaRepository(db);
+  const almacenamientoRepo = new DrizzleAlmacenamientoProduccionRepository(db);
   const app = buildApp({
     insumosCanonicosRepo: new DrizzleInsumosRepository(db),
     inventarioInsumosRepo: new DrizzleInventarioInsumosRepository(db),
@@ -64,6 +66,8 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
     cosechasRegistroRepo: new DrizzleCosechasRegistroRepository(db),
     clasificacionesRepo: poscosechaRepo,
     poscosechaRepo,
+    almacenamientoRepo,
+    destinosProduccionRepo: almacenamientoRepo,
     actividadesRealizadasRepo: new DrizzleActividadesRealizadasRepository(db),
     monitoreosRepo: new DrizzleMonitoreosRepository(db),
     accesoRecursosAgricolasRepo: new DrizzleAccesoRecursosAgricolasRepository(db),

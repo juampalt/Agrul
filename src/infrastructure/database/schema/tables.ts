@@ -12,6 +12,7 @@ export { insumosTable, partidasInsumoTable, aplicacionesInsumoTable, aplicacione
 export { movimientosInventarioTable } from './movimientos-inventario.js';
 export { correccionesAplicacionesTable } from './correcciones-aplicaciones.js';
 export { clasificacionesTable, partidasProduccionTable, acondicionamientosTable } from './poscosecha.js';
+export { camarasSectorTable, movimientosAlmacenamientoTable, destinosProduccionTable } from './almacenamiento-produccion.js';
 import { ciclosProductivosTable } from './ciclos-productivos.js';
 export { ciclosProductivosTable };
 

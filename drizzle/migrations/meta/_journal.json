@@ -197,6 +197,20 @@
       "when": 1793149223000,
       "tag": "0027_acondicionamientos",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1793149224000,
+      "tag": "0028_camaras_movimientos_destinos",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1793149225000,
+      "tag": "0029_saldos_produccion_trazables",
+      "breakpoints": true
     }
   ]
 }

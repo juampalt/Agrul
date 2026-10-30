@@ -4,6 +4,7 @@ import { AcondicionamientoProduccion, ClasificacionProduccion, PartidaProduccion
 import { FiltrosPoscosecha } from '../../core/ports/clasificaciones-repository.port.js';
 import { AgrulDatabase, AgrulTransaction } from './connection.js';
 import { clasificacionesTable as c, partidasProduccionTable as p, acondicionamientosTable as a } from './schema/poscosecha.js';
+import { movimientosAlmacenamientoTable as m, destinosProduccionTable as d } from './schema/almacenamiento-produccion.js';
 import { cosechasTable as h, lotesTable as l } from './schema/tables.js';
 
 type Consulta = AgrulDatabase | AgrulTransaction;
@@ -14,10 +15,16 @@ export async function consultarPartidasProduccion(db: Consulta, filtros: Filtros
   id?: string, clasificacionIds?: string[]): Promise<PartidaProduccion[]> {
   // Fragmento externo propio para conservar el prefijo en la subconsulta Drizzle.
   const partidaExterna = sql`${p.id}`;
+  const acondicionado = sql<string>`(SELECT coalesce(sum(${a.cantidadKg}),0) FROM ${a} WHERE ${a.partidaProduccionId}=${partidaExterna})`;
+  const almacenado = sql<string>`(SELECT coalesce(sum(CASE WHEN ${m.tipoMovimiento}='INGRESO' THEN ${m.cantidadKg} ELSE -${m.cantidadKg} END),0) FROM ${m} WHERE ${m.partidaProduccionId}=${partidaExterna})`;
+  const destinado = sql<string>`(SELECT coalesce(sum(${d.cantidadDestinadaKg}),0) FROM ${d} WHERE ${d.partidaProduccionId}=${partidaExterna})`;
   const filas = await db.select({ id: p.id, clasificacionId: p.clasificacionId, cosechaId: c.cosechaId,
     loteId: h.loteId, cicloId: h.cicloId, categoria: p.categoria, cantidadInicialKg: p.cantidadInicialKg,
     cantidadDisponibleKg: p.cantidadDisponibleKg,
-    cantidadAcondicionadaKg: sql<string>`(SELECT coalesce(sum(${a.cantidadKg}),0)::text FROM ${a} WHERE ${a.partidaProduccionId}=${partidaExterna})`,
+    cantidadAcondicionadaKg: sql<string>`${acondicionado}::text`, cantidadEnCamaraKg: sql<string>`${almacenado}::text`,
+    cantidadDestinadaKg: sql<string>`${destinado}::text`, cantidadFisicaKg: sql<string>`(${p.cantidadInicialKg}-${destinado})::text`,
+    cantidadSinAcondicionarKg: sql<string>`(${p.cantidadInicialKg}-${acondicionado})::text`,
+    cantidadAcondicionableKg: sql<string>`least(${p.cantidadDisponibleKg},${p.cantidadInicialKg}-${acondicionado})::text`,
   }).from(p).innerJoin(c, eq(p.clasificacionId, c.id)).innerJoin(h, eq(c.cosechaId, h.id)).innerJoin(l, eq(h.loteId, l.id))
     .where(and(alcance(actor), id ? eq(p.id, id) : undefined,
       filtros.cosechaId ? eq(c.cosechaId, filtros.cosechaId) : undefined,
@@ -26,8 +33,9 @@ export async function consultarPartidasProduccion(db: Consulta, filtros: Filtros
       filtros.categoria ? eq(p.categoria, filtros.categoria) : undefined))
     .orderBy(asc(p.id)).limit(filtros.limit).offset(filtros.offset);
   return filas.map(f => ({ ...f, cantidadInicialKg: Number(f.cantidadInicialKg), cantidadDisponibleKg: Number(f.cantidadDisponibleKg),
-    cantidadAcondicionadaKg: Number(f.cantidadAcondicionadaKg),
-    cantidadSinAcondicionarKg: Number((Number(f.cantidadInicialKg) - Number(f.cantidadAcondicionadaKg)).toFixed(2)) }));
+    cantidadAcondicionadaKg: Number(f.cantidadAcondicionadaKg), cantidadSinAcondicionarKg: Number(f.cantidadSinAcondicionarKg),
+    cantidadEnCamaraKg: Number(f.cantidadEnCamaraKg), cantidadDestinadaKg: Number(f.cantidadDestinadaKg),
+    cantidadFisicaKg: Number(f.cantidadFisicaKg), cantidadAcondicionableKg: Number(f.cantidadAcondicionableKg) }));
 }
 export async function consultarClasificaciones(db: Consulta, filtros: FiltrosPoscosecha, actor: ActorCosechas, id?: string): Promise<ClasificacionProduccion[]> {
   const filas = await db.select({ clasificacion: c }).from(c).innerJoin(h, eq(c.cosechaId, h.id)).innerJoin(l, eq(h.loteId, l.id))
