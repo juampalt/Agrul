@@ -154,3 +154,10 @@ commit de código auditado 9e2ad6508f72b93e7ce570933f0fa03327ad38ed. Sin merge.
 Revisión estática: Standards 2/2 hallazgos corregidos; Spec 2/2 hallazgos
 corregidos, más endurecimiento de conflicto SQL. El resultado de ejecución
 documentado arriba determina el cierre de la validación.
+
+## Cierre autorizado
+
+El usuario autorizó terminar e integrar PR #59 después de la auditoría y la
+regresión integral aprobadas. Se marca AGRUL-056 DONE para su integración
+mediante el PR con Closes #50. Desde la ejecución de 1709 pruebas solo se
+modificó documentación de entrega y cierre; no cambió el código validado.
