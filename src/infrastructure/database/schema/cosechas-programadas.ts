@@ -37,5 +37,5 @@ export const historialJornadasCosechaTable = pgTable('cosechas_programadas_histo
   registradoEn: timestamp('registrado_en', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
 }, t => [
   index('idx_cosechas_programadas_historial_jornada').on(t.jornadaId, t.registradoEn),
-  check('cosechas_programadas_historial_operacion', sql`${t.operacion} IN ('PROGRAMACION','REPROGRAMACION','CANCELACION')`),
+  check('cosechas_programadas_historial_operacion_check', sql`${t.operacion} IN ('PROGRAMACION','REPROGRAMACION','CANCELACION','EJECUCION')`),
 ]);

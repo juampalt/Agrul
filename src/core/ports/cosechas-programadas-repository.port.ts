@@ -13,7 +13,7 @@ export interface FiltrosJornadasCosecha {
 export interface HistorialJornadaCosecha {
   id: string;
   jornadaId: string;
-  operacion: 'PROGRAMACION' | 'REPROGRAMACION' | 'CANCELACION';
+  operacion: 'PROGRAMACION' | 'REPROGRAMACION' | 'CANCELACION' | 'EJECUCION';
   actorId: string;
   anterior: Record<string, unknown> | null;
   nuevo: Record<string, unknown>;

@@ -9,6 +9,7 @@ import { DrizzlePlantacionesRepository } from './infrastructure/database/reposit
 import { DrizzleTiposActividadRepository } from './infrastructure/database/repositories/drizzle-tipos-actividad.repository.js';
 import { DrizzleActividadesProgramadasRepository } from './infrastructure/database/repositories/drizzle-actividades-programadas.repository.js';
 import { DrizzleCosechasProgramadasRepository } from './infrastructure/database/repositories/drizzle-cosechas-programadas.repository.js';
+import { DrizzleCosechasRegistroRepository } from './infrastructure/database/repositories/drizzle-cosechas-registro.repository.js';
 import { DrizzleActividadesRealizadasRepository } from './infrastructure/database/repositories/drizzle-actividades-realizadas.repository.js';
 import { DrizzleMonitoreosRepository } from './infrastructure/database/repositories/drizzle-monitoreos.repository.js';
 import { DrizzleAccesoRecursosAgricolasRepository } from './infrastructure/database/repositories/drizzle-acceso-recursos-agricolas.repository.js';
@@ -58,6 +59,7 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
     tiposActividadRepo: new DrizzleTiposActividadRepository(db),
     actividadesProgramadasRepo: new DrizzleActividadesProgramadasRepository(db),
     cosechasProgramadasRepo: new DrizzleCosechasProgramadasRepository(db),
+    cosechasRegistroRepo: new DrizzleCosechasRegistroRepository(db),
     actividadesRealizadasRepo: new DrizzleActividadesRealizadasRepository(db),
     monitoreosRepo: new DrizzleMonitoreosRepository(db),
     accesoRecursosAgricolasRepo: new DrizzleAccesoRecursosAgricolasRepository(db),

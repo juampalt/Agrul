@@ -17,6 +17,8 @@ import { registrarRutasCiclosProductivos } from './routes/ciclos-productivos.rou
 import { registrarRutasTiposActividad } from './routes/tipos-actividad.routes.js';
 import { registrarRutasActividadesProgramadas } from './routes/actividades-programadas.routes.js';
 import { registrarRutasCosechasProgramadas } from './routes/cosechas-programadas.routes.js';
+import { registrarRutasCosechasRegistro } from './routes/cosechas-registro.routes.js';
+import { CosechasRegistroRepositoryPort } from '../../core/ports/cosechas-registro-repository.port.js';
 import { CosechasProgramadasRepositoryPort } from '../../core/ports/cosechas-programadas-repository.port.js';
 import { registrarRutasActividadesRealizadas } from './routes/actividades-realizadas.routes.js';
 import { registrarRutasMonitoreos } from './routes/monitoreos.routes.js';
@@ -263,6 +265,7 @@ export interface BuildAppOptions {
   tiposActividadRepo?: TiposActividadRepositoryPort;
   actividadesProgramadasRepo?: ActividadesProgramadasRepositoryPort;
   cosechasProgramadasRepo?: CosechasProgramadasRepositoryPort;
+  cosechasRegistroRepo?: CosechasRegistroRepositoryPort;
   actividadesRealizadasRepo?: ActividadesRealizadasGestionPort;
   monitoreosRepo?: MonitoreosRepositoryPort;
   accesoRecursosAgricolasRepo?: AccesoRecursosAgricolasPort;
@@ -528,6 +531,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     );
   }
 
+  if (options.cosechasRepo && options.cosechasRegistroRepo) throw new Error('No se pueden habilitar simultáneamente los contratos heredado y vigente de cosechas.');
   let cosechasController: CosechasController | undefined;
   if (options.cosechasRepo && options.ciclosRepo) {
     const registrarCosechaUseCase = new RegistrarCosechaUseCase(
@@ -950,6 +954,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   }
   if (options.actividadesRealizadasRepo) registrarRutasActividadesRealizadas(app, options.actividadesRealizadasRepo, options.accesoRecursosAgricolasRepo);
   if (options.cosechasProgramadasRepo) registrarRutasCosechasProgramadas(app, options.cosechasProgramadasRepo, options.accesoRecursosAgricolasRepo);
+  if (options.cosechasRegistroRepo) registrarRutasCosechasRegistro(app, options.cosechasRegistroRepo);
   if (options.monitoreosRepo) registrarRutasMonitoreos(app, options.monitoreosRepo, options.accesoRecursosAgricolasRepo);
   if (
     options.actividadesProgramadasRepo &&

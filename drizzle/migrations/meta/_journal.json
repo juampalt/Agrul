@@ -176,6 +176,13 @@
       "when": 1793149220000,
       "tag": "0024_cosechas_programadas",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793149221000,
+      "tag": "0025_cosechas_registro",
+      "breakpoints": true
     }
   ]
 }

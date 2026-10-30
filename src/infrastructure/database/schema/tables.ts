@@ -1,10 +1,11 @@
-import { pgTable, uuid, varchar, numeric, timestamp, jsonb, index, uniqueIndex, boolean, text, integer, check } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, numeric, timestamp, jsonb, index, uniqueIndex, boolean, text, integer, check, date } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 export { cultivosTable } from './cultivos.js';
 export { variedadesTable } from './variedades.js';
 export { plantacionesTable } from './plantaciones.js';
 export { actividadesProgramadasTable } from './actividades-programadas.js';
 export { cosechasProgramadasTable, historialJornadasCosechaTable } from './cosechas-programadas.js';
+import { cosechasProgramadasTable } from './cosechas-programadas.js';
 export { actividadesRealizadasTable } from './actividades-realizadas.js';
 export { monitoreosTable } from './monitoreos.js';
 export { insumosTable, partidasInsumoTable, aplicacionesInsumoTable, aplicacionesInsumoItemsTable } from './insumos.js';
@@ -355,8 +356,8 @@ export const cosechasTable = pgTable('cosechas', {
   cicloId: uuid('ciclo_id').notNull().references(() => ciclosProductivosTable.id, { onDelete: 'restrict' }),
   fecha: varchar('fecha', { length: 30 }).notNull(),
   cantidadCosechadaKg: numeric('cantidad_cosechada_kg', { precision: 14, scale: 4 }).notNull(),
-  cantidadComercializableKg: numeric('cantidad_comercializable_kg', { precision: 14, scale: 4 }).notNull(),
-  cantidadDescarteKg: numeric('cantidad_descarte_kg', { precision: 14, scale: 4 }).notNull(),
+  cantidadComercializableKg: numeric('cantidad_comercializable_kg', { precision: 14, scale: 4 }),
+  cantidadDescarteKg: numeric('cantidad_descarte_kg', { precision: 14, scale: 4 }),
   motivoDescarte: varchar('motivo_descarte', { length: 150 }),
   observacionesCalidad: text('observaciones_calidad'),
   responsableId: uuid('responsable_id'),
@@ -369,6 +370,15 @@ export const cosechasTable = pgTable('cosechas', {
   anuladoEn: timestamp('anulado_en', { withTimezone: true, mode: 'string' }),
   historialModificaciones: jsonb('historial_modificaciones').notNull().default([]),
   claveIdempotencia: varchar('clave_idempotencia', { length: 150 }).unique(),
+  // Nulos históricos conservados; los INSERT vigentes se validan en dominio y PostgreSQL.
+  cosechaProgramadaId: uuid('cosecha_programada_id').references(() => cosechasProgramadasTable.id, { onDelete: 'restrict' }),
+  fechaEfectiva: date('fecha_efectiva', { mode: 'string' }),
+  sector: text('sector'),
+  numeroPasada: integer('numero_pasada'),
+  origen: varchar('origen', { length: 13 }).$type<'PROGRAMADA' | 'NO_PROGRAMADA' | null>(),
+  registradoPor: uuid('registrado_por').references(() => usuariosTable.id, { onDelete: 'restrict' }),
+  solicitud: jsonb('solicitud').$type<Record<string, unknown> | null>(),
+  timestampCapturaLocal: timestamp('timestamp_captura_local', { withTimezone: true, mode: 'string' }),
   creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
@@ -378,6 +388,8 @@ export const cosechasTable = pgTable('cosechas', {
   index('idx_cosechas_fecha').on(table.fecha),
   index('idx_cosechas_estado').on(table.estado),
   index('idx_cosechas_clave_idempotencia').on(table.claveIdempotencia),
+  uniqueIndex('cosechas_ciclo_pasada_unique').on(table.cicloId, table.numeroPasada),
+  uniqueIndex('cosechas_programada_unique').on(table.cosechaProgramadaId),
 ]);
 
 // TABLA MAESTRA: Catálogo de Destinatarios (AGRUL-029 / RF-M5-08)
