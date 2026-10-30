@@ -1,4 +1,4 @@
-import { and, asc, eq, ne } from 'drizzle-orm';
+import { and, asc, eq, ne, sql } from 'drizzle-orm';
 import { DatosVariedad, Variedad, VariedadDuplicadaError, VariedadInvalidaError } from '../../../core/domain/entities/variedad.entity.js';
 import { EntidadNoEncontradaError } from '../../../core/domain/errors/domain.error.js';
 import { FiltrosVariedades, VariedadesRepositoryPort } from '../../../core/ports/variedades-repository.port.js';
@@ -29,6 +29,7 @@ export class DrizzleVariedadesRepository implements VariedadesRepositoryPort {
     const condiciones = [];
     if (filtros.cultivoId) condiciones.push(eq(variedadesTable.cultivoId, filtros.cultivoId));
     if (filtros.estado) condiciones.push(eq(variedadesTable.estado, filtros.estado));
+    if (filtros.nombre) condiciones.push(sql`position(lower(${filtros.nombre}) in lower(${variedadesTable.nombre})) > 0`);
     const filas = await this.db.select().from(variedadesTable).where(and(...condiciones))
       .orderBy(asc(variedadesTable.nombre), asc(variedadesTable.id)).limit(filtros.limit).offset(filtros.offset);
     return filas.map(Variedad.reconstituir);

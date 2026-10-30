@@ -30,6 +30,24 @@ export class DrizzlePlantacionesRepository implements PlantacionesRepositoryPort
     });
   }
 
+  async detalle(id: string) {
+    const [fila] = await this.db.select({ lote: lotesTable }).from(plantacionesTable)
+      .innerJoin(lotesTable, eq(plantacionesTable.loteId, lotesTable.id)).where(eq(plantacionesTable.id, id));
+    if (!fila) return null;
+    const [ocupacion] = await this.db.select({ total: sql<string>`coalesce(sum(${plantacionesTable.superficieHa}), 0)` })
+      .from(plantacionesTable).where(and(eq(plantacionesTable.loteId, fila.lote.id), eq(plantacionesTable.estado, 'ACTIVA')));
+    const ciclos = await this.db.select({ id: ciclosProductivosTable.id, nombreCodigo: ciclosProductivosTable.nombreCodigo,
+      estado: ciclosProductivosTable.estado, fechaInicioPrevista: ciclosProductivosTable.fechaInicioPrevista,
+      fechaFinPrevista: ciclosProductivosTable.fechaFinPrevista, fechaInicioEfectiva: ciclosProductivosTable.fechaInicioEfectiva,
+      fechaFinEfectiva: ciclosProductivosTable.fechaFinEfectiva }).from(ciclosProductivosTable)
+      .where(eq(ciclosProductivosTable.plantacionId, id)).orderBy(asc(ciclosProductivosTable.fechaInicioPrevista), asc(ciclosProductivosTable.id));
+    const superficie = Number(fila.lote.superficieHa ?? 0);
+    const ocupada = Number(ocupacion?.total ?? 0);
+    return { fincaId: fila.lote.fincaId, ciclos,
+      lote: { id: fila.lote.id, codigoLote: fila.lote.codigoLote, estadoTerritorial: fila.lote.estadoTerritorial, superficieHa: superficie,
+        superficieOcupadaHa: ocupada, superficieDisponibleHa: Math.round((superficie - ocupada) * 100) / 100 } };
+  }
+
   async buscarPorId(id: string): Promise<Plantacion | null> {
     const [fila] = await this.db.select().from(plantacionesTable).where(eq(plantacionesTable.id, id));
     return fila ? this.mapear(fila) : null;

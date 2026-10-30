@@ -1,9 +1,10 @@
-import { and, asc, eq, ne } from 'drizzle-orm';
+import { and, asc, eq, ne, sql } from 'drizzle-orm';
 import { Cultivo, CultivoDuplicadoError, CultivoInvalidoError, DatosCultivo } from '../../../core/domain/entities/cultivo.entity.js';
 import { CultivosRepositoryPort, FiltrosCultivos } from '../../../core/ports/cultivos-repository.port.js';
 import { AgrulDatabase } from '../connection.js';
 import { cultivosTable } from '../schema/cultivos.js';
 import { ciclosProductivosTable, plantacionesTable } from '../schema/tables.js';
+import { variedadesTable } from '../schema/variedades.js';
 
 export class DrizzleCultivosRepository implements CultivosRepositoryPort {
   constructor(private readonly db: AgrulDatabase) {}
@@ -19,9 +20,16 @@ export class DrizzleCultivosRepository implements CultivosRepositoryPort {
 
   async listar(filtros: FiltrosCultivos): Promise<Cultivo[]> {
     const filas = await this.db.select().from(cultivosTable)
-      .where(filtros.estado ? eq(cultivosTable.estado, filtros.estado) : undefined)
+      .where(and(filtros.estado ? eq(cultivosTable.estado, filtros.estado) : undefined,
+        filtros.tipoCicloVida ? eq(cultivosTable.tipoCicloVida, filtros.tipoCicloVida) : undefined,
+        filtros.nombre ? sql`position(lower(${filtros.nombre}) in lower(${cultivosTable.nombre})) > 0` : undefined))
       .orderBy(asc(cultivosTable.nombre), asc(cultivosTable.id)).limit(filtros.limit).offset(filtros.offset);
     return filas.map(Cultivo.reconstituir);
+  }
+
+  async variedadesDe(cultivoId: string) {
+    return this.db.select({ id: variedadesTable.id, nombre: variedadesTable.nombre, estado: variedadesTable.estado })
+      .from(variedadesTable).where(eq(variedadesTable.cultivoId, cultivoId)).orderBy(asc(variedadesTable.nombre), asc(variedadesTable.id));
   }
 
   async modificar(id: string, datos: DatosCultivo): Promise<Cultivo | null> {

@@ -42,6 +42,20 @@ describe.skipIf(!connectionString)('AGRUL-053 CU62: modificación y auditoría t
     expect(detalle.headers['cache-control']).toBe('no-store');
   });
 
+  it('rechaza con 409 una modificación basada en una lectura obsoleta (If-Match)', async () => {
+    const lectura = await f.app.inject({ url: `/api/v1/usuarios/${USUARIO_CU62}`, headers: { authorization: `Bearer ${f.token}` } });
+    const version = lectura.headers.etag as string;
+    expect(version).toBeTruthy();
+    const put = (nombre: string, ifMatch?: string) => f.app.inject({ method: 'PUT', url: `/api/v1/usuarios/${USUARIO_CU62}`,
+      headers: { authorization: `Bearer ${f.token}`, ...(ifMatch ? { 'if-match': ifMatch } : {}) }, payload: { nombre } });
+    expect((await put('Primera', version)).statusCode).toBe(200);
+    const obsoleta = await put('Segunda', version);
+    expect(obsoleta.statusCode).toBe(409);
+    expect(obsoleta.json().error.code).toBe('MODIFICACION_CONCURRENTE');
+    const vigente = await f.app.inject({ url: `/api/v1/usuarios/${USUARIO_CU62}`, headers: { authorization: `Bearer ${f.token}` } });
+    expect(vigente.json().data.nombre).toBe('Primera');
+  });
+
   it('conserva las asignaciones y el historial al abrir otra instancia y desasigna sin borrar el vínculo', async () => {
     expect((await f.modificar({ fincaIds: [FINCA_CU62, FINCA_CU62] })).statusCode).toBe(200);
     const otra = crearServidorProduccion({ connectionString: f.connectionString, logger: false });

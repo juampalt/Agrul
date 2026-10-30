@@ -61,6 +61,33 @@ export class DrizzleCiclosProductivosRepository implements CiclosProductivosRepo
     }
   }
 
+  async resumen(id: string) {
+    const [ciclo] = await this.db.select({ estado: ciclos.estado }).from(ciclos).where(eq(ciclos.id, id));
+    if (!ciclo) return null;
+    const una = async <T extends Record<string, unknown>>(consulta: ReturnType<typeof sql>) => (await this.db.execute<T>(consulta)).rows;
+    const [labores] = await una<{ cantidad: string; superficie: string | null }>(sql`SELECT count(*) AS cantidad, sum(superficie_trabajada)::text AS superficie
+      FROM actividades_realizadas WHERE ciclo_id = ${id}::uuid`);
+    const [monitoreos] = await una<{ cantidad: string }>(sql`SELECT count(*) AS cantidad FROM monitoreos WHERE ciclo_id = ${id}::uuid`);
+    // Una corrección (CU40) reemplaza la aplicación anterior: solo cuentan las versiones vigentes.
+    const vigentes = sql`FROM aplicaciones_insumo a JOIN actividades_realizadas r ON r.id = a.actividad_realizada_id
+      WHERE r.ciclo_id = ${id}::uuid AND NOT EXISTS (SELECT 1 FROM correcciones_aplicaciones_insumo c WHERE c.aplicacion_anterior_id = a.id)`;
+    const [aplicaciones] = await una<{ cantidad: string }>(sql`SELECT count(*) AS cantidad ${vigentes}`);
+    const insumos = await una<{ insumo_id: string; codigo: string; nombre: string; unidad: string; total: string }>(sql`
+      SELECT i.id AS insumo_id, i.codigo, i.nombre, i.unidad_medida AS unidad, sum(it.cantidad_aplicada)::text AS total
+      FROM aplicaciones_insumo_items it JOIN insumos i ON i.id = it.insumo_id
+      WHERE it.aplicacion_id IN (SELECT a.id ${vigentes}) GROUP BY i.id, i.codigo, i.nombre, i.unidad_medida ORDER BY i.codigo`);
+    const [cosechas] = await una<{ cantidad: string; total: string | null }>(sql`SELECT count(*) AS cantidad, sum(cantidad_cosechada_kg)::text AS total
+      FROM cosechas WHERE ciclo_id = ${id}::uuid`);
+    const cantidadLabores = Number(labores?.cantidad ?? 0);
+    const cantidadCosechas = Number(cosechas?.cantidad ?? 0);
+    return { cicloId: id, estado: ciclo.estado,
+      actividadesRealizadas: { cantidad: cantidadLabores, superficieTrabajadaHa: cantidadLabores ? Number(labores?.superficie) : null },
+      monitoreos: { cantidad: Number(monitoreos?.cantidad ?? 0) },
+      aplicacionesInsumos: { cantidad: Number(aplicaciones?.cantidad ?? 0), insumos: insumos.map(x => ({
+        insumoId: x.insumo_id, codigo: x.codigo, nombre: x.nombre, unidadMedida: x.unidad, cantidadTotal: Number(x.total) })) },
+      cosechas: { cantidad: cantidadCosechas, totalCosechadoKg: cantidadCosechas ? Number(cosechas?.total) : null } };
+  }
+
   async guardar(ciclo: CicloProductivo): Promise<void> {
     const dto = ciclo.toPlanificacionJSON();
     if (dto.estado !== 'PLANIFICADO') throw new CicloProductivoInvalidoError('Las transiciones requieren iniciar/finalizar con sus validaciones transaccionales.');

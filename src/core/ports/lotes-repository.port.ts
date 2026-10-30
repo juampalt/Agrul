@@ -19,7 +19,8 @@ export interface LotesRepositoryPort {
   guardar(lote: Lote): Promise<void>;
   buscarPorId(id: string): Promise<Lote | null>;
   buscarPorCodigo(codigo: CodigoLote | string): Promise<Lote | null>;
-  actualizar(lote: Lote): Promise<void>;
+  /** `versionEsperada` es el `actualizadoEn` leído por el cliente; si cambió, se rechaza sin sobrescribir. */
+  actualizar(lote: Lote, versionEsperada?: string): Promise<void>;
   existeCodigo(codigo: string): Promise<boolean>;
   listarTodos(filtro?: ListarLotesFiltros): Promise<Lote[]>;
   sumarSuperficieActiva?(fincaId: string, excluirLoteId?: string): Promise<number>;

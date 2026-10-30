@@ -246,6 +246,13 @@
       "when": 1793149230000,
       "tag": "0034_registro_cambios",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793149231000,
+      "tag": "0035_lotes_sector_unico",
+      "breakpoints": true
     }
   ]
 }

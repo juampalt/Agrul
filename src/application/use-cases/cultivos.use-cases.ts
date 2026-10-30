@@ -20,7 +20,8 @@ export class ConsultarCultivosUseCase {
   async obtenerPorId(id: string) {
     const cultivo = await this.repo.buscarPorId(id);
     if (!cultivo) throw new EntidadNoEncontradaError('Cultivo', id);
-    return cultivo.toJSON();
+    // CU08: el detalle incluye las variedades asociadas, activas e inactivas, con nombre y estado.
+    return { ...cultivo.toJSON(), variedades: await this.repo.variedadesDe(id) };
   }
 }
 

@@ -81,18 +81,76 @@ describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)',
     } finally { await aislado?.cerrar(); }
   });
 
-  async function registrar(codigo: string, nombre: string, superficieHa: number, estado = 'DISPONIBLE') {
-    return app.inject({ headers: H,
+  async function registrar(codigo: string, nombre: string, superficieHa: number, estado = 'DISPONIBLE', sector = `Sector ${codigo}`) {
+    const respuesta = await app.inject({ headers: H,
       method: 'POST',
       url: '/api/v1/lotes-territorio',
-      payload: { codigo, nombre, superficieHa, ubicacionSector: 'Norte', estado },
+      payload: { codigo, nombre, superficieHa, ubicacionSector: sector },
     });
+    if (estado === 'EN_PRODUCCION' && respuesta.statusCode === 201) {
+      const lote = (await lotes.buscarPorCodigo(codigo))!;
+      lote.marcarEnProduccion();
+      await lotes.actualizar(lote);
+    }
+    return respuesta;
   }
 
   it('CU01 consulta la finca persistida', async () => {
     const response = await app.inject({ headers: H, method: 'GET', url: '/api/v1/finca' });
     expect(response.statusCode).toBe(200);
     expect(response.json().data).toMatchObject({ id: FINCA_ID, superficieTotalHa: 100 });
+  });
+
+  it('CU02/CU05 rechazan sobrescribir datos modificados desde otra lectura (If-Match)', async () => {
+    const finca = await app.inject({ headers: H, method: 'GET', url: '/api/v1/finca' });
+    const version = finca.headers.etag as string;
+    expect(version).toBeTruthy();
+    const cuerpo = { nombre: 'Finca v2', provincia: 'Tucumán', departamento: 'Lules', localidad: 'San Pablo', superficieTotalHa: 90 };
+    const primera = await app.inject({ headers: { ...H, 'if-match': version }, method: 'PUT', url: '/api/v1/finca', payload: cuerpo });
+    expect(primera.statusCode).toBe(200);
+    const obsoleta = await app.inject({ headers: { ...H, 'if-match': version }, method: 'PUT', url: '/api/v1/finca', payload: { ...cuerpo, nombre: 'Finca v3' } });
+    expect(obsoleta.statusCode).toBe(409);
+    expect(obsoleta.json().error.code).toBe('MODIFICACION_CONCURRENTE');
+    expect((await app.inject({ headers: H, method: 'GET', url: '/api/v1/finca' })).json().data.nombre).toBe('Finca v2');
+
+    const lote = (await registrar('LOT-2026-15120', 'Original', 10)).json().data;
+    const cambio = { nombre: 'Lote v2', superficieHa: 11, ubicacionSector: lote.ubicacionSector };
+    const ok = await app.inject({ headers: { ...H, 'if-match': `"${lote.actualizadoEn}"` }, method: 'PUT', url: `/api/v1/lotes-territorio/${lote.id}`, payload: cambio });
+    expect(ok.statusCode).toBe(200);
+    const stale = await app.inject({ headers: { ...H, 'if-match': `"${lote.actualizadoEn}"` }, method: 'PUT', url: `/api/v1/lotes-territorio/${lote.id}`, payload: { ...cambio, nombre: 'Lote v3' } });
+    expect(stale.statusCode).toBe(409);
+  });
+
+  it('CU03 serializa altas simultáneas, deja el lote Disponible y no admite estado ni sector repetido', async () => {
+    const respuestas = await Promise.all([registrar('LOT-2026-15130', 'A', 60), registrar('LOT-2026-15131', 'B', 60)]);
+    expect(respuestas.map(r => r.statusCode).sort()).toEqual([201, 422]);
+    expect(respuestas.find(r => r.statusCode === 201)!.json().data.estadoTerritorial).toBe('DISPONIBLE');
+    const conEstado = await app.inject({ headers: H, method: 'POST', url: '/api/v1/lotes-territorio',
+      payload: { codigo: 'LOT-2026-15132', nombre: 'C', superficieHa: 1, ubicacionSector: 'Otro', estado: 'EN_PRODUCCION' } });
+    expect(conEstado.statusCode).toBe(400);
+    const sinSector = await app.inject({ headers: H, method: 'POST', url: '/api/v1/lotes-territorio',
+      payload: { codigo: 'LOT-2026-15133', nombre: 'D', superficieHa: 1 } });
+    expect(sinSector.statusCode).toBe(400);
+    const existente = respuestas.find(r => r.statusCode === 201)!.json().data;
+    const repetido = await app.inject({ headers: H, method: 'POST', url: '/api/v1/lotes-territorio',
+      payload: { codigo: 'LOT-2026-15134', nombre: 'E', superficieHa: 1, ubicacionSector: `  ${existente.ubicacionSector.toUpperCase()} ` } });
+    expect(repetido.statusCode).toBe(422);
+    expect(repetido.json().error.code).toBe('UBICACION_LOTE_SUPERPUESTA');
+    await app.inject({ headers: H, method: 'PATCH', url: `/api/v1/lotes-territorio/${existente.id}/desactivar` });
+    expect((await app.inject({ headers: H, method: 'POST', url: '/api/v1/lotes-territorio',
+      payload: { codigo: 'LOT-2026-15135', nombre: 'F', superficieHa: 1, ubicacionSector: existente.ubicacionSector } })).statusCode).toBe(201);
+  });
+
+  it('CU05 impide cambiar superficie o ubicación con producción en curso', async () => {
+    const creado = (await registrar('LOT-2026-15140', 'Productivo', 10)).json().data;
+    const lote = (await lotes.buscarPorCodigo('LOT-2026-15140'))!;
+    lote.marcarEnProduccion();
+    await lotes.actualizar(lote);
+    const put = (payload: object) => app.inject({ headers: H, method: 'PUT', url: `/api/v1/lotes-territorio/${creado.id}`, payload });
+    const base = { nombre: 'Productivo', superficieHa: 10, ubicacionSector: creado.ubicacionSector };
+    expect((await put({ ...base, superficieHa: 9 })).json().error.code).toBe('PRODUCCION_EN_CURSO');
+    expect((await put({ ...base, ubicacionSector: 'Otro sector' })).json().error.code).toBe('PRODUCCION_EN_CURSO');
+    expect((await put({ ...base, nombre: 'Productivo renombrado', tipoSuelo: 'Franco' })).statusCode).toBe(200);
   });
 
   it('CU02 modifica la finca y conserva la validación de superficie', async () => {
@@ -121,7 +179,7 @@ describe.skipIf(!connectionString)('AGRUL-0511 con PostgreSQL real (CU01-CU06)',
   });
 
   it('CU04 combina filtros territoriales', async () => {
-    await registrar('LOT-2026-15104', 'Norte Productivo', 10, 'EN_PRODUCCION');
+    await registrar('LOT-2026-15104', 'Norte Productivo', 10, 'EN_PRODUCCION', 'Norte productivo');
     await registrar('LOT-2026-15105', 'Sur Disponible', 10);
     const response = await app.inject({ headers: H,
       method: 'GET', url: '/api/v1/lotes-territorio?codigo=15104&nombre=Norte&sector=Norte&estado=EN_PRODUCCION',

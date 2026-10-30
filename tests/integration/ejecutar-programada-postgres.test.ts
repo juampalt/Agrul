@@ -68,6 +68,18 @@ describe.skipIf(!url)('CU30/CU31: labores realizadas con PostgreSQL y bootstrap 
   });
   afterAll(async () => { await servidor?.app.close(); await connection.pool.end(); });
 
+  it('CU19/CU21 resume el ciclo solo con registros existentes, distinguiendo «sin registro» de cero', async () => {
+    const resumen = () => servidor.app.inject({ method: 'GET', url: `/api/v1/ciclos-productivos/${cicloId}/resumen`, headers: admin });
+    const vacio = await resumen();
+    expect(vacio.statusCode).toBe(200);
+    expect(vacio.json().data).toMatchObject({ cicloId, estado: 'ACTIVO',
+      actividadesRealizadas: { cantidad: 0, superficieTrabajadaHa: null }, monitoreos: { cantidad: 0 },
+      aplicacionesInsumos: { cantidad: 0, insumos: [] }, cosechas: { cantidad: 0, totalCosechadoKg: null } });
+    expect((await directa()).statusCode).toBe(201);
+    expect((await resumen()).json().data.actividadesRealizadas).toEqual({ cantidad: 1, superficieTrabajadaHa: 1.25 });
+    expect((await servidor.app.inject({ method: 'GET', url: `/api/v1/ciclos-productivos/${randomUUID()}/resumen`, headers: admin })).statusCode).toBe(404);
+  });
+
   it('CU30 exige la descripción del trabajo realizado', async () => {
     const { descripcionTrabajo: _omitida, ...sinDescripcion } = datos();
     const res = await ejecutar(sinDescripcion as ReturnType<typeof datos>);

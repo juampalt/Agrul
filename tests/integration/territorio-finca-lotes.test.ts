@@ -40,11 +40,17 @@ describe('Issue #45 - finca única y lotes territoriales (CU01-CU06)', () => {
 
   afterEach(async () => app.close());
 
-  async function registrar(codigo: string, nombre: string, superficieHa: number, estado = 'DISPONIBLE') {
-    return app.inject({ headers: H,
+  async function registrar(codigo: string, nombre: string, superficieHa: number, estado = 'DISPONIBLE', sector = `Sector ${codigo}`) {
+    const respuesta = await app.inject({ headers: H,
       method: 'POST', url: '/api/v1/lotes-territorio',
-      payload: { codigo, nombre, superficieHa, ubicacionSector: 'Norte', estado },
+      payload: { codigo, nombre, superficieHa, ubicacionSector: sector },
     });
+    if (estado === 'EN_PRODUCCION' && respuesta.statusCode === 201) {
+      const lote = (await lotes.buscarPorCodigo(codigo))!;
+      lote.marcarEnProduccion();
+      await lotes.actualizar(lote);
+    }
+    return respuesta;
   }
 
   it('CU01-CU06 exigen autenticación y perfil Administrador', async () => {
@@ -92,7 +98,7 @@ describe('Issue #45 - finca única y lotes territoriales (CU01-CU06)', () => {
   });
 
   it('CU04 combina filtros por código, nombre, sector y estado en menos de 2 segundos', async () => {
-    await registrar('LOT-2026-05104', 'Norte Productivo', 10, 'EN_PRODUCCION');
+    await registrar('LOT-2026-05104', 'Norte Productivo', 10, 'EN_PRODUCCION', 'Norte productivo');
     await registrar('LOT-2026-05105', 'Sur Disponible', 10);
     const inicio = performance.now();
     const res = await app.inject({ headers: H,
@@ -122,7 +128,7 @@ describe('Issue #45 - finca única y lotes territoriales (CU01-CU06)', () => {
     expect((await registrar('LOT-2026-05108', 'Reutiliza superficie', 100)).statusCode).toBe(201);
 
     const loteConCiclo = (await lotes.buscarPorCodigo('LOT-2026-05108'))!;
-    loteConCiclo.modificarTerritorio({ nombreTerritorial: 'Reutiliza superficie', superficieHa: 100, estadoTerritorial: 'DISPONIBLE' });
+    loteConCiclo.modificarTerritorio({ nombreTerritorial: 'Reutiliza superficie', superficieHa: 100, });
     await lotes.actualizar(loteConCiclo);
     await ciclos.guardar(CicloProductivo.crear({
       id: 'c0000000-0000-4000-8000-000000000051', codigoCiclo: 'CICLO-2026-0051',
@@ -135,6 +141,6 @@ describe('Issue #45 - finca única y lotes territoriales (CU01-CU06)', () => {
 
   it('devuelve 400 para payload inválido y 404 para lote inexistente', async () => {
     expect((await app.inject({ headers: H, method: 'POST', url: '/api/v1/lotes-territorio', payload: { codigo: 'x' } })).statusCode).toBe(400);
-    expect((await app.inject({ headers: H, method: 'PUT', url: '/api/v1/lotes-territorio/00000000-0000-4000-8000-000000000099', payload: { nombre: 'No existe', superficieHa: 1 } })).statusCode).toBe(404);
+    expect((await app.inject({ headers: H, method: 'PUT', url: '/api/v1/lotes-territorio/00000000-0000-4000-8000-000000000099', payload: { nombre: 'No existe', superficieHa: 1, ubicacionSector: 'Sector X' } })).statusCode).toBe(404);
   });
 });

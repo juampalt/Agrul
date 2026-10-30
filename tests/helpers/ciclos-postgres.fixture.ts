@@ -44,7 +44,7 @@ export class CiclosPostgresFixture {
     }
     await new DrizzleFincasRepository(this.conexion.db).guardar(Finca.crear({ id: INEXISTENTE_CICLO, nombre: 'Finca ciclos',
       provincia: 'Tucumán', departamento: 'Lules', localidad: 'San Pablo', superficieTotalHa: 100 }));
-    this.loteId = await this.alta('/lotes-territorio', { codigo: 'LOT-2026-0058', nombre: 'Lote ciclos', superficieHa: 10 });
+    this.loteId = await this.alta('/lotes-territorio', { codigo: 'LOT-2026-0058', nombre: 'Lote ciclos', superficieHa: 10, ubicacionSector: 'Norte' });
     this.cultivoId = await this.alta('/cultivos', { nombre: 'Arándano', tipoCicloVida: 'PERENNE' });
     this.variedadId = await this.alta('/variedades', { cultivoId: this.cultivoId, nombre: 'Emerald' });
     this.plantacionId = await this.alta('/plantaciones', { loteId: this.loteId, cultivoId: this.cultivoId, variedadId: this.variedadId,

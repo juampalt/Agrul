@@ -19,14 +19,30 @@ export class RegistrarVariedadUseCase {
 }
 
 export class ConsultarVariedadesUseCase {
-  constructor(private readonly repo: VariedadesRepositoryPort) {}
+  constructor(private readonly repo: VariedadesRepositoryPort, private readonly cultivos?: CultivosRepositoryPort) {}
+
+  /** CU12: indica si la variedad está disponible para nuevas plantaciones (ella y su cultivo activos). */
+  private async enriquecer(variedades: Variedad[]) {
+    const estados = new Map<string, string | null>();
+    const resultado = [];
+    for (const variedad of variedades) {
+      const datos = variedad.toJSON();
+      if (this.cultivos && !estados.has(datos.cultivoId)) {
+        estados.set(datos.cultivoId, (await this.cultivos.buscarPorId(datos.cultivoId))?.toJSON().estado ?? null);
+      }
+      const cultivoEstado = estados.get(datos.cultivoId) ?? null;
+      resultado.push({ ...datos, cultivoEstado, disponibleParaNuevasPlantaciones: datos.estado === 'ACTIVO' && cultivoEstado === 'ACTIVO' });
+    }
+    return resultado;
+  }
+
   async execute(filtros: FiltrosVariedades) {
-    return (await this.repo.listar(filtros)).map((variedad) => variedad.toJSON());
+    return this.enriquecer(await this.repo.listar(filtros));
   }
   async obtenerPorId(id: string) {
     const variedad = await this.repo.buscarPorId(id);
     if (!variedad) throw new EntidadNoEncontradaError('Variedad', id);
-    return variedad.toJSON();
+    return (await this.enriquecer([variedad]))[0];
   }
 }
 

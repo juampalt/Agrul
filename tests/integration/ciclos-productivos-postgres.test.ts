@@ -61,10 +61,10 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
   it('CU20 impide dos ciclos activos en una misma plantación y el mismo código en otra plantación es válido', async () => {
     const a = await f.crear();
     const b = await f.crear('CICLO-2026-B', { fechaInicioPrevista: '2026-11-01', fechaFinPrevista: '2026-11-30' });
+    const p2 = await f.segundaPlantacion();
     expect((await f.iniciar(a)).statusCode).toBe(200);
     expect((await f.iniciar(b, '2026-11-01')).statusCode).toBe(422);
     expect(await f.estadoLote()).toBe('EN_PRODUCCION');
-    const p2 = await f.segundaPlantacion();
     expect((await f.crear('CICLO-2026-A', { plantacionId: p2 })).length).toBeGreaterThan(0);
   });
 
@@ -150,7 +150,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU18-CU21 con bootstrap y PostgreS
     expect((await finalizarPlantacion()).statusCode).toBe(422);
     await f.iniciar(id);
     expect((await f.app.inject({ method: 'PUT', url: `/api/v1/lotes-territorio/${f.loteId}`, headers,
-      payload: { nombre: 'Lote ciclos', superficieHa: 10, estado: 'DISPONIBLE' } })).statusCode).toBe(422);
+      payload: { nombre: 'Lote ciclos', superficieHa: 9, ubicacionSector: 'Norte' } })).statusCode).toBe(422);
     expect((await f.app.inject({ method: 'PATCH', url: `/api/v1/lotes-territorio/${f.loteId}/desactivar`, headers })).statusCode).toBe(422);
     expect((await finalizarPlantacion()).statusCode).toBe(422);
     expect((await f.finalizar(id)).statusCode).toBe(200);

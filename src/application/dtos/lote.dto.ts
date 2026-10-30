@@ -33,10 +33,9 @@ export interface RegistrarLoteTerritorialDTO {
   codigo: string;
   nombre: string;
   superficieHa: number;
-  ubicacionSector?: string | null;
+  ubicacionSector: string;
   tipoSuelo?: string | null;
   sistemaRiego?: string | null;
-  estado?: Exclude<EstadoTerritorial, 'INACTIVO'>;
   fechaRegistro?: string;
 }
 

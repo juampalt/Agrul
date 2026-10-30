@@ -1,8 +1,10 @@
-import { eq, ilike, and } from 'drizzle-orm';
+import { eq, ilike, and, ne, sql } from 'drizzle-orm';
 import { Finca } from '../../../core/domain/entities/finca.entity.js';
 import { FincasRepositoryPort, ListarFincasFiltros } from '../../../core/ports/fincas-repository.port.js';
 import { AgrulDatabase } from '../connection.js';
-import { fincasTable } from '../schema/tables.js';
+import { fincasTable, lotesTable } from '../schema/tables.js';
+import { ConflictoModificacionError } from '../../../core/domain/errors/domain.error.js';
+import { SuperficieFincaInsuficienteError } from '../../../application/use-cases/finca-territorial.use-cases.js';
 
 export class DrizzleFincasRepository implements FincasRepositoryPort {
   constructor(private readonly db: AgrulDatabase) {}
@@ -11,8 +13,19 @@ export class DrizzleFincasRepository implements FincasRepositoryPort {
     await this.db.insert(fincasTable).values(this.valores(finca));
   }
 
-  async actualizar(finca: Finca): Promise<void> {
-    await this.db.update(fincasTable).set(this.valores(finca)).where(eq(fincasTable.id, finca.id));
+  /** CU02: bajo bloqueo de la finca, valida la versión leída y que la superficie cubra los lotes no inactivos. */
+  async actualizar(finca: Finca, versionEsperada?: string): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      const [actual] = await tx.select({ id: fincasTable.id,
+        igual: versionEsperada ? sql<boolean>`${fincasTable.actualizadoEn} = ${versionEsperada}::timestamptz` : sql<boolean>`true` })
+        .from(fincasTable).where(eq(fincasTable.id, finca.id)).for('update');
+      if (actual && !actual.igual) throw new ConflictoModificacionError();
+      const [asignada] = await tx.select({ total: sql<string>`coalesce(sum(${lotesTable.superficieHa}), 0)` }).from(lotesTable)
+        .where(and(eq(lotesTable.fincaId, finca.id), ne(lotesTable.estadoTerritorial, 'INACTIVO')));
+      const total = Number(asignada?.total ?? 0);
+      if (finca.superficieTotalHa < total) throw new SuperficieFincaInsuficienteError(finca.superficieTotalHa, total);
+      await tx.update(fincasTable).set(this.valores(finca)).where(eq(fincasTable.id, finca.id));
+    });
   }
 
   async buscarPorId(id: string): Promise<Finca | null> {

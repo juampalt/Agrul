@@ -31,7 +31,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU07-CU10 con bootstrap y PostgreS
     headers = await autenticarOperadorPrueba(connection.pool, app, usuario);
   }, 60000);
 
-  beforeEach(async () => { await connection.pool.query('delete from cultivos'); });
+  beforeEach(async () => { await connection.pool.query('delete from variedades'); await connection.pool.query('delete from cultivos'); });
   afterAll(async () => {
     try {
       await app?.close();
@@ -112,6 +112,22 @@ describe.skipIf(!connectionString)('AGRUL-052 CU07-CU10 con bootstrap y PostgreS
     expect(desactivar.valor_nuevo).toMatchObject({ estado: 'INACTIVO' });
     expect(rows.find(r => r.accion === 'REGISTRAR').valor_previo).toBeNull();
     await expect(connection.pool.query("update registro_cambios set accion='X' where entidad_id=$1", [creado.id])).rejects.toThrow('VIOLACION_DE_INMUTABILIDAD');
+  });
+
+  it('CU08 busca por nombre, filtra por tipo y muestra las variedades asociadas con su estado', async () => {
+    const arandano = await crear('Arándano Gigante');
+    const frutilla = (await app.inject({ method: 'POST', url: '/api/v1/cultivos', headers, payload: { nombre: 'Frutilla', tipoCicloVida: 'ANUAL', descripcion: null } })).json().data;
+    await app.inject({ method: 'POST', url: '/api/v1/variedades', headers, payload: { cultivoId: arandano.id, nombre: 'Emerald' } });
+    const inactiva = (await app.inject({ method: 'POST', url: '/api/v1/variedades', headers, payload: { cultivoId: arandano.id, nombre: 'Duke' } })).json().data;
+    await app.inject({ method: 'PATCH', url: `/api/v1/variedades/${inactiva.id}/desactivar`, headers });
+    const nombres = async (q: string) => (await app.inject({ method: 'GET', url: `/api/v1/cultivos?${q}`, headers })).json().data.map((c: { nombre: string }) => c.nombre);
+    expect(await nombres('nombre=GIGANTE')).toEqual(['Arándano Gigante']);
+    expect(await nombres('tipoCicloVida=ANUAL')).toEqual(['Frutilla']);
+    expect(await nombres('nombre=frut&tipoCicloVida=PERENNE')).toEqual([]);
+    const detalle = (await app.inject({ method: 'GET', url: `/api/v1/cultivos/${arandano.id}`, headers })).json().data;
+    expect(detalle.variedades).toEqual([
+      expect.objectContaining({ nombre: 'Duke', estado: 'INACTIVO' }), expect.objectContaining({ nombre: 'Emerald', estado: 'ACTIVO' })]);
+    expect((await app.inject({ method: 'GET', url: `/api/v1/cultivos/${frutilla.id}`, headers })).json().data.variedades).toEqual([]);
   });
 
   it('rechaza renombrar a un nombre ocupado sin alterar los datos', async () => {

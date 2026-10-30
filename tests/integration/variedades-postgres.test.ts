@@ -118,6 +118,18 @@ describe.skipIf(!connectionString)('AGRUL-052 CU11-CU14 con bootstrap y PostgreS
       payload: { nombre: 'Duke 2', descripcion: null } })).statusCode).toBe(422);
   });
 
+  it('CU12 busca por nombre e informa si la variedad está disponible para nuevas plantaciones', async () => {
+    const activa = await crear('Emerald'); const inactiva = await crear('Duke');
+    await app.inject({ method: 'PATCH', url: `/api/v1/variedades/${inactiva.id}/desactivar`, headers });
+    const detalle = async (id: string) => (await app.inject({ method: 'GET', url: `/api/v1/variedades/${id}`, headers })).json().data;
+    expect(await detalle(activa.id)).toMatchObject({ cultivoEstado: 'ACTIVO', disponibleParaNuevasPlantaciones: true });
+    expect(await detalle(inactiva.id)).toMatchObject({ disponibleParaNuevasPlantaciones: false });
+    const buscar = (await app.inject({ method: 'GET', url: `/api/v1/variedades?cultivoId=${cultivoId}&nombre=EMER`, headers })).json().data;
+    expect(buscar.map((v: { id: string }) => v.id)).toEqual([activa.id]);
+    await app.inject({ method: 'PATCH', url: `/api/v1/cultivos/${cultivoId}/desactivar`, headers });
+    expect(await detalle(activa.id)).toMatchObject({ estado: 'ACTIVO', cultivoEstado: 'INACTIVO', disponibleParaNuevasPlantaciones: false });
+  });
+
   it('CU11 no registra variedades en un cultivo inactivo y el nombre no distingue mayúsculas dentro del cultivo', async () => {
     await crear('Emerald');
     expect((await app.inject({ method: 'POST', url: '/api/v1/variedades', headers,
