@@ -21,5 +21,9 @@ export const ConsultarExistenciasSchema = z.object({ fincaId: z.string().uuid().
   limit: z.coerce.number().int().min(1).max(100).default(100), offset: z.coerce.number().int().min(0).default(0),
 }).strict();
 export const ConsultarInventarioSchema = ConsultarExistenciasSchema.extend({ partidaId: z.string().uuid().optional() }).strict();
+export const ConsultarMovimientosInventarioSchema = ConsultarInventarioSchema.extend({
+  tipoMovimiento: z.enum(['INGRESO', 'EXISTENCIA_INICIAL', 'AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO', 'DEVOLUCION', 'PERDIDA', 'EGRESO_APLICACION', 'REGULARIZACION_CORRECCION']).optional(),
+  desde: fecha.optional(), hasta: fecha.optional(),
+}).strict().refine(f => !f.desde || !f.hasta || f.desde <= f.hasta, { path: ['hasta'], message: 'El rango de fechas está invertido.' });
 export const InventarioIdSchema = z.object({ id: z.string().uuid() }).strict();
 export const InventarioVacioSchema = z.object({}).strict();

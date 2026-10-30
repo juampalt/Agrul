@@ -20,6 +20,8 @@ export const ReprogramarActividadSchema = z
   .object({
     fechaProgramada: FechaProgramadaSchema,
     responsableId: z.string().uuid().optional(),
+    superficiePrevista: z.number().finite().refine(esSuperficiePrevistaValida, MENSAJE_SUPERFICIE_PREVISTA).nullable().optional(),
+    descripcion: z.string().nullable().optional(),
   })
   .strict();
 
@@ -32,6 +34,7 @@ export const CancelarActividadSchema = z
 export const ConsultarActividadesProgramadasSchema = z
   .object({
     cicloId: z.string().uuid().optional(),
+    loteId: z.string().uuid().optional(),
     tipoActividadId: z.string().uuid().optional(),
     responsableId: z.string().uuid().optional(),
     estado: z.enum(['PENDIENTE', 'EJECUTADA', 'CANCELADA']).optional(),

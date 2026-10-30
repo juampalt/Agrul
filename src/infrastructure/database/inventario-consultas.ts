@@ -32,7 +32,10 @@ export class ConsultasInventario {
     return this.db.select(camposMovimiento).from(m).where(and(alcance(m.fincaId, actor),
       filtros.insumoId ? eq(m.insumoId, filtros.insumoId) : undefined,
       filtros.fincaId ? eq(m.fincaId, filtros.fincaId) : undefined,
-      filtros.partidaId ? eq(m.partidaId, filtros.partidaId) : undefined))
+      filtros.partidaId ? eq(m.partidaId, filtros.partidaId) : undefined,
+      filtros.tipoMovimiento ? sql`${m.tipoMovimiento} = ${filtros.tipoMovimiento}` : undefined,
+      filtros.desde ? sql`${m.fechaMovimiento} >= ${filtros.desde}` : undefined,
+      filtros.hasta ? sql`${m.fechaMovimiento} <= ${filtros.hasta}` : undefined))
       .orderBy(desc(m.fechaMovimiento), asc(m.id)).limit(filtros.limit).offset(filtros.offset);
   }
   async movimiento(id: string, actor: ActorInventario) {

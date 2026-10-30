@@ -19,6 +19,7 @@ export const ConsultarInsumosSchema = z.object({
   categoria: z.enum(CATEGORIAS_INSUMO_CANONICO).optional(),
   estado: z.enum(['ACTIVO', 'INACTIVO']).optional(),
   codigo: z.string().trim().min(1).max(15).optional(),
+  nombre: z.string().trim().min(1).max(200).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(100),
   offset: z.coerce.number().int().min(0).default(0),
 }).strict();

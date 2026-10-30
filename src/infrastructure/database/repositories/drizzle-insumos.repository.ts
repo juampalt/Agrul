@@ -1,5 +1,5 @@
-import { and, asc, eq } from 'drizzle-orm';
-import { CodigoInsumoDuplicadoError, DatosInsumo, Insumo, UnidadInsumoInmutableError } from '../../../core/domain/entities/insumo.entity.js';
+import { and, asc, eq, sql } from 'drizzle-orm';
+import { CodigoInsumoDuplicadoError, CodigoInsumoInmutableError, DatosInsumo, Insumo, UnidadInsumoInmutableError } from '../../../core/domain/entities/insumo.entity.js';
 import { FiltrosInsumos, InsumosRepositoryPort } from '../../../core/ports/insumos-repository.port.js';
 import { AgrulDatabase } from '../connection.js';
 import { insumosTable } from '../schema/insumos.js';
@@ -31,6 +31,7 @@ export class DrizzleInsumosRepository implements InsumosRepositoryPort {
     if (filtros.estado) condiciones.push(eq(insumosTable.estado, filtros.estado));
     if (filtros.categoria) condiciones.push(eq(insumosTable.categoria, filtros.categoria));
     if (filtros.codigo) condiciones.push(eq(insumosTable.codigo, filtros.codigo));
+    if (filtros.nombre) condiciones.push(sql`position(lower(${filtros.nombre}) in lower(${insumosTable.nombre})) > 0`);
     const filas = await this.db.select().from(insumosTable).where(and(...condiciones))
       .orderBy(asc(insumosTable.codigo), asc(insumosTable.id)).limit(filtros.limit).offset(filtros.offset);
     return filas.map(reconstruir);
@@ -54,6 +55,7 @@ export class DrizzleInsumosRepository implements InsumosRepositoryPort {
       if (error instanceof Error && 'code' in error && 'constraint' in error) {
         if (error.code === '23505' && error.constraint === 'insumos_codigo_unique') throw new CodigoInsumoDuplicadoError();
         if (error.code === '23514' && error.constraint === 'insumos_unidad_inmutable') throw new UnidadInsumoInmutableError();
+        if (error.code === '23514' && error.constraint === 'insumos_codigo_inmutable') throw new CodigoInsumoInmutableError();
       }
       throw error;
     }

@@ -51,7 +51,6 @@ export interface ModificarLoteTerritorialParams {
   ubicacionSector?: string | null;
   tipoSuelo?: string | null;
   sistemaRiego?: string | null;
-  estadoTerritorial?: Exclude<EstadoTerritorial, 'INACTIVO'>;
 }
 
 /**
@@ -157,7 +156,13 @@ export class Lote {
     this.props.ubicacionSector = params.ubicacionSector?.trim() || null;
     this.props.tipoSuelo = params.tipoSuelo?.trim() || null;
     this.props.sistemaRiego = params.sistemaRiego?.trim() || null;
-    if (params.estadoTerritorial) this.props.estadoTerritorial = params.estadoTerritorial;
+    this.props.actualizadoEn = new Date().toISOString();
+  }
+
+  /** Un lote disponible pasa a «En producción» al iniciar un ciclo productivo (CU20). */
+  public marcarEnProduccion(): void {
+    if (this.props.estadoTerritorial === 'INACTIVO') throw new InvalidStateTransitionError('INACTIVO', 'EN_PRODUCCION');
+    this.props.estadoTerritorial = 'EN_PRODUCCION';
     this.props.actualizadoEn = new Date().toISOString();
   }
 

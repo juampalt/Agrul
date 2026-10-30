@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import {
   ActividadProgramada,
   DatosProgramacionActividad,
+  validarFechaNoAnteriorAHoy,
 } from '../../core/domain/entities/actividad-programada.entity.js';
 import {
   EntidadNoEncontradaError,
@@ -22,6 +23,11 @@ export class CicloNoActivoParaProgramacionError extends DomainError {
   }
 }
 
+export class ResponsableNoHabilitadoError extends DomainError {
+  readonly code = 'RESPONSABLE_NO_HABILITADO';
+  constructor() { super('El responsable asignado debe encontrarse habilitado.'); }
+}
+
 export class TipoActividadInactivoError extends DomainError {
   readonly code = 'TIPO_ACTIVIDAD_INACTIVO';
   constructor(nombre: string) {
@@ -38,11 +44,12 @@ export class ProgramarActividadUseCase {
   ) {}
 
   async execute(datos: DatosProgramacionActividad) {
+    validarFechaNoAnteriorAHoy(datos.fechaProgramada);
     // 1. Validar ciclo
     const ciclo = await this.ciclosRepo.buscarPorId(datos.cicloId);
     if (!ciclo) throw new EntidadNoEncontradaError('CicloProductivo', datos.cicloId);
-    if (ciclo.estado === 'FINALIZADO') {
-      throw new CicloNoActivoParaProgramacionError('No se pueden programar actividades en un ciclo finalizado (RN-09).');
+    if (ciclo.estado !== 'ACTIVO' && ciclo.estado !== 'ABIERTO') {
+      throw new CicloNoActivoParaProgramacionError('Solo pueden programarse actividades en ciclos productivos activos (RN-09).');
     }
 
     // 2. Validar tipo de actividad
@@ -55,6 +62,7 @@ export class ProgramarActividadUseCase {
     // 3. Validar responsable
     const responsable = await this.usuariosRepo.buscarPorId(datos.responsableId);
     if (!responsable) throw new EntidadNoEncontradaError('Usuario', datos.responsableId);
+    if (!responsable.estaActivo) throw new ResponsableNoHabilitadoError();
 
     const actividad = ActividadProgramada.programar({ ...datos, id: randomUUID() });
     await this.repo.guardar(actividad);
@@ -82,13 +90,15 @@ export class ReprogramarActividadUseCase {
     private readonly usuariosRepo?: UsuariosRepositoryPort,
   ) {}
 
-  async execute(id: string, params: { fechaProgramada: string; responsableId?: string }) {
+  async execute(id: string, params: { fechaProgramada: string; responsableId?: string; superficiePrevista?: number | null; descripcion?: string | null }) {
+    validarFechaNoAnteriorAHoy(params.fechaProgramada);
     const act = await this.repo.buscarPorId(id);
     if (!act) throw new EntidadNoEncontradaError('ActividadProgramada', id);
 
     if (params.responsableId && this.usuariosRepo) {
       const resp = await this.usuariosRepo.buscarPorId(params.responsableId);
       if (!resp) throw new EntidadNoEncontradaError('Usuario', params.responsableId);
+      if (!resp.estaActivo) throw new ResponsableNoHabilitadoError();
     }
 
     const reprogramada = act.reprogramar(params);

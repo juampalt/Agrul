@@ -35,6 +35,8 @@ export function registrarRutasAlmacenamientoProduccion(app: FastifyInstance, alm
   rutas.get('/api/v1/almacenamiento/movimientos', { ...permisos, schema: { querystring: ConsultarMovimientosAlmacenamientoSchema } }, async req => respuesta(await consultar.listarMovimientos(req.query, actor(req))));
   rutas.get('/api/v1/almacenamiento/saldos', { ...permisos, schema: { querystring: ConsultarSaldosCamaraSchema } }, async req => respuesta(await consultar.consultarSaldos(req.query, actor(req))));
   rutas.get('/api/v1/destinos-produccion', { ...permisos, schema: { querystring: ConsultarDestinosProduccionSchema } }, async req => respuesta(await consultar.listarDestinos(req.query, actor(req))));
+  rutas.get('/api/v1/destinos-produccion/totales', { ...permisos, schema: { querystring: ConsultarDestinosProduccionSchema } }, async req =>
+    respuesta(await consultar.totalesDestinos(req.query, actor(req))));
   rutas.get('/api/v1/almacenamiento/camaras/:id', { ...permisos, schema: { params: AlmacenamientoIdSchema, querystring: AlmacenamientoVacioSchema } }, async req => {
     return respuesta(await consultar.obtenerCamara(req.params.id, actor(req)));
   });

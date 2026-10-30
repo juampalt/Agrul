@@ -28,6 +28,14 @@ export class DrizzleUsuariosRepository implements UsuariosRepositoryPort {
     const condiciones = [];
     if (filtros.perfil) condiciones.push(eq(usuariosTable.perfil, filtros.perfil));
     if (filtros.estado) condiciones.push(eq(usuariosTable.estado, filtros.estado));
+    const contiene = (columna: unknown, valor?: string) => {
+      const v = valor?.trim();
+      if (v) condiciones.push(sql`position(lower(${v}) in lower(coalesce(${columna}, ''))) > 0`);
+    };
+    contiene(usuariosTable.nombre, filtros.nombre);
+    contiene(usuariosTable.apellido, filtros.apellido);
+    contiene(usuariosTable.nombreUsuario, filtros.nombreUsuario);
+    contiene(usuariosTable.email, filtros.email);
     const busqueda = filtros.busqueda?.trim();
     if (busqueda) condiciones.push(sql`position(lower(${busqueda}) in lower(concat_ws(' ', ${usuariosTable.nombre}, ${usuariosTable.apellido}, ${usuariosTable.nombreUsuario}, ${usuariosTable.email}))) > 0`);
     return (await this.db.select().from(usuariosTable).where(and(...condiciones))

@@ -9,6 +9,7 @@ export class RegistrarPesajeCosechaUseCase {
 export class ConsultarCosechasRegistroUseCase {
   constructor(private readonly repo: CosechasRegistroRepositoryPort) {}
   listar(filtros: FiltrosCosechasRegistro, actor: ActorCosechas) { return this.repo.listar(filtros, actor); }
+  totales(filtros: FiltrosCosechasRegistro, actor: ActorCosechas) { return this.repo.totalizar(filtros, actor); }
   async obtener(id: string, actor: ActorCosechas) {
     const cosecha = await this.repo.buscarPorId(id, actor);
     if (!cosecha) throw new EntidadNoEncontradaError('Cosecha', id);

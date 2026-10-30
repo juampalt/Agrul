@@ -8,7 +8,7 @@ import { AccesoDenegadoFincaError, EntidadNoEncontradaError } from '../../../cor
 import { AlmacenamientoProduccionRepositoryPort, FiltrosAlmacenamiento } from '../../../core/ports/poscosecha-almacenamiento-repository.port.js';
 import { DestinosRepositoryPort, FiltrosDestinosProduccion } from '../../../core/ports/destinos-repository.port.js';
 import { AgrulDatabase, AgrulTransaction } from '../connection.js';
-import { consultarCamaras, consultarDestinos, consultarMovimientosAlmacenamiento, consultarSaldosCamaras } from '../almacenamiento-consultas.js';
+import { consultarCamaras, consultarDestinos, consultarMovimientosAlmacenamiento, consultarSaldosCamaras, totalesDestinosPorTipo } from '../almacenamiento-consultas.js';
 import { camarasSectorTable as cam, movimientosAlmacenamientoTable as m, destinosProduccionTable as d } from '../schema/almacenamiento-produccion.js';
 import { partidasProduccionTable as p, clasificacionesTable as c } from '../schema/poscosecha.js';
 import { cosechasTable as h, lotesTable as l, fincasTable as fincas } from '../schema/tables.js';
@@ -81,6 +81,7 @@ export class DrizzleAlmacenamientoProduccionRepository implements Almacenamiento
   async obtenerMovimiento(id: string, actor: ActorCosechas) { return (await consultarMovimientosAlmacenamiento(this.db, { limit: 1, offset: 0 }, actor, id))[0] ?? null; }
   consultarSaldos(f: FiltrosAlmacenamiento, actor: ActorCosechas) { return consultarSaldosCamaras(this.db, f, actor); }
   listarDestinos(f: FiltrosDestinosProduccion, actor: ActorCosechas) { return consultarDestinos(this.db, f, actor); }
+  totalesDestinos(f: FiltrosDestinosProduccion, actor: ActorCosechas) { return totalesDestinosPorTipo(this.db, f, actor); }
   async obtenerDestino(id: string, actor: ActorCosechas) { return (await consultarDestinos(this.db, { limit: 1, offset: 0 }, actor, id))[0] ?? null; }
   private autorizar(fincaId: string, actor: ActorCosechas) {
     if (actor.fincaIds !== undefined && !actor.fincaIds.includes(fincaId)) throw new AccesoDenegadoFincaError(fincaId);

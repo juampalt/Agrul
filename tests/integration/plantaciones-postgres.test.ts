@@ -38,13 +38,13 @@ describe.skipIf(!connectionString)('AGRUL-052 CU15-CU17 con bootstrap y PostgreS
     headers = await autenticarOperadorPrueba(connection.pool, app, usuario);
   }, 60000);
   beforeEach(async () => {
-    for (const tabla of ['plantaciones', 'variedades', 'cultivos', 'lotes', 'fincas']) {
+    for (const tabla of ['ciclos_productivos', 'plantaciones', 'variedades', 'cultivos', 'lotes', 'fincas']) {
       // Nombres constantes; solo tablas del esquema propio, sin fallback a public.
       await connection.pool.query(`delete from ${tabla}`);
     }
     await new DrizzleFincasRepository(connection.db).guardar(Finca.crear({ id: inexistente, nombre: 'Finca de prueba',
       provincia: 'Tucumán', departamento: 'Lules', localidad: 'San Pablo', superficieTotalHa: 100 }));
-    loteId = await alta('/lotes-territorio', { codigo: 'LOT-2026-0054', nombre: 'Lote de prueba', superficieHa: 10 });
+    loteId = await alta('/lotes-territorio', { codigo: 'LOT-2026-0054', nombre: 'Lote de prueba', superficieHa: 10, ubicacionSector: 'Norte' });
     cultivoId = await alta('/cultivos', { nombre: 'Arándano', tipoCicloVida: 'PERENNE' });
     variedadId = await alta('/variedades', { cultivoId, nombre: 'Emerald' });
   });
@@ -67,6 +67,25 @@ describe.skipIf(!connectionString)('AGRUL-052 CU15-CU17 con bootstrap y PostgreS
   function finalizar(id: string, fechaFinalizacion = '2026-10-27') {
     return app.inject({ method: 'PATCH', url: `/api/v1/plantaciones/${id}/finalizar`, headers, payload: { fechaFinalizacion } });
   }
+
+  it('CU16 el detalle muestra finca, ocupación del lote y ciclos asociados', async () => {
+    const id = (await registrar({ superficieHa: 4 })).json().data.id;
+    await app.inject({ method: 'POST', url: '/api/v1/ciclos-productivos', headers, payload: {
+      plantacionId: id, nombreCodigo: 'CICLO-CU16', fechaInicioPrevista: '2026-10-10', fechaFinPrevista: '2026-11-30',
+      responsableSeguimientoId: usuario.sub, observaciones: null } });
+    const detalle = (await app.inject({ method: 'GET', url: `/api/v1/plantaciones/${id}`, headers })).json().data;
+    expect(detalle).toMatchObject({ id, fincaId: inexistente, lote: { id: loteId, superficieHa: 10, superficieOcupadaHa: 4, superficieDisponibleHa: 6 } });
+    expect(detalle.ciclos).toEqual([expect.objectContaining({ nombreCodigo: 'CICLO-CU16', estado: 'PLANIFICADO' })]);
+  });
+
+  it('CU15 conserva las observaciones opcionales de la plantación', async () => {
+    const con = await registrar({ observaciones: '  Plantines certificados  ' });
+    expect(con.statusCode).toBe(201);
+    expect(con.json().data.observaciones).toBe('Plantines certificados');
+    const sin = await registrar({ superficieHa: 1 });
+    expect(sin.statusCode).toBe(201);
+    expect(sin.json().data.observaciones).toBeNull();
+  });
 
   it('CU15 registra una plantación con superficie, plantas y vínculos persistidos', async () => {
     const respuesta = await registrar();
@@ -91,7 +110,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU15-CU17 con bootstrap y PostgreS
   });
 
   it('permite ocupar exactamente 0.3 ha con 0.1 y 0.2 ha', async () => {
-    const loteDecimal = await alta('/lotes-territorio', { codigo: 'LOT-2026-0055', nombre: 'Decimal', superficieHa: 0.3 });
+    const loteDecimal = await alta('/lotes-territorio', { codigo: 'LOT-2026-0055', nombre: 'Decimal', superficieHa: 0.3, ubicacionSector: 'Sur' });
     expect((await registrar({ loteId: loteDecimal, superficieHa: 0.1 })).statusCode).toBe(201);
     expect((await registrar({ loteId: loteDecimal, superficieHa: 0.2 })).statusCode).toBe(201);
     expect((await registrar({ loteId: loteDecimal, superficieHa: 0.01 })).statusCode).toBe(422);
@@ -153,7 +172,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU15-CU17 con bootstrap y PostgreS
   it('integra el control de superficie con la modificación territorial del Módulo 1', async () => {
     const id = (await registrar({ superficieHa: 8 })).json().data.id;
     const modificar = () => app.inject({ method: 'PUT', url: `/api/v1/lotes-territorio/${loteId}`, headers,
-      payload: { nombre: 'Lote modificado', superficieHa: 7 } });
+      payload: { nombre: 'Lote modificado', superficieHa: 7, ubicacionSector: 'Norte' } });
     expect((await modificar()).statusCode).toBe(422);
     expect((await connection.pool.query('select superficie_ha from lotes where id = $1', [loteId])).rows[0].superficie_ha).toBe('10.00');
     expect((await finalizar(id)).statusCode).toBe(200);
@@ -162,7 +181,7 @@ describe.skipIf(!connectionString)('AGRUL-052 CU15-CU17 con bootstrap y PostgreS
 
   it('serializa el alta de plantación contra una reducción simultánea del lote', async () => {
     const respuestas = await Promise.all([registrar({ superficieHa: 8 }), app.inject({ method: 'PUT',
-      url: `/api/v1/lotes-territorio/${loteId}`, headers, payload: { nombre: 'Reducido', superficieHa: 7 } })]);
+      url: `/api/v1/lotes-territorio/${loteId}`, headers, payload: { nombre: 'Reducido', superficieHa: 7, ubicacionSector: 'Norte' } })]);
     expect(respuestas.filter((r) => r.statusCode === 422)).toHaveLength(1);
     expect(respuestas.every((r) => [200, 201, 422].includes(r.statusCode))).toBe(true);
     const { rows } = await connection.pool.query('select superficie_ha::float8 as superficie, (select coalesce(sum(superficie_ha),0)::float8 from plantaciones where lote_id=$1 and estado=\'ACTIVA\') as ocupada from lotes where id=$1', [loteId]);

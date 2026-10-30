@@ -91,11 +91,38 @@ describe.skipIf(!connectionString)('AGRUL-054 CU22-CU25: Tipos de Actividad AgrÃ
       method: 'POST',
       url: '/api/v1/tipos-actividad',
       headers: headersAdmin,
-      payload: { ...payload, nombre: ` ${nombrePrueba(payload.nombre)} ` },
+      payload: { cultivoIds: [cultivoArandanoId], ...payload, nombre: ` ${nombrePrueba(payload.nombre)} ` },
     });
     if (res.statusCode === 201) tiposCreados.push(res.json().data.id);
     return res;
   }
+
+  it('CU22 exige al menos un cultivo aplicable y solo cultivos activos; la unicidad ignora mayÃºsculas', async () => {
+    const sinCultivos = await crearTipo({ nombre: 'Sin cultivos', categoria: 'OTRO', cultivoIds: [] });
+    expect(sinCultivos.statusCode).toBe(400);
+    const inactivo = await app.inject({ method: 'POST', url: '/api/v1/cultivos', headers: headersAdmin,
+      payload: { nombre: nombrePrueba('Cultivo inactivo'), tipoCicloVida: 'ANUAL', descripcion: null } });
+    const inactivoId = inactivo.json().data.id;
+    try {
+      await app.inject({ method: 'PATCH', url: `/api/v1/cultivos/${inactivoId}/desactivar`, headers: headersAdmin });
+      const conInactivo = await crearTipo({ nombre: 'Con cultivo inactivo', categoria: 'OTRO', cultivoIds: [inactivoId] });
+      expect(conInactivo.statusCode).toBe(422);
+      expect((await crearTipo({ nombre: 'Mayusculas', categoria: 'OTRO' })).statusCode).toBe(201);
+      const duplicado = await app.inject({ method: 'POST', url: '/api/v1/tipos-actividad', headers: headersAdmin,
+        payload: { nombre: nombrePrueba('MAYUSCULAS'), categoria: 'OTRO', cultivoIds: [cultivoArandanoId] } });
+      expect(duplicado.statusCode).toBe(409);
+    } finally {
+      await connection.pool.query('delete from cultivos where id=$1', [inactivoId]);
+    }
+  });
+
+  it('CU24/CU25 rechazan modificar o desactivar un tipo inactivo', async () => {
+    const id = (await crearTipo({ nombre: 'Para desactivar', categoria: 'RIEGO' })).json().data.id;
+    expect((await app.inject({ method: 'PATCH', url: `/api/v1/tipos-actividad/${id}/desactivar`, headers: headersAdmin })).statusCode).toBe(200);
+    expect((await app.inject({ method: 'PATCH', url: `/api/v1/tipos-actividad/${id}/desactivar`, headers: headersAdmin })).statusCode).toBe(422);
+    expect((await app.inject({ method: 'PUT', url: `/api/v1/tipos-actividad/${id}`, headers: headersAdmin,
+      payload: { nombre: nombrePrueba('Renombrado'), categoria: 'RIEGO', cultivoIds: [cultivoArandanoId] } })).statusCode).toBe(422);
+  });
 
   it('CU22 registra, normaliza y persiste un tipo de actividad activo con cultivos asociados', async () => {
     const res = await crearTipo({
@@ -189,9 +216,9 @@ describe.skipIf(!connectionString)('AGRUL-054 CU22-CU25: Tipos de Actividad AgrÃ
       headers: headersEncargado,
     });
     expect(resFiltroCultivo.statusCode).toBe(200);
-    expect(resFiltroCultivo.json().data).toHaveLength(2);
+    expect(resFiltroCultivo.json().data).toHaveLength(3);
     expect(resFiltroCultivo.json().data.map((tipo: { id: string }) => tipo.id)).toEqual(expect.arrayContaining([id1, otraCategoria.json().data.id]));
-    expect(resFiltroCultivo.json().data.map((tipo: { id: string }) => tipo.id)).not.toContain(id2);
+    expect(resFiltroCultivo.json().data.map((tipo: { id: string }) => tipo.id)).toContain(id2);
   });
 
   it('la limpieza elimina solo tipos propios y conserva los catÃ¡logos preexistentes', async () => {

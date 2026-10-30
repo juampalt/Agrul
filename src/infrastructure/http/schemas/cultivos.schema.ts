@@ -10,6 +10,8 @@ export const CultivoIdSchema = z.object({ id: z.string().uuid() }).strict();
 
 export const ConsultarCultivosSchema = z.object({
   estado: z.enum(['ACTIVO', 'INACTIVO']).optional(),
+  nombre: z.string().trim().min(1).max(40).optional(),
+  tipoCicloVida: z.enum(['ANUAL', 'PERENNE']).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(100),
   offset: z.coerce.number().int().min(0).default(0),
 }).strict();

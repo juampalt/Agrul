@@ -4,6 +4,7 @@ import {
 } from '../../../application/use-cases/usuarios.use-cases.js';
 import { RegistrarUsuarioUseCase } from '../../../application/use-cases/registrar-usuario.use-case.js';
 import { ConsultarUsuariosUseCase } from '../../../application/use-cases/consultar-usuarios.use-case.js';
+import { versionEsperada } from '../if-match.js';
 import { ModificarUsuarioUseCase } from '../../../application/use-cases/modificar-usuario.use-case.js';
 import {
   CrearUsuarioSchema,
@@ -50,7 +51,7 @@ export class UsuariosController {
   async obtenerPorId(req: FastifyRequest, reply: FastifyReply) {
     const { id } = UsuarioIdParamSchema.parse(req.params);
     const resultado = await this.consultarUsuariosUC.obtener(id, req.usuario?.sub);
-    reply.header('Cache-Control', 'no-store');
+    reply.header('Cache-Control', 'no-store').header('ETag', `"${resultado.actualizadoEn}"`);
 
     return reply.status(200).send({
       success: true,
@@ -63,7 +64,8 @@ export class UsuariosController {
   async actualizar(req: FastifyRequest, reply: FastifyReply) {
     const { id } = UsuarioIdParamSchema.parse(req.params);
     const body = ActualizarUsuarioSchema.parse(req.body);
-    const resultado = await this.modificarUsuarioUC.execute(id, body, req.usuario?.sub);
+    const resultado = await this.modificarUsuarioUC.execute(id, body, req.usuario?.sub, versionEsperada(req));
+    reply.header('ETag', `"${resultado.actualizadoEn}"`);
 
     return reply.status(200).send({
       success: true,

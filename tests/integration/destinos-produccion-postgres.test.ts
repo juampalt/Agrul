@@ -25,6 +25,17 @@ describe.skipIf(!url)('AGRUL-056 CU53/CU54: destinos desde disponibilidad exteri
     expect(evento).toMatchObject({ actor_id: f.campoId, ubicacion_id: f.fincaId,
       payload_especifico: { cosechaId: origen.cosechaId, clasificacionId: origen.clasificacionId, partidaProduccionId: partida, cantidadDestinadaKg: 2, tipoDestino } });
   });
+  it('CU53 el destino específico es opcional salvo «Otro»; CU54 totaliza kg por tipo sin sumarlos a la cosecha', async () => {
+    const partida = await f.partida();
+    const { destinoEspecifico: _omitido, ...base } = f.datosDestino(partida, 2);
+    const fresco = await f.destinar({ ...base, operacionId: randomUUID(), tipoDestino: 'MERCADO_FRESCO' });
+    expect(fresco.statusCode).toBe(201); expect(fresco.json().data.destinoEspecifico).toBe('No registrado');
+    expect((await f.destinar({ ...base, operacionId: randomUUID(), tipoDestino: 'INDUSTRIA', cantidadDestinadaKg: 1 })).statusCode).toBe(201);
+    expect((await f.destinar({ ...base, operacionId: randomUUID(), tipoDestino: 'OTRO' })).statusCode).toBe(400);
+    const totales = await f.app.inject({ method: 'GET', url: `/api/v1/destinos-produccion/totales?partidaProduccionId=${partida}`, headers: f.campo });
+    expect(totales.statusCode).toBe(200);
+    expect(totales.json().data).toEqual({ porTipo: [{ tipoDestino: 'INDUSTRIA', cantidadDestinos: 1, totalKg: 1 }, { tipoDestino: 'MERCADO_FRESCO', cantidadDestinos: 1, totalKg: 2 }], totalDestinadoKg: 3 });
+  });
   it('acumula destinos parciales y no duplica el consumo ante reintentos', async () => {
     const partida = await f.partida(), datos = f.datosDestino(partida, 2);
     expect((await f.destinar(datos)).statusCode).toBe(201); expect((await f.destinar(datos)).statusCode).toBe(201);

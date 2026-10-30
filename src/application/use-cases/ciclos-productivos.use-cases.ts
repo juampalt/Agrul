@@ -20,6 +20,14 @@ export class ConsultarCiclosProductivosUseCase {
     return ciclo.toPlanificacionJSON();
   }
 }
+export class ResumirCicloProductivoUseCase {
+  constructor(private readonly repo: CiclosProductivosRepositoryPort) {}
+  async execute(id: string) {
+    const resumen = await this.repo.resumen(id);
+    if (!resumen) throw new EntidadNoEncontradaError('Ciclo productivo', id);
+    return resumen;
+  }
+}
 export class IniciarCicloProductivoUseCase {
   constructor(private readonly repo: CiclosProductivosRepositoryPort) {}
   async execute(id: string, fecha: string) {

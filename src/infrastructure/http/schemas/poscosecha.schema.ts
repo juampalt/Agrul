@@ -15,11 +15,12 @@ export const AcondicionarProduccionSchema = z.object({ ...comun, partidaProducci
 }).strict();
 export const PoscosechaIdSchema = z.object({ id: uuid }).strict();
 export const PoscosechaVacioSchema = z.object({}).strict();
+const origen = { loteId: uuid.optional(), cicloId: uuid.optional(), cultivoId: uuid.optional(), variedadId: uuid.optional() };
 const pagina = { limit: z.coerce.number().int().min(1).max(100).default(100), offset: z.coerce.number().int().min(0).max(2147483647).default(0) };
 const rango = (v: { desde?: string; hasta?: string }) => !v.desde || !v.hasta || v.desde <= v.hasta;
-export const ConsultarClasificacionesSchema = z.object({ ...pagina, cosechaId: uuid.optional(), desde: fecha.optional(), hasta: fecha.optional() })
+export const ConsultarClasificacionesSchema = z.object({ ...pagina, ...origen, cosechaId: uuid.optional(), desde: fecha.optional(), hasta: fecha.optional() })
   .strict().refine(rango, 'El rango de fechas está invertido');
-export const ConsultarPartidasProduccionSchema = z.object({ ...pagina, cosechaId: uuid.optional(), clasificacionId: uuid.optional(),
+export const ConsultarPartidasProduccionSchema = z.object({ ...pagina, ...origen, cosechaId: uuid.optional(), clasificacionId: uuid.optional(),
   categoria: z.enum(['FRESCO', 'INDUSTRIA']).optional() }).strict();
-export const ConsultarAcondicionamientosSchema = z.object({ ...pagina, cosechaId: uuid.optional(), partidaProduccionId: uuid.optional(),
+export const ConsultarAcondicionamientosSchema = z.object({ ...pagina, ...origen, cosechaId: uuid.optional(), partidaProduccionId: uuid.optional(),
   desde: fecha.optional(), hasta: fecha.optional() }).strict().refine(rango, 'El rango de fechas está invertido');

@@ -14,7 +14,7 @@ export interface MovimientoAlmacenamiento extends Omit<RegistrarMovimientoAlmace
 }
 export interface RegistrarDestinoProduccion {
   operacionId: string; partidaProduccionId: string; fechaDestino: string; tipoDestino: 'MERCADO_FRESCO' | 'INDUSTRIA' | 'OTRO';
-  destinoEspecifico: string; cantidadDestinadaKg: number; responsableId: string; timestampCapturaLocal?: string;
+  destinoEspecifico?: string; cantidadDestinadaKg: number; responsableId: string; timestampCapturaLocal?: string;
 }
 export interface DestinoProduccion extends Omit<RegistrarDestinoProduccion, 'operacionId' | 'timestampCapturaLocal'> {
   id: string; registradoPor: string; creadoEn: string; timestampCapturaLocal: string;
@@ -40,12 +40,16 @@ export function validarMovimientoAlmacenamiento(datos: RegistrarMovimientoAlmace
   validarKgPositivos(datos.cantidadKg);
   return { ...datos };
 }
-export function validarDestinoProduccion(datos: RegistrarDestinoProduccion, hoy = new Date()): RegistrarDestinoProduccion {
+export const DESTINO_NO_REGISTRADO = 'No registrado';
+export function validarDestinoProduccion(datos: RegistrarDestinoProduccion, hoy = new Date()): RegistrarDestinoProduccion & { destinoEspecifico: string } {
   validarFechaPoscosecha(datos.fechaDestino, hoy);
-  if (!datos.partidaProduccionId || !datos.responsableId || !datos.destinoEspecifico.trim() ||
-      !['MERCADO_FRESCO', 'INDUSTRIA', 'OTRO'].includes(datos.tipoDestino)) throw new PoscosechaInvalidaError('El destino requiere partida, finalidad, destinatario y responsable.');
+  if (!datos.partidaProduccionId || !datos.responsableId ||
+      !['MERCADO_FRESCO', 'INDUSTRIA', 'OTRO'].includes(datos.tipoDestino)) throw new PoscosechaInvalidaError('El destino requiere partida, tipo de destino y responsable.');
+  const especifico = datos.destinoEspecifico?.trim() ?? '';
+  // CU53: el destino específico es opcional salvo para «Otro», que debe describir su finalidad.
+  if (!especifico && datos.tipoDestino === 'OTRO') throw new PoscosechaInvalidaError('El destino «Otro» requiere describir su finalidad.');
   validarKgPositivos(datos.cantidadDestinadaKg);
-  return { ...datos, destinoEspecifico: datos.destinoEspecifico.trim() };
+  return { ...datos, destinoEspecifico: especifico || DESTINO_NO_REGISTRADO };
 }
 function validarKgPositivos(valor: number): void {
   if (!esEstimacionKgValida(valor) || valor <= 0) throw new PoscosechaInvalidaError('Los kg deben ser positivos, con hasta dos decimales y máximo 99999999.99.');

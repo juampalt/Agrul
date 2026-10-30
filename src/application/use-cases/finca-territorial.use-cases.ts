@@ -33,7 +33,7 @@ export class ModificarFincaUseCase {
     private readonly lotesRepo: LotesRepositoryPort
   ) {}
 
-  async execute(dto: ModificarFincaDTO): Promise<FincaResponseDTO> {
+  async execute(dto: ModificarFincaDTO, versionEsperada?: string): Promise<FincaResponseDTO> {
     const finca = await obtenerFincaUnica(this.fincasRepo);
     const superficieAsignada = this.lotesRepo.sumarSuperficieActiva
       ? await this.lotesRepo.sumarSuperficieActiva(finca.id)
@@ -44,7 +44,7 @@ export class ModificarFincaUseCase {
       throw new SuperficieFincaInsuficienteError(dto.superficieTotalHa, superficieAsignada);
     }
     finca.modificar(dto);
-    if (this.fincasRepo.actualizar) await this.fincasRepo.actualizar(finca);
+    if (this.fincasRepo.actualizar) await this.fincasRepo.actualizar(finca, versionEsperada);
     else await this.fincasRepo.guardar(finca);
     return finca.toJSON();
   }

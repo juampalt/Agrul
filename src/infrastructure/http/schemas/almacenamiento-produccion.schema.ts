@@ -15,14 +15,16 @@ export const RegistrarCamaraSchema = z.object({ operacionId: uuid, fincaId: uuid
 export const RegistrarMovimientoAlmacenamientoSchema = z.object({ ...captura, operacionId: uuid, partidaProduccionId: uuid,
   camaraSectorId: uuid, tipoMovimiento: z.enum(['INGRESO','SALIDA']), cantidadKg: kg, fechaMovimiento: fecha }).strict();
 export const RegistrarDestinoProduccionSchema = z.object({ ...captura, operacionId: uuid, partidaProduccionId: uuid,
-  fechaDestino: fecha, tipoDestino: z.enum(['MERCADO_FRESCO','INDUSTRIA','OTRO']), destinoEspecifico: z.string().trim().min(1), cantidadDestinadaKg: kg }).strict();
+  fechaDestino: fecha, tipoDestino: z.enum(['MERCADO_FRESCO','INDUSTRIA','OTRO']), destinoEspecifico: z.string().trim().min(1).optional(), cantidadDestinadaKg: kg }).strict()
+  .refine(d => d.tipoDestino !== 'OTRO' || Boolean(d.destinoEspecifico), { path: ['destinoEspecifico'], message: 'El destino «Otro» requiere describir su finalidad.' });
 export const AlmacenamientoIdSchema = z.object({ id: uuid }).strict();
 export const AlmacenamientoVacioSchema = z.object({}).strict();
 export const ConsultarCamarasSchema = z.object({ ...pagina, fincaId: uuid.optional() }).strict();
-const saldo = { ...pagina, fincaId: uuid.optional(), camaraSectorId: uuid.optional(), partidaProduccionId: uuid.optional(), cosechaId: uuid.optional() };
+const origen = { loteId: uuid.optional(), cicloId: uuid.optional(), cultivoId: uuid.optional(), variedadId: uuid.optional() };
+const saldo = { ...pagina, ...origen, fincaId: uuid.optional(), camaraSectorId: uuid.optional(), partidaProduccionId: uuid.optional(), cosechaId: uuid.optional() };
 export const ConsultarSaldosCamaraSchema = z.object(saldo).strict();
 export const ConsultarMovimientosAlmacenamientoSchema = z.object({ ...saldo, tipoMovimiento: z.enum(['INGRESO','SALIDA']).optional(),
   desde: fecha.optional(), hasta: fecha.optional() }).strict().refine(rango, 'El rango de fechas está invertido');
-export const ConsultarDestinosProduccionSchema = z.object({ ...pagina, fincaId: uuid.optional(), partidaProduccionId: uuid.optional(),
+export const ConsultarDestinosProduccionSchema = z.object({ ...pagina, ...origen, fincaId: uuid.optional(), partidaProduccionId: uuid.optional(),
   cosechaId: uuid.optional(), tipoDestino: z.enum(['MERCADO_FRESCO','INDUSTRIA','OTRO']).optional(), desde: fecha.optional(), hasta: fecha.optional() })
   .strict().refine(rango, 'El rango de fechas está invertido');

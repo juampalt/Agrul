@@ -4,6 +4,10 @@ export interface FiltrosUsuarios {
   perfil?: PerfilUsuario;
   estado?: EstadoUsuario;
   busqueda?: string;
+  nombre?: string;
+  apellido?: string;
+  nombreUsuario?: string;
+  email?: string;
 }
 
 export interface UsuariosRepositoryPort {

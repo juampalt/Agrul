@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte } from 'drizzle-orm';
+import { and, desc, eq, gte, isNotNull, isNull, lte } from 'drizzle-orm';
 import { ContextoMonitoreo, Monitoreo } from '../../../core/domain/entities/monitoreo.entity.js';
 import { EntidadNoEncontradaError } from '../../../core/domain/errors/domain.error.js';
 import { FiltrosMonitoreos, MonitoreosRepositoryPort } from '../../../core/ports/monitoreos-repository.port.js';
@@ -42,6 +42,7 @@ export class DrizzleMonitoreosRepository implements MonitoreosRepositoryPort {
     if (f.etapaFenologica) condiciones.push(eq(monitoreos.etapaFenologica, f.etapaFenologica));
     if (f.estadoGeneralCultivo) condiciones.push(eq(monitoreos.estadoGeneralCultivo, f.estadoGeneralCultivo));
     if (f.tipoObservacion) condiciones.push(eq(monitoreos.tipoObservacion, f.tipoObservacion));
+    if (f.conProblema !== undefined) condiciones.push(f.conProblema ? isNotNull(monitoreos.problemaDetectado) : isNull(monitoreos.problemaDetectado));
     if (f.desde) condiciones.push(gte(monitoreos.fechaInspeccion, f.desde));
     if (f.hasta) condiciones.push(lte(monitoreos.fechaInspeccion, f.hasta));
     return (await this.db.select().from(monitoreos).where(and(...condiciones, alcanceFincasPorLote(this.db, monitoreos.loteId, f.fincaIds)))

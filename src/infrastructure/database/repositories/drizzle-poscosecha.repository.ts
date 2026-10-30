@@ -7,7 +7,7 @@ import { AccesoDenegadoFincaError, EntidadNoEncontradaError } from '../../../cor
 import { ClasificacionesRepositoryPort, FiltrosPoscosecha } from '../../../core/ports/clasificaciones-repository.port.js';
 import { PoscosechaAlmacenamientoRepositoryPort } from '../../../core/ports/poscosecha-almacenamiento-repository.port.js';
 import { AgrulDatabase, AgrulTransaction } from '../connection.js';
-import { consultarAcondicionamientos, consultarClasificaciones, consultarPartidasProduccion } from '../poscosecha-consultas.js';
+import { consultarAcondicionamientos, consultarClasificaciones, consultarPartidasProduccion, totalesClasificaciones as totalesClasificacionesDb } from '../poscosecha-consultas.js';
 import { clasificacionesTable as c, partidasProduccionTable as p, acondicionamientosTable as a } from '../schema/poscosecha.js';
 import { cosechasTable as h, lotesTable as l } from '../schema/tables.js';
 
@@ -57,6 +57,7 @@ export class DrizzlePoscosechaRepository implements ClasificacionesRepositoryPor
     }));
   }
   listarClasificaciones(f: FiltrosPoscosecha, actor: ActorCosechas) { return consultarClasificaciones(this.db, f, actor); }
+  totalesClasificaciones(f: FiltrosPoscosecha, actor: ActorCosechas) { return totalesClasificacionesDb(this.db, f, actor); }
   async obtenerClasificacion(id: string, actor: ActorCosechas) { return (await consultarClasificaciones(this.db, { limit: 1, offset: 0 }, actor, id))[0] ?? null; }
   listarAcondicionamientos(f: FiltrosPoscosecha, actor: ActorCosechas) { return consultarAcondicionamientos(this.db, f, actor); }
   async obtenerAcondicionamiento(id: string, actor: ActorCosechas) { return (await consultarAcondicionamientos(this.db, { limit: 1, offset: 0 }, actor, id))[0] ?? null; }

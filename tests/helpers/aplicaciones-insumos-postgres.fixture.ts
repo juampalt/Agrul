@@ -35,7 +35,7 @@ export class AplicacionesInsumosPostgresFixture extends InventarioPostgresFixtur
     const { rows } = await this.pool.query<{ tipo_actividad_id: string }>('select tipo_actividad_id from actividades_realizadas where id=$1', [this.actividadId]);
     const res = await this.app.inject({ method: 'POST', url: '/api/v1/actividades-realizadas', headers: this.admin,
       payload: { origen: 'NO_PROGRAMADA', cicloId: ciclo, tipoActividadId: rows[0].tipo_actividad_id,
-        responsableId: this.adminId, fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1 } });
+        responsableId: this.adminId, fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1, descripcionTrabajo: 'Labor de prueba' } });
     expect(res.statusCode).toBe(201); return res.json().data.id as string;
   }
 }

@@ -1,4 +1,5 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
+import { versionEsperada } from '../if-match.js';
 import { ConsultarFincaUseCase, ModificarFincaUseCase } from '../../../application/use-cases/finca-territorial.use-cases.js';
 import {
   ConsultarLotesTerritorialesUseCase,
@@ -29,12 +30,14 @@ export class TerritorioController {
   }
 
   async obtenerFinca(_req: FastifyRequest, reply: FastifyReply) {
-    return this.responder(reply, 200, await this.consultarFinca.execute());
+    const finca = await this.consultarFinca.execute();
+    return this.responder(reply.header('ETag', `"${finca.actualizadoEn}"`), 200, finca);
   }
 
   async actualizarFinca(req: FastifyRequest, reply: FastifyReply) {
     const body = ModificarFincaUnicaBodySchema.parse(req.body);
-    return this.responder(reply, 200, await this.modificarFinca.execute(body));
+    const finca = await this.modificarFinca.execute(body, versionEsperada(req));
+    return this.responder(reply.header('ETag', `"${finca.actualizadoEn}"`), 200, finca);
   }
 
   async crearLote(req: FastifyRequest, reply: FastifyReply) {
@@ -51,7 +54,8 @@ export class TerritorioController {
   async actualizarLote(req: FastifyRequest, reply: FastifyReply) {
     const { id } = LoteTerritorialIdParamSchema.parse(req.params);
     const body = ModificarLoteTerritorialBodySchema.parse(req.body);
-    return this.responder(reply, 200, await this.modificarLote.execute(id, body));
+    const lote = await this.modificarLote.execute(id, body, versionEsperada(req));
+    return this.responder(reply.header('ETag', `"${lote.actualizadoEn}"`), 200, lote);
   }
 
   async desactivar(req: FastifyRequest, reply: FastifyReply) {

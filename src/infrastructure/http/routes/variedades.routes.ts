@@ -11,7 +11,7 @@ import {
 
 export function registrarRutasVariedades(app: FastifyInstance, repo: VariedadesRepositoryPort, cultivos: CultivosRepositoryPort) {
   const registrar = new RegistrarVariedadUseCase(repo, cultivos);
-  const consultar = new ConsultarVariedadesUseCase(repo);
+  const consultar = new ConsultarVariedadesUseCase(repo, cultivos);
   const modificar = new ModificarVariedadUseCase(repo);
   const desactivar = new DesactivarVariedadUseCase(repo);
   const permisos = { preHandler: [requerirRol('ADMINISTRADOR'), verificarPasswordInicial] };

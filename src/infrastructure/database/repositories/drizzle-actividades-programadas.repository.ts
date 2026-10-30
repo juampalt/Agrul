@@ -1,5 +1,5 @@
 import { and, asc, eq, getTableColumns, gte, lte, sql } from 'drizzle-orm';
-import { ActividadProgramada, validarSuperficiePrevista } from '../../../core/domain/entities/actividad-programada.entity.js';
+import { ActividadProgramada, ActividadProgramadaInvalidaError, validarSuperficiePrevista } from '../../../core/domain/entities/actividad-programada.entity.js';
 import { ConflictoActividadProgramadaError, EstadoActividadInvalidoError } from '../../../core/domain/entities/actividad-programada.entity.js';
 import {
   ActividadesProgramadasRepositoryPort,
@@ -7,6 +7,9 @@ import {
 } from '../../../core/ports/actividades-programadas-repository.port.js';
 import { AgrulDatabase } from '../connection.js';
 import { actividadesProgramadasTable } from '../schema/actividades-programadas.js';
+import { ciclosProductivosTable, lotesTable, plantacionesTable } from '../schema/tables.js';
+import { tiposActividadCultivosTable } from '../schema/tipos-actividad.js';
+import { AgrulTransaction } from '../connection.js';
 import { alcanceFincasPorCiclo } from '../alcance-fincas-agricolas.js';
 
 // xmin cambia con cada versión de fila confirmada, incluso en escrituras SQL
@@ -17,21 +20,46 @@ const columnas = { ...getTableColumns(actividadesProgramadasTable),
 export class DrizzleActividadesProgramadasRepository implements ActividadesProgramadasRepositoryPort {
   constructor(private readonly db: AgrulDatabase) {}
 
+  /** CU26/CU28: ciclo activo, plantación activa, lote habilitado, tipo aplicable y superficie dentro de la plantación. */
+  private async validarContexto(tx: AgrulTransaction, cicloId: string, tipoActividadId: string | null, superficiePrevista: number | null) {
+    const [ref] = await tx.select({ ciclo: ciclosProductivosTable.estado, plantacion: plantacionesTable.estado,
+      lote: lotesTable.estadoTerritorial, cultivoId: plantacionesTable.cultivoId, superficie: plantacionesTable.superficieHa })
+      .from(ciclosProductivosTable)
+      .innerJoin(plantacionesTable, eq(ciclosProductivosTable.plantacionId, plantacionesTable.id))
+      .innerJoin(lotesTable, eq(plantacionesTable.loteId, lotesTable.id))
+      .where(eq(ciclosProductivosTable.id, cicloId)).for('share', { of: [ciclosProductivosTable, plantacionesTable, lotesTable] });
+    if (!ref) return;
+    if (ref.ciclo !== 'ACTIVO' || ref.plantacion !== 'ACTIVA' || ref.lote === 'INACTIVO') {
+      throw new ActividadProgramadaInvalidaError('Solo pueden programarse actividades en ciclos activos de plantaciones activas y lotes habilitados.');
+    }
+    if (superficiePrevista !== null && Math.round(superficiePrevista * 100) > Math.round(Number(ref.superficie) * 100)) {
+      throw new ActividadProgramadaInvalidaError('La superficie prevista no puede superar la superficie de la plantación.');
+    }
+    if (tipoActividadId) {
+      const [aplicable] = await tx.select({ cultivoId: tiposActividadCultivosTable.cultivoId }).from(tiposActividadCultivosTable)
+        .where(and(eq(tiposActividadCultivosTable.tipoActividadId, tipoActividadId), eq(tiposActividadCultivosTable.cultivoId, ref.cultivoId)));
+      if (!aplicable) throw new ActividadProgramadaInvalidaError('El tipo de actividad no es aplicable al cultivo del ciclo.');
+    }
+  }
+
   async guardar(actividad: ActividadProgramada): Promise<void> {
     const raw = actividad.toJSON();
     validarSuperficiePrevista(raw.superficiePrevista);
-    await this.db.insert(actividadesProgramadasTable).values({
-      id: raw.id,
-      cicloId: raw.cicloId,
-      tipoActividadId: raw.tipoActividadId,
-      fechaProgramada: raw.fechaProgramada,
-      responsableId: raw.responsableId,
-      superficiePrevista: raw.superficiePrevista !== null ? raw.superficiePrevista.toFixed(2) : null,
-      descripcion: raw.descripcion,
-      estado: raw.estado,
-      motivoCancelacion: raw.motivoCancelacion,
-      creadoEn: raw.creadoEn,
-      actualizadoEn: raw.actualizadoEn,
+    await this.db.transaction(async (tx) => {
+      await this.validarContexto(tx, raw.cicloId, raw.tipoActividadId, raw.superficiePrevista);
+      await tx.insert(actividadesProgramadasTable).values({
+        id: raw.id,
+        cicloId: raw.cicloId,
+        tipoActividadId: raw.tipoActividadId,
+        fechaProgramada: raw.fechaProgramada,
+        responsableId: raw.responsableId,
+        superficiePrevista: raw.superficiePrevista !== null ? raw.superficiePrevista.toFixed(2) : null,
+        descripcion: raw.descripcion,
+        estado: raw.estado,
+        motivoCancelacion: raw.motivoCancelacion,
+        creadoEn: raw.creadoEn,
+        actualizadoEn: raw.actualizadoEn,
+      });
     });
   }
 
@@ -57,6 +85,9 @@ export class DrizzleActividadesProgramadasRepository implements ActividadesProgr
     const condiciones = [];
     if (filtros.cicloId) {
       condiciones.push(eq(actividadesProgramadasTable.cicloId, filtros.cicloId));
+    }
+    if (filtros.loteId) {
+      condiciones.push(sql`${actividadesProgramadasTable.cicloId} IN (SELECT c.id FROM ciclos_productivos c JOIN plantaciones p ON p.id = c.plantacion_id WHERE p.lote_id = ${filtros.loteId})`);
     }
     if (filtros.tipoActividadId) {
       condiciones.push(eq(actividadesProgramadasTable.tipoActividadId, filtros.tipoActividadId));
@@ -109,18 +140,24 @@ export class DrizzleActividadesProgramadasRepository implements ActividadesProgr
     if (!actividad.versionPersistida) throw new ConflictoActividadProgramadaError();
     const cambios = raw.estado === 'CANCELADA'
       ? { estado: raw.estado, motivoCancelacion: raw.motivoCancelacion, actualizadoEn: raw.actualizadoEn }
-      : { fechaProgramada: raw.fechaProgramada, responsableId: raw.responsableId, actualizadoEn: raw.actualizadoEn };
+      : { fechaProgramada: raw.fechaProgramada, responsableId: raw.responsableId,
+          superficiePrevista: raw.superficiePrevista !== null ? raw.superficiePrevista.toFixed(2) : null,
+          descripcion: raw.descripcion, actualizadoEn: raw.actualizadoEn };
     // Compare-and-swap: estado y versión deben seguir siendo los leídos. No se
     // reintenta automáticamente una decisión tomada sobre una lectura obsoleta.
-    const filas = await this.db
-      .update(actividadesProgramadasTable)
-      .set(cambios)
-      .where(and(
-        eq(actividadesProgramadasTable.id, raw.id),
-        eq(actividadesProgramadasTable.estado, 'PENDIENTE'),
-        eq(columnas.versionPersistida, actividad.versionPersistida),
-      ))
-      .returning({ id: actividadesProgramadasTable.id });
+    const filas = await this.db.transaction(async (tx) => {
+      // La cancelación sigue permitida aunque el contexto cambie; reprogramar exige contexto vigente.
+      if (raw.estado === 'PENDIENTE') await this.validarContexto(tx, raw.cicloId, null, raw.superficiePrevista);
+      return tx
+        .update(actividadesProgramadasTable)
+        .set(cambios)
+        .where(and(
+          eq(actividadesProgramadasTable.id, raw.id),
+          eq(actividadesProgramadasTable.estado, 'PENDIENTE'),
+          eq(columnas.versionPersistida, actividad.versionPersistida!),
+        ))
+        .returning({ id: actividadesProgramadasTable.id });
+    });
     if (filas.length === 0) {
       throw new ConflictoActividadProgramadaError();
     }

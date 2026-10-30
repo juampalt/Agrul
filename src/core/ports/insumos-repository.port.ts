@@ -4,6 +4,7 @@ export interface FiltrosInsumos {
   categoria?: DatosInsumo['categoria'];
   estado?: 'ACTIVO' | 'INACTIVO';
   codigo?: string;
+  nombre?: string;
   limit: number;
   offset: number;
 }

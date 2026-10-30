@@ -20,6 +20,10 @@ export class CodigoInsumoDuplicadoError extends DomainError {
   readonly code = 'CODIGO_INSUMO_DUPLICADO';
   constructor() { super('El código de insumo ya está registrado, incluso si está inactivo.'); }
 }
+export class CodigoInsumoInmutableError extends DomainError {
+  readonly code = 'CODIGO_INSUMO_INMUTABLE';
+  constructor() { super('El código del insumo es invariable.'); }
+}
 export class UnidadInsumoInmutableError extends DomainError {
   readonly code = 'UNIDAD_INSUMO_INMUTABLE';
   constructor() { super('No se puede cambiar la unidad de un insumo con aplicaciones registradas (RN-15).'); }

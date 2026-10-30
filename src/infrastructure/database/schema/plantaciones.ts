@@ -14,6 +14,7 @@ export const plantacionesTable = pgTable('plantaciones', {
   superficieHa: numeric('superficie_ha', { precision: 8, scale: 2 }).notNull(),
   cantidadInicialPlantas: integer('cantidad_inicial_plantas').notNull(),
   procedencia: text('procedencia'),
+  observaciones: text('observaciones'),
   estado: varchar('estado', { length: 10 }).$type<EstadoPlantacion>().notNull().default('ACTIVA'),
   fechaFinalizacion: date('fecha_finalizacion', { mode: 'string' }),
 }, (table) => [

@@ -16,10 +16,9 @@ export const ModificarFincaUnicaBodySchema = CamposFincaSchema.strict();
 const CamposLoteSchema = z.object({
   nombre: z.string().trim().min(1).max(150),
   superficieHa: z.number().positive(),
-  ubicacionSector: z.string().trim().max(150).optional().nullable(),
+  ubicacionSector: z.string().trim().min(1, 'La ubicación o sector es obligatoria.').max(150),
   tipoSuelo: z.string().trim().max(100).optional().nullable(),
   sistemaRiego: z.string().trim().max(100).optional().nullable(),
-  estado: z.enum(['DISPONIBLE', 'EN_PRODUCCION']).optional(),
 });
 
 export const RegistrarLoteTerritorialBodySchema = CamposLoteSchema.extend({

@@ -27,9 +27,9 @@ describe.skipIf(!url)('S1: aislamiento por finca desde bootstrap y sesiones real
   const recursos: Recurso[] = [];
   const request = (actor: number, method: 'GET' | 'POST' | 'PATCH', path: string, payload?: Record<string, unknown>) =>
     servidor.app.inject({ method, url: `/api/v1/${path}`, headers: headers[actor], payload });
-  const programar = (r: Recurso) => ({ cicloId: r.cicloId, tipoActividadId: tipoId, responsableId: usuarios[1], fechaProgramada: '2026-10-15' });
+  const programar = (r: Recurso) => ({ cicloId: r.cicloId, tipoActividadId: tipoId, responsableId: usuarios[1], fechaProgramada: '2030-10-15' });
   const directa = (r: Recurso) => ({ origen: 'NO_PROGRAMADA', cicloId: r.cicloId, tipoActividadId: tipoId,
-    responsableId: usuarios[1], fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1 });
+    responsableId: usuarios[1], fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1, descripcionTrabajo: 'Labor de prueba' });
   const monitoreo = (r: Recurso) => ({ cicloId: r.cicloId, responsableId: usuarios[1], fechaInspeccion: '2026-10-15',
     etapaFenologica: 'Floración', estadoGeneralCultivo: 'Bueno', tipoObservacion: 'Sanitaria', descripcionHallazgos: 'Sin síntomas' });
 
@@ -43,7 +43,7 @@ describe.skipIf(!url)('S1: aislamiento por finca desde bootstrap y sesiones real
     headers = [];
     for (let i = 0; i < usuarios.length; i++) headers.push(await autenticarOperadorPrueba(connection.pool, servidor.app,
       { sub: usuarios[i], nombre: 'Prueba', apellido: 'S1', email: `s1-${usuarios[i]}@example.test`, perfil: i === 0 ? 'ADMINISTRADOR' : 'ENCARGADO_CAMPO' }));
-    const tipo = await request(0, 'POST', 'tipos-actividad', { nombre: `Riego S1 ${randomUUID().slice(0, 8)}`, categoria: 'RIEGO' });
+    const tipo = await request(0, 'POST', 'tipos-actividad', { nombre: `Riego S1 ${randomUUID().slice(0, 8)}`, categoria: 'RIEGO', cultivoIds: ['b0000000-0000-4000-8000-000000000059'] });
     expect(tipo.statusCode).toBe(201); tipoId = tipo.json().data.id;
     for (let i = 0; i < 2; i++) {
       const r: Recurso = { fincaId: randomUUID(), loteId: randomUUID(), plantacionId: randomUUID(), cicloId: randomUUID(), programadaId: '', realizadaId: '', monitoreoId: '' };
@@ -53,7 +53,7 @@ describe.skipIf(!url)('S1: aislamiento por finca desde bootstrap y sesiones real
       await connection.pool.query(`insert into plantaciones(id,lote_id,cultivo_id,variedad_id,fecha_plantacion,superficie_ha,cantidad_inicial_plantas)
         select $1,$2,p.cultivo_id,p.variedad_id,'2026-10-01',10,100 from plantaciones p inner join ciclos_productivos c on c.plantacion_id=p.id where c.id=$3`, [r.plantacionId, r.loteId, BASE]);
       await connection.pool.query("insert into ciclos_productivos(id,plantacion_id,nombre_codigo,fecha_inicio_prevista,fecha_fin_prevista,fecha_inicio_efectiva,responsable_seguimiento_id,estado) values($1,$2,$3,'2026-10-01','2026-10-27','2026-10-01',$4,'ACTIVO')", [r.cicloId, r.plantacionId, `S1-${r.cicloId.slice(0, 20)}`, usuarios[0]]);
-      const plan = await request(0, 'POST', rutas[0], { ...programar(r), fechaProgramada: i ? '2026-10-14' : '2026-10-15' });
+      const plan = await request(0, 'POST', rutas[0], { ...programar(r), fechaProgramada: i ? '2030-10-14' : '2030-10-15' });
       expect(plan.statusCode).toBe(201); r.programadaId = plan.json().data.id;
       const labor = await request(0, 'POST', rutas[1], { ...directa(r), fechaEjecucion: i ? '2026-10-16' : '2026-10-15' });
       expect(labor.statusCode).toBe(201); r.realizadaId = labor.json().data.id;
@@ -76,7 +76,7 @@ describe.skipIf(!url)('S1: aislamiento por finca desde bootstrap y sesiones real
         await connection.pool.query('delete from usuario_finca_asignacion where finca_id=$1', [r.fincaId]);
         await connection.pool.query('delete from fincas where id=$1', [r.fincaId]);
       }
-      if (tipoId) await connection.pool.query('delete from tipos_actividad where id=$1', [tipoId]);
+      if (tipoId) { await connection.pool.query('delete from tipos_actividad_cultivos where tipo_actividad_id=$1', [tipoId]); await connection.pool.query('delete from tipos_actividad where id=$1', [tipoId]); }
     } finally { await servidor?.app.close(); await connection.pool.end(); }
   });
 
@@ -104,8 +104,8 @@ describe.skipIf(!url)('S1: aislamiento por finca desde bootstrap y sesiones real
     expect((await request(1, 'POST', rutas[0], programar(r))).statusCode).toBe(403);
     expect((await request(1, 'POST', rutas[1], directa(r))).statusCode).toBe(403);
     expect((await request(1, 'POST', rutas[2], monitoreo(r))).statusCode).toBe(403);
-    expect((await request(1, 'POST', rutas[1], { actividadProgramadaId: r.programadaId, responsableId: usuarios[1], fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1 })).statusCode).toBe(403);
-    expect((await request(1, 'PATCH', `${rutas[0]}/${r.programadaId}/reprogramar`, { fechaProgramada: '2026-10-20' })).statusCode).toBe(403);
+    expect((await request(1, 'POST', rutas[1], { actividadProgramadaId: r.programadaId, responsableId: usuarios[1], fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1, descripcionTrabajo: 'Labor de prueba' })).statusCode).toBe(403);
+    expect((await request(1, 'PATCH', `${rutas[0]}/${r.programadaId}/reprogramar`, { fechaProgramada: '2030-10-20' })).statusCode).toBe(403);
     expect((await request(1, 'PATCH', `${rutas[0]}/${r.programadaId}/cancelar`, { motivoCancelacion: 'Intento ajeno' })).statusCode).toBe(403);
     expect(await snapshot()).toEqual(antes);
   });
@@ -116,11 +116,11 @@ describe.skipIf(!url)('S1: aislamiento por finca desde bootstrap y sesiones real
     expect((await request(1, 'POST', rutas[2], monitoreo(r))).statusCode).toBe(201);
     const nueva = await request(1, 'POST', rutas[0], programar(r)); expect(nueva.statusCode).toBe(201);
     const id = nueva.json().data.id;
-    expect((await request(1, 'PATCH', `${rutas[0]}/${id}/reprogramar`, { fechaProgramada: '2026-10-20' })).statusCode).toBe(200);
+    expect((await request(1, 'PATCH', `${rutas[0]}/${id}/reprogramar`, { fechaProgramada: '2030-10-20' })).statusCode).toBe(200);
     expect((await request(1, 'PATCH', `${rutas[0]}/${id}/cancelar`, { motivoCancelacion: 'Prueba propia' })).statusCode).toBe(200);
     const ejecutable = (await request(1, 'POST', rutas[0], programar(r))).json().data.id;
-    expect((await request(1, 'POST', rutas[1], { actividadProgramadaId: ejecutable, responsableId: usuarios[1], fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1 })).statusCode).toBe(201);
-    expect((await request(0, 'PATCH', `${rutas[0]}/${recursos[1].programadaId}/reprogramar`, { fechaProgramada: '2026-10-20' })).statusCode).toBe(200);
+    expect((await request(1, 'POST', rutas[1], { actividadProgramadaId: ejecutable, responsableId: usuarios[1], fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1, descripcionTrabajo: 'Labor de prueba' })).statusCode).toBe(201);
+    expect((await request(0, 'PATCH', `${rutas[0]}/${recursos[1].programadaId}/reprogramar`, { fechaProgramada: '2030-10-20' })).statusCode).toBe(200);
   });
 
   it('un encargado sin asignaciones no lista recursos ni puede consultar o crear', async () => {

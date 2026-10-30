@@ -148,6 +148,30 @@ export class UsuarioDuplicadoError extends DomainError {
   }
 }
 
+export class ConflictoModificacionError extends DomainError {
+  public readonly code = 'MODIFICACION_CONCURRENTE';
+
+  constructor() {
+    super('Los datos cambiaron desde su lectura. Se evitó sobrescribir información confirmada; volvé a consultarlos antes de modificarlos.');
+  }
+}
+
+export class UbicacionLoteSuperpuestaError extends DomainError {
+  public readonly code = 'UBICACION_LOTE_SUPERPUESTA';
+
+  constructor(sector: string) {
+    super(`La ubicación o sector '${sector}' coincide con otro lote no inactivo de la finca.`);
+  }
+}
+
+export class ProduccionEnCursoError extends DomainError {
+  public readonly code = 'PRODUCCION_EN_CURSO';
+
+  constructor() {
+    super('No pueden modificarse la superficie ni la ubicación de un lote con producción en curso.');
+  }
+}
+
 export class AccesoDenegadoFincaError extends DomainError {
   public readonly code = 'ACCESO_DENEGADO_FINCA';
 

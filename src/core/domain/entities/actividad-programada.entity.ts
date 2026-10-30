@@ -1,4 +1,5 @@
 import { DomainError } from '../errors/domain.error.js';
+import { LocalizacionTucumanService } from '../services/localizacion-tucuman.service.js';
 
 export type EstadoActividadProgramada = 'PENDIENTE' | 'EJECUTADA' | 'CANCELADA';
 
@@ -87,7 +88,7 @@ export class ActividadProgramada {
   /** Token opaco del adaptador, válido para el ciclo interno de lectura/escritura. */
   get versionPersistida(): string | undefined { return this.revisionLectura; }
 
-  reprogramar(params: { fechaProgramada: string; responsableId?: string }): ActividadProgramada {
+  reprogramar(params: { fechaProgramada: string; responsableId?: string; superficiePrevista?: number | null; descripcion?: string | null }): ActividadProgramada {
     if (this.props.estado !== 'PENDIENTE') {
       throw new EstadoActividadInvalidoError(`Solo se pueden reprogramar actividades en estado PENDIENTE. Estado actual: '${this.props.estado}'.`);
     }
@@ -97,11 +98,14 @@ export class ActividadProgramada {
     if (params.responsableId !== undefined && !params.responsableId) {
       throw new ActividadProgramadaInvalidaError('El nuevo responsable no puede estar vacío.');
     }
+    validarSuperficiePrevista(params.superficiePrevista);
 
     return ActividadProgramada.reconstituir({
       ...this.props,
       fechaProgramada: params.fechaProgramada,
       responsableId: params.responsableId ?? this.props.responsableId,
+      superficiePrevista: params.superficiePrevista === undefined ? this.props.superficiePrevista : params.superficiePrevista,
+      descripcion: params.descripcion === undefined ? this.props.descripcion : params.descripcion?.trim() || null,
       actualizadoEn: new Date().toISOString(),
     }, this.revisionLectura);
   }
@@ -144,5 +148,12 @@ export function esSuperficiePrevistaValida(valor: number): boolean {
 export function validarSuperficiePrevista(valor: number | null | undefined): void {
   if (valor != null && !esSuperficiePrevistaValida(valor)) {
     throw new ActividadProgramadaInvalidaError(MENSAJE_SUPERFICIE_PREVISTA);
+  }
+}
+
+/** La fecha programada no puede ser anterior a la fecha actual (hora oficial de Tucumán). */
+export function validarFechaNoAnteriorAHoy(fecha: string, hoy = new Date()): void {
+  if (fecha < LocalizacionTucumanService.extraerFechaLocal(hoy)) {
+    throw new ActividadProgramadaInvalidaError('La fecha programada no puede ser anterior a la fecha actual.');
   }
 }

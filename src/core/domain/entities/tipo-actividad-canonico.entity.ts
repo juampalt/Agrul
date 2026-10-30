@@ -49,7 +49,7 @@ export class TipoActividad {
   }
 
   static reconstituir(props: TipoActividadProps): TipoActividad {
-    const nombre = props.nombre.trim();
+    const nombre = props.nombre.trim().replace(/\s+/g, ' ');
     if (!nombre || nombre.length > 40) {
       throw new TipoActividadInvalidoError('El nombre del tipo de actividad debe tener entre 1 y 40 caracteres.');
     }

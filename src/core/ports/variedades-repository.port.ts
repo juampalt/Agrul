@@ -3,6 +3,8 @@ import { DatosVariedad, EstadoVariedad, Variedad } from '../domain/entities/vari
 export interface FiltrosVariedades {
   cultivoId?: string;
   estado?: EstadoVariedad;
+  /** Búsqueda por nombre (contiene, sin distinguir mayúsculas). */
+  nombre?: string;
   limit: number;
   offset: number;
 }

@@ -23,6 +23,8 @@ export function registrarRutasCosechasRegistro(app: FastifyInstance, repo: Cosec
   });
   rutas.get('/api/v1/cosechas', { ...permisos, schema: { querystring: ConsultarCosechasVigentesSchema } }, async req =>
     respuesta(await consultar.listar(req.query, actor(req))));
+  rutas.get('/api/v1/cosechas/totales', { ...permisos, schema: { querystring: ConsultarCosechasVigentesSchema } }, async req =>
+    respuesta(await consultar.totales(req.query, actor(req))));
   rutas.get('/api/v1/cosechas/:id', { ...permisos, schema: { params: CosechaRegistroIdSchema, querystring: CosechaRegistroVacioSchema } }, async req => {
     return respuesta(await consultar.obtener(req.params.id, actor(req)));
   });

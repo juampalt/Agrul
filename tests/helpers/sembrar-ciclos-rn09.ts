@@ -16,6 +16,6 @@ export async function sembrarCiclosRn09(pool: pg.Pool, cicloIds: string[]) {
   for (let i = 0; i < cicloIds.length; i++) {
     // UUID completo en 22 caracteres: único entre suites y dentro de varchar(30).
     const codigo = `RN09-${Buffer.from(cicloIds[i].replaceAll('-', ''), 'hex').toString('base64url')}`;
-    await pool.query("insert into ciclos_productivos(id,plantacion_id,nombre_codigo,fecha_inicio_prevista,fecha_fin_prevista,responsable_seguimiento_id) values ($1,$2,$3,'2026-10-01','2026-10-27',$4) on conflict (id) do nothing", [cicloIds[i], plantacion, codigo, finca]);
+    await pool.query("insert into ciclos_productivos(id,plantacion_id,nombre_codigo,fecha_inicio_prevista,fecha_fin_prevista,fecha_inicio_efectiva,estado,responsable_seguimiento_id) values ($1,$2,$3,'2026-10-01','2026-10-27','2026-10-01','ACTIVO',$4) on conflict (id) do nothing", [cicloIds[i], plantacion, codigo, finca]);
   }
 }

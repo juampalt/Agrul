@@ -30,6 +30,7 @@ export function registrarRutasPoscosecha(app: FastifyInstance, clasificaciones: 
   rutas.get('/api/v1/clasificaciones', { ...permisos, schema: { querystring: ConsultarClasificacionesSchema } }, async req => respuesta(await consultar.listarClasificaciones(req.query, actor(req))));
   rutas.get('/api/v1/acondicionamientos', { ...permisos, schema: { querystring: ConsultarAcondicionamientosSchema } }, async req => respuesta(await consultar.listarAcondicionamientos(req.query, actor(req))));
   rutas.get('/api/v1/partidas-produccion', { ...permisos, schema: { querystring: ConsultarPartidasProduccionSchema } }, async req => respuesta(await consultar.listarPartidas(req.query, actor(req))));
+  rutas.get('/api/v1/clasificaciones/totales', { ...permisos, schema: { querystring: ConsultarClasificacionesSchema } }, async req => respuesta(await consultar.totalesClasificaciones(req.query, actor(req))));
   rutas.get('/api/v1/clasificaciones/:id', { ...permisos, schema: { params: PoscosechaIdSchema, querystring: PoscosechaVacioSchema } }, async req => {
     return respuesta(await consultar.obtenerClasificacion(req.params.id, actor(req)));
   });

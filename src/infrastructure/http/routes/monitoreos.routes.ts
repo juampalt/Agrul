@@ -11,7 +11,7 @@ const texto = z.string().trim().min(1).max(100);
 const fecha = z.string().refine(esFechaProgramadaValida, 'La fecha debe existir y tener formato YYYY-MM-DD.');
 export const RegistrarMonitoreoSchema = z.object({
   cicloId: z.string().uuid(), responsableId: z.string().uuid(), fechaInspeccion: fecha,
-  sectorObservado: z.string().trim().max(120).nullable().optional(), etapaFenologica: texto,
+  sectorObservado: z.string().trim().max(120).nullable().optional(), etapaFenologica: texto.nullable().optional(),
   estadoGeneralCultivo: texto, tipoObservacion: texto,
   problemaDetectado: z.string().trim().nullable().optional(), descripcionHallazgos: z.string().trim().min(1),
   accionRecomendada: z.string().trim().nullable().optional(),
@@ -20,6 +20,7 @@ export const ConsultarMonitoreosSchema = z.object({
   cicloId: z.string().uuid().optional(), loteId: z.string().uuid().optional(), responsableId: z.string().uuid().optional(),
   etapaFenologica: texto.optional(), estadoGeneralCultivo: texto.optional(), tipoObservacion: texto.optional(),
   desde: fecha.optional(), hasta: fecha.optional(),
+  conProblema: z.enum(['true', 'false']).transform(v => v === 'true').optional(),
   limit: z.coerce.number().int().min(1).max(100).default(100), offset: z.coerce.number().int().min(0).default(0),
 }).strict().refine(f => !f.desde || !f.hasta || f.desde <= f.hasta, { path: ['hasta'], message: 'El rango de fechas está invertido.' });
 

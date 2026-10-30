@@ -18,6 +18,7 @@ import {
   PasswordCambioObligatorioError,
   ProveedorDuplicadoError,
 } from '../../../core/domain/errors/domain.error.js';
+import { ConflictoModificacionError } from '../../../core/domain/errors/domain.error.js';
 import { CodigoLoteDuplicadoError } from '../../../application/use-cases/crear-lote.use-case.js';
 import { InsumoDuplicadoError } from '../../../application/use-cases/insumos-catalogo.use-cases.js';
 import { CultivoDuplicadoError } from '../../../core/domain/entities/cultivo.entity.js';
@@ -115,7 +116,8 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
     error instanceof ConflictoProgramacionCosechaError ||
     error instanceof ConflictoRegistroCosechaError ||
     error instanceof ConflictoPoscosechaError ||
-    error instanceof ConflictoActividadProgramadaError
+    error instanceof ConflictoActividadProgramadaError ||
+    error instanceof ConflictoModificacionError
   ) {
     return reply.status(409).send({
       success: false,

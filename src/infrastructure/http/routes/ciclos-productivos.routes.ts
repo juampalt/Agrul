@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import {
-  ConsultarCiclosProductivosUseCase, FinalizarCicloProductivoUseCase, IniciarCicloProductivoUseCase, RegistrarCicloProductivoUseCase,
+  ConsultarCiclosProductivosUseCase, FinalizarCicloProductivoUseCase, IniciarCicloProductivoUseCase, RegistrarCicloProductivoUseCase, ResumirCicloProductivoUseCase,
 } from '../../../application/use-cases/ciclos-productivos.use-cases.js';
 import { CiclosProductivosRepositoryPort } from '../../../core/ports/ciclos-productivos-repository.port.js';
 import { requerirRol, verificarPasswordInicial } from '../middlewares/auth.middleware.js';
@@ -12,6 +12,7 @@ import {
 export function registrarRutasCiclosProductivos(app: FastifyInstance, repo: CiclosProductivosRepositoryPort) {
   const registrar = new RegistrarCicloProductivoUseCase(repo);
   const consultar = new ConsultarCiclosProductivosUseCase(repo);
+  const resumir = new ResumirCicloProductivoUseCase(repo);
   const iniciar = new IniciarCicloProductivoUseCase(repo);
   const finalizar = new FinalizarCicloProductivoUseCase(repo);
   const permisos = { preHandler: [requerirRol('ADMINISTRADOR'), verificarPasswordInicial] };
@@ -27,6 +28,12 @@ export function registrarRutasCiclosProductivos(app: FastifyInstance, repo: Cicl
     const { id } = CicloProductivoIdSchema.parse(req.params);
     SolicitudVaciaCicloSchema.parse(req.query);
     return respuesta(await consultar.obtenerPorId(id));
+  });
+  // CU19/CU21: resumen de actividades, monitoreos, aplicaciones de insumos y cosechas del ciclo.
+  app.get('/api/v1/ciclos-productivos/:id/resumen', permisos, async (req) => {
+    const { id } = CicloProductivoIdSchema.parse(req.params);
+    SolicitudVaciaCicloSchema.parse(req.query);
+    return respuesta(await resumir.execute(id));
   });
   app.patch('/api/v1/ciclos-productivos/:id/iniciar', permisos, async (req) => {
     const { id } = CicloProductivoIdSchema.parse(req.params);

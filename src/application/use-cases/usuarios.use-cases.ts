@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { Usuario, PerfilUsuario, EstadoUsuario } from '../../core/domain/entities/usuario.entity.js';
 import { AuditoriaSeguridadLog } from '../../core/domain/entities/auditoria-seguridad-log.entity.js';
-import { UsuariosRepositoryPort } from '../../core/ports/usuarios-repository.port.js';
+import { FiltrosUsuarios, UsuariosRepositoryPort } from '../../core/ports/usuarios-repository.port.js';
 import { UsuarioFincasRepositoryPort } from '../../core/ports/usuario-fincas-repository.port.js';
 import { AuditoriaSeguridadRepositoryPort } from '../../core/ports/auditoria-seguridad-repository.port.js';
 import { CryptoAuthService } from '../../infrastructure/services/crypto-auth.service.js';
@@ -246,7 +246,7 @@ export class ListarUsuariosUseCase {
     private readonly usuarioFincasRepo: UsuarioFincasRepositoryPort,
   ) {}
 
-  async execute(filtros?: { perfil?: PerfilUsuario; estado?: EstadoUsuario; busqueda?: string }): Promise<UsuarioOutputDto[]> {
+  async execute(filtros?: FiltrosUsuarios): Promise<UsuarioOutputDto[]> {
     const usuarios = await this.usuariosRepo.listar(filtros);
     const resultado: UsuarioOutputDto[] = [];
 

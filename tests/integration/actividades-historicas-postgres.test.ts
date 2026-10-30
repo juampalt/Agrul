@@ -75,9 +75,9 @@ describe.skipIf(!url)('P1: históricos reales anteriores a 0015 desde bootstrap'
     for (let i = 0; i < usuarios.length; i++) headers.push(await autenticarOperadorPrueba(base.pool, servidor.app,
       { sub: usuarios[i], nombre: 'Prueba', apellido: 'P1', email: `p1-${usuarios[i]}@example.test`, perfil: i ? 'ENCARGADO_CAMPO' : 'ADMINISTRADOR' }));
     await new DrizzleUsuarioFincasRepository(base.db).asignarFincas(usuarios[1], [FINCA]);
-    const tipo = await servidor.app.inject({ method: 'POST', url: '/api/v1/tipos-actividad', headers: headers[0], payload: { nombre: `Historial P1 ${randomUUID().slice(0, 8)}`, categoria: 'RIEGO' } });
+    const tipo = await servidor.app.inject({ method: 'POST', url: '/api/v1/tipos-actividad', headers: headers[0], payload: { nombre: `Historial P1 ${randomUUID().slice(0, 8)}`, categoria: 'RIEGO', cultivoIds: ['b0000000-0000-4000-8000-000000000059'] } });
     expect(tipo.statusCode).toBe(201); tipoId = tipo.json().data.id;
-    const moderna = await request(1, 'POST', '', { cicloId: ciclos[0], tipoActividadId: tipoId, responsableId: usuarios[1], fechaProgramada: '2026-10-15' });
+    const moderna = await request(1, 'POST', '', { cicloId: ciclos[0], tipoActividadId: tipoId, responsableId: usuarios[1], fechaProgramada: '2030-10-15' });
     expect(moderna.statusCode).toBe(201); modernaId = moderna.json().data.id;
   }, 30000);
 
@@ -87,7 +87,7 @@ describe.skipIf(!url)('P1: históricos reales anteriores a 0015 desde bootstrap'
       // Se elimina únicamente el esquema aleatorio creado por esta suite y sus ciclos.
       if (esquemaCreado) await base.pool.query(`drop schema "${esquema}" cascade`);
       if (ciclosCreados) await base.pool.query('delete from ciclos_productivos where id=ANY($1::uuid[])', [ciclos]);
-      if (tipoId) await base.pool.query('delete from tipos_actividad where id=$1', [tipoId]);
+      if (tipoId) { await base.pool.query('delete from tipos_actividad_cultivos where tipo_actividad_id=$1', [tipoId]); await base.pool.query('delete from tipos_actividad where id=$1', [tipoId]); }
     } finally { await base.pool.end(); }
   });
 
@@ -105,7 +105,7 @@ describe.skipIf(!url)('P1: históricos reales anteriores a 0015 desde bootstrap'
     expect(lista.json().data.map((a: { id: string }) => a.id).sort()).toEqual([...filas.slice(0, 3), modernaId].sort());
     const pagina = await request(1, 'GET', `?cicloId=${ciclos[0]}&limit=1&offset=1`);
     expect(pagina.statusCode).toBe(200); expect(pagina.json().data).toHaveLength(1);
-    const fechadas = await request(1, 'GET', `?cicloId=${ciclos[0]}&desde=2026-10-01&hasta=2026-10-27`);
+    const fechadas = await request(1, 'GET', `?cicloId=${ciclos[0]}&desde=2030-10-01&hasta=2030-10-27`);
     expect(fechadas.statusCode).toBe(200); expect(fechadas.json().data.map((a: { id: string }) => a.id)).toEqual([modernaId]);
   });
 
@@ -120,20 +120,20 @@ describe.skipIf(!url)('P1: históricos reales anteriores a 0015 desde bootstrap'
   });
 
   it('reprograma solo información explícita de un pendiente histórico sin completar el tipo', async () => {
-    const res = await request(1, 'PATCH', `/${filas[4]}/reprogramar`, { fechaProgramada: '2026-10-20' });
-    expect(res.statusCode).toBe(200); expect(res.json().data).toMatchObject({ tipoActividadId: null, responsableId: null, fechaProgramada: '2026-10-20' });
+    const res = await request(1, 'PATCH', `/${filas[4]}/reprogramar`, { fechaProgramada: '2030-10-20' });
+    expect(res.statusCode).toBe(200); expect(res.json().data).toMatchObject({ tipoActividadId: null, responsableId: null, fechaProgramada: '2030-10-20' });
   });
 
   it('no inventa un tipo para ejecutar una programación incompleta', async () => {
     const antes = await snapshot(filas[0]);
     const res = await servidor.app.inject({ method: 'POST', url: '/api/v1/actividades-realizadas', headers: headers[1],
-      payload: { actividadProgramadaId: filas[0], responsableId: usuarios[1], fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1 } });
+      payload: { actividadProgramadaId: filas[0], responsableId: usuarios[1], fechaEjecucion: '2026-10-15', superficieTrabajadaHa: 1, descripcionTrabajo: 'Labor de prueba' } });
     expect(res.statusCode).toBe(422); expect(res.json().error.code).toBe('EJECUCION_ACTIVIDAD_INVALIDA');
     expect(await snapshot(filas[0])).toEqual(antes);
   });
 
   it('no permite crear nuevas actividades incompletas ni cancelaciones sin motivo', async () => {
-    const completa = { cicloId: ciclos[0], tipoActividadId: tipoId, responsableId: usuarios[1], fechaProgramada: '2026-10-15' };
+    const completa = { cicloId: ciclos[0], tipoActividadId: tipoId, responsableId: usuarios[1], fechaProgramada: '2030-10-15' };
     for (const campo of ['tipoActividadId', 'responsableId', 'fechaProgramada']) {
       expect((await request(1, 'POST', '', { ...completa, [campo]: null })).statusCode).toBe(400);
     }

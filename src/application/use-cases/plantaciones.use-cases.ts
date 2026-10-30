@@ -20,7 +20,9 @@ export class ConsultarPlantacionesUseCase {
   async obtenerPorId(id: string) {
     const plantacion = await this.repo.buscarPorId(id);
     if (!plantacion) throw new EntidadNoEncontradaError('Plantación', id);
-    return plantacion.toJSON();
+    // CU16: el detalle incluye finca, lote con su ocupación y los ciclos productivos asociados.
+    const detalle = await this.repo.detalle(id);
+    return { ...plantacion.toJSON(), fincaId: detalle?.fincaId ?? null, lote: detalle?.lote ?? null, ciclos: detalle?.ciclos ?? [] };
   }
 }
 

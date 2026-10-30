@@ -6,7 +6,7 @@ export interface DatosMonitoreo {
   responsableId: string;
   fechaInspeccion: string;
   sectorObservado?: string | null;
-  etapaFenologica: string;
+  etapaFenologica?: string | null;
   estadoGeneralCultivo: string;
   tipoObservacion: string;
   problemaDetectado?: string | null;
@@ -23,6 +23,7 @@ export interface MonitoreoProps extends DatosMonitoreo {
   id: string;
   loteId: string;
   sectorObservado: string | null;
+  etapaFenologica: string | null;
   problemaDetectado: string | null;
   accionRecomendada: string | null;
 }
@@ -43,14 +44,17 @@ export class Monitoreo {
     if (datos.fechaInspeccion < ciclo.fechaInicio || datos.fechaInspeccion > ciclo.fechaFin) {
       throw new MonitoreoInvalidoError('La inspección debe estar comprendida en el ciclo.');
     }
-    for (const campo of ['etapaFenologica', 'estadoGeneralCultivo', 'tipoObservacion'] as const) {
+    if (datos.etapaFenologica != null && (!datos.etapaFenologica.trim() || datos.etapaFenologica.trim().length > 100)) {
+      throw new MonitoreoInvalidoError('etapaFenologica debe contener entre 1 y 100 caracteres cuando se informa.');
+    }
+    for (const campo of ['estadoGeneralCultivo', 'tipoObservacion'] as const) {
       if (!datos[campo].trim() || datos[campo].trim().length > 100) throw new MonitoreoInvalidoError(`${campo} debe contener entre 1 y 100 caracteres.`);
     }
     if (!datos.descripcionHallazgos.trim()) throw new MonitoreoInvalidoError('Los hallazgos son obligatorios.');
     if ((datos.sectorObservado?.trim().length ?? 0) > 120) throw new MonitoreoInvalidoError('El sector admite hasta 120 caracteres.');
     // RN-13: la recomendación se conserva como texto; registrar no emite órdenes.
     return new Monitoreo({ ...datos, id, loteId: ciclo.loteId,
-      etapaFenologica: datos.etapaFenologica.trim(), estadoGeneralCultivo: datos.estadoGeneralCultivo.trim(),
+      etapaFenologica: datos.etapaFenologica?.trim() || null, estadoGeneralCultivo: datos.estadoGeneralCultivo.trim(),
       tipoObservacion: datos.tipoObservacion.trim(), descripcionHallazgos: datos.descripcionHallazgos.trim(),
       sectorObservado: datos.sectorObservado?.trim() || null, problemaDetectado: datos.problemaDetectado?.trim() || null,
       accionRecomendada: datos.accionRecomendada?.trim() || null });

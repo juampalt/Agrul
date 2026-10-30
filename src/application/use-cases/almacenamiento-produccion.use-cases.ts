@@ -23,6 +23,7 @@ export class ConsultarAlmacenamientoProduccionUseCase {
   listarMovimientos(f: FiltrosAlmacenamiento, actor: ActorCosechas) { return this.almacen.listarMovimientos(f, actor); }
   consultarSaldos(f: FiltrosAlmacenamiento, actor: ActorCosechas) { return this.almacen.consultarSaldos(f, actor); }
   listarDestinos(f: FiltrosDestinosProduccion, actor: ActorCosechas) { return this.destinos.listarDestinos(f, actor); }
+  totalesDestinos(f: FiltrosDestinosProduccion, actor: ActorCosechas) { return this.destinos.totalesDestinos(f, actor); }
   obtenerCamara(id: string, actor: ActorCosechas) { return this.exigir(this.almacen.obtenerCamara(id, actor), 'Cámara', id); }
   obtenerMovimiento(id: string, actor: ActorCosechas) { return this.exigir(this.almacen.obtenerMovimiento(id, actor), 'Movimiento de almacenamiento', id); }
   obtenerDestino(id: string, actor: ActorCosechas) { return this.exigir(this.destinos.obtenerDestino(id, actor), 'Destino de producción', id); }

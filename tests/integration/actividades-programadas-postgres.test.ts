@@ -31,10 +31,10 @@ describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
   let lector: { authorization: string };
   let tipoId: string;
   const ruta = '/api/v1/actividades-programadas';
-  const datos = () => ({ cicloId: CICLO, tipoActividadId: tipoId, responsableId: ENCARGADO, fechaProgramada: '2026-11-15' });
+  const datos = () => ({ cicloId: CICLO, tipoActividadId: tipoId, responsableId: ENCARGADO, fechaProgramada: '2030-11-15' });
   const crear = () => servidor.app.inject({ method: 'POST', url: ruta, headers: encargado, payload: datos() });
 
-  it.each([0.01, 0.29, 1.23, 999999.99])('persiste y consulta %s ha sin redondear desde el bootstrap', async (superficiePrevista) => {
+  it.each([0.01, 0.29, 1.23, 10])('persiste y consulta %s ha sin redondear desde el bootstrap', async (superficiePrevista) => {
     const res = await servidor.app.inject({ method: 'POST', url: ruta, headers: encargado, payload: { ...datos(), superficiePrevista } });
     expect(res.statusCode).toBe(201);
     const id = res.json().data.id;
@@ -80,7 +80,7 @@ describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
     encargado = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: ENCARGADO, email: 'encargado054@example.test', perfil: 'ENCARGADO_CAMPO' });
     lector = await autenticarOperadorPrueba(connection.pool, servidor.app, { ...actor, sub: LECTOR, email: 'lector054@example.test', perfil: 'OPERARIO' });
     await new DrizzleUsuarioFincasRepository(connection.db).asignarFincas(ENCARGADO, ['f0000000-0000-4000-8000-000000000059']);
-    const tipo = await servidor.app.inject({ method: 'POST', url: '/api/v1/tipos-actividad', headers: admin, payload: { nombre: `Riego ${randomUUID().slice(0, 8)}`, categoria: 'RIEGO' } });
+    const tipo = await servidor.app.inject({ method: 'POST', url: '/api/v1/tipos-actividad', headers: admin, payload: { nombre: `Riego ${randomUUID().slice(0, 8)}`, categoria: 'RIEGO', cultivoIds: ['b0000000-0000-4000-8000-000000000059'] } });
     expect(tipo.statusCode).toBe(201);
     tipoId = tipo.json().data.id;
   }, 30000);
@@ -89,6 +89,35 @@ describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
     await connection.pool.query('delete from actividades_programadas where ciclo_id = ANY($1::uuid[])', [[CICLO, OTRO]]);
   });
   afterAll(async () => { await servidor?.app.close(); await connection.pool.end(); });
+
+  it('CU26 exige ciclo activo, tipo aplicable al cultivo, responsable habilitado y superficie dentro de la plantación', async () => {
+    const post = (extra: object) => servidor.app.inject({ method: 'POST', url: ruta, headers: encargado, payload: { ...datos(), ...extra } });
+    expect((await post({ superficiePrevista: 10.01 })).statusCode).toBe(422);
+    expect((await post({ fechaProgramada: '2020-01-01' })).statusCode).toBe(422);
+    const sinCultivo = await servidor.app.inject({ method: 'POST', url: '/api/v1/tipos-actividad', headers: admin,
+      payload: { nombre: `Otro cultivo ${randomUUID().slice(0, 8)}`, categoria: 'RIEGO', cultivoIds: [(await connection.pool.query(
+        "insert into cultivos(id,nombre,tipo_ciclo_vida) values (gen_random_uuid(),$1,'ANUAL') returning id", [`Aux ${randomUUID().slice(0, 8)}`])).rows[0].id] } });
+    expect(sinCultivo.statusCode).toBe(201);
+    expect((await post({ tipoActividadId: sinCultivo.json().data.id })).statusCode).toBe(422);
+    await connection.pool.query("update ciclos_productivos set estado='PLANIFICADO', fecha_inicio_efectiva=null where id=$1", [CICLO]);
+    try { expect((await post({})).statusCode).toBe(422); }
+    finally { await connection.pool.query("update ciclos_productivos set estado='ACTIVO', fecha_inicio_efectiva='2026-10-01' where id=$1", [CICLO]); }
+    expect((await post({})).statusCode).toBe(201);
+  });
+
+  it('CU28 reprograma superficie y descripción, rechaza fecha pasada, superficie excesiva y responsable inactivo', async () => {
+    const id = (await crear()).json().data.id;
+    const patch = (payload: object) => servidor.app.inject({ method: 'PATCH', url: `${ruta}/${id}/reprogramar`, headers: encargado, payload });
+    expect((await patch({ fechaProgramada: '2020-01-01' })).statusCode).toBe(422);
+    expect((await patch({ fechaProgramada: '2030-12-01', superficiePrevista: 10.01 })).statusCode).toBe(422);
+    const ok = await patch({ fechaProgramada: '2030-12-01', superficiePrevista: 2.5, descripcion: 'Nueva descripción' });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json().data).toMatchObject({ fechaProgramada: '2030-12-01', superficiePrevista: 2.5, descripcion: 'Nueva descripción', estado: 'PENDIENTE' });
+    const inactivo = randomUUID();
+    await connection.pool.query("insert into usuarios(id,nombre,apellido,email,password_hash,salt,perfil,estado) values ($1,'Inactivo','CU28',$2,'hash-fixture','salt-fixture','ENCARGADO_CAMPO','INACTIVO')", [inactivo, `inactivo-${inactivo}@example.test`]);
+    try { expect((await patch({ fechaProgramada: '2030-12-02', responsableId: inactivo })).statusCode).toBe(422); }
+    finally { await connection.pool.query('delete from usuarios where id=$1', [inactivo]); }
+  });
 
   it('CU26 programa y persiste sin superficie opcional', async () => {
     const res = await crear();
@@ -103,7 +132,7 @@ describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
     const detalle = await servidor.app.inject({ method: 'GET', url: `${ruta}/${id}`, headers: encargado });
     expect(detalle.statusCode).toBe(200);
     expect(detalle.json().data.id).toBe(id);
-    const listado = await servidor.app.inject({ method: 'GET', url: `${ruta}?cicloId=${CICLO}&tipoActividadId=${tipoId}&responsableId=${ENCARGADO}&estado=PENDIENTE&desde=2026-11-01&hasta=2026-11-30&limit=1&offset=0`, headers: encargado });
+    const listado = await servidor.app.inject({ method: 'GET', url: `${ruta}?cicloId=${CICLO}&tipoActividadId=${tipoId}&responsableId=${ENCARGADO}&estado=PENDIENTE&desde=2030-11-01&hasta=2030-11-30&limit=1&offset=0`, headers: encargado });
     expect(listado.statusCode).toBe(200);
     expect(listado.json().data.map((a: { id: string }) => a.id)).toEqual([id]);
     const vacio = await servidor.app.inject({ method: 'GET', url: `${ruta}?cicloId=${OTRO}`, headers: encargado });
@@ -112,9 +141,9 @@ describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
 
   it('CU28 reprograma fecha y responsable en la base real', async () => {
     const id = (await crear()).json().data.id;
-    const res = await servidor.app.inject({ method: 'PATCH', url: `${ruta}/${id}/reprogramar`, headers: encargado, payload: { fechaProgramada: '2026-11-20', responsableId: ADMIN } });
+    const res = await servidor.app.inject({ method: 'PATCH', url: `${ruta}/${id}/reprogramar`, headers: encargado, payload: { fechaProgramada: '2030-11-20', responsableId: ADMIN } });
     expect(res.statusCode).toBe(200);
-    expect((await repo.buscarPorId(id))?.toJSON()).toMatchObject({ fechaProgramada: '2026-11-20', responsableId: ADMIN, estado: 'PENDIENTE' });
+    expect((await repo.buscarPorId(id))?.toJSON()).toMatchObject({ fechaProgramada: '2030-11-20', responsableId: ADMIN, estado: 'PENDIENTE' });
   });
 
   it('CU29 conserva cancelación y motivo; rechaza reprogramarla', async () => {
@@ -122,14 +151,14 @@ describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
     const cancelada = await servidor.app.inject({ method: 'PATCH', url: `${ruta}/${id}/cancelar`, headers: encargado, payload: { motivoCancelacion: '  Lluvia  ' } });
     expect(cancelada.statusCode).toBe(200);
     expect((await repo.buscarPorId(id))?.toJSON()).toMatchObject({ estado: 'CANCELADA', motivoCancelacion: 'Lluvia' });
-    const res = await servidor.app.inject({ method: 'PATCH', url: `${ruta}/${id}/reprogramar`, headers: encargado, payload: { fechaProgramada: '2026-11-20' } });
+    const res = await servidor.app.inject({ method: 'PATCH', url: `${ruta}/${id}/reprogramar`, headers: encargado, payload: { fechaProgramada: '2030-11-20' } });
     expect(res.statusCode).toBe(422);
   });
 
   it('RN-09 bloquea pendientes y reprogramaciones, libera canceladas y aísla ciclos', async () => {
     const id = (await crear()).json().data.id;
     await expect(servidor.cierreCicloGuard.ejecutar(CICLO, async () => true)).rejects.toBeInstanceOf(CicloConActividadesPendientesError);
-    await repo.actualizar((await repo.buscarPorId(id))!.reprogramar({ fechaProgramada: '2026-11-20' }));
+    await repo.actualizar((await repo.buscarPorId(id))!.reprogramar({ fechaProgramada: '2030-11-20' }));
     await expect(servidor.cierreCicloGuard.ejecutar(CICLO, async () => true)).rejects.toBeInstanceOf(CicloConActividadesPendientesError);
     await expect(servidor.cierreCicloGuard.ejecutar(OTRO, async () => true)).resolves.toBe(true);
     await repo.actualizar((await repo.buscarPorId(id))!.cancelar('Lluvia'));
@@ -142,8 +171,8 @@ describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
     const escritor = await connection.pool.connect();
     try {
       await escritor.query("update actividades_programadas set estado='CANCELADA',motivo_cancelacion='Otra solicitud' where id=$1", [id]);
-      await expect(repo.actualizar(leida.reprogramar({ fechaProgramada: '2026-11-20' }))).rejects.toBeInstanceOf(ConflictoActividadProgramadaError);
-      expect((await repo.buscarPorId(id))?.toJSON()).toMatchObject({ estado: 'CANCELADA', motivoCancelacion: 'Otra solicitud', fechaProgramada: '2026-11-15' });
+      await expect(repo.actualizar(leida.reprogramar({ fechaProgramada: '2030-11-20' }))).rejects.toBeInstanceOf(ConflictoActividadProgramadaError);
+      expect((await repo.buscarPorId(id))?.toJSON()).toMatchObject({ estado: 'CANCELADA', motivoCancelacion: 'Otra solicitud', fechaProgramada: '2030-11-15' });
     } finally { escritor.release(); }
   });
 

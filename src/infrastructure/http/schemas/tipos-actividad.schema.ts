@@ -6,7 +6,7 @@ export const DatosTipoActividadSchema = z
     nombre: z.string().trim().min(1).max(40),
     categoria: z.enum(CATEGORIAS_TIPO_ACTIVIDAD),
     descripcion: z.string().nullable().default(null),
-    cultivoIds: z.array(z.string().uuid()).optional(),
+    cultivoIds: z.array(z.string().uuid()).min(1, "Debe indicarse al menos un cultivo aplicable."),
   })
   .strict();
 
