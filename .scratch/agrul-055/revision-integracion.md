@@ -74,3 +74,16 @@ se detiene tras publicar para que el usuario revise su cupo.
 PR publicado: [#58](https://github.com/juampalt/Agrul/pull/58), abierto, no draft,
 con ae449d1 como commit productivo validado y `Closes #49`. El enlace se registra
 en un commit posterior de documentación; no modifica el código probado.
+
+## Cierre autorizado
+
+El usuario autorizó expresamente cerrar #49 después de confirmar el alcance
+CU34–CU40 y CU63–CU66. Antes del merge se verificó el HEAD del PR a2ea8d1,
+sin cambios productivos posteriores a ae449d1, y main bb6af6d. GitHub informó
+mergeable=true y estado clean, sin checks ni estados de CI registrados. La
+evidencia de ejecución es local: 1404 pruebas aprobadas, 0 fallidas u omitidas,
+con PostgreSQL real, lint y build aprobados.
+
+Este registro final solo modifica documentación. El merge se solicita por la
+API normal de GitHub, con SHA esperado y sin omitir protecciones. El cierre de
+la issue se comprueba después del merge; no se cierra manualmente antes de integrar.

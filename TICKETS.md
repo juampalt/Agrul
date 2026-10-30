@@ -1084,7 +1084,7 @@
 
 ### `[AGRUL-055]` Módulos 4 & 9: Insumos, Inventario y Aplicaciones FIFO (CU34 - CU40, CU63 - CU66)
 - **GitHub Issue:** [#49](https://github.com/juampalt/Agrul/issues/49)
-- **Estado:** `IN_PROGRESS` — Catálogo, inventario, aplicaciones FIFO y correcciones canónicas implementados; matriz auditada, revisión de integración y regresión completa aprobadas. Integración a main pendiente.
+- **Estado:** `DONE` — Catálogo, inventario, aplicaciones FIFO y correcciones canónicas implementados; matriz auditada, revisión de integración y regresión completa aprobadas. Entrega mediante PR #58; cierre autorizado por el usuario.
 - **Validación etapa 1:** 54 pruebas nuevas aprobadas (32 PostgreSQL/HTTP y 22 de dominio). Regresión: 944 aprobadas, 342 omitidas, 0 fallidas. Lint y build aprobados. Detalle: [.scratch/agrul-055/etapa1.md](.scratch/agrul-055/etapa1.md).
 - **Validación etapa 2:** Ingresos, movimientos inmutables, devoluciones de sobrantes, existencias, alertas y autorización por finca. 44 pruebas nuevas aprobadas; regresión: 988 aprobadas, 342 omitidas, 0 fallidas. Lint y build aprobados. Detalle: [.scratch/agrul-055/etapa2.md](.scratch/agrul-055/etapa2.md).
 - **Validación etapa 3:** Aplicaciones vinculadas a labores realizadas, consumo FEFO/FIFO trazable, idempotencia y transacción con stock y evento. 42 pruebas nuevas aprobadas; regresión: 1030 aprobadas, 342 omitidas, 0 fallidas. Lint y build aprobados. Detalle: [.scratch/agrul-055/etapa3.md](.scratch/agrul-055/etapa3.md).
@@ -1092,7 +1092,7 @@
 - **Validación etapa 4 / CU40:** Compensación exacta y versión reemplazante en una transacción según definición aprobada; conciliación, consumos posteriores, sustitución única, historial y rollback verificados. 27 pruebas nuevas; regresión: 1060 aprobadas, 342 omitidas, 0 fallidas. Lint y build aprobados. Detalle: [.scratch/agrul-055/etapa4.md](.scratch/agrul-055/etapa4.md).
 - **Auditoría y regresión completa:** Matriz de los once CU respetando los grupos documentados; aislamiento de las suites anteriores en la base autorizada. **1402 aprobadas, 0 omitidas, 0 fallidas**, 131 archivos; lint y build aprobados. Detalle: [.scratch/agrul-055/auditoria.md](.scratch/agrul-055/auditoria.md). Sin PR ni merge en este bloque; pausa para revisión del cupo.
 - **Revisión de integración:** Revisión independiente por estándares y especificación; corregidos INSERT tardíos de items confirmados (migración 0023) y alerta de mínimo tras cambiar unidad. **1404 aprobadas, 0 omitidas, 0 fallidas**; lint y build aprobados, sin hallazgos pendientes. [Informe](.scratch/agrul-055/revision-integracion.md) y [cuerpo del PR](.scratch/agrul-055/pr.md). El bloque publica el PR y se detiene antes del merge para revisión del cupo.
-- **Pull Request:** [#58](https://github.com/juampalt/Agrul/pull/58), abierto hacia main con `Closes #49`. Sin merge en este bloque.
+- **Pull Request:** [#58](https://github.com/juampalt/Agrul/pull/58), hacia main con `Closes #49`. Merge autorizado por el usuario después de verificar el commit validado, ausencia de conflictos y condiciones de GitHub.
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulos 4 & 9: Insumos y Stock
 - **Casos de Uso:** CU34 a CU40, CU63 a CU66
