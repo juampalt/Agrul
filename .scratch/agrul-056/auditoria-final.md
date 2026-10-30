@@ -148,6 +148,8 @@ npm.cmd exec -- vitest run --no-file-parallelism --silent --reporter=dot --repor
 
 Los reportes JSON son evidencia local excluida de Git. El PR referencia
 Closes #50 para cierre al integrar; la rama main no se modifica directamente.
+Entrega: [PR #59](https://github.com/juampalt/Agrul/pull/59), abierto hacia main;
+commit de código auditado 9e2ad6508f72b93e7ce570933f0fa03327ad38ed. Sin merge.
 
 Revisión estática: Standards 2/2 hallazgos corregidos; Spec 2/2 hallazgos
 corregidos, más endurecimiento de conflicto SQL. El resultado de ejecución
