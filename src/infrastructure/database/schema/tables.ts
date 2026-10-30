@@ -4,6 +4,7 @@ export { cultivosTable } from './cultivos.js';
 export { variedadesTable } from './variedades.js';
 export { plantacionesTable } from './plantaciones.js';
 export { actividadesProgramadasTable } from './actividades-programadas.js';
+export { cosechasProgramadasTable, historialJornadasCosechaTable } from './cosechas-programadas.js';
 export { actividadesRealizadasTable } from './actividades-realizadas.js';
 export { monitoreosTable } from './monitoreos.js';
 export { insumosTable, partidasInsumoTable, aplicacionesInsumoTable, aplicacionesInsumoItemsTable } from './insumos.js';

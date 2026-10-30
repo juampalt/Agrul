@@ -169,6 +169,13 @@
       "when": 1793149219000,
       "tag": "0023_congelar_items_confirmados",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793149220000,
+      "tag": "0024_cosechas_programadas",
+      "breakpoints": true
     }
   ]
 }

@@ -16,6 +16,8 @@ import { registrarRutasPlantaciones } from './routes/plantaciones.routes.js';
 import { registrarRutasCiclosProductivos } from './routes/ciclos-productivos.routes.js';
 import { registrarRutasTiposActividad } from './routes/tipos-actividad.routes.js';
 import { registrarRutasActividadesProgramadas } from './routes/actividades-programadas.routes.js';
+import { registrarRutasCosechasProgramadas } from './routes/cosechas-programadas.routes.js';
+import { CosechasProgramadasRepositoryPort } from '../../core/ports/cosechas-programadas-repository.port.js';
 import { registrarRutasActividadesRealizadas } from './routes/actividades-realizadas.routes.js';
 import { registrarRutasMonitoreos } from './routes/monitoreos.routes.js';
 import { MonitoreosRepositoryPort } from '../../core/ports/monitoreos-repository.port.js';
@@ -260,6 +262,7 @@ export interface BuildAppOptions {
   ciclosProductivosRepo?: CiclosProductivosRepositoryPort;
   tiposActividadRepo?: TiposActividadRepositoryPort;
   actividadesProgramadasRepo?: ActividadesProgramadasRepositoryPort;
+  cosechasProgramadasRepo?: CosechasProgramadasRepositoryPort;
   actividadesRealizadasRepo?: ActividadesRealizadasGestionPort;
   monitoreosRepo?: MonitoreosRepositoryPort;
   accesoRecursosAgricolasRepo?: AccesoRecursosAgricolasPort;
@@ -946,6 +949,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     registrarRutasTiposActividad(app, options.tiposActividadRepo, options.cultivosRepo);
   }
   if (options.actividadesRealizadasRepo) registrarRutasActividadesRealizadas(app, options.actividadesRealizadasRepo, options.accesoRecursosAgricolasRepo);
+  if (options.cosechasProgramadasRepo) registrarRutasCosechasProgramadas(app, options.cosechasProgramadasRepo, options.accesoRecursosAgricolasRepo);
   if (options.monitoreosRepo) registrarRutasMonitoreos(app, options.monitoreosRepo, options.accesoRecursosAgricolasRepo);
   if (
     options.actividadesProgramadasRepo &&

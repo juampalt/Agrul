@@ -24,6 +24,7 @@ import { VariedadDuplicadaError } from '../../../core/domain/entities/variedad.e
 import { CodigoCicloDuplicadoError } from '../../../core/domain/value-objects/planificacion-ciclo.vo.js';
 import { TipoActividadDuplicadoError } from '../../../core/domain/entities/tipo-actividad-canonico.entity.js';
 import { ConflictoActividadProgramadaError } from '../../../core/domain/entities/actividad-programada.entity.js';
+import { ConflictoProgramacionCosechaError } from '../../../core/domain/entities/cosecha-programada.entity.js';
 
 export function errorHandler(error: FastifyError | Error, request: FastifyRequest, reply: FastifyReply) {
   const timestamp = new Date().toISOString();
@@ -107,6 +108,7 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
     error instanceof VariedadDuplicadaError ||
     error instanceof CodigoCicloDuplicadoError ||
     error instanceof TipoActividadDuplicadoError ||
+    error instanceof ConflictoProgramacionCosechaError ||
     error instanceof ConflictoActividadProgramadaError
   ) {
     return reply.status(409).send({
