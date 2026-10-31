@@ -64,7 +64,7 @@ describe.skipIf(!url)('AGRUL-056: migración de cosechas heredadas sin inventar 
   });
   it('conserva todos los valores anteriores y deja nulos los nuevos campos desconocidos', async () => {
     const fila = (await nueva!.pool.query('select row_to_json(c) as fila from cosechas c where id=$1', [cosechaId])).rows[0].fila;
-    expect(fila).toEqual({ ...anterior, cosecha_programada_id: null,fecha_efectiva: null,sector: null,numero_pasada: null,
+    expect(fila).toEqual({ ...anterior, cosecha_programada_id: null,fecha_efectiva: null,sector: null,observaciones: null,numero_pasada: null,
       origen: null,registrado_por: null,solicitud: null,timestamp_captura_local: null });
     expect((await nueva!.pool.query('select count(*)::int as n from eventos_trazabilidad')).rows[0].n).toBe(0);
   });

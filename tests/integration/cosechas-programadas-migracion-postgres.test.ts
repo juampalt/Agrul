@@ -24,10 +24,10 @@ describe.skipIf(!url)('AGRUL-056: cadena completa y compatibilidad histórica', 
     (select row_to_json(e) from eventos_trazabilidad e where id=$2) as evento,
     (select row_to_json(i) from insumos i where id=$3) as insumo`, [ciclo, evento, insumo])).rows;
   const snapshotProduccion = async () => (await nueva!.pool.query(`select
-    (select row_to_json(h) from cosechas h where id=$1) as cosecha,
-    (select row_to_json(c) from clasificaciones c where id=$2) as clasificacion,
+    (select to_jsonb(h) - 'observaciones' from cosechas h where id=$1) as cosecha,
+    (select to_jsonb(c) - 'observaciones' - 'descarte_por_causa' from clasificaciones c where id=$2) as clasificacion,
     (select jsonb_agg(to_jsonb(p) order by p.id) from partidas_produccion p where clasificacion_id=$2) as partidas,
-    (select row_to_json(a) from acondicionamientos a where id=$3) as acondicionamiento,
+    (select to_jsonb(a) - 'observaciones' from acondicionamientos a where id=$3) as acondicionamiento,
     (select jsonb_agg(to_jsonb(e) order by e.id) from eventos_trazabilidad e where payload_especifico->>'cosechaId'=$1::text) as eventos`,
   [cosechaProduccion, clasificacionProduccion, acondicionamientoProduccion])).rows;
   const snapshotPublico = async () => (await base!.connection.pool.query(`select
@@ -76,8 +76,8 @@ describe.skipIf(!url)('AGRUL-056: cadena completa y compatibilidad histórica', 
       }
     } finally { await base?.cerrar(); }
   });
-  it('ejecuta las 36 migraciones desde un esquema vacío y no cambia hechos anteriores', async () => {
-    expect(aplicadas).toBe(36);
+  it('ejecuta las 37 migraciones desde un esquema vacío y no cambia hechos anteriores', async () => {
+    expect(aplicadas).toBe(37);
     expect(await snapshot()).toEqual(historico);
     expect((await nueva!.pool.query('select count(*)::int as n from cosechas_programadas')).rows[0].n).toBe(0);
   });

@@ -1,6 +1,6 @@
 import {
   cancelarJornadaCosecha, ConflictoProgramacionCosechaError, DatosProgramacionCosecha,
-  reprogramarCosecha, validarProgramacionCosecha,
+  DatosReprogramacionCosecha, reprogramarCosecha, validarProgramacionCosecha,
 } from '../../core/domain/entities/cosecha-programada.entity.js';
 import { EntidadNoEncontradaError } from '../../core/domain/errors/domain.error.js';
 import { CosechasProgramadasRepositoryPort, FiltrosJornadasCosecha } from '../../core/ports/cosechas-programadas-repository.port.js';
@@ -26,7 +26,7 @@ export class ConsultarCosechasProgramadasUseCase {
 }
 export class ReprogramarCosechaUseCase {
   constructor(private readonly repo: CosechasProgramadasRepositoryPort) {}
-  async execute(id: string, version: number, datos: { fechaPrevista: string; responsableId?: string }, actorId: string) {
+  async execute(id: string, version: number, datos: DatosReprogramacionCosecha, actorId: string) {
     const jornada = await new ConsultarCosechasProgramadasUseCase(this.repo).obtener(id);
     if (jornada.version !== version) throw new ConflictoProgramacionCosechaError();
     return this.repo.actualizar(reprogramarCosecha(jornada, datos), version, actorId);
@@ -34,7 +34,7 @@ export class ReprogramarCosechaUseCase {
 }
 export class CancelarJornadaCosechaUseCase {
   constructor(private readonly repo: CosechasProgramadasRepositoryPort) {}
-  async execute(id: string, version: number, motivo: string, actorId: string) {
+  async execute(id: string, version: number, motivo: string | undefined, actorId: string) {
     const jornada = await new ConsultarCosechasProgramadasUseCase(this.repo).obtener(id);
     if (jornada.version !== version) throw new ConflictoProgramacionCosechaError();
     return this.repo.actualizar(cancelarJornadaCosecha(jornada, motivo), version, actorId);

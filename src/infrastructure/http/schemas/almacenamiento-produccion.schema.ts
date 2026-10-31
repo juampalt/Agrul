@@ -5,7 +5,7 @@ import { esTemperaturaObjetivoValida } from '../../../core/domain/entities/almac
 const uuid = z.string().uuid().transform(v => v.toLowerCase());
 const fecha = z.string().refine(esFechaCosechaValida, 'Debe ser una fecha de calendario YYYY-MM-DD');
 const kg = z.number().positive().refine(esEstimacionKgValida, 'Los kg requieren hasta dos decimales y máximo 99999999.99');
-const captura = { responsableId: uuid, timestampCapturaLocal: z.string().datetime({ offset: true }).optional() };
+const captura = { responsableId: uuid, observaciones: z.string().trim().max(2000).optional().nullable(), timestampCapturaLocal: z.string().datetime({ offset: true }).optional() };
 const pagina = { limit: z.coerce.number().int().min(1).max(100).default(100), offset: z.coerce.number().int().min(0).max(2147483647).default(0) };
 const rango = (v: { desde?: string; hasta?: string }) => !v.desde || !v.hasta || v.desde <= v.hasta;
 export const RegistrarCamaraSchema = z.object({ operacionId: uuid, fincaId: uuid, nombre: z.string().trim().min(1).max(40),

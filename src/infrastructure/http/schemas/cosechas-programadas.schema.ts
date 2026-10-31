@@ -9,17 +9,21 @@ export const ProgramarCosechaSchema = z.object({
   cicloId: z.string().uuid().transform(id => id.toLowerCase()),
   fechaPrevista: fecha,
   responsableId: z.string().uuid().transform(id => id.toLowerCase()),
-  sector: z.string().trim().min(1),
-  cantidadEstimadaKg: z.number().refine(esEstimacionKgValida, 'Los kg estimados deben estar entre 0 y 99999999.99, con hasta dos decimales'),
+  sector: z.string().trim().optional(),
+  cantidadEstimadaKg: z.number().refine(esEstimacionKgValida, 'Los kg estimados deben estar entre 0 y 99999999.99, con hasta dos decimales').nullable().default(null),
+  observaciones: z.string().trim().max(2000).optional().nullable(),
 }).strict();
 export const ReprogramarCosechaSchema = z.object({
   version: z.number().int().positive(),
   fechaPrevista: fecha,
   responsableId: z.string().uuid().transform(id => id.toLowerCase()).optional(),
+  sector: z.string().trim().min(1).optional(),
+  cantidadEstimadaKg: z.number().refine(esEstimacionKgValida, 'Los kg estimados deben estar entre 0 y 99999999.99, con hasta dos decimales').nullable().optional(),
+  observaciones: z.string().trim().max(2000).optional().nullable(),
 }).strict();
 export const CancelarJornadaSchema = z.object({
   version: z.number().int().positive(),
-  motivoCancelacion: z.string().trim().min(1),
+  motivoCancelacion: z.string().trim().max(2000).optional(),
 }).strict();
 export const PaginaHistorialJornadaSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(100),
@@ -27,6 +31,8 @@ export const PaginaHistorialJornadaSchema = z.object({
 }).strict();
 export const ConsultarJornadasSchema = PaginaHistorialJornadaSchema.extend({
   cicloId: z.string().uuid().transform(id => id.toLowerCase()).optional(),
+  loteId: z.string().uuid().transform(id => id.toLowerCase()).optional(),
+  plantacionId: z.string().uuid().transform(id => id.toLowerCase()).optional(),
   responsableId: z.string().uuid().transform(id => id.toLowerCase()).optional(),
   estado: z.enum(['PENDIENTE', 'EJECUTADA', 'CANCELADA']).optional(),
   desde: fecha.optional(),

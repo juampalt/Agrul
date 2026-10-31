@@ -43,6 +43,20 @@ describe.skipIf(!url)('AGRUL-056: programación persistente desde bootstrap', ()
     expect((await f.app.inject({ method: 'PATCH', url: `${ruta}/${id}/reprogramar`, headers: f.admin,
       payload: { version: 3, fechaPrevista: '2026-11-21' } })).statusCode).toBe(422);
   });
+  it('CU41/CU43/CU44: sector, kg y motivo opcionales; observaciones; reprograma sector, kg y observaciones', async () => {
+    const { sector: _sector, cantidadEstimadaKg: _kg, ...minimos } = f.datos();
+    const creada = await f.crear({ ...minimos, observaciones: ' Entrar por el camino norte ' } as unknown as ReturnType<typeof f.datos>);
+    expect(creada.statusCode).toBe(201);
+    expect(creada.json().data).toMatchObject({ sector: 'Sin especificar', cantidadEstimadaKg: null, observaciones: 'Entrar por el camino norte' });
+    const id = creada.json().data.id;
+    const cambio = await f.app.inject({ method: 'PATCH', url: `${ruta}/${id}/reprogramar`, headers: f.campo,
+      payload: { version: 1, fechaPrevista: '2026-11-25', sector: 'Sur', cantidadEstimadaKg: 80.5, observaciones: 'Sin lluvia' } });
+    expect(cambio.statusCode).toBe(200);
+    expect(cambio.json().data).toMatchObject({ sector: 'Sur', cantidadEstimadaKg: 80.5, observaciones: 'Sin lluvia', version: 2 });
+    const cancelada = await f.app.inject({ method: 'PATCH', url: `${ruta}/${id}/cancelar`, headers: f.campo, payload: { version: 2 } });
+    expect(cancelada.statusCode).toBe(200);
+    expect(cancelada.json().data).toMatchObject({ estado: 'CANCELADA', motivoCancelacion: 'Sin motivo informado' });
+  });
   it('filtra por ciclo, responsable, estado y fecha antes de paginar', async () => {
     const datos = { ...f.datos(), fechaPrevista: '2027-01-02' };
     await f.crear(datos);
@@ -52,6 +66,17 @@ describe.skipIf(!url)('AGRUL-056: programación persistente desde bootstrap', ()
     expect(res.json().data.map((j: { id: string }) => j.id)).toEqual([datos.operacionId]);
     const segunda = await f.app.inject({ method: 'GET', url: `${ruta}?desde=2027-01-01&limit=1&offset=1`, headers: f.campo });
     expect(segunda.json().data).toEqual([]);
+  });
+  it('CU42: filtra por lote y plantación del ciclo', async () => {
+    const datos = { ...f.datos(), fechaPrevista: '2027-03-02' };
+    await f.crear(datos);
+    const { rows } = await f.pool.query('select p.id as plantacion, p.lote_id as lote from ciclos_productivos c join plantaciones p on p.id=c.plantacion_id where c.id=$1', [f.cicloId]);
+    for (const filtro of [`loteId=${rows[0].lote}`, `plantacionId=${rows[0].plantacion}`]) {
+      const res = await f.app.inject({ method: 'GET', url: `${ruta}?${filtro}&desde=2027-03-01&hasta=2027-03-31`, headers: f.campo });
+      expect(res.json().data.map((j: { id: string }) => j.id)).toEqual([datos.operacionId]);
+    }
+    const otro = await f.app.inject({ method: 'GET', url: `${ruta}?loteId=${randomUUID()}`, headers: f.campo });
+    expect(otro.json().data).toEqual([]);
   });
   it('reintentar la misma operación no duplica jornadas ni historial, aun tras reprogramarla', async () => {
     const datos = f.datos(); await f.crear(datos);
@@ -85,7 +110,7 @@ describe.skipIf(!url)('AGRUL-056: programación persistente desde bootstrap', ()
     expect((await f.pool.query('select id from cosechas_programadas where id=$1', [datos.operacionId])).rows).toEqual([]);
   });
   it.each([
-    { fechaPrevista: '2026-02-30' }, { responsableId: 'no-uuid' }, { sector: ' ' },
+    { fechaPrevista: '2026-02-30' }, { responsableId: 'no-uuid' }, { observaciones: 5 },
     { fincaId: randomUUID() }, { timestampServidor: '2026-10-29' }, { cantidadCosechadaKg: 100 },
   ])('rechaza contrato inválido %j antes de SQL', async cambio => {
     expect((await f.app.inject({ method: 'POST', url: ruta, headers: f.campo, payload: { ...f.datos(), ...cambio } })).statusCode).toBe(400);
@@ -125,7 +150,7 @@ describe.skipIf(!url)('AGRUL-056: programación persistente desde bootstrap', ()
     'delete from cosechas_programadas_historial where jornada_id=$1',
     'delete from cosechas_programadas where id=$1',
     "update cosechas_programadas set estado='EJECUTADA' where id=$1",
-    "update cosechas_programadas set cantidad_estimada_kg=999 where id=$1",
+    "update cosechas_programadas set creado_en=now() where id=$1",
   ])('protege estados e historial ante SQL directo: %s', async sql => {
     const id = (await f.crear()).json().data.id;
     await expect(f.pool.query(sql, [id])).rejects.toMatchObject({ code: '23514' });

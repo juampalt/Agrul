@@ -3,6 +3,9 @@ import { DatosProgramacionCosecha, EstadoJornadaCosecha, JornadaCosecha } from '
 export interface FiltrosJornadasCosecha {
   fincaIds?: readonly string[];
   cicloId?: string;
+  /** CU42: filtra por el lote o la plantación del ciclo de la jornada. */
+  loteId?: string;
+  plantacionId?: string;
   responsableId?: string;
   estado?: EstadoJornadaCosecha;
   desde?: string;

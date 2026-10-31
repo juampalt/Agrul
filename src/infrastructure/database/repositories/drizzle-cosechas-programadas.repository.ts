@@ -10,7 +10,7 @@ import { alcanceFincasPorCiclo } from '../alcance-fincas-agricolas.js';
 import { cosechasProgramadasTable as jornadas, historialJornadasCosechaTable as historial } from '../schema/cosechas-programadas.js';
 
 function reconstruir(fila: typeof jornadas.$inferSelect): JornadaCosecha {
-  return { ...fila, cantidadEstimadaKg: Number(fila.cantidadEstimadaKg) };
+  return { ...fila, cantidadEstimadaKg: fila.cantidadEstimadaKg === null ? null : Number(fila.cantidadEstimadaKg) };
 }
 export class DrizzleCosechasProgramadasRepository implements CosechasProgramadasRepositoryPort {
   constructor(private readonly db: AgrulDatabase) {}
@@ -24,7 +24,7 @@ export class DrizzleCosechasProgramadasRepository implements CosechasProgramadas
       const [actual] = await tx.select().from(jornadas).where(eq(jornadas.id, id));
       if (!actual) {
         const [creada] = await tx.insert(jornadas).values({
-          ...validos, id, cantidadEstimadaKg: validos.cantidadEstimadaKg.toFixed(2), actualizadoPor: actorId,
+          ...validos, id, cantidadEstimadaKg: validos.cantidadEstimadaKg === null ? null : validos.cantidadEstimadaKg.toFixed(2), actualizadoPor: actorId,
         }).returning();
         return reconstruir(creada);
       }
@@ -34,7 +34,8 @@ export class DrizzleCosechasProgramadasRepository implements CosechasProgramadas
       const previo = original?.nuevo;
       if (!previo || original.actorId !== actorId || previo.ciclo_id !== validos.cicloId ||
           previo.fecha_prevista !== validos.fechaPrevista || previo.responsable_id !== validos.responsableId ||
-          previo.sector !== validos.sector || Number(previo.cantidad_estimada_kg) !== validos.cantidadEstimadaKg) {
+          previo.sector !== validos.sector || (previo.cantidad_estimada_kg === null ? null : Number(previo.cantidad_estimada_kg)) !== validos.cantidadEstimadaKg ||
+          (previo.observaciones ?? null) !== (validos.observaciones ?? null)) {
         throw new ConflictoProgramacionCosechaError();
       }
       return reconstruir(actual);
@@ -47,6 +48,11 @@ export class DrizzleCosechasProgramadasRepository implements CosechasProgramadas
   async listar(filtros: FiltrosJornadasCosecha) {
     const condiciones = [alcanceFincasPorCiclo(this.db, jornadas.cicloId, filtros.fincaIds)];
     if (filtros.cicloId) condiciones.push(eq(jornadas.cicloId, filtros.cicloId));
+    if (filtros.loteId || filtros.plantacionId) {
+      condiciones.push(sql`${jornadas.cicloId} IN (SELECT c.id FROM ciclos_productivos c JOIN plantaciones p ON p.id = c.plantacion_id WHERE true
+        ${filtros.plantacionId ? sql`AND p.id = ${filtros.plantacionId}` : sql``}
+        ${filtros.loteId ? sql`AND p.lote_id = ${filtros.loteId}` : sql``})`);
+    }
     if (filtros.responsableId) condiciones.push(eq(jornadas.responsableId, filtros.responsableId));
     if (filtros.estado) condiciones.push(eq(jornadas.estado, filtros.estado));
     if (filtros.desde) condiciones.push(gte(jornadas.fechaPrevista, filtros.desde));
@@ -63,7 +69,9 @@ export class DrizzleCosechasProgramadasRepository implements CosechasProgramadas
     return this.conErrores(async () => {
       const cambios = jornada.estado === 'CANCELADA'
         ? { estado: jornada.estado, motivoCancelacion: jornada.motivoCancelacion, actualizadoPor: actorId }
-        : { fechaPrevista: jornada.fechaPrevista, responsableId: jornada.responsableId, actualizadoPor: actorId };
+        : { fechaPrevista: jornada.fechaPrevista, responsableId: jornada.responsableId, sector: jornada.sector,
+          cantidadEstimadaKg: jornada.cantidadEstimadaKg == null ? null : jornada.cantidadEstimadaKg.toFixed(2),
+          observaciones: jornada.observaciones ?? null, actualizadoPor: actorId };
       // La versión viaja con la intención del cliente. También detecta dos
       // reprogramaciones concurrentes cuyo estado seguiría siendo PENDIENTE.
       const [fila] = await this.db.update(jornadas).set(cambios)

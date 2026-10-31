@@ -362,6 +362,7 @@ export const cosechasTable = pgTable('cosechas', {
   cantidadDescarteKg: numeric('cantidad_descarte_kg', { precision: 14, scale: 4 }),
   motivoDescarte: varchar('motivo_descarte', { length: 150 }),
   observacionesCalidad: text('observaciones_calidad'),
+  observaciones: text('observaciones'),
   responsableId: uuid('responsable_id'),
   cuadrillaId: uuid('cuadrilla_id'),
   recipientes: jsonb('recipientes'),
