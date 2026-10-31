@@ -19,6 +19,13 @@ describe.skipIf(!url)('AGRUL-056 CU50–CU52: cámaras y conservación de existe
     expect(saldo.cantidadDisponibleKg + saldo.cantidadEnCamaraKg + saldo.cantidadDestinadaKg).toBe(saldo.cantidadInicialKg);
     expect((await f.acondicionar(f.datosAcondicionamiento(partida, 2))).statusCode).toBe(422);
   });
+  it('CU50/CU51 guardan observaciones del movimiento de cámara', async () => {
+    const partida = await f.partida(), camara = await f.camara();
+    const res = await f.mover({ ...f.datosMovimiento(partida, camara, 2), observaciones: ' Pallet 4 ' });
+    expect(res.statusCode).toBe(201); expect(res.json().data.observaciones).toBe('Pallet 4');
+    const salida = await f.mover({ ...f.datosMovimiento(partida, camara, 1, 'SALIDA'), observaciones: 'Retiro para venta' });
+    expect(salida.json().data.observaciones).toBe('Retiro para venta');
+  });
   it('conserva temperatura nula distinta de cero y no duplica el registro de una cámara', async () => {
     const datos = { ...f.datosCamara(), temperaturaObjetivoC: null };
     expect((await f.registrarCamara(datos)).statusCode).toBe(201);

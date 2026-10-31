@@ -71,7 +71,7 @@ export class DrizzleActividadesRealizadasRepository implements ActividadesRealiz
 
   private mapear(fila: typeof realizadas.$inferSelect) {
     const { creadoEn: _creadoEn, ...props } = fila;
-    return ActividadRealizada.reconstituir({ ...props, superficieTrabajadaHa: Number(fila.superficieTrabajadaHa),
+    return ActividadRealizada.reconstituir({ ...props, superficieTrabajadaHa: fila.superficieTrabajadaHa === null ? null : Number(fila.superficieTrabajadaHa),
       duracionHoras: fila.duracionHoras === null ? null : Number(fila.duracionHoras) });
   }
 
@@ -83,7 +83,15 @@ export class DrizzleActividadesRealizadasRepository implements ActividadesRealiz
       if (!monitoreo) throw new EntidadNoEncontradaError('Monitoreo', dto.monitoreoId);
       if (monitoreo.cicloId !== dto.cicloId) throw new EjecucionActividadInvalidaError('El monitoreo vinculado debe pertenecer al mismo ciclo productivo.');
     }
-    await tx.insert(realizadas).values({ ...dto, superficieTrabajadaHa: dto.superficieTrabajadaHa.toFixed(2),
+    if (dto.superficieTrabajadaHa !== null) {
+      // CU30: la superficie trabajada no puede superar la de la plantación del ciclo.
+      const [plantacion] = await tx.select({ superficie: plantaciones.superficieHa }).from(ciclos)
+        .innerJoin(plantaciones, eq(ciclos.plantacionId, plantaciones.id)).where(eq(ciclos.id, dto.cicloId));
+      if (plantacion && Math.round(dto.superficieTrabajadaHa * 100) > Math.round(Number(plantacion.superficie) * 100)) {
+        throw new EjecucionActividadInvalidaError('La superficie trabajada no puede superar la superficie de la plantación.');
+      }
+    }
+    await tx.insert(realizadas).values({ ...dto, superficieTrabajadaHa: dto.superficieTrabajadaHa === null ? null : dto.superficieTrabajadaHa.toFixed(2),
       duracionHoras: dto.duracionHoras === null ? null : dto.duracionHoras.toFixed(2) });
   }
 

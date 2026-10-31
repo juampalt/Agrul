@@ -42,7 +42,7 @@ export class DrizzleMonitoreosRepository implements MonitoreosRepositoryPort {
       superficie: aplicaciones.superficieTratada, metodoAplicacion: aplicaciones.metodoAplicacion, motivoAplicacion: aplicaciones.motivoAplicacion })
       .from(aplicaciones).where(inArray(aplicaciones.actividadRealizadaId, ids)).orderBy(asc(aplicaciones.id)) : [];
     return {
-      actividadesRealizadas: labores.map(({ superficie, ...l }) => ({ ...l, superficieTrabajadaHa: Number(superficie) })),
+      actividadesRealizadas: labores.map(({ superficie, ...l }) => ({ ...l, superficieTrabajadaHa: superficie === null ? null : Number(superficie) })),
       aplicacionesInsumos: apps.map(({ superficie, ...a }) => ({ ...a, superficieTratada: Number(superficie) })),
     };
   }

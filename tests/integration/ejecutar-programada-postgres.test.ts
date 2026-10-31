@@ -87,6 +87,16 @@ describe.skipIf(!url)('CU30/CU31: labores realizadas con PostgreSQL y bootstrap 
     expect((await ejecutar({ ...datos(), descripcionTrabajo: '   ' })).statusCode).toBe(400);
   });
 
+  it('CU30 la superficie es opcional, pero si se informa debe ser positiva y caber en la plantación; guarda observaciones', async () => {
+    const { superficieTrabajadaHa: _omitida, ...sinSuperficie } = datosDirectos();
+    const ok = await servidor.app.inject({ method: 'POST', url: '/api/v1/actividades-realizadas', headers: encargado,
+      payload: { ...sinSuperficie, observaciones: ' Sin medir ' } });
+    expect(ok.statusCode).toBe(201);
+    expect(ok.json().data).toMatchObject({ superficieTrabajadaHa: null, observaciones: 'Sin medir' });
+    expect((await directa({ superficieTrabajadaHa: 0 })).statusCode).toBe(400);
+    expect((await directa({ superficieTrabajadaHa: 999999 })).statusCode).toBe(422);
+  });
+
   it('persiste el hecho y marca EJECUTADA, liberando RN-09', async () => {
     await expect(servidor.cierreCicloGuard.ejecutar(cicloId, async () => true)).rejects.toBeInstanceOf(CicloConActividadesPendientesError);
     const res = await ejecutar();

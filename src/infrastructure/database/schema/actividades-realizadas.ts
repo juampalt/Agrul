@@ -13,7 +13,8 @@ export const actividadesRealizadasTable = pgTable('actividades_realizadas', {
   tipoActividadId: uuid('tipo_actividad_id').notNull().references(() => tiposActividadTable.id, { onDelete: 'restrict' }),
   fechaEjecucion: date('fecha_ejecucion', { mode: 'string' }).notNull(),
   responsableId: uuid('responsable_id').notNull(),
-  superficieTrabajadaHa: numeric('superficie_trabajada', { precision: 8, scale: 2 }).notNull(),
+  superficieTrabajadaHa: numeric('superficie_trabajada', { precision: 8, scale: 2 }),
+  observaciones: text('observaciones'),
   duracionHoras: numeric('duracion_horas', { precision: 5, scale: 2 }),
   descripcionTrabajo: text('descripcion_trabajo'),
   monitoreoId: uuid('monitoreo_id'),
@@ -23,6 +24,6 @@ export const actividadesRealizadasTable = pgTable('actividades_realizadas', {
   foreignKey({ columns: [t.loteId], foreignColumns: [lotesTable.id] }).onDelete('restrict'),
   foreignKey({ columns: [t.responsableId], foreignColumns: [usuariosTable.id] }).onDelete('restrict'),
   index('idx_realizadas_ciclo_fecha').on(t.cicloId, t.fechaEjecucion),
-  check('realizadas_superficie_positiva', sql`${t.superficieTrabajadaHa} > 0`),
+  check('realizadas_superficie_positiva', sql`${t.superficieTrabajadaHa} IS NULL OR ${t.superficieTrabajadaHa} > 0`),
   check('realizadas_duracion_positiva', sql`${t.duracionHoras} IS NULL OR ${t.duracionHoras} > 0`),
 ]);

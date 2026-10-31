@@ -22,6 +22,13 @@ describe.skipIf(!url)('AGRUL-056 CU49: acondicionamiento sin duplicación físic
     expect(rows[0].payload_especifico.cosechaId).toBe(detalle.json().data.cosechaId);
     expect((await f.app.inject({ method: 'GET', url: `/api/v1/acondicionamientos/${datos.operacionId}`, headers: f.campo })).statusCode).toBe(200);
   });
+  it('CU49 admite envase y cantidad de envases ausentes y guarda observaciones', async () => {
+    const partida = await f.partida();
+    const { tipoEnvase: _t, cantidadEnvases: _c, ...base } = f.datosAcondicionamiento(partida, 2);
+    const res = await f.acondicionar({ ...base, observaciones: ' Sin bandejas ' } as never);
+    expect(res.statusCode).toBe(201);
+    expect(res.json().data).toMatchObject({ tipoEnvase: 'Sin especificar', cantidadEnvases: null, observaciones: 'Sin bandejas' });
+  });
   it('admite empaque parcial hasta agotar el saldo pendiente y bloquea reempaquetar los mismos kilos', async () => {
     const partida = await f.partida();
     expect((await f.acondicionar(f.datosAcondicionamiento(partida, 3))).statusCode).toBe(201);

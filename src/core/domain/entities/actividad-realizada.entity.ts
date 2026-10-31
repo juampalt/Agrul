@@ -6,9 +6,11 @@ export interface DatosEjecucionProgramada {
   actividadProgramadaId: string;
   responsableId: string;
   fechaEjecucion: string;
-  superficieTrabajadaHa: number;
+  /** Opcional: si se informa, debe ser positiva y no superar la superficie de la plantación. */
+  superficieTrabajadaHa?: number | null;
   duracionHoras?: number | null;
   descripcionTrabajo?: string | null;
+  observaciones?: string | null;
   /** CU33: monitoreo del mismo ciclo al que responde la labor. */
   monitoreoId?: string | null;
   datosEspecificos?: Record<string, unknown>;
@@ -37,9 +39,10 @@ export interface ActividadRealizadaProps {
   tipoActividadId: string;
   responsableId: string;
   fechaEjecucion: string;
-  superficieTrabajadaHa: number;
+  superficieTrabajadaHa: number | null;
   duracionHoras: number | null;
   descripcionTrabajo: string | null;
+  observaciones?: string | null;
   monitoreoId?: string | null;
   datosEspecificos: Record<string, unknown>;
 }
@@ -85,14 +88,15 @@ export class ActividadRealizada {
       throw new EjecucionActividadInvalidaError('La fecha de ejecución debe estar comprendida en el ciclo.');
     }
     // Se preservan exactamente los valores representables en NUMERIC(8,2)/(5,2).
-    if (!esDecimalPositivo(datos.superficieTrabajadaHa, 999999.99)
+    if ((datos.superficieTrabajadaHa != null && !esDecimalPositivo(datos.superficieTrabajadaHa, 999999.99))
       || (datos.duracionHoras != null && !esDecimalPositivo(datos.duracionHoras, 999.99))) {
-      throw new EjecucionActividadInvalidaError('Superficie y duración deben ser positivas, finitas y tener hasta dos decimales dentro del rango permitido.');
+      throw new EjecucionActividadInvalidaError('La superficie y la duración, si se informan, deben ser positivas, finitas y tener hasta dos decimales dentro del rango permitido.');
     }
     return new ActividadRealizada({
       id, actividadProgramadaId, cicloId: ciclo.id, loteId: ciclo.loteId,
       tipoActividadId, responsableId: datos.responsableId,
-      fechaEjecucion: datos.fechaEjecucion, superficieTrabajadaHa: datos.superficieTrabajadaHa,
+      fechaEjecucion: datos.fechaEjecucion, superficieTrabajadaHa: datos.superficieTrabajadaHa ?? null,
+      observaciones: datos.observaciones?.trim() || null,
       duracionHoras: datos.duracionHoras ?? null, descripcionTrabajo: datos.descripcionTrabajo?.trim() ?? null,
       monitoreoId: datos.monitoreoId ?? null,
       datosEspecificos: structuredClone(datos.datosEspecificos ?? {}),

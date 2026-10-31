@@ -12,10 +12,11 @@ export const EjecutarProgramadaSchema = z.object({
   actividadProgramadaId: z.string().uuid(),
   responsableId: z.string().uuid(),
   fechaEjecucion: z.string().refine(esFechaProgramadaValida, 'La fecha debe existir y tener formato YYYY-MM-DD.'),
-  superficieTrabajadaHa: z.number().finite().positive().max(999999.99),
+  superficieTrabajadaHa: z.number().finite().positive().max(999999.99).nullable().optional(),
   duracionHoras: z.number().finite().positive().max(999.99).nullable().optional(),
   descripcionTrabajo: z.string().trim().min(1, 'La descripción del trabajo realizado es obligatoria.'),
   monitoreoId: z.string().uuid().nullable().optional(),
+  observaciones: z.string().trim().max(2000).nullable().optional(),
   datosEspecificos: z.record(z.unknown()).optional(),
 }).strict();
 

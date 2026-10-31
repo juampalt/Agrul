@@ -139,6 +139,16 @@ describe.skipIf(!url)('AGRUL-054 CU26–CU29 PostgreSQL real', () => {
     expect(vacio.json().data).toEqual([]);
   });
 
+  it('CU26/CU28 guardan y reprograman las observaciones', async () => {
+    const creada = await servidor.app.inject({ method: 'POST', url: ruta, headers: encargado, payload: { ...datos(), observaciones: ' Coordinar con riego ' } });
+    expect(creada.statusCode).toBe(201);
+    expect(creada.json().data.observaciones).toBe('Coordinar con riego');
+    const id = creada.json().data.id;
+    const ok = await servidor.app.inject({ method: 'PATCH', url: `${ruta}/${id}/reprogramar`, headers: encargado, payload: { fechaProgramada: '2030-12-02', observaciones: 'Sin riego esa semana' } });
+    expect(ok.json().data.observaciones).toBe('Sin riego esa semana');
+    expect((await repo.buscarPorId(id))?.toJSON().observaciones).toBe('Sin riego esa semana');
+  });
+
   it('CU28 reprograma fecha y responsable en la base real', async () => {
     const id = (await crear()).json().data.id;
     const res = await servidor.app.inject({ method: 'PATCH', url: `${ruta}/${id}/reprogramar`, headers: encargado, payload: { fechaProgramada: '2030-11-20', responsableId: ADMIN } });

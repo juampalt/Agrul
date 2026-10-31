@@ -26,6 +26,6 @@ export interface MonitoreosRepositoryPort {
 }
 
 export interface VinculadosMonitoreo {
-  actividadesRealizadas: { id: string; fechaEjecucion: string; tipoActividadId: string; tipoActividad: string; responsableId: string; superficieTrabajadaHa: number }[];
+  actividadesRealizadas: { id: string; fechaEjecucion: string; tipoActividadId: string; tipoActividad: string; responsableId: string; superficieTrabajadaHa: number | null }[];
   aplicacionesInsumos: { id: string; actividadRealizadaId: string; superficieTratada: number; metodoAplicacion: string; motivoAplicacion: string }[];
 }
