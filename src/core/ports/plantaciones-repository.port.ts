@@ -5,6 +5,8 @@ export interface FiltrosPlantaciones {
   cultivoId?: string;
   variedadId?: string;
   estado?: EstadoPlantacion;
+  /** Alcance interno derivado de la sesión; no forma parte del contrato HTTP. */
+  fincaIds?: readonly string[];
   limit: number;
   offset: number;
 }

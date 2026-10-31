@@ -25,7 +25,7 @@ export class JornadasPostgresFixture {
   sinFincas = { authorization: '' };
   operario = { authorization: '' };
   sistema = { authorization: '' };
-  readonly password = randomBytes(24).toString('base64url');
+  readonly password = randomBytes(24).toString('base64url') + 'aA1';
   readonly email = `admin-${this.adminId}@example.test`;
   get app() { return this.servidor.app; }
   get pool() { return this.aislado.connection.pool; }

@@ -358,6 +358,16 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     return reply.status(404).send('Not Found');
   });
 
+  for (const script of ['vistas.js', 'sesion.js', 'pantallas.js', 'pantallas-operativas.js']) {
+    app.get(`/${script}`, async (_req, reply) => {
+      const jsPath = resolve(publicPath, script);
+      if (existsSync(jsPath)) {
+        return reply.type('application/javascript; charset=utf-8').send(readFileSync(jsPath, 'utf-8'));
+      }
+      return reply.status(404).send('Not Found');
+    });
+  }
+
   app.get('/offline-manager.js', async (_req, reply) => {
     const jsPath = resolve(publicPath, 'offline-manager.js');
     if (existsSync(jsPath)) {
@@ -964,8 +974,8 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   if (options.aplicacionesInsumosRepo) registrarRutasAplicacionesInsumos(app, options.aplicacionesInsumosRepo);
   if (options.correccionesAplicacionesRepo) registrarRutasCorreccionesAplicaciones(app, options.correccionesAplicacionesRepo);
   if (options.cultivosRepo) registrarRutasCultivos(app, options.cultivosRepo);
-  if (options.plantacionesRepo) registrarRutasPlantaciones(app, options.plantacionesRepo);
-  if (options.ciclosProductivosRepo) registrarRutasCiclosProductivos(app, options.ciclosProductivosRepo);
+  if (options.plantacionesRepo) registrarRutasPlantaciones(app, options.plantacionesRepo, options.accesoRecursosAgricolasRepo);
+  if (options.ciclosProductivosRepo) registrarRutasCiclosProductivos(app, options.ciclosProductivosRepo, options.accesoRecursosAgricolasRepo);
   if (options.tiposActividadRepo) {
     registrarRutasTiposActividad(app, options.tiposActividadRepo, options.cultivosRepo);
   }

@@ -6,6 +6,8 @@ export interface ConsultarCiclosFiltros {
   plantacionId?: string;
   loteId?: string;
   estado?: EstadoCicloPlanificado;
+  /** Alcance interno derivado de la sesión; no forma parte del contrato HTTP. */
+  fincaIds?: readonly string[];
   limit: number;
   offset: number;
 }
