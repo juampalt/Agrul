@@ -21,4 +21,11 @@ export interface MonitoreosRepositoryPort {
   registrar(cicloId: string, responsableId: string, crear: (contexto: ContextoMonitoreo) => Monitoreo): Promise<Monitoreo>;
   buscarPorId(id: string): Promise<Monitoreo | null>;
   listar(filtros: FiltrosMonitoreos): Promise<Monitoreo[]>;
+  /** CU33: labores y aplicaciones de insumos expresamente vinculadas al monitoreo. */
+  vinculados?(id: string): Promise<VinculadosMonitoreo>;
+}
+
+export interface VinculadosMonitoreo {
+  actividadesRealizadas: { id: string; fechaEjecucion: string; tipoActividadId: string; tipoActividad: string; responsableId: string; superficieTrabajadaHa: number }[];
+  aplicacionesInsumos: { id: string; actividadRealizadaId: string; superficieTratada: number; metodoAplicacion: string; motivoAplicacion: string }[];
 }

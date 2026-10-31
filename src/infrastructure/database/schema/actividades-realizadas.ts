@@ -16,6 +16,7 @@ export const actividadesRealizadasTable = pgTable('actividades_realizadas', {
   superficieTrabajadaHa: numeric('superficie_trabajada', { precision: 8, scale: 2 }).notNull(),
   duracionHoras: numeric('duracion_horas', { precision: 5, scale: 2 }),
   descripcionTrabajo: text('descripcion_trabajo'),
+  monitoreoId: uuid('monitoreo_id'),
   datosEspecificos: jsonb('datos_especificos').$type<Record<string, unknown>>().notNull().default({}),
   creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
 }, (t) => [

@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { ConsultarInsumosUseCase, DesactivarInsumoUseCase, ModificarInsumoUseCase, RegistrarInsumoUseCase } from '../../../application/use-cases/insumos.use-cases.js';
 import { InsumosRepositoryPort } from '../../../core/ports/insumos-repository.port.js';
+import { fincasVisiblesAgricolas } from '../../../application/use-cases/autorizar-recurso-agricola.use-case.js';
 import { requerirRol, verificarPasswordInicial } from '../middlewares/auth.middleware.js';
 import { ConsultarInsumosSchema, DatosInsumoSchema, InsumoCanonicoIdSchema, SolicitudVaciaInsumoSchema } from '../schemas/insumos-canonicos.schema.js';
 
@@ -22,7 +23,7 @@ export function registrarRutasInsumos(app: FastifyInstance, repo: InsumosReposit
     respuesta(await consultar.execute(ConsultarInsumosSchema.parse(req.query))));
   app.get('/api/v1/insumos/:id', lectura, async req => {
     SolicitudVaciaInsumoSchema.parse(req.query);
-    return respuesta(await consultar.obtenerPorId(InsumoCanonicoIdSchema.parse(req.params).id));
+    return respuesta(await consultar.obtenerPorId(InsumoCanonicoIdSchema.parse(req.params).id, fincasVisiblesAgricolas(req.usuario)));
   });
   app.put('/api/v1/insumos/:id', admin, async req => {
     SolicitudVaciaInsumoSchema.parse(req.query);

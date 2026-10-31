@@ -61,10 +61,32 @@ describe.skipIf(!url)('CU32/CU33: monitoreos con PostgreSQL y bootstrap reales',
     expect(res.json().data).toMatchObject({ ...datos(), loteId: LOTE });
     const id = res.json().data.id;
     const detalle = await servidor.app.inject({ method: 'GET', url: `/api/v1/monitoreos/${id}`, headers: admin });
-    expect(detalle.statusCode).toBe(200); expect(detalle.json().data).toEqual(res.json().data);
+    expect(detalle.statusCode).toBe(200); expect(detalle.json().data).toMatchObject(res.json().data);
+    expect(detalle.json().data).toMatchObject({ actividadesRealizadas: [], aplicacionesInsumos: [], mensajeIntervenciones: 'No existen intervenciones asociadas al monitoreo.' });
     expect((await connection.pool.query('select accion_recomendada from monitoreos where id=$1', [id])).rows[0].accion_recomendada).toBe('Evaluar riego');
   });
 
+  it('CU33 presenta las labores expresamente vinculadas al monitoreo y rechaza vincular otro ciclo', async () => {
+    const tipo = await servidor.app.inject({ method: 'POST', url: '/api/v1/tipos-actividad', headers: admin,
+      payload: { nombre: `CU33 ${randomUUID().slice(0, 8)}`, categoria: 'RIEGO', cultivoIds: ['b0000000-0000-4000-8000-000000000059'] } });
+    expect(tipo.statusCode).toBe(201);
+    const monitoreoId = (await registrar()).json().data.id;
+    const labor = (monitoreo: string | null) => servidor.app.inject({ method: 'POST', url: '/api/v1/actividades-realizadas', headers: encargado,
+      payload: { origen: 'NO_PROGRAMADA', cicloId, tipoActividadId: tipo.json().data.id, responsableId: RESPONSABLE, fechaEjecucion: '2026-10-16',
+        superficieTrabajadaHa: 1, descripcionTrabajo: 'Riego correctivo', monitoreoId: monitoreo } });
+    const creada = await labor(monitoreoId);
+    expect(creada.statusCode).toBe(201);
+    const detalle = (await servidor.app.inject({ method: 'GET', url: `/api/v1/monitoreos/${monitoreoId}`, headers: admin })).json().data;
+    expect(detalle.actividadesRealizadas).toEqual([expect.objectContaining({ id: creada.json().data.id, superficieTrabajadaHa: 1 })]);
+    expect(detalle).toMatchObject({ aplicacionesInsumos: [], mensajeIntervenciones: null });
+    const otroCiclo = await connection.pool.query('select id from monitoreos where ciclo_id<>$1 limit 1', [cicloId]);
+    const ajeno = otroCiclo.rows[0]?.id ?? (await (async () => { const otro = randomUUID();
+      await connection.pool.query(`insert into ciclos_productivos(id,plantacion_id,nombre_codigo,fecha_inicio_prevista,fecha_fin_prevista,fecha_inicio_efectiva,responsable_seguimiento_id,estado)
+        select $1,plantacion_id,$2,'2026-10-01','2026-10-27','2026-10-01',$3,'ACTIVO' from ciclos_productivos where id=$4`, [otro, `CU33-${otro.slice(0, 20)}`, RESPONSABLE, BASE]);
+      return (await servidor.app.inject({ method: 'POST', url: '/api/v1/monitoreos', headers: encargado, payload: { ...datos(), cicloId: otro } })).json().data.id; })());
+    expect((await labor(ajeno)).statusCode).toBe(422);
+    expect((await labor(randomUUID())).statusCode).toBe(404);
+  });
   it('RN-13 no genera actividades, aplicaciones ni bloqueos RN-09 a partir de recomendaciones', async () => {
     const aplicaciones = vi.spyOn(InMemoryAplicacionesRepository.prototype, 'guardar');
     const actividades = vi.spyOn(InMemoryActividadesRepository.prototype, 'guardar');

@@ -19,6 +19,10 @@ export async function registrarAplicacionEnTransaccion(tx: AgrulTransaction, dat
   const [existente] = await tx.select({ solicitud: a.solicitud }).from(a).where(eq(a.id, datos.operacionId));
   if (existente && !isDeepStrictEqual(existente.solicitud, solicitud)) throw new AplicacionInsumosDuplicadaError();
   if (!existente) {
+    // CU38: la superficie tratada no puede superar la trabajada en la actividad realizada.
+    if (Math.round(datos.superficieTratada * 100) > Math.round(Number(labor.superficieTrabajadaHa) * 100)) {
+      throw new AplicacionInsumosInvalidaError('La superficie tratada no puede superar la superficie trabajada de la actividad realizada.');
+    }
     const insumos = await tx.select().from(i).where(inArray(i.id, datos.items.map(linea => linea.insumoId)))
       .orderBy(asc(i.id)).for('update');
     await tx.insert(a).values({ id: datos.operacionId, actividadRealizadaId: datos.actividadRealizadaId,
@@ -49,7 +53,7 @@ export async function registrarAplicacionEnTransaccion(tx: AgrulTransaction, dat
 }
 
 export async function cargarLaborAplicacion(tx: AgrulTransaction, id: string, actor: ActorInventario) {
-  const [labor] = await tx.select({ fincaId: l.fincaId, loteId: r.loteId }).from(r)
+  const [labor] = await tx.select({ fincaId: l.fincaId, loteId: r.loteId, superficieTrabajadaHa: r.superficieTrabajadaHa }).from(r)
     .innerJoin(l, eq(r.loteId, l.id)).where(eq(r.id, id)).for('share');
   if (!labor) throw new EntidadNoEncontradaError('Actividad realizada', id);
   if (!labor.fincaId) throw new AplicacionInsumosInvalidaError('La labor debe pertenecer a una finca.');

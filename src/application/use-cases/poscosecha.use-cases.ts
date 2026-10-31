@@ -15,7 +15,13 @@ export class RegistrarAcondicionamientoUseCase {
 export class ConsultarPoscosechaUseCase {
   constructor(private readonly clasificaciones: ClasificacionesRepositoryPort, private readonly poscosecha: PoscosechaAlmacenamientoRepositoryPort) {}
   listarClasificaciones(f: FiltrosPoscosecha, actor: ActorCosechas) { return this.clasificaciones.listarClasificaciones(f, actor); }
-  totalesClasificaciones(f: FiltrosPoscosecha, actor: ActorCosechas) { return this.clasificaciones.totalesClasificaciones(f, actor); }
+  /** CU48: totales del período filtrado y acumulado sin fechas, con los demás criterios. */
+  async totalesClasificaciones(f: FiltrosPoscosecha, actor: ActorCosechas) {
+    const periodo = await this.clasificaciones.totalesClasificaciones(f, actor);
+    const { desde: _desde, hasta: _hasta, ...sinPeriodo } = f;
+    const acumulado = f.desde || f.hasta ? await this.clasificaciones.totalesClasificaciones(sinPeriodo, actor) : periodo;
+    return { ...periodo, periodo: { desde: f.desde ?? null, hasta: f.hasta ?? null }, acumulado };
+  }
   listarAcondicionamientos(f: FiltrosPoscosecha, actor: ActorCosechas) { return this.poscosecha.listarAcondicionamientos(f, actor); }
   listarPartidas(f: FiltrosPoscosecha, actor: ActorCosechas) { return this.poscosecha.listarPartidas(f, actor); }
   obtenerClasificacion(id: string, actor: ActorCosechas) { return this.exigir(this.clasificaciones.obtenerClasificacion(id, actor), 'Clasificación', id); }

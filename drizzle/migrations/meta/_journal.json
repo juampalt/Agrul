@@ -260,6 +260,13 @@
       "when": 1793149232000,
       "tag": "0036_observaciones_campos_opcionales",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793149233000,
+      "tag": "0037_actividades_monitoreo_vinculado",
+      "breakpoints": true
     }
   ]
 }

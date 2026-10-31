@@ -17,6 +17,10 @@ export class ConsultarMonitoreosUseCase {
   async obtenerPorId(id: string) {
     const monitoreo = await this.repo.buscarPorId(id);
     if (!monitoreo) throw new EntidadNoEncontradaError('Monitoreo', id);
-    return monitoreo.toJSON();
+    // CU33: solo se presentan intervenciones expresamente vinculadas; una recomendación no genera ninguna.
+    const vinculados = await this.repo.vinculados?.(id) ?? { actividadesRealizadas: [], aplicacionesInsumos: [] };
+    const sinIntervenciones = !vinculados.actividadesRealizadas.length && !vinculados.aplicacionesInsumos.length;
+    return { ...monitoreo.toJSON(), ...vinculados,
+      mensajeIntervenciones: sinIntervenciones ? 'No existen intervenciones asociadas al monitoreo.' : null };
   }
 }

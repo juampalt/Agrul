@@ -19,7 +19,13 @@ export class RegistrarInsumoUseCase {
 export class ConsultarInsumosUseCase {
   constructor(private readonly repo: InsumosRepositoryPort) {}
   async execute(filtros: FiltrosInsumos) { return (await this.repo.listar(filtros)).map(i => i.toJSON()); }
-  async obtenerPorId(id: string) { return requerido(await this.repo.buscarPorId(id), id); }
+  async obtenerPorId(id: string, fincaIds?: readonly string[]) {
+    const insumo = requerido(await this.repo.buscarPorId(id), id);
+    const antecedentes = await this.repo.antecedentes?.(id, fincaIds) ?? [];
+    // CU35: solo un insumo activo está habilitado para nuevas aplicaciones; el inactivo conserva su historia.
+    return { ...insumo, habilitadoParaNuevasAplicaciones: insumo.estado === 'ACTIVO', antecedentes,
+      mensajeAntecedentes: antecedentes.length ? null : 'No se encontraron aplicaciones registradas para el insumo.' };
+  }
 }
 export class ModificarInsumoUseCase {
   constructor(private readonly repo: InsumosRepositoryPort) {}
