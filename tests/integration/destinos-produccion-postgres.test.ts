@@ -34,7 +34,10 @@ describe.skipIf(!url)('AGRUL-056 CU53/CU54: destinos desde disponibilidad exteri
     expect((await f.destinar({ ...base, operacionId: randomUUID(), tipoDestino: 'OTRO' })).statusCode).toBe(400);
     const totales = await f.app.inject({ method: 'GET', url: `/api/v1/destinos-produccion/totales?partidaProduccionId=${partida}`, headers: f.campo });
     expect(totales.statusCode).toBe(200);
-    expect(totales.json().data).toEqual({ porTipo: [{ tipoDestino: 'INDUSTRIA', cantidadDestinos: 1, totalKg: 1 }, { tipoDestino: 'MERCADO_FRESCO', cantidadDestinos: 1, totalKg: 2 }], totalDestinadoKg: 3 });
+    expect(totales.json().data).toMatchObject({ porTipo: [{ tipoDestino: 'INDUSTRIA', cantidadDestinos: 1, totalKg: 1 }, { tipoDestino: 'MERCADO_FRESCO', cantidadDestinos: 1, totalKg: 2 }], totalDestinadoKg: 3 });
+    // CU52: con período, el total del período se informa junto al acumulado sin fechas.
+    const futuro = await f.app.inject({ method: 'GET', url: `/api/v1/destinos-produccion/totales?partidaProduccionId=${partida}&desde=2099-01-01`, headers: f.campo });
+    expect(futuro.json().data).toMatchObject({ totalDestinadoKg: 0, periodo: { desde: '2099-01-01', hasta: null }, acumulado: { totalDestinadoKg: 3 } });
   });
   it('acumula destinos parciales y no duplica el consumo ante reintentos', async () => {
     const partida = await f.partida(), datos = f.datosDestino(partida, 2);

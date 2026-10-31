@@ -1,6 +1,6 @@
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { CodigoInsumoDuplicadoError, CodigoInsumoInmutableError, DatosInsumo, Insumo, UnidadInsumoInmutableError } from '../../../core/domain/entities/insumo.entity.js';
-import { FiltrosInsumos, InsumosRepositoryPort } from '../../../core/ports/insumos-repository.port.js';
+import { AntecedenteInsumo, FiltrosInsumos, InsumosRepositoryPort } from '../../../core/ports/insumos-repository.port.js';
 import { AgrulDatabase } from '../connection.js';
 import { insumosTable } from '../schema/insumos.js';
 
@@ -15,6 +15,30 @@ function serializar(datos: DatosInsumo) {
 
 export class DrizzleInsumosRepository implements InsumosRepositoryPort {
   constructor(private readonly db: AgrulDatabase) {}
+
+  async antecedentes(insumoId: string, fincaIds?: readonly string[]): Promise<AntecedenteInsumo[]> {
+    const finca = fincaIds === undefined ? sql`` : fincaIds.length
+      ? sql`AND l.finca_id IN (${sql.join(fincaIds.map(id => sql`${id}::uuid`), sql`, `)})` : sql`AND false`;
+    const { rows } = await this.db.execute<{ aplicacion_id: string; fecha: string; lote_id: string; codigo_lote: string; cultivo_id: string;
+      cultivo: string; ciclo_id: string; ciclo: string; actividad_id: string; cantidad: string; unidad: string }>(sql`
+      SELECT a.id AS aplicacion_id, r.fecha_ejecucion::text AS fecha, l.id AS lote_id, l.codigo_lote, cu.id AS cultivo_id, cu.nombre AS cultivo,
+        c.id AS ciclo_id, c.nombre_codigo AS ciclo, r.id AS actividad_id, sum(it.cantidad_aplicada)::text AS cantidad, i.unidad_medida AS unidad
+      FROM aplicaciones_insumo_items it
+      JOIN aplicaciones_insumo a ON a.id = it.aplicacion_id
+      JOIN actividades_realizadas r ON r.id = a.actividad_realizada_id
+      JOIN lotes l ON l.id = r.lote_id
+      JOIN ciclos_productivos c ON c.id = r.ciclo_id
+      JOIN plantaciones p ON p.id = c.plantacion_id
+      JOIN cultivos cu ON cu.id = p.cultivo_id
+      JOIN insumos i ON i.id = it.insumo_id
+      WHERE it.insumo_id = ${insumoId}::uuid ${finca}
+        AND NOT EXISTS (SELECT 1 FROM correcciones_aplicaciones_insumo k WHERE k.aplicacion_anterior_id = a.id)
+      GROUP BY a.id, r.fecha_ejecucion, l.id, l.codigo_lote, cu.id, cu.nombre, c.id, c.nombre_codigo, r.id, i.unidad_medida
+      ORDER BY r.fecha_ejecucion DESC, a.id LIMIT 100`);
+    return rows.map(x => ({ aplicacionId: x.aplicacion_id, fechaAplicacion: x.fecha, loteId: x.lote_id, codigoLote: x.codigo_lote,
+      cultivoId: x.cultivo_id, cultivo: x.cultivo, cicloId: x.ciclo_id, ciclo: x.ciclo, actividadRealizadaId: x.actividad_id,
+      cantidadUtilizada: Number(x.cantidad), unidadMedida: x.unidad }));
+  }
 
   async guardar(insumo: Insumo): Promise<void> {
     const datos = insumo.toJSON();

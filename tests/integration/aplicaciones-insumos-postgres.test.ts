@@ -67,6 +67,13 @@ describe.skipIf(!url)('AGRUL-055: aplicaciones y consumo FEFO/FIFO PostgreSQL', 
     expect((await f.registrarAplicacion(datos)).statusCode).toBe(422);
     expect(await f.saldo(primero.partidaId)).toBe('10.00'); expect(await f.conteos(datos.operacionId)).toEqual(cero);
   });
+  it('CU38 rechaza una superficie tratada mayor que la trabajada en la actividad y no consume stock', async () => {
+    const { insumoId, partidaId } = await f.alta();
+    const exceso = f.datosAplicacion(insumoId, { superficieTratada: 1.01 });
+    expect((await f.registrarAplicacion(exceso)).statusCode).toBe(422);
+    expect(await f.saldo(partidaId)).toBe('10.00'); expect(await f.conteos(exceso.operacionId)).toEqual(cero);
+    expect((await f.registrarAplicacion(f.datosAplicacion(insumoId, { superficieTratada: 1 }))).statusCode).toBe(201);
+  });
   it('dos aplicaciones simultáneas no consumen más stock del disponible', async () => {
     const { insumoId, partidaId } = await f.alta({ cantidad: 10 });
     const datos = () => f.datosAplicacion(insumoId, { items: [{ insumoId, cantidad: 6, unidadMedida: 'kg', dosis: 6 }] });

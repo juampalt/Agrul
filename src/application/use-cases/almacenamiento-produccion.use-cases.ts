@@ -23,7 +23,13 @@ export class ConsultarAlmacenamientoProduccionUseCase {
   listarMovimientos(f: FiltrosAlmacenamiento, actor: ActorCosechas) { return this.almacen.listarMovimientos(f, actor); }
   consultarSaldos(f: FiltrosAlmacenamiento, actor: ActorCosechas) { return this.almacen.consultarSaldos(f, actor); }
   listarDestinos(f: FiltrosDestinosProduccion, actor: ActorCosechas) { return this.destinos.listarDestinos(f, actor); }
-  totalesDestinos(f: FiltrosDestinosProduccion, actor: ActorCosechas) { return this.destinos.totalesDestinos(f, actor); }
+  /** CU52: totales del período filtrado y acumulado sin fechas, con los demás criterios. */
+  async totalesDestinos(f: FiltrosDestinosProduccion, actor: ActorCosechas) {
+    const periodo = await this.destinos.totalesDestinos(f, actor);
+    const { desde: _desde, hasta: _hasta, ...sinPeriodo } = f;
+    const acumulado = f.desde || f.hasta ? await this.destinos.totalesDestinos(sinPeriodo, actor) : periodo;
+    return { ...periodo, periodo: { desde: f.desde ?? null, hasta: f.hasta ?? null }, acumulado };
+  }
   obtenerCamara(id: string, actor: ActorCosechas) { return this.exigir(this.almacen.obtenerCamara(id, actor), 'Cámara', id); }
   obtenerMovimiento(id: string, actor: ActorCosechas) { return this.exigir(this.almacen.obtenerMovimiento(id, actor), 'Movimiento de almacenamiento', id); }
   obtenerDestino(id: string, actor: ActorCosechas) { return this.exigir(this.destinos.obtenerDestino(id, actor), 'Destino de producción', id); }

@@ -9,6 +9,8 @@ export interface DatosEjecucionProgramada {
   superficieTrabajadaHa: number;
   duracionHoras?: number | null;
   descripcionTrabajo?: string | null;
+  /** CU33: monitoreo del mismo ciclo al que responde la labor. */
+  monitoreoId?: string | null;
   datosEspecificos?: Record<string, unknown>;
 }
 
@@ -38,6 +40,7 @@ export interface ActividadRealizadaProps {
   superficieTrabajadaHa: number;
   duracionHoras: number | null;
   descripcionTrabajo: string | null;
+  monitoreoId?: string | null;
   datosEspecificos: Record<string, unknown>;
 }
 
@@ -91,6 +94,7 @@ export class ActividadRealizada {
       tipoActividadId, responsableId: datos.responsableId,
       fechaEjecucion: datos.fechaEjecucion, superficieTrabajadaHa: datos.superficieTrabajadaHa,
       duracionHoras: datos.duracionHoras ?? null, descripcionTrabajo: datos.descripcionTrabajo?.trim() ?? null,
+      monitoreoId: datos.monitoreoId ?? null,
       datosEspecificos: structuredClone(datos.datosEspecificos ?? {}),
     });
   }

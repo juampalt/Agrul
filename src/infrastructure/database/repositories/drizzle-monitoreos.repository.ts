@@ -1,7 +1,10 @@
-import { and, desc, eq, gte, isNotNull, isNull, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte } from 'drizzle-orm';
 import { ContextoMonitoreo, Monitoreo } from '../../../core/domain/entities/monitoreo.entity.js';
 import { EntidadNoEncontradaError } from '../../../core/domain/errors/domain.error.js';
-import { FiltrosMonitoreos, MonitoreosRepositoryPort } from '../../../core/ports/monitoreos-repository.port.js';
+import { actividadesRealizadasTable as realizadas } from '../schema/actividades-realizadas.js';
+import { aplicacionesInsumoTable as aplicaciones } from '../schema/insumos.js';
+import { tiposActividadTable as tipos } from '../schema/tipos-actividad.js';
+import { FiltrosMonitoreos, MonitoreosRepositoryPort, VinculadosMonitoreo } from '../../../core/ports/monitoreos-repository.port.js';
 import { AgrulDatabase } from '../connection.js';
 import { monitoreosTable as monitoreos } from '../schema/monitoreos.js';
 import { ciclosProductivosTable as ciclos } from '../schema/ciclos-productivos.js';
@@ -27,6 +30,21 @@ export class DrizzleMonitoreosRepository implements MonitoreosRepositoryPort {
       await tx.insert(monitoreos).values(monitoreo.toJSON());
       return monitoreo;
     });
+  }
+
+  async vinculados(id: string): Promise<VinculadosMonitoreo> {
+    const labores = await this.db.select({ id: realizadas.id, fechaEjecucion: realizadas.fechaEjecucion, tipoActividadId: realizadas.tipoActividadId,
+      tipoActividad: tipos.nombre, responsableId: realizadas.responsableId, superficie: realizadas.superficieTrabajadaHa })
+      .from(realizadas).innerJoin(tipos, eq(realizadas.tipoActividadId, tipos.id))
+      .where(eq(realizadas.monitoreoId, id)).orderBy(asc(realizadas.fechaEjecucion), asc(realizadas.id));
+    const ids = labores.map(l => l.id);
+    const apps = ids.length ? await this.db.select({ id: aplicaciones.id, actividadRealizadaId: aplicaciones.actividadRealizadaId,
+      superficie: aplicaciones.superficieTratada, metodoAplicacion: aplicaciones.metodoAplicacion, motivoAplicacion: aplicaciones.motivoAplicacion })
+      .from(aplicaciones).where(inArray(aplicaciones.actividadRealizadaId, ids)).orderBy(asc(aplicaciones.id)) : [];
+    return {
+      actividadesRealizadas: labores.map(({ superficie, ...l }) => ({ ...l, superficieTrabajadaHa: Number(superficie) })),
+      aplicacionesInsumos: apps.map(({ superficie, ...a }) => ({ ...a, superficieTratada: Number(superficie) })),
+    };
   }
 
   async buscarPorId(id: string) {

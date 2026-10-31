@@ -76,8 +76,8 @@ describe.skipIf(!url)('AGRUL-056: cadena completa y compatibilidad histórica', 
       }
     } finally { await base?.cerrar(); }
   });
-  it('ejecuta las 37 migraciones desde un esquema vacío y no cambia hechos anteriores', async () => {
-    expect(aplicadas).toBe(37);
+  it('ejecuta las 38 migraciones desde un esquema vacío y no cambia hechos anteriores', async () => {
+    expect(aplicadas).toBe(38);
     expect(await snapshot()).toEqual(historico);
     expect((await nueva!.pool.query('select count(*)::int as n from cosechas_programadas')).rows[0].n).toBe(0);
   });

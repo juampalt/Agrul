@@ -46,14 +46,27 @@ describe.skipIf(!url)('AGRUL-055 CU34–CU37: PostgreSQL y bootstrap real', () =
     const original = f.datos('CU36-NUEVO'); const id = await f.crear(original);
     const datos = { ...original, nombre: 'Nuevo nombre', categoria: 'OTRO' as const, unidadMedida: 'L', nivelMinimo: 0 };
     const res = await modificar(id, datos);
-    expect(res.statusCode).toBe(200); expect((await consultar(id)).json().data).toEqual({ ...datos, id, estado: 'ACTIVO' });
+    expect(res.statusCode).toBe(200); expect((await consultar(id)).json().data).toMatchObject({ ...datos, id, estado: 'ACTIVO', habilitadoParaNuevasAplicaciones: true, antecedentes: [] });
+  });
+  it('CU35 presenta los antecedentes de utilización y si está habilitado para nuevas aplicaciones', async () => {
+    const vacio = await f.crear();
+    expect((await consultar(vacio)).json().data).toMatchObject({ habilitadoParaNuevasAplicaciones: true, antecedentes: [],
+      mensajeAntecedentes: 'No se encontraron aplicaciones registradas para el insumo.' });
+    const id = await f.crear(); await f.aplicar(id);
+    const detalle = (await consultar(id)).json().data;
+    expect(detalle.antecedentes).toHaveLength(1);
+    expect(detalle.antecedentes[0]).toMatchObject({ fechaAplicacion: '2026-10-15', cantidadUtilizada: 1, unidadMedida: 'kg' });
+    expect(Object.keys(detalle.antecedentes[0])).toEqual(expect.arrayContaining(['loteId', 'codigoLote', 'cultivo', 'ciclo', 'actividadRealizadaId']));
+    await f.app.inject({ method: 'PATCH', url: `/api/v1/insumos/${id}/desactivar`, headers: f.admin });
+    expect((await consultar(id)).json().data).toMatchObject({ habilitadoParaNuevasAplicaciones: false });
+    expect((await consultar(id)).json().data.antecedentes).toHaveLength(1);
   });
   it('CU36 RN-15 rechaza cambiar unidad tras aplicación y revierte todos los campos', async () => {
     const id = await f.crear(); await f.aplicar(id);
-    const antes = (await consultar(id)).json().data;
+    const { habilitadoParaNuevasAplicaciones: _h, antecedentes: _a, mensajeAntecedentes: _m, ...antes } = (await consultar(id)).json().data;
     const res = await modificar(id, { ...antes, id: undefined, estado: undefined, unidadMedida: 'L' });
     expect(res.statusCode).toBe(422); expect(res.json().error.code).toBe('UNIDAD_INSUMO_INMUTABLE');
-    expect((await consultar(id)).json().data).toEqual(antes);
+    expect((await consultar(id)).json().data).toMatchObject(antes);
     expect((await modificar(id, { ...antes, id: undefined, estado: undefined, nombre: 'Nombre corregido' })).statusCode).toBe(200);
   });
   it('CU36 RN-15 también rechaza SQL directo y conserva las referencias históricas', async () => {
