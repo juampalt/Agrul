@@ -15,6 +15,7 @@ export const EjecutarProgramadaSchema = z.object({
   superficieTrabajadaHa: z.number().finite().positive().max(999999.99),
   duracionHoras: z.number().finite().positive().max(999.99).nullable().optional(),
   descripcionTrabajo: z.string().trim().min(1, 'La descripción del trabajo realizado es obligatoria.'),
+  monitoreoId: z.string().uuid().nullable().optional(),
   datosEspecificos: z.record(z.unknown()).optional(),
 }).strict();
 

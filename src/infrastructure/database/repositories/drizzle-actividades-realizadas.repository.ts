@@ -6,6 +6,7 @@ import { ActividadesRealizadasGestionPort, FiltrosActividadesRealizadas } from '
 import { AgrulDatabase, AgrulTransaction } from '../connection.js';
 import { actividadesProgramadasTable as programadas } from '../schema/actividades-programadas.js';
 import { actividadesRealizadasTable as realizadas } from '../schema/actividades-realizadas.js';
+import { monitoreosTable } from '../schema/monitoreos.js';
 import { ciclosProductivosTable as ciclos } from '../schema/ciclos-productivos.js';
 import { plantacionesTable as plantaciones } from '../schema/plantaciones.js';
 import { usuariosTable } from '../schema/tables.js';
@@ -76,6 +77,12 @@ export class DrizzleActividadesRealizadasRepository implements ActividadesRealiz
 
   private async insertar(tx: AgrulTransaction, actividad: ActividadRealizada) {
     const dto = actividad.toJSON();
+    if (dto.monitoreoId) {
+      const [monitoreo] = await tx.select({ cicloId: monitoreosTable.cicloId }).from(monitoreosTable)
+        .where(eq(monitoreosTable.id, dto.monitoreoId)).for('share');
+      if (!monitoreo) throw new EntidadNoEncontradaError('Monitoreo', dto.monitoreoId);
+      if (monitoreo.cicloId !== dto.cicloId) throw new EjecucionActividadInvalidaError('El monitoreo vinculado debe pertenecer al mismo ciclo productivo.');
+    }
     await tx.insert(realizadas).values({ ...dto, superficieTrabajadaHa: dto.superficieTrabajadaHa.toFixed(2),
       duracionHoras: dto.duracionHoras === null ? null : dto.duracionHoras.toFixed(2) });
   }
