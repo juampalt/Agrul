@@ -3,6 +3,7 @@ import { CicloProductivoInvalidoError } from '../../../core/domain/value-objects
 import { Plantacion } from '../../../core/domain/entities/plantacion.entity.js';
 import { EntidadNoEncontradaError } from '../../../core/domain/errors/domain.error.js';
 import { FiltrosPlantaciones, PlantacionesRepositoryPort } from '../../../core/ports/plantaciones-repository.port.js';
+import { alcanceFincasPorLote } from '../alcance-fincas-agricolas.js';
 import { AgrulDatabase } from '../connection.js';
 import { ciclosProductivosTable, cultivosTable, lotesTable, plantacionesTable, variedadesTable } from '../schema/tables.js';
 
@@ -59,6 +60,8 @@ export class DrizzlePlantacionesRepository implements PlantacionesRepositoryPort
     if (filtros.cultivoId) condiciones.push(eq(plantacionesTable.cultivoId, filtros.cultivoId));
     if (filtros.variedadId) condiciones.push(eq(plantacionesTable.variedadId, filtros.variedadId));
     if (filtros.estado) condiciones.push(eq(plantacionesTable.estado, filtros.estado));
+    const alcance = alcanceFincasPorLote(this.db, plantacionesTable.loteId, filtros.fincaIds);
+    if (alcance) condiciones.push(alcance);
     return (await this.db.select().from(plantacionesTable).where(and(...condiciones))
       .orderBy(asc(plantacionesTable.fechaPlantacion), asc(plantacionesTable.id))
       .limit(filtros.limit).offset(filtros.offset)).map((fila) => this.mapear(fila));

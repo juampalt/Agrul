@@ -13,51 +13,94 @@
 </head>
 <body>
   <div class="app-container">
-    <!-- Barra Superior / Header -->
-    <header class="app-header">
+    <div id="menu-overlay" class="menu-overlay" hidden></div>
+    <!-- Menú lateral: cada acción abre su propia vista o ventana -->
+    <aside id="menu-lateral" class="app-sidebar" aria-label="Navegación principal">
+      <div class="side-brand">
       <div class="brand">
-        <div class="brand-icon">🌱</div>
-        <div class="brand-info">
-          <h1>Agrul <span>TraceEngine</span></h1>
-          <p class="tagline">Trazabilidad Agroindustrial de Precisión</p>
+          <div class="brand-icon">🌱</div>
+          <div class="brand-info">
+            <h1>Agrul <span>TraceEngine</span></h1>
+            <p class="tagline">Trazabilidad Agroindustrial de Precisión</p>
+          </div>
         </div>
       </div>
+      <nav class="side-nav">
+        <p class="side-title">Vistas</p>
+        <button class="nav-item" data-roles="ADMIN_SISTEMA" data-nav="inicio" data-titulo="Inicio" data-subtitulo="Accesos del administrador del sistema" type="button"><span class="btn-icon">🏠</span> Inicio</button>
+        <button class="nav-item active" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="lotes" data-titulo="Trazabilidad de lotes" data-subtitulo="Inventario de lotes, estados y stock" type="button"><span class="btn-icon">🌾</span> Trazabilidad de lotes</button>
+        <button id="btn-toggle-dashboard" class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="tablero" data-titulo="Tablero ejecutivo" data-subtitulo="Resumen operativo: producción, stock, labores y costos" type="button" title="Tablero Ejecutivo de Inicio con Resumen Operativo y Gráficos"><span class="btn-icon">📈</span> Tablero ejecutivo</button>
+
+        <p class="side-title">Finca y catálogos</p>
+        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="finca" data-titulo="Finca" data-subtitulo="Datos generales de la finca" type="button"><span class="btn-icon">🏡</span> Finca</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="lotes-territorio" data-titulo="Lotes de la finca" data-subtitulo="Alta, modificación y baja de lotes" type="button"><span class="btn-icon">🗺️</span> Lotes de la finca</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="cultivos" data-titulo="Cultivos" data-subtitulo="Catálogo de cultivos" type="button"><span class="btn-icon">🌱</span> Cultivos</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="variedades" data-titulo="Variedades" data-subtitulo="Variedades de cada cultivo" type="button"><span class="btn-icon">🧬</span> Variedades</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="tipos-actividad" data-titulo="Tipos de actividad" data-subtitulo="Labores que se pueden programar" type="button"><span class="btn-icon">🛠️</span> Tipos de actividad</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="insumos" data-titulo="Insumos" data-subtitulo="Catálogo de insumos y sus antecedentes de uso" type="button"><span class="btn-icon">🧪</span> Insumos</button>
+
+        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="plantaciones" data-titulo="Plantaciones" data-subtitulo="Cultivo y variedad plantados en cada lote" type="button"><span class="btn-icon">🌿</span> Plantaciones</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="ciclos" data-titulo="Ciclos productivos" data-subtitulo="Planificación, inicio y cierre de ciclos" type="button"><span class="btn-icon">🔄</span> Ciclos productivos</button>
+
+        <p class="side-title">Planificación y campo</p>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="actividades-programadas" data-titulo="Actividades programadas" data-subtitulo="Labores planificadas para cada ciclo" type="button"><span class="btn-icon">📅</span> Actividades programadas</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="actividades-realizadas" data-titulo="Actividades realizadas" data-subtitulo="Labores ejecutadas" type="button"><span class="btn-icon">✅</span> Actividades realizadas</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="monitoreos" data-titulo="Monitoreos" data-subtitulo="Inspecciones de cultivo" type="button"><span class="btn-icon">🔎</span> Monitoreos</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="aplicaciones-insumos" data-titulo="Aplicaciones de insumos" data-subtitulo="Insumos aplicados y su corrección" type="button"><span class="btn-icon">💧</span> Aplicaciones de insumos</button>
+
+        <p class="side-title">Inventario</p>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="inventario-existencias" data-titulo="Existencias" data-subtitulo="Stock de insumos y alertas" type="button"><span class="btn-icon">📦</span> Existencias</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="inventario-movimientos" data-titulo="Movimientos" data-subtitulo="Ingresos, egresos y ajustes de insumos" type="button"><span class="btn-icon">↔️</span> Movimientos</button>
+
+        <p class="side-title">Cosecha y poscosecha</p>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="cosechas-programadas" data-titulo="Cosechas programadas" data-subtitulo="Jornadas de cosecha previstas" type="button"><span class="btn-icon">🗓️</span> Cosechas programadas</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="cosechas" data-titulo="Cosechas realizadas" data-subtitulo="Pesajes reales por pasada" type="button"><span class="btn-icon">🧺</span> Cosechas realizadas</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="clasificaciones" data-titulo="Clasificación y pérdidas" data-subtitulo="Fresco, industria y descarte" type="button"><span class="btn-icon">⚖️</span> Clasificación y pérdidas</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="acondicionamientos" data-titulo="Acondicionamiento" data-subtitulo="Preparación y envasado" type="button"><span class="btn-icon">📥</span> Acondicionamiento</button>
+
+        <p class="side-title">Almacenamiento y destinos</p>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="camaras" data-titulo="Cámaras" data-subtitulo="Cámaras y sectores de conservación" type="button"><span class="btn-icon">❄️</span> Cámaras</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="almacenamiento-movimientos" data-titulo="Movimientos de cámara" data-subtitulo="Ingresos y salidas de producción" type="button"><span class="btn-icon">🔁</span> Movimientos de cámara</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="almacenamiento-saldos" data-titulo="Saldos en cámara" data-subtitulo="Kg almacenados hoy" type="button"><span class="btn-icon">📊</span> Saldos en cámara</button>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="destinos" data-titulo="Destinos" data-subtitulo="Destino de la producción" type="button"><span class="btn-icon">🚚</span> Destinos</button>
+
+        <p class="side-title">Atajos</p>
+        <button id="btn-nuevo-lote" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" class="nav-item nav-primary" type="button"><span class="btn-icon">+</span> Nuevo lote</button>
+        <button id="btn-cosecha-rapida" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" class="nav-item" type="button" title="Cosecha ultrarrápida para operarios de campo"><span class="btn-icon">⚡</span> Cosecha rápida</button>
+        <button id="btn-abrir-escaner" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" class="nav-item" type="button"><span class="btn-icon">📷</span> Escanear QR</button>
+
+        <p class="side-title">Análisis</p>
+        <button id="btn-indicadores-produccion" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" class="nav-item" type="button" title="Métricas de Producción, Rendimiento por Hectárea y Descarte"><span class="btn-icon">📊</span> Rendimientos</button>
+        <button id="btn-recall-insumo" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" class="nav-item" type="button" title="Consulta Inversa de Trazabilidad para Retiro Preventivo de Insumos (Recall)"><span class="btn-icon">🚨</span> Recall de insumos</button>
+
+        <p class="side-title">Administración</p>
+        <button id="btn-usuarios-roles" data-roles="ADMIN_SISTEMA" class="nav-item" type="button" title="Gestión de Usuarios, Autenticación y Control de Acceso por Finca"><span class="btn-icon">🔐</span> Usuarios y roles</button>
+        <button id="btn-bitacora-auditoria" data-roles="ADMIN_SISTEMA ADMINISTRADOR" class="nav-item" type="button" title="Bitácora Centralizada de Auditoría y Seguridad de Sesión"><span class="btn-icon">📜</span> Auditoría y sesión</button>
+      </nav>
+      <div id="side-usuario" class="side-usuario"></div>
+    </aside>
+
+    <!-- Barra Superior / Header -->
+    <header class="app-header">
+      <button id="btn-menu" class="menu-toggle" type="button" aria-label="Mostrar u ocultar el menú" aria-controls="menu-lateral" aria-expanded="true">
+        <span class="menu-toggle-barras" aria-hidden="true"></span>
+      </button>
+      <div class="topbar-title">
+        <h2 id="vista-titulo">Lotes</h2>
+        <p id="vista-subtitulo">Inventario de lotes, estados y stock</p>
+      </div>
       <div class="header-actions">
-        <div id="connection-badge" class="connection-badge" title="Estado de conectividad y modo offline de campo (RNF-02)">
+        <div id="connection-badge" class="connection-badge" title="Estado de conectividad y modo offline de campo">
           <span id="connection-status-dot" class="status-dot"></span> <span id="connection-status-text">API v1 Online</span>
         </div>
-        <button id="btn-forzar-sync" class="btn btn-sync-header" style="display: none;" title="Sincronizar inmediatamente operaciones pendientes capturadas en campo (RNF-02)">
+        <button id="btn-forzar-sync" class="btn btn-sync-header" style="display: none;" title="Sincronizar inmediatamente operaciones pendientes capturadas en campo">
           <span class="btn-icon">🔄</span> Sincronizar (<span id="count-sync-pendientes">0</span>)
-        </button>
-        <button id="btn-toggle-dashboard" class="btn btn-tablero-header" title="Tablero Ejecutivo de Inicio con Resumen Operativo y Gráficos (AGRUL-037)">
-          <span class="btn-icon">📈</span> Tablero Ejecutivo
-        </button>
-        <button id="btn-cosecha-rapida" class="btn btn-warning-mobile" title="Cosecha ultrarrápida para operarios de campo (RF-M5-13)">
-          <span class="btn-icon">⚡</span> Cosecha Rápida (Campo)
-        </button>
-        <button id="btn-recall-insumo" class="btn btn-recall-header" title="Consulta Inversa de Trazabilidad para Retiro Preventivo de Insumos (Recall - RF-M6-12)">
-          <span class="btn-icon">🚨</span> Recall Insumos
-        </button>
-        <button id="btn-indicadores-produccion" class="btn btn-indicators-header" title="Métricas de Producción, Rendimiento por Hectárea y Descarte (AGRUL-035)">
-          <span class="btn-icon">📊</span> Rendimientos
-        </button>
-        <button id="btn-usuarios-roles" class="btn btn-users-header" title="Gestión de Usuarios, Autenticación y Control de Acceso por Finca (AGRUL-038)">
-          <span class="btn-icon">🔐</span> Usuarios &amp; Roles
-        </button>
-        <button id="btn-bitacora-auditoria" class="btn btn-audit-header" title="Bitácora Centralizada de Auditoría y Seguridad de Sesión (AGRUL-040)">
-          <span class="btn-icon">📜</span> Auditoría &amp; Sesión
-        </button>
-        <button id="btn-abrir-escaner" class="btn btn-secondary">
-          <span class="btn-icon">📷</span> Escanear QR
-        </button>
-        <button id="btn-nuevo-lote" class="btn btn-primary">
-          <span class="btn-icon">+</span> Nuevo Lote
         </button>
       </div>
     </header>
 
     <!-- TABLERO EJECUTIVO DE INICIO (AGRUL-037 / RF-M7-12 / RF-M7-13 / RF-M7-14) -->
-    <section id="dashboard-ejecutivo" class="dashboard-ejecutivo glass">
+    <section id="dashboard-ejecutivo" class="dashboard-ejecutivo glass" data-view="tablero">
       <!-- Barra Superior del Tablero -->
       <div class="dash-header">
         <div class="dash-title-group">
@@ -68,10 +111,10 @@
           </div>
         </div>
         <div class="dash-header-actions">
-          <button id="btn-dash-exportar-csv" class="btn btn-secondary btn-sm" title="Exportar resumen del tablero a archivo CSV (RF-M7-13)">
+          <button id="btn-dash-exportar-csv" class="btn btn-secondary btn-sm" title="Exportar resumen del tablero a archivo CSV">
             <span class="btn-icon">📄</span> Exportar CSV
           </button>
-          <button id="btn-dash-exportar-pdf" class="btn btn-secondary btn-sm" title="Exportar reporte ejecutivo a PDF o imprimir (RF-M7-13)">
+          <button id="btn-dash-exportar-pdf" class="btn btn-secondary btn-sm" title="Exportar reporte ejecutivo a PDF o imprimir">
             <span class="btn-icon">🖨️</span> Exportar PDF / Imprimir
           </button>
           <button id="btn-dash-refrescar" class="btn btn-primary btn-sm" title="Actualizar datos del tablero">
@@ -112,7 +155,7 @@
         <div class="dash-kpi-card glass emerald" id="card-kpi-lotes">
           <div class="dash-kpi-card-header">
             <div class="dash-kpi-icon">🌾</div>
-            <span class="dash-kpi-tag">RF-M7-12.1</span>
+            
           </div>
           <span class="dash-kpi-label">Lotes en Producción</span>
           <div class="dash-kpi-val" id="dash-kpi-lotes-prod-val">0</div>
@@ -128,7 +171,7 @@
         <div class="dash-kpi-card glass blue" id="card-kpi-produccion">
           <div class="dash-kpi-card-header">
             <div class="dash-kpi-icon">⚖️</div>
-            <span class="dash-kpi-tag">RF-M7-12.2</span>
+            
           </div>
           <span class="dash-kpi-label">Producción Acumulada</span>
           <div class="dash-kpi-val" id="dash-kpi-kilos-totales">0 kg</div>
@@ -144,7 +187,7 @@
         <div class="dash-kpi-card glass amber" id="card-kpi-stock">
           <div class="dash-kpi-card-header">
             <div class="dash-kpi-icon">🚨</div>
-            <span class="dash-kpi-tag">RF-M7-12.3</span>
+            
           </div>
           <span class="dash-kpi-label">Alertas de Stock</span>
           <div class="dash-kpi-val" id="dash-kpi-alertas-total">0</div>
@@ -160,7 +203,7 @@
         <div class="dash-kpi-card glass purple" id="card-kpi-actividades">
           <div class="dash-kpi-card-header">
             <div class="dash-kpi-icon">📅</div>
-            <span class="dash-kpi-tag">RF-M7-12.4</span>
+            
           </div>
           <span class="dash-kpi-label">Labores Urgentes</span>
           <div class="dash-kpi-val" id="dash-kpi-act-vencidas">0</div>
@@ -271,7 +314,7 @@
         <div class="dash-subpanel glass" id="subpanel-costos-lote">
           <div class="dash-subpanel-header">
             <div>
-              <h4>💰 Estructura de Costos Operativos por Lote (RF-M7-14)</h4>
+              <h4>💰 Estructura de Costos Operativos por Lote</h4>
               <p class="dash-subpanel-sub">Cómputo analítico: Insumos aplicados + Mano de obra (jornales) + Maquinaria (horas tractor)</p>
             </div>
             <button type="button" id="btn-toggle-tabla-costos" class="btn btn-secondary btn-sm">Ocultar / Mostrar</button>
@@ -307,7 +350,7 @@
     </section>
 
     <!-- Contadores / KPIs de Producción -->
-    <section class="kpi-grid">
+    <section class="kpi-grid" data-view="lotes">
       <div class="kpi-card glass">
         <div class="kpi-icon-wrap emerald">🌾</div>
         <div class="kpi-data">
@@ -342,8 +385,32 @@
       </div>
     </section>
 
+    <section id="vista-inicio" class="pantalla" data-view="inicio"></section>
+    <section id="vista-finca" class="pantalla" data-view="finca"></section>
+    <section id="vista-lotes-territorio" class="pantalla" data-view="lotes-territorio"></section>
+    <section id="vista-cultivos" class="pantalla" data-view="cultivos"></section>
+    <section id="vista-variedades" class="pantalla" data-view="variedades"></section>
+    <section id="vista-tipos-actividad" class="pantalla" data-view="tipos-actividad"></section>
+    <section id="vista-insumos" class="pantalla" data-view="insumos"></section>
+    <section id="vista-plantaciones" class="pantalla" data-view="plantaciones"></section>
+    <section id="vista-ciclos" class="pantalla" data-view="ciclos"></section>
+    <section id="vista-actividades-programadas" class="pantalla" data-view="actividades-programadas"></section>
+    <section id="vista-actividades-realizadas" class="pantalla" data-view="actividades-realizadas"></section>
+    <section id="vista-monitoreos" class="pantalla" data-view="monitoreos"></section>
+    <section id="vista-aplicaciones-insumos" class="pantalla" data-view="aplicaciones-insumos"></section>
+    <section id="vista-inventario-existencias" class="pantalla" data-view="inventario-existencias"></section>
+    <section id="vista-inventario-movimientos" class="pantalla" data-view="inventario-movimientos"></section>
+    <section id="vista-cosechas-programadas" class="pantalla" data-view="cosechas-programadas"></section>
+    <section id="vista-cosechas" class="pantalla" data-view="cosechas"></section>
+    <section id="vista-clasificaciones" class="pantalla" data-view="clasificaciones"></section>
+    <section id="vista-acondicionamientos" class="pantalla" data-view="acondicionamientos"></section>
+    <section id="vista-camaras" class="pantalla" data-view="camaras"></section>
+    <section id="vista-almacenamiento-movimientos" class="pantalla" data-view="almacenamiento-movimientos"></section>
+    <section id="vista-almacenamiento-saldos" class="pantalla" data-view="almacenamiento-saldos"></section>
+    <section id="vista-destinos" class="pantalla" data-view="destinos"></section>
+
     <!-- Barra de Controles y Filtros -->
-    <section class="table-controls glass">
+    <section class="table-controls glass" data-view="lotes">
       <div class="search-box">
         <span class="search-icon">🔍</span>
         <input type="text" id="input-busqueda" placeholder="Buscar por código de lote, producto o variedad..." aria-label="Buscar lote">
@@ -372,7 +439,7 @@
     </section>
 
     <!-- Tabla Operativa de Lotes -->
-    <main class="table-container glass">
+    <main class="table-container glass" data-view="lotes">
       <table class="lotes-table" id="tabla-lotes">
         <thead>
           <tr>
@@ -566,7 +633,7 @@
             <span class="informe-lote-tag" id="informe-lote-codigo-display">-</span>
           </div>
           <p class="informe-desc">
-            Genere informes certificados descargables en formato PDF (&lt;10s) con membrete estructurado, hash SHA-256 e historial de rectificaciones/anulaciones según RN-06. O exporte la matriz de trazabilidad en CSV/Excel compatible con UTF-8 BOM y unidades de medida explícitas.
+            Genere informes certificados descargables en formato PDF (&lt;10s) con membrete estructurado, hash SHA-256 e historial de rectificaciones/anulaciones. O exporte la matriz de trazabilidad en CSV/Excel compatible con UTF-8 BOM y unidades de medida explícitas.
           </p>
         </div>
 
@@ -590,7 +657,7 @@
             <div class="privacy-box-header">
               <span class="privacy-icon">🛡️</span>
               <div>
-                <strong>Filtros de Privacidad y Cumplimiento (RF-M6-11 / RNF-14)</strong>
+                <strong>Filtros de Privacidad y Cumplimiento</strong>
                 <p class="text-dim" style="font-size: 12px;">Por defecto se excluyen costos financieros y teléfonos de operarios del informe público.</p>
               </div>
             </div>
@@ -774,7 +841,7 @@
       <div class="modal-header">
         <div>
           <h2>Etiqueta Oficial de Trazabilidad</h2>
-          <p class="subtitle" id="qr-label-subtitle">Rótulo estandarizado para bines y pallets de campo (RN-07)</p>
+          <p class="subtitle" id="qr-label-subtitle">Rótulo estandarizado para bines y pallets de campo</p>
         </div>
         <button class="close-btn" data-close="modal-qr-label">&times;</button>
       </div>
@@ -982,7 +1049,7 @@
         <div class="header-title-wrap">
           <div class="tag-mobile-ultra">⚡ MODO CAMPO &bull; &lt; 15 SEGUNDOS</div>
           <h2>Cosecha Rápida en Smartphone</h2>
-          <p class="subtitle">Solo 4 campos obligatorios &bull; Botones táctiles &gt; 48px y alto contraste (RNF-15)</p>
+          <p class="subtitle">Solo 4 campos obligatorios &bull; Botones táctiles &gt; 48px y alto contraste</p>
         </div>
         <div class="header-right-tools">
           <button type="button" id="btn-toggle-contraste-solar" class="btn-contrast-solar" title="Alternar modo de alto contraste para sol directo">
@@ -1138,7 +1205,7 @@
       <div class="modal-header">
         <div>
           <div class="modal-title-with-badge">
-            <h2>Consulta Inversa & Retiro Preventivo (Recall) <span class="badge-recall-tag">RF-M6-12</span></h2>
+            <h2>Consulta Inversa & Retiro Preventivo (Recall)</h2>
           </div>
           <p class="subtitle">Rastreo multidimensional aguas abajo (Insumo ➔ Lotes & Linaje ➔ Cosechas ➔ Despachos ➔ Clientes)</p>
         </div>
@@ -1341,7 +1408,7 @@
           <div class="modal-icon-badge ind-badge">📊</div>
           <div>
             <h2 id="modal-ind-titulo">Métricas de Producción y Rendimientos</h2>
-            <p class="modal-subtitle">Rendimiento por Hectárea (Bruto/Neto), Descarte (RN-09), Labores y Prendimiento (Módulo 7)</p>
+            <p class="modal-subtitle">Rendimiento por Hectárea (Bruto/Neto), Descarte, Labores y Prendimiento (Módulo 7)</p>
           </div>
         </div>
         <button class="modal-close" data-close="modal-indicadores-produccion" aria-label="Cerrar modal">&times;</button>
@@ -1416,7 +1483,7 @@
             <div class="ind-kpi-content">
               <span class="ind-kpi-label">Porcentaje de Descarte</span>
               <span class="ind-kpi-value" id="ind-kpi-descarte">0 %</span>
-              <span class="ind-kpi-subtext" id="ind-kpi-descarte-sub">Descarte s/ total cosechado (RN-09)</span>
+              <span class="ind-kpi-subtext" id="ind-kpi-descarte-sub">Descarte s/ total cosechado</span>
             </div>
           </div>
           <div class="ind-kpi-card glass purple">
@@ -1424,7 +1491,7 @@
             <div class="ind-kpi-content">
               <span class="ind-kpi-label">Supervivencia / Prendimiento</span>
               <span class="ind-kpi-value" id="ind-kpi-prendimiento">0 %</span>
-              <span class="ind-kpi-subtext" id="ind-kpi-prendimiento-sub">Plantas vivas / plantadas (RF-M7-09)</span>
+              <span class="ind-kpi-subtext" id="ind-kpi-prendimiento-sub">Plantas vivas / plantadas</span>
             </div>
           </div>
         </div>
@@ -1745,7 +1812,7 @@
               <input type="password" id="login-password" class="form-input form-input-sm" placeholder="Contraseña" style="max-width: 160px;">
               <button id="btn-ejecutar-login" class="btn btn-sm btn-primary">Ingresar</button>
             </div>
-            <p class="login-help-text">Seguridad RNF-04: Contraseñas con salting y hash PBKDF2-SHA512. Se bloquea tras 5 intentos fallidos.</p>
+            <p class="login-help-text">Las contraseñas se guardan cifradas. La cuenta se bloquea tras 5 intentos fallidos.</p>
           </div>
         </div>
 
@@ -1753,7 +1820,7 @@
         <div class="comp-tabs-bar" style="margin-top: 14px;">
           <button class="comp-tab active" data-usrtab="tab-lista-usuarios">👥 Usuarios Registrados</button>
           <button class="comp-tab" data-usrtab="tab-alta-usuario">➕ Alta de Usuario</button>
-          <button class="comp-tab" data-usrtab="tab-verificar-finca">🛡️ Verificador de Acceso a Finca (RN-16)</button>
+          <button class="comp-tab" data-usrtab="tab-verificar-finca">🛡️ Verificador de Acceso a Finca</button>
         </div>
 
         <!-- Pestaña 1: Lista de Usuarios -->
@@ -1883,7 +1950,7 @@
             </div>
 
             <div class="form-group" style="margin-top: 12px;">
-              <label class="form-label">Asignación de Fincas Autorizadas (RF-M8-02 / RN-16)</label>
+              <label class="form-label">Asignación de Fincas Autorizadas</label>
               <div id="usr-alta-fincas-container" class="fincas-checkbox-grid" style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px;">
                 <!-- Dinámicamente poblado con las fincas registradas -->
               </div>
@@ -1898,7 +1965,7 @@
         <!-- Pestaña 3: Verificador de Acceso a Finca (RF-M8-05 / RN-16) -->
         <div id="tab-verificar-finca" class="usr-tab-content" style="display: none;">
           <div class="glass" style="padding: 16px; border-radius: 8px; margin-top: 12px;">
-            <h4>Prueba de Aislamiento Multi-Finca (RN-16 / RF-M8-05)</h4>
+            <h4>Prueba de Aislamiento Multi-Finca</h4>
             <p class="dash-subtitle" style="margin-bottom: 14px;">
               Verifica si un usuario particular posee autorización legal para operar sobre una finca específica. Los Administradores acceden a todas; otros roles solo a las asignadas.
             </p>
@@ -1934,7 +2001,7 @@
           <span style="font-size: 1.5rem;">📜</span>
           <div>
             <h3 id="modal-auditoria-title" style="margin: 0;">Bitácora Centralizada de Auditoría y Seguridad</h3>
-            <p class="dash-subtitle" style="margin: 0; font-size: 12px;">Registro inmutable append-only con deltas de cambio (RN-06), expiración por inactividad (RF-M8-09) y cambio obligatorio de password</p>
+            <p class="dash-subtitle" style="margin: 0; font-size: 12px;">Registro inmutable de cambios, expiración por inactividad y cambio obligatorio de contraseña</p>
           </div>
         </div>
         <button type="button" class="modal-close" data-close="modal-auditoria-seguridad">&times;</button>
@@ -1943,8 +2010,8 @@
       <div class="modal-body">
         <!-- Pestañas de Navegación -->
         <div class="comp-tabs-nav" style="margin-bottom: 16px;">
-          <button class="comp-tab active" data-auditortab="tab-audit-logs">📜 Bitácora de Eventos (RN-06)</button>
-          <button class="comp-tab" data-auditortab="tab-audit-sesion">⏱️ Seguridad de Sesión (RF-M8-09)</button>
+          <button class="comp-tab active" data-auditortab="tab-audit-logs">📜 Bitácora de Eventos</button>
+          <button class="comp-tab" data-auditortab="tab-audit-sesion">⏱️ Seguridad de Sesión</button>
           <button class="comp-tab" data-auditortab="tab-audit-password">🔑 Cambio Obligatorio de Password</button>
         </div>
 
@@ -2010,7 +2077,7 @@
         <!-- Pestaña 2: Seguridad de Sesión y Timeout por Inactividad (RF-M8-09) -->
         <div id="tab-audit-sesion" class="auditor-tab-content" style="display: none;">
           <div class="glass" style="padding: 16px; border-radius: 8px;">
-            <h4>⏱️ Política de Expiración por Inactividad (RF-M8-09)</h4>
+            <h4>⏱️ Política de Expiración por Inactividad</h4>
             <p class="dash-subtitle" style="margin-bottom: 16px;">
               Agrul exige el cierre automático de sesión si el operario o administrador no registra actividad dentro del límite configurado, protegiendo terminales rurales o de empaque desatendidas.
             </p>
@@ -2054,7 +2121,7 @@
         <!-- Pestaña 3: Cambio Obligatorio de Password en Primer Ingreso -->
         <div id="tab-audit-password" class="auditor-tab-content" style="display: none;">
           <div class="glass" style="padding: 16px; border-radius: 8px;">
-            <h4>🔑 Política de Cambio Obligatorio de Contraseña (RF-M8-08 / RF-M8-09)</h4>
+            <h4>🔑 Política de Cambio Obligatorio de Contraseña</h4>
             <p class="dash-subtitle" style="margin-bottom: 14px;">
               Cuando un usuario es dado de alta por el Administrador con contraseña provisoria, la flag <code>debeCambiarPassword</code> se activa obligatoriamente. Cualquier petición operativa es bloqueada con <strong>403 PASSWORD_CAMBIO_OBLIGATORIO</strong> hasta que la actualice.
             </p>
@@ -2089,7 +2156,7 @@
     <div class="modal-backdrop" data-close="modal-delta-auditoria"></div>
     <div class="modal-content glass" style="max-width: 650px;">
       <div class="modal-header">
-        <h4 id="modal-delta-title" style="margin: 0;">🔍 Detalle de Cambio Auditado (Delta RN-06)</h4>
+        <h4 id="modal-delta-title" style="margin: 0;">🔍 Detalle de Cambio Auditado (Delta)</h4>
         <button type="button" class="modal-close" data-close="modal-delta-auditoria">&times;</button>
       </div>
       <div class="modal-body">
@@ -2113,7 +2180,11 @@
   <!-- Notificaciones Toast -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
+  <script src="/sesion.js"></script>
   <script src="/offline-manager.js"></script>
   <script src="/app.js"></script>
+  <script src="/vistas.js"></script>
+  <script src="/pantallas.js"></script>
+  <script src="/pantallas-operativas.js"></script>
 </body>
 </html>

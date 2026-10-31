@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const icono = document.createElement('span');
     icono.textContent = icon;
     const texto = document.createElement('span');
+    message = (window.AGRUL && window.AGRUL.sinCodigos) ? window.AGRUL.sinCodigos(message) : message;
     texto.textContent = message;
     toast.append(icono, document.createTextNode(' '), texto);
     toastContainer.appendChild(toast);
@@ -339,13 +340,13 @@ document.addEventListener('DOMContentLoaded', () => {
               <button class="btn-action action-qr" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Ver e imprimir etiqueta oficial con código QR">
                 🏷️ QR
               </button>
-              <button class="btn-action action-cartel" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Ver e imprimir Cartel de Cabecera de Lote (RF-M1-11)">
+              <button class="btn-action action-cartel" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Ver e imprimir Cartel de Cabecera de Lote">
                 📋 Cartel
               </button>
-              <button class="btn-action action-report" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Emitir informe oficial en PDF o exportar a Excel/CSV (AGRUL-033)">
+              <button class="btn-action action-report" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Emitir informe oficial en PDF o exportar a Excel/CSV">
                 📄 Informe
               </button>
-              <button class="btn-action action-harvest" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Cosecha ultrarrápida en campo (RF-M5-13)">
+              <button class="btn-action action-harvest" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Cosecha ultrarrápida en campo">
                 🌾 Cosechar
               </button>
             </div>
@@ -444,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function closeModal(modal) {
-    modal.classList.remove('open');
+    modal.classList.remove('open', 'active');
     modal.setAttribute('aria-hidden', 'true');
   }
 
@@ -1075,7 +1076,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const data = json.data;
-      qrLabelSubtitle.textContent = `Rótulo estandarizado para bines y pallets de campo (RN-07)`;
+      qrLabelSubtitle.textContent = `Rótulo estandarizado para bines y pallets de campo`;
       labelCodigoLote.textContent = data.codigoLote;
       labelProducto.textContent = data.producto;
       labelVariedad.textContent = data.variedad || 'Sin variedad';
@@ -1393,7 +1394,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (rapidaRecipienteTipo && borrador.recipienteTipo) rapidaRecipienteTipo.value = borrador.recipienteTipo;
       if (rapidaRecipienteCant && borrador.recipienteCant) rapidaRecipienteCant.value = borrador.recipienteCant;
       formCosechaRapida.dataset.claveIdempotencia = borrador.claveIdempotencia || (window.AgrulOffline ? window.AgrulOffline.generarClaveIdempotencia('cos') : '');
-      showToast('Borrador previo recuperado automáticamente (RNF-02)', 'info');
+      showToast('Borrador previo recuperado automáticamente', 'info');
     } else {
       // Fecha actual autocompletada por defecto (RN-01 / RF-M5-13)
       if (rapidaFecha) {
@@ -1587,7 +1588,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (comercialKg > totalKg) {
-        showToast('La cantidad comercializable no puede superar el total cosechado (RN-09).', 'error');
+        showToast('La cantidad comercializable no puede superar el total cosechado.', 'error');
         rapidaComercialKg?.focus();
         return;
       }
@@ -1629,7 +1630,7 @@ document.addEventListener('DOMContentLoaded', () => {
           tipoOperacion: 'COSECHA_RAPIDA',
         });
         window.AgrulOffline.limpiarBorrador('cosecha_rapida');
-        showToast(`📡 Modo Campo Offline: Cosecha preservada en dispositivo (${claveIdempotencia.slice(0, 16)}...). Se sincronizará automáticamente (RNF-02 / RN-11).`, 'info');
+        showToast(`📡 Modo Campo Offline: Cosecha preservada en dispositivo (${claveIdempotencia.slice(0, 16)}...). Se sincronizará automáticamente.`, 'info');
         closeModal(modalCosechaRapida);
         actualizarUIConectividad();
         return;
@@ -1674,7 +1675,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tipoOperacion: 'COSECHA_RAPIDA',
           });
           window.AgrulOffline.limpiarBorrador('cosecha_rapida');
-          showToast(`📡 Conexión interrumpida: Cosecha guardada en cola offline sin duplicar en base de datos (RNF-02 / RN-11).`, 'info');
+          showToast(`📡 Conexión interrumpida: Cosecha guardada en cola offline sin duplicar en base de datos.`, 'info');
           closeModal(modalCosechaRapida);
           actualizarUIConectividad();
         } else {
@@ -3220,7 +3221,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (sessionUserEmail) sessionUserEmail.textContent = activeAuthUser.email;
       if (sessionUserFincas) {
         if (activeAuthUser.perfil === 'ADMINISTRADOR') {
-          sessionUserFincas.textContent = 'Todas (Acceso Global RN-16)';
+          sessionUserFincas.textContent = 'Todas (Acceso Global)';
         } else {
           const numFincas = activeAuthUser.fincasAsignadas?.length || 0;
           sessionUserFincas.textContent = numFincas > 0 ? `${numFincas} finca(s) asignada(s)` : 'Ninguna';
@@ -3582,15 +3583,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.status === 200 && json.data?.tieneAcceso) {
           resultadoTestAcceso.innerHTML = `
             <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); padding: 12px; border-radius: 6px; color: #34d399;">
-              <strong>✅ ACCESO AUTORIZADO (RN-16)</strong>
+              <strong>✅ ACCESO AUTORIZADO</strong>
               <p style="margin: 4px 0 0; font-size: 13px;">El usuario tiene autorización legal para operar esta finca. ${json.data.esAdminGlobal ? '<em>(Acceso global como Administrador)</em>' : ''}</p>
             </div>
           `;
         } else {
-          const motivo = json.error?.message || json.data?.motivo || 'Acceso denegado (RF-M8-05).';
+          const motivo = json.error?.message || json.data?.motivo || 'Acceso denegado.';
           resultadoTestAcceso.innerHTML = `
             <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); padding: 12px; border-radius: 6px; color: #f87171;">
-              <strong>❌ ACCESO DENEGADO (403 Forbidden - RF-M8-05 / RN-16)</strong>
+              <strong>❌ ACCESO DENEGADO (403 Forbidden)</strong>
               <p style="margin: 4px 0 0; font-size: 13px;">${motivo}</p>
             </div>
           `;
@@ -3678,7 +3679,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const json = await res.json();
 
       if (res.status === 403) {
-        tbodyAuditoriaLogs.innerHTML = `<tr><td colspan="7" class="text-center text-danger">⚠️ Acceso Denegado: Se requiere rol ADMINISTRADOR para inspeccionar la bitácora centralizada de seguridad (RF-M8-04).</td></tr>`;
+        tbodyAuditoriaLogs.innerHTML = `<tr><td colspan="7" class="text-center text-danger">⚠️ Acceso Denegado: Se requiere rol ADMINISTRADOR para inspeccionar la bitácora centralizada de seguridad.</td></tr>`;
         return;
       }
 
@@ -3697,7 +3698,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fecha = new Date(log.timestamp).toLocaleString('es-AR', { timeZone: 'America/Argentina/Tucuman' });
         const tieneDelta = !!(log.valorPrevioJson || log.valorNuevoJson);
         const deltaBtn = tieneDelta
-          ? `<button class="btn btn-secondary btn-sm btn-ver-delta" data-index="${idx}" style="font-size: 11px; padding: 2px 8px;">🔍 Ver Delta (RN-06)</button>`
+          ? `<button class="btn btn-secondary btn-sm btn-ver-delta" data-index="${idx}" style="font-size: 11px; padding: 2px 8px;">🔍 Ver Delta</button>`
           : '<span class="text-dim" style="font-size: 11px;">N/A</span>';
 
         return `
@@ -3796,11 +3797,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.status === 401 && json.error?.code === 'SESION_EXPIRADA_POR_INACTIVIDAD') {
           resultadoSimularInactividad.innerHTML = `
             <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); padding: 12px; border-radius: 6px; color: #f87171;">
-              <strong>🛡️ CIERRE AUTOMÁTICO DE SESIÓN EXITOSO (RF-M8-09)</strong>
+              <strong>🛡️ CIERRE AUTOMÁTICO DE SESIÓN EXITOSO</strong>
               <p style="margin: 4px 0 0; font-size: 13px;">${json.error.message}</p>
             </div>
           `;
-          showToast('Sesión cerrada automáticamente por inactividad prolongada (RF-M8-09).', 'error');
+          showToast('Sesión cerrada automáticamente por inactividad prolongada.', 'error');
         } else {
           resultadoSimularInactividad.innerHTML = `
             <div style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); padding: 12px; border-radius: 6px; color: #60a5fa;">
@@ -3828,7 +3829,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (!nueva || nueva.length < 8) {
-        showToast('La nueva contraseña debe tener al menos 8 caracteres (RNF-04).', 'error');
+        showToast('La nueva contraseña debe tener al menos 8 caracteres.', 'error');
         return;
       }
 

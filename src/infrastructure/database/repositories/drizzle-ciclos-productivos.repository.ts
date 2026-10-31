@@ -5,6 +5,7 @@ import { EntidadNoEncontradaError } from '../../../core/domain/errors/domain.err
 import { CicloProductivoInvalidoError, CodigoCicloDuplicadoError, DatosPlanificacionCiclo } from '../../../core/domain/value-objects/planificacion-ciclo.vo.js';
 import { ConsultarCiclosFiltros, CiclosProductivosRepositoryPort } from '../../../core/ports/ciclos-productivos-repository.port.js';
 import { ListarCiclosFiltros } from '../../../core/ports/ciclos-repository.port.js';
+import { alcanceFincasPorLote } from '../alcance-fincas-agricolas.js';
 import { AgrulDatabase, AgrulTransaction } from '../connection.js';
 import { DrizzleCierreCicloGuard } from '../cierre-ciclo.guard.js';
 import { ciclosProductivosTable as ciclos, cultivosTable, lotesTable, plantacionesTable, usuariosTable, variedadesTable } from '../schema/tables.js';
@@ -116,6 +117,8 @@ export class DrizzleCiclosProductivosRepository implements CiclosProductivosRepo
     if (filtros.plantacionId) condiciones.push(eq(ciclos.plantacionId, filtros.plantacionId));
     if (filtros.loteId) condiciones.push(eq(plantacionesTable.loteId, filtros.loteId));
     if (filtros.estado) condiciones.push(eq(ciclos.estado, filtros.estado));
+    const alcance = alcanceFincasPorLote(this.db, plantacionesTable.loteId, filtros.fincaIds);
+    if (alcance) condiciones.push(alcance);
     return (await consultaCiclos(this.db).where(and(...condiciones)).orderBy(asc(ciclos.nombreCodigo), asc(ciclos.id))
       .limit(filtros.limit).offset(filtros.offset)).map(mapearCiclo);
   }
