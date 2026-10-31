@@ -7,14 +7,14 @@ export interface RegistrarCamara {
 export interface CamaraProduccion extends Omit<RegistrarCamara, 'operacionId'> { id: string; creadoPor: string; creadoEn: string }
 export interface RegistrarMovimientoAlmacenamiento {
   operacionId: string; partidaProduccionId: string; camaraSectorId: string; tipoMovimiento: 'INGRESO' | 'SALIDA';
-  cantidadKg: number; fechaMovimiento: string; responsableId: string; timestampCapturaLocal?: string;
+  cantidadKg: number; fechaMovimiento: string; responsableId: string; observaciones?: string | null; timestampCapturaLocal?: string;
 }
 export interface MovimientoAlmacenamiento extends Omit<RegistrarMovimientoAlmacenamiento, 'operacionId' | 'timestampCapturaLocal'> {
   id: string; registradoPor: string; creadoEn: string; timestampCapturaLocal: string;
 }
 export interface RegistrarDestinoProduccion {
   operacionId: string; partidaProduccionId: string; fechaDestino: string; tipoDestino: 'MERCADO_FRESCO' | 'INDUSTRIA' | 'OTRO';
-  destinoEspecifico?: string; cantidadDestinadaKg: number; responsableId: string; timestampCapturaLocal?: string;
+  destinoEspecifico?: string; cantidadDestinadaKg: number; responsableId: string; observaciones?: string | null; timestampCapturaLocal?: string;
 }
 export interface DestinoProduccion extends Omit<RegistrarDestinoProduccion, 'operacionId' | 'timestampCapturaLocal'> {
   id: string; registradoPor: string; creadoEn: string; timestampCapturaLocal: string;
@@ -38,7 +38,7 @@ export function validarMovimientoAlmacenamiento(datos: RegistrarMovimientoAlmace
   if (!datos.partidaProduccionId || !datos.camaraSectorId || !datos.responsableId ||
       !['INGRESO', 'SALIDA'].includes(datos.tipoMovimiento)) throw new PoscosechaInvalidaError('Movimiento de cámara inválido.');
   validarKgPositivos(datos.cantidadKg);
-  return { ...datos };
+  return { ...datos, observaciones: datos.observaciones?.trim() || null };
 }
 export const DESTINO_NO_REGISTRADO = 'No registrado';
 export function validarDestinoProduccion(datos: RegistrarDestinoProduccion, hoy = new Date()): RegistrarDestinoProduccion & { destinoEspecifico: string } {
@@ -49,7 +49,7 @@ export function validarDestinoProduccion(datos: RegistrarDestinoProduccion, hoy 
   // CU53: el destino específico es opcional salvo para «Otro», que debe describir su finalidad.
   if (!especifico && datos.tipoDestino === 'OTRO') throw new PoscosechaInvalidaError('El destino «Otro» requiere describir su finalidad.');
   validarKgPositivos(datos.cantidadDestinadaKg);
-  return { ...datos, destinoEspecifico: especifico || DESTINO_NO_REGISTRADO };
+  return { ...datos, destinoEspecifico: especifico || DESTINO_NO_REGISTRADO, observaciones: datos.observaciones?.trim() || null };
 }
 function validarKgPositivos(valor: number): void {
   if (!esEstimacionKgValida(valor) || valor <= 0) throw new PoscosechaInvalidaError('Los kg deben ser positivos, con hasta dos decimales y máximo 99999999.99.');

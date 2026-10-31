@@ -8,7 +8,7 @@ const acondicionamiento = { operacionId: 'operacion', partidaProduccionId: 'part
   tipoAcondicionamiento: ' Empaque ', tipoEnvase: ' Bandeja ', cantidadKg: 0.3, cantidadEnvases: 2, responsableId: 'responsable' };
 describe('RN-20–RN-22: balance exacto y acondicionamiento', () => {
   it('acepta 0.10 + 0.20 = 0.30 sin tolerancias de punto flotante', () => {
-    expect(validarClasificacion(clasificacion, hoy)).toEqual(clasificacion);
+    expect(validarClasificacion(clasificacion, hoy)).toEqual({ ...clasificacion, descartePorCausa: null, observaciones: null });
   });
   it('acepta recepción totalmente descartada con causas, sin inventar fruta aprovechable', () => {
     const datos = { ...clasificacion, kgFresco: 0, kgIndustria: 0, kgDescarte: 0.3, motivosDescarte: ['  Golpes  '] };
@@ -29,7 +29,7 @@ describe('RN-20–RN-22: balance exacto y acondicionamiento', () => {
     expect(() => validarClasificacion({ ...clasificacion, fechaClasificacion }, hoy)).toThrow();
   });
   it('normaliza preparación/envase sin cambiar los kilos ni deducir peso por envase', () => {
-    expect(validarAcondicionamiento(acondicionamiento, hoy)).toEqual({ ...acondicionamiento, tipoAcondicionamiento: 'Empaque', tipoEnvase: 'Bandeja' });
+    expect(validarAcondicionamiento(acondicionamiento, hoy)).toEqual({ ...acondicionamiento, tipoAcondicionamiento: 'Empaque', tipoEnvase: 'Bandeja', observaciones: null });
   });
   it.each([0, -1, 0.001, 100000000])('rechaza acondicionamiento de %s kg', cantidadKg => {
     expect(() => validarAcondicionamiento({ ...acondicionamiento, cantidadKg }, hoy)).toThrow();
@@ -37,8 +37,21 @@ describe('RN-20–RN-22: balance exacto y acondicionamiento', () => {
   it.each([0, -1, 1.5, 2147483648])('rechaza cantidad de envases %s', cantidadEnvases => {
     expect(() => validarAcondicionamiento({ ...acondicionamiento, cantidadEnvases }, hoy)).toThrow();
   });
-  it('requiere preparación, envase y responsable', () => {
-    expect(() => validarAcondicionamiento({ ...acondicionamiento, tipoEnvase: ' ' }, hoy)).toThrow();
+  it('CU49: el envase y su cantidad son opcionales', () => {
+    const datos = validarAcondicionamiento({ ...acondicionamiento, tipoEnvase: ' ', cantidadEnvases: null }, hoy);
+    expect(datos).toMatchObject({ tipoEnvase: 'Sin especificar', cantidadEnvases: null });
+  });
+  it('CU47: los kg por causa deben sumar el descarte total', () => {
+    const base = { ...clasificacion, kgFresco: 0, kgIndustria: 0.1, kgDescarte: 0.2 };
+    const ok = validarClasificacion({ ...base, motivosDescarte: [], descartePorCausa: [{ causa: 'Golpes', kg: 0.1 }, { causa: 'Plaga', kg: 0.1 }] }, hoy);
+    expect(ok.motivosDescarte).toEqual(['Golpes', 'Plaga']);
+    expect(ok.descartePorCausa).toEqual([{ causa: 'Golpes', kg: 0.1 }, { causa: 'Plaga', kg: 0.1 }]);
+    expect(() => validarClasificacion({ ...base, motivosDescarte: [], descartePorCausa: [{ causa: 'Golpes', kg: 0.1 }] }, hoy)).toThrow();
+    expect(() => validarClasificacion({ ...base, motivosDescarte: ['Golpes', 'Plaga'] }, hoy)).toThrow();
+    expect(() => validarClasificacion({ ...base, motivosDescarte: [], descartePorCausa: [{ causa: 'Golpes', kg: 0.1 }, { causa: 'golpes', kg: 0.1 }] }, hoy)).toThrow();
+    expect(validarClasificacion({ ...base, motivosDescarte: ['Golpes'] }, hoy).descartePorCausa).toEqual([{ causa: 'Golpes', kg: 0.2 }]);
+  });
+  it('requiere preparación y responsable', () => {
     expect(() => validarAcondicionamiento({ ...acondicionamiento, responsableId: '' }, hoy)).toThrow();
   });
 });

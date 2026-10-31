@@ -253,6 +253,13 @@
       "when": 1793149231000,
       "tag": "0035_lotes_sector_unico",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793149232000,
+      "tag": "0036_observaciones_campos_opcionales",
+      "breakpoints": true
     }
   ]
 }

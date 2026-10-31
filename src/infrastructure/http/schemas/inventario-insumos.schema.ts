@@ -9,7 +9,8 @@ const cantidad = z.number().finite().superRefine((valor, ctx) => {
   }
 });
 const comunes = { operacionId: z.string().uuid(), cantidad, unidadMedida: z.string().trim().min(1).max(30),
-  motivo: z.string().trim().min(1).max(2000) };
+  // CU63/CU64: el motivo es opcional; sin dato se guarda una constancia explícita (la base exige texto).
+  motivo: z.string().trim().max(2000).optional().transform(valor => valor || 'Sin motivo informado') };
 export const IngresoInsumosSchema = z.object({ ...comunes, fincaId: z.string().uuid(), insumoId: z.string().uuid(),
   fechaIngreso: fecha, proveedor: z.string().trim().min(1).max(2000), fechaVencimiento: fecha.nullable().default(null),
   tipoMovimiento: z.enum(['INGRESO', 'EXISTENCIA_INICIAL']),

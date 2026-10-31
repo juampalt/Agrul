@@ -4,6 +4,7 @@ import {
   ActorCosechas, ConflictoRegistroCosechaError, CosechaRegistrada, RegistrarCosecha,
   RegistroCosechaInvalidoError, validarPesajeCosecha,
 } from '../../../core/domain/entities/cosecha-registrada.js';
+import { SECTOR_SIN_ESPECIFICAR } from '../../../core/domain/entities/cosecha-programada.entity.js';
 import { AccesoDenegadoFincaError, EntidadNoEncontradaError } from '../../../core/domain/errors/domain.error.js';
 import { CosechasRegistroRepositoryPort, FiltrosCosechasRegistro } from '../../../core/ports/cosechas-registro-repository.port.js';
 import { AgrulDatabase } from '../connection.js';
@@ -15,7 +16,7 @@ type Fila = typeof cosechas.$inferSelect;
 function mapear(f: Fila): CosechaRegistrada {
   return { id: f.id, codigoTrazabilidad: f.codigoTrazabilidad, cicloId: f.cicloId, loteId: f.loteId,
     cosechaProgramadaId: f.cosechaProgramadaId, fecha: f.fecha, fechaEfectiva: f.fechaEfectiva,
-    numeroPasada: f.numeroPasada, sector: f.sector, origen: f.origen,
+    numeroPasada: f.numeroPasada, sector: f.sector, observaciones: f.observaciones, origen: f.origen,
     cantidadCosechadaKg: Number(f.cantidadCosechadaKg),
     cantidadComercializableKg: f.cantidadComercializableKg === null ? null : Number(f.cantidadComercializableKg),
     cantidadDescarteKg: f.cantidadDescarteKg === null ? null : Number(f.cantidadDescarteKg),
@@ -36,10 +37,12 @@ export class DrizzleCosechasRegistroRepository implements CosechasRegistroReposi
       return await this.db.transaction(async tx => {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${'cosecha:' + datos.operacionId},0))`);
         let cicloId: string;
+        let sectorJornada: string | null = null;
         if (datos.origen === 'PROGRAMADA') {
           const [jornada] = await tx.select().from(jornadas).where(eq(jornadas.id, datos.cosechaProgramadaId)).for('update');
           if (!jornada) throw new EntidadNoEncontradaError('CosechaProgramada', datos.cosechaProgramadaId);
           cicloId = jornada.cicloId;
+          sectorJornada = jornada.sector;
         } else cicloId = datos.cicloId;
         const [contexto] = await tx.select({ loteId: lotes.id, fincaId: lotes.fincaId, estado: ciclos.estado,
           fechaInicio: ciclos.fechaInicioEfectiva }).from(ciclos)
@@ -60,7 +63,7 @@ export class DrizzleCosechasRegistroRepository implements CosechasRegistroReposi
           id: datos.operacionId, codigoTrazabilidad: `COS-${datos.operacionId.toUpperCase()}`,
           cicloId, loteId: contexto.loteId, fecha: datos.fechaEfectiva, fechaEfectiva: datos.fechaEfectiva,
           cosechaProgramadaId: datos.origen === 'PROGRAMADA' ? datos.cosechaProgramadaId : null,
-          origen: datos.origen, sector: datos.sector, numeroPasada: datos.numeroPasada,
+          origen: datos.origen, sector: datos.sector ?? sectorJornada ?? SECTOR_SIN_ESPECIFICAR, observaciones: datos.observaciones ?? null, numeroPasada: datos.numeroPasada,
           cantidadCosechadaKg: datos.cantidadCosechadaKg.toFixed(2), responsableId: datos.responsableId,
           cantidadComercializableKg: null, cantidadDescarteKg: null, registradoPor: actor.usuarioId, solicitud,
           timestampCapturaLocal: datos.timestampCapturaLocal ?? sql`CURRENT_TIMESTAMP`,

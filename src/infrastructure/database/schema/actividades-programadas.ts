@@ -18,6 +18,7 @@ export const actividadesProgramadasTable = pgTable('actividades_programadas', {
   responsableId: uuid('responsable_id'),
   superficiePrevista: numeric('superficie_prevista', { precision: 8, scale: 2 }),
   descripcion: text('descripcion'),
+  observaciones: text('observaciones'),
   estado: varchar('estado', { length: 10 }).$type<EstadoActividadProgramada>().notNull().default('PENDIENTE'),
   motivoCancelacion: text('motivo_cancelacion'),
   creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),

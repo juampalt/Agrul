@@ -22,8 +22,17 @@ describe('Jornadas de cosecha: estimaciones separadas y transiciones', () => {
   });
   it('reprograma sin cambiar ciclo, sector ni estimación y conserva el objeto anterior', () => {
     const nueva = reprogramarCosecha(jornada, { fechaPrevista: '2028-02-29', responsableId: 'otro' });
-    expect(nueva).toEqual({ ...jornada, fechaPrevista: '2028-02-29', responsableId: 'otro' });
+    expect(nueva).toEqual({ ...jornada, fechaPrevista: '2028-02-29', responsableId: 'otro', observaciones: null });
     expect(jornada.fechaPrevista).toBe('2026-11-01');
+  });
+  it('CU43: reprograma también sector, kg estimados y observaciones', () => {
+    const nueva = reprogramarCosecha(jornada, { fechaPrevista: '2028-02-29', sector: ' Sur ', cantidadEstimadaKg: 50, observaciones: ' Cambió el clima ' });
+    expect(nueva).toMatchObject({ sector: 'Sur', cantidadEstimadaKg: 50, observaciones: 'Cambió el clima', cicloId: 'ciclo' });
+    expect(() => reprogramarCosecha(jornada, { fechaPrevista: '2028-02-29', cantidadEstimadaKg: -1 })).toThrow();
+  });
+  it('CU41: sector y kg estimados son opcionales', () => {
+    const valida = validarProgramacionCosecha({ ...jornada, sector: ' ', cantidadEstimadaKg: null });
+    expect(valida).toMatchObject({ sector: 'Sin especificar', cantidadEstimadaKg: null, observaciones: null });
   });
   it('cancela con motivo y conserva la programación original', () => {
     const cancelada = cancelarJornadaCosecha(jornada, '  Lluvia  ');
@@ -31,8 +40,8 @@ describe('Jornadas de cosecha: estimaciones separadas y transiciones', () => {
     expect(() => reprogramarCosecha(cancelada, { fechaPrevista: '2026-11-02' })).toThrow();
     expect(() => cancelarJornadaCosecha(cancelada, 'Otra vez')).toThrow();
   });
-  it('no permite cancelar sin motivo ni reprogramar una jornada ejecutada', () => {
-    expect(() => cancelarJornadaCosecha(jornada, ' ')).toThrow();
+  it('CU44: el motivo es opcional pero queda constancia; no se reprograma una jornada ejecutada', () => {
+    expect(cancelarJornadaCosecha(jornada, ' ').motivoCancelacion).toBe('Sin motivo informado');
     expect(() => reprogramarCosecha({ ...jornada, estado: 'EJECUTADA' }, { fechaPrevista: '2026-11-02' })).toThrow();
   });
 });

@@ -11,6 +11,7 @@ export const ProgramarActividadSchema = z
     responsableId: z.string().uuid(),
     superficiePrevista: z.number().finite().refine(esSuperficiePrevistaValida, MENSAJE_SUPERFICIE_PREVISTA).nullable().optional(),
     descripcion: z.string().nullable().optional(),
+    observaciones: z.string().trim().max(2000).nullable().optional(),
   })
   .strict();
 
@@ -22,6 +23,7 @@ export const ReprogramarActividadSchema = z
     responsableId: z.string().uuid().optional(),
     superficiePrevista: z.number().finite().refine(esSuperficiePrevistaValida, MENSAJE_SUPERFICIE_PREVISTA).nullable().optional(),
     descripcion: z.string().nullable().optional(),
+    observaciones: z.string().trim().max(2000).nullable().optional(),
   })
   .strict();
 

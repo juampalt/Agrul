@@ -8,7 +8,9 @@ export interface DatosPesajeCosecha {
   numeroPasada: number;
   cantidadCosechadaKg: number;
   responsableId: string;
-  sector: string;
+  /** Opcional: si falta y hay jornada, se toma el de la jornada; si no, «Sin especificar». */
+  sector?: string;
+  observaciones?: string | null;
   timestampCapturaLocal?: string;
 }
 export type RegistrarCosecha = DatosPesajeCosecha & (
@@ -26,6 +28,7 @@ export interface CosechaRegistrada {
   fechaEfectiva: string | null;
   numeroPasada: number | null;
   sector: string | null;
+  observaciones: string | null;
   origen: 'PROGRAMADA' | 'NO_PROGRAMADA' | null;
   cantidadCosechadaKg: number;
   cantidadComercializableKg: number | null;
@@ -45,8 +48,8 @@ export function validarPesajeCosecha(datos: RegistrarCosecha, hoy = new Date()):
   if (!esFechaCosechaValida(datos.fechaEfectiva) || datos.fechaEfectiva > LocalizacionTucumanService.extraerFechaLocal(hoy) ||
       !esEstimacionKgValida(datos.cantidadCosechadaKg) || datos.cantidadCosechadaKg <= 0 ||
       !Number.isInteger(datos.numeroPasada) || datos.numeroPasada < 1 || datos.numeroPasada > 2147483647 ||
-      !datos.sector.trim() || !datos.responsableId) {
-    throw new RegistroCosechaInvalidoError('La cosecha requiere fecha real no futura, kg positivos con hasta dos decimales, pasada positiva, sector y responsable.');
+      !datos.responsableId) {
+    throw new RegistroCosechaInvalidoError('La cosecha requiere fecha real no futura, kg positivos con hasta dos decimales, pasada positiva y responsable.');
   }
   if (datos.origen === 'PROGRAMADA' && (!datos.cosechaProgramadaId || !Number.isInteger(datos.versionProgramacion) || datos.versionProgramacion < 1)) {
     throw new RegistroCosechaInvalidoError('El registro programado requiere jornada y versión vigente.');
@@ -55,5 +58,5 @@ export function validarPesajeCosecha(datos: RegistrarCosecha, hoy = new Date()):
   if (datos.timestampCapturaLocal && !Number.isFinite(Date.parse(datos.timestampCapturaLocal))) {
     throw new RegistroCosechaInvalidoError('La captura local debe ser un timestamp válido.');
   }
-  return { ...datos, sector: datos.sector.trim() };
+  return { ...datos, sector: datos.sector?.trim() || undefined, observaciones: datos.observaciones?.trim() || null };
 }

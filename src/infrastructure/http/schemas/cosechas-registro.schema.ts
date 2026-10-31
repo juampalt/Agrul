@@ -6,7 +6,8 @@ const fecha = z.string().refine(esFechaCosechaValida, 'Debe ser una fecha de cal
 const pasada = z.number().int().min(1).max(2147483647);
 const comun = {
   operacionId: uuid, fechaEfectiva: fecha, numeroPasada: pasada, responsableId: uuid,
-  sector: z.string().trim().min(1),
+  sector: z.string().trim().min(1).optional(),
+  observaciones: z.string().trim().max(2000).optional().nullable(),
   cantidadCosechadaKg: z.number().positive().refine(esEstimacionKgValida, 'Los kg reales deben tener hasta dos decimales, sin superar 99999999.99'),
   timestampCapturaLocal: z.string().datetime({ offset: true }).optional(),
 };

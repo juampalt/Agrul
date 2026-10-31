@@ -55,6 +55,7 @@ export class DrizzleActividadesProgramadasRepository implements ActividadesProgr
         responsableId: raw.responsableId,
         superficiePrevista: raw.superficiePrevista !== null ? raw.superficiePrevista.toFixed(2) : null,
         descripcion: raw.descripcion,
+        observaciones: raw.observaciones,
         estado: raw.estado,
         motivoCancelacion: raw.motivoCancelacion,
         creadoEn: raw.creadoEn,
@@ -74,6 +75,7 @@ export class DrizzleActividadesProgramadasRepository implements ActividadesProgr
       responsableId: fila.responsableId,
       superficiePrevista: fila.superficiePrevista ? Number(fila.superficiePrevista) : null,
       descripcion: fila.descripcion,
+      observaciones: fila.observaciones,
       estado: fila.estado,
       motivoCancelacion: fila.motivoCancelacion,
       creadoEn: fila.creadoEn,
@@ -124,6 +126,7 @@ export class DrizzleActividadesProgramadasRepository implements ActividadesProgr
         responsableId: fila.responsableId,
         superficiePrevista: fila.superficiePrevista ? Number(fila.superficiePrevista) : null,
         descripcion: fila.descripcion,
+        observaciones: fila.observaciones,
         estado: fila.estado,
         motivoCancelacion: fila.motivoCancelacion,
         creadoEn: fila.creadoEn,
@@ -142,7 +145,7 @@ export class DrizzleActividadesProgramadasRepository implements ActividadesProgr
       ? { estado: raw.estado, motivoCancelacion: raw.motivoCancelacion, actualizadoEn: raw.actualizadoEn }
       : { fechaProgramada: raw.fechaProgramada, responsableId: raw.responsableId,
           superficiePrevista: raw.superficiePrevista !== null ? raw.superficiePrevista.toFixed(2) : null,
-          descripcion: raw.descripcion, actualizadoEn: raw.actualizadoEn };
+          descripcion: raw.descripcion, observaciones: raw.observaciones, actualizadoEn: raw.actualizadoEn };
     // Compare-and-swap: estado y versión deben seguir siendo los leídos. No se
     // reintenta automáticamente una decisión tomada sobre una lectura obsoleta.
     const filas = await this.db.transaction(async (tx) => {

@@ -90,7 +90,7 @@ export class ReprogramarActividadUseCase {
     private readonly usuariosRepo?: UsuariosRepositoryPort,
   ) {}
 
-  async execute(id: string, params: { fechaProgramada: string; responsableId?: string; superficiePrevista?: number | null; descripcion?: string | null }) {
+  async execute(id: string, params: { fechaProgramada: string; responsableId?: string; superficiePrevista?: number | null; descripcion?: string | null; observaciones?: string | null }) {
     validarFechaNoAnteriorAHoy(params.fechaProgramada);
     const act = await this.repo.buscarPorId(id);
     if (!act) throw new EntidadNoEncontradaError('ActividadProgramada', id);

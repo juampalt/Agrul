@@ -61,6 +61,7 @@ describe.skipIf(!url)('P1: históricos reales anteriores a 0015 desde bootstrap'
         ($1,$6,'PENDIENTE'),($2,$6,'CANCELADA'),($3,$6,'EJECUTADA'),($4,$7,'PENDIENTE'),($5,$8,'PENDIENTE')`, [...filas, ...ciclos]);
       // Se aplica el SQL real sobre filas ya existentes, sin relajar ningún CHECK.
       await client.query(readFileSync(new URL('../../drizzle/migrations/0015_ampliar_actividades_programadas.sql', import.meta.url), 'utf8'));
+      await client.query('alter table actividades_programadas add column observaciones text'); // migración 0036
       await client.query('commit'); esquemaCreado = true;
     } catch (error) { await client.query('rollback'); throw error; }
     finally { client.release(); }

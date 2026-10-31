@@ -5,8 +5,10 @@ export interface DatosProgramacionCosecha {
   cicloId: string;
   fechaPrevista: string;
   responsableId: string;
-  sector: string;
-  cantidadEstimadaKg: number;
+  /** Opcional en el documento; sin dato se guarda «Sin especificar». */
+  sector?: string;
+  cantidadEstimadaKg?: number | null;
+  observaciones?: string | null;
 }
 export interface JornadaCosecha extends DatosProgramacionCosecha {
   id: string;
@@ -33,22 +35,35 @@ export function esEstimacionKgValida(cantidad: number): boolean {
   return Number.isFinite(cantidad) && cantidad >= 0 && cantidad <= 99999999.99 &&
     /^\d+(?:\.\d{1,2})?$/.test(String(cantidad));
 }
-export function validarProgramacionCosecha(datos: DatosProgramacionCosecha): DatosProgramacionCosecha {
+export const SECTOR_SIN_ESPECIFICAR = 'Sin especificar';
+export const MOTIVO_SIN_INFORMAR = 'Sin motivo informado';
+export function validarProgramacionCosecha<T extends DatosProgramacionCosecha>(datos: T): T & { sector: string; cantidadEstimadaKg: number | null; observaciones: string | null } {
+  const estimacion = datos.cantidadEstimadaKg ?? null;
   if (!datos.cicloId || !datos.responsableId || !esFechaCosechaValida(datos.fechaPrevista) ||
-      !datos.sector.trim() || !esEstimacionKgValida(datos.cantidadEstimadaKg)) {
-    throw new ProgramacionCosechaInvalidaError('Se requieren ciclo, responsable, sector, fecha válida y kg estimados no negativos con hasta dos decimales.');
+      (estimacion !== null && !esEstimacionKgValida(estimacion))) {
+    throw new ProgramacionCosechaInvalidaError('Se requieren ciclo, responsable y fecha válida; los kg estimados, si se informan, no pueden ser negativos y admiten hasta dos decimales.');
   }
-  return { ...datos, cicloId: datos.cicloId.toLowerCase(), responsableId: datos.responsableId.toLowerCase(), sector: datos.sector.trim() };
+  return { ...datos, cicloId: datos.cicloId.toLowerCase(), responsableId: datos.responsableId.toLowerCase(),
+    sector: datos.sector?.trim() || SECTOR_SIN_ESPECIFICAR, cantidadEstimadaKg: estimacion,
+    observaciones: datos.observaciones?.trim() || null };
 }
-export function reprogramarCosecha(jornada: JornadaCosecha, datos: { fechaPrevista: string; responsableId?: string }): JornadaCosecha {
+export interface DatosReprogramacionCosecha {
+  fechaPrevista: string;
+  responsableId?: string;
+  sector?: string;
+  cantidadEstimadaKg?: number | null;
+  observaciones?: string | null;
+}
+export function reprogramarCosecha(jornada: JornadaCosecha, datos: DatosReprogramacionCosecha): JornadaCosecha {
   exigirPendiente(jornada);
-  const nueva = { ...jornada, ...datos };
+  const informados = Object.fromEntries(Object.entries(datos).filter(([, v]) => v !== undefined));
+  const nueva = { ...jornada, ...informados };
   return { ...nueva, ...validarProgramacionCosecha(nueva) };
 }
-export function cancelarJornadaCosecha(jornada: JornadaCosecha, motivo: string): JornadaCosecha {
+export function cancelarJornadaCosecha(jornada: JornadaCosecha, motivo?: string | null): JornadaCosecha {
   exigirPendiente(jornada);
-  if (!motivo.trim()) throw new ProgramacionCosechaInvalidaError('El motivo de cancelación es obligatorio.');
-  return { ...jornada, estado: 'CANCELADA', motivoCancelacion: motivo.trim() };
+  // El motivo es opcional en el documento; sin él queda constancia explícita.
+  return { ...jornada, estado: 'CANCELADA', motivoCancelacion: motivo?.trim() || MOTIVO_SIN_INFORMAR };
 }
 function exigirPendiente(jornada: JornadaCosecha): void {
   if (jornada.estado !== 'PENDIENTE') throw new ProgramacionCosechaInvalidaError('Solo se modifica una jornada pendiente.');

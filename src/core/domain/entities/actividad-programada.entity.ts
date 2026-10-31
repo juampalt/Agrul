@@ -10,6 +10,7 @@ export interface DatosProgramacionActividad {
   responsableId: string;
   superficiePrevista?: number | null;
   descripcion?: string | null;
+  observaciones?: string | null;
 }
 
 export interface ActividadProgramadaProps extends Omit<DatosProgramacionActividad, 'tipoActividadId' | 'fechaProgramada' | 'responsableId'> {
@@ -19,6 +20,7 @@ export interface ActividadProgramadaProps extends Omit<DatosProgramacionActivida
   responsableId: string | null;
   superficiePrevista: number | null;
   descripcion: string | null;
+  observaciones?: string | null;
   id: string;
   estado: EstadoActividadProgramada;
   motivoCancelacion: string | null;
@@ -54,6 +56,7 @@ export class ActividadProgramada {
       ...datos,
       superficiePrevista: datos.superficiePrevista ?? null,
       descripcion: datos.descripcion?.trim() ?? null,
+      observaciones: datos.observaciones?.trim() || null,
       estado: 'PENDIENTE',
       motivoCancelacion: null,
       creadoEn: ahora,
@@ -81,6 +84,7 @@ export class ActividadProgramada {
   get responsableId(): string | null { return this.props.responsableId; }
   get superficiePrevista(): number | null { return this.props.superficiePrevista ?? null; }
   get descripcion(): string | null { return this.props.descripcion ?? null; }
+  get observaciones(): string | null { return this.props.observaciones ?? null; }
   get estado(): EstadoActividadProgramada { return this.props.estado; }
   get motivoCancelacion(): string | null { return this.props.motivoCancelacion ?? null; }
   get creadoEn(): string { return this.props.creadoEn; }
@@ -88,7 +92,7 @@ export class ActividadProgramada {
   /** Token opaco del adaptador, válido para el ciclo interno de lectura/escritura. */
   get versionPersistida(): string | undefined { return this.revisionLectura; }
 
-  reprogramar(params: { fechaProgramada: string; responsableId?: string; superficiePrevista?: number | null; descripcion?: string | null }): ActividadProgramada {
+  reprogramar(params: { fechaProgramada: string; responsableId?: string; superficiePrevista?: number | null; descripcion?: string | null; observaciones?: string | null }): ActividadProgramada {
     if (this.props.estado !== 'PENDIENTE') {
       throw new EstadoActividadInvalidoError(`Solo se pueden reprogramar actividades en estado PENDIENTE. Estado actual: '${this.props.estado}'.`);
     }
@@ -106,6 +110,7 @@ export class ActividadProgramada {
       responsableId: params.responsableId ?? this.props.responsableId,
       superficiePrevista: params.superficiePrevista === undefined ? this.props.superficiePrevista : params.superficiePrevista,
       descripcion: params.descripcion === undefined ? this.props.descripcion : params.descripcion?.trim() || null,
+      observaciones: params.observaciones === undefined ? this.props.observaciones : params.observaciones?.trim() || null,
       actualizadoEn: new Date().toISOString(),
     }, this.revisionLectura);
   }
