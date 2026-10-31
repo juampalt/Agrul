@@ -267,6 +267,13 @@
       "when": 1793149233000,
       "tag": "0037_actividades_monitoreo_vinculado",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793149234000,
+      "tag": "0038_actividad_realizada_superficie_opcional",
+      "breakpoints": true
     }
   ]
 }

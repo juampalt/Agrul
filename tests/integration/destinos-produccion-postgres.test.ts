@@ -25,6 +25,11 @@ describe.skipIf(!url)('AGRUL-056 CU53/CU54: destinos desde disponibilidad exteri
     expect(evento).toMatchObject({ actor_id: f.campoId, ubicacion_id: f.fincaId,
       payload_especifico: { cosechaId: origen.cosechaId, clasificacionId: origen.clasificacionId, partidaProduccionId: partida, cantidadDestinadaKg: 2, tipoDestino } });
   });
+  it('CU53 guarda observaciones del destino', async () => {
+    const partida = await f.partida();
+    const res = await f.destinar({ ...f.datosDestino(partida, 1), observaciones: ' Entrega parcial ' });
+    expect(res.statusCode).toBe(201); expect(res.json().data.observaciones).toBe('Entrega parcial');
+  });
   it('CU53 el destino específico es opcional salvo «Otro»; CU54 totaliza kg por tipo sin sumarlos a la cosecha', async () => {
     const partida = await f.partida();
     const { destinoEspecifico: _omitido, ...base } = f.datosDestino(partida, 2);

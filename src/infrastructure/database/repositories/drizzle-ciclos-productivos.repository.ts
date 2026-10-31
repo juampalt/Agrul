@@ -81,7 +81,7 @@ export class DrizzleCiclosProductivosRepository implements CiclosProductivosRepo
     const cantidadLabores = Number(labores?.cantidad ?? 0);
     const cantidadCosechas = Number(cosechas?.cantidad ?? 0);
     return { cicloId: id, estado: ciclo.estado,
-      actividadesRealizadas: { cantidad: cantidadLabores, superficieTrabajadaHa: cantidadLabores ? Number(labores?.superficie) : null },
+      actividadesRealizadas: { cantidad: cantidadLabores, superficieTrabajadaHa: labores?.superficie == null ? null : Number(labores.superficie) },
       monitoreos: { cantidad: Number(monitoreos?.cantidad ?? 0) },
       aplicacionesInsumos: { cantidad: Number(aplicaciones?.cantidad ?? 0), insumos: insumos.map(x => ({
         insumoId: x.insumo_id, codigo: x.codigo, nombre: x.nombre, unidadMedida: x.unidad, cantidadTotal: Number(x.total) })) },

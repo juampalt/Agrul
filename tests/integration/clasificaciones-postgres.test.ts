@@ -22,6 +22,18 @@ describe.skipIf(!url)('AGRUL-056 CU47/CU48: clasificación exacta y descarte', (
     expect(rows[0]).toMatchObject({ actor_id: f.campoId, ubicacion_id: f.fincaId, payload_especifico: { cosechaId, kgDescarte: 1, motivosDescarte: ['Daño de fruta'] } });
     expect((await f.app.inject({ method: 'GET', url: `/api/v1/clasificaciones/${salida.id}`, headers: f.campo })).statusCode).toBe(200);
   });
+  it('CU47 guarda observaciones y exige que los kg por causa sumen el descarte', async () => {
+    const cosechaId = await f.cosecha();
+    const base = { ...f.datosClasificacion(cosechaId), motivosDescarte: [] as string[] };
+    const mal = { ...base, descartePorCausa: [{ causa: 'Golpes', kg: 0.4 }] };
+    expect((await f.clasificar(mal)).statusCode).toBeGreaterThanOrEqual(400);
+    expect((await f.pool.query('select id from clasificaciones where id=$1', [mal.operacionId])).rows).toEqual([]);
+    const ok = { ...base, operacionId: randomUUID(), observaciones: ' Lote con granizo ',
+      descartePorCausa: [{ causa: 'Golpes', kg: 0.4 }, { causa: 'Plaga', kg: 0.6 }] };
+    const res = await f.clasificar(ok); expect(res.statusCode).toBe(201);
+    expect(res.json().data).toMatchObject({ observaciones: 'Lote con granizo', motivosDescarte: ['Golpes', 'Plaga'],
+      descartePorCausa: [{ causa: 'Golpes', kg: 0.4 }, { causa: 'Plaga', kg: 0.6 }] });
+  });
   it('acepta clasificaciones parciales y no permite superar el acumulado cosechado', async () => {
     const cosechaId = await f.cosecha();
     const parcial = () => ({ ...f.datosClasificacion(cosechaId), cantidadRecibidaKg: 5, kgFresco: 3, kgIndustria: 1, kgDescarte: 1 });

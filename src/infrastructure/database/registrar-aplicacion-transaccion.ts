@@ -20,7 +20,7 @@ export async function registrarAplicacionEnTransaccion(tx: AgrulTransaction, dat
   if (existente && !isDeepStrictEqual(existente.solicitud, solicitud)) throw new AplicacionInsumosDuplicadaError();
   if (!existente) {
     // CU38: la superficie tratada no puede superar la trabajada en la actividad realizada.
-    if (Math.round(datos.superficieTratada * 100) > Math.round(Number(labor.superficieTrabajadaHa) * 100)) {
+    if (labor.superficieTrabajadaHa !== null && Math.round(datos.superficieTratada * 100) > Math.round(Number(labor.superficieTrabajadaHa) * 100)) {
       throw new AplicacionInsumosInvalidaError('La superficie tratada no puede superar la superficie trabajada de la actividad realizada.');
     }
     const insumos = await tx.select().from(i).where(inArray(i.id, datos.items.map(linea => linea.insumoId)))
