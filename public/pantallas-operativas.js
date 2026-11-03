@@ -8,6 +8,7 @@
   const ESTADOS_JORNADA = [['PENDIENTE', 'Pendiente'], ['EJECUTADA', 'Ejecutada'], ['CANCELADA', 'Cancelada']];
   const TIPOS_MOV_INVENTARIO = [['AJUSTE_POSITIVO', 'Ajuste positivo'], ['AJUSTE_NEGATIVO', 'Ajuste negativo'], ['PERDIDA', 'Pérdida'], ['DEVOLUCION', 'Devolución']];
   const TIPOS_DESTINO = [['MERCADO_FRESCO', 'Mercado fresco'], ['INDUSTRIA', 'Industria'], ['OTRO', 'Otro']];
+  const TIPOS_EVENTO_CLIMATICO = [['HELADA', 'Helada'], ['GRANIZO', 'Granizo'], ['LLUVIA_INTENSA', 'Lluvia intensa'], ['VIENTO_FUERTE', 'Viento fuerte'], ['OTRO', 'Otro']];
 
   function configurar() {
     const U = A.ui;
@@ -395,6 +396,121 @@
             el('ul', {}, (t.porTipo || []).map(x => el('li', {}, `${nombreDe(TIPOS_DESTINO, x.tipoDestino)}: ${numero(x.totalKg)} kg (${x.cantidadDestinos} destinos)`)))), { ancho: '520px' });
         } catch (err) { aviso(err.message, 'error'); }
       } }] });
+
+    /* ---------- Meteorología y Eventos Adversos (Módulo 10 SGTA) ---------- */
+    const meteoCfg = {
+      id: 'meteorologia',
+      titulo: 'Observaciones meteorológicas',
+      nombreSingular: 'observación',
+      textoNuevo: 'Nueva observación',
+      mensajeAlta: 'Observación meteorológica registrada.',
+      descripcion: 'Registro diario de condiciones meteorológicas locales de la finca (RN-28).',
+      ruta: '/meteorologia',
+      vacio: 'Todavía no hay observaciones meteorológicas registradas.',
+      editar: false,
+      antes: async () => {
+        const fId = await fincaActual();
+        if (fId) meteoCfg.consulta = 'fincaId=' + fId;
+      },
+      filtros: [
+        { name: 'fechaDesde', label: 'Desde', tipo: 'date' },
+        { name: 'fechaHasta', label: 'Hasta', tipo: 'date' },
+      ],
+      columnas: [
+        { titulo: 'Fecha y hora', valor: f => f.fechaHoraObservacion ? new Date(f.fechaHoraObservacion).toLocaleString('es-AR') : '' },
+        { titulo: 'Temp (°C)', valor: f => numero(f.temperaturaC) + ' °C' },
+        { titulo: 'Humedad', valor: f => numero(f.humedadRelativa) + ' %' },
+        { titulo: 'Precipitación', valor: f => numero(f.precipitacionesMm) + ' mm' },
+        { titulo: 'Observaciones', valor: f => texto(f.observaciones) },
+      ],
+      campos: [
+        {
+          name: 'fechaHoraObservacion',
+          label: 'Fecha y hora',
+          tipo: 'datetime-local',
+          req: true,
+          defecto: () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16),
+        },
+        { name: 'temperaturaC', label: 'Temperatura (°C)', tipo: 'number', req: true, min: -50, max: 65, step: 0.1 },
+        { name: 'humedadRelativa', label: 'Humedad relativa (%)', tipo: 'number', req: true, min: 0, max: 100, step: 0.1 },
+        { name: 'precipitacionesMm', label: 'Precipitaciones (mm)', tipo: 'number', req: true, min: 0, step: 0.1, defecto: 0 },
+        responsable(),
+        { name: 'observaciones', label: 'Observaciones', tipo: 'area', vacioComo: null, ancho: 'completo' },
+      ],
+      cuerpo: async (v) => ({
+        ...v,
+        fincaId: await fincaActual(),
+        fechaHoraObservacion: new Date(v.fechaHoraObservacion).toISOString(),
+        temperaturaC: Number(v.temperaturaC),
+        humedadRelativa: Number(v.humedadRelativa),
+        precipitacionesMm: Number(v.precipitacionesMm),
+      }),
+    };
+    pantallaListado(meteoCfg);
+
+    const eventosClimaticosCfg = {
+      id: 'eventos-climaticos',
+      titulo: 'Eventos climáticos adversos',
+      nombreSingular: 'evento climático',
+      textoNuevo: 'Reportar siniestro',
+      mensajeAlta: 'Evento climático registrado.',
+      descripcion: 'Registro de siniestros climáticos y evaluación de daño por lote (CU69).',
+      ruta: '/eventos-climaticos',
+      vacio: 'No se registran eventos climáticos adversos.',
+      editar: false,
+      antes: async () => {
+        const fId = await fincaActual();
+        if (fId) eventosClimaticosCfg.consulta = 'fincaId=' + fId;
+        return cargarReferencias([{ ruta: '/lotes-territorio', etiqueta: R.lotes.etiqueta }]);
+      },
+      filtros: [
+        { name: 'tipoEvento', label: 'Tipo', tipo: 'select', opciones: TIPOS_EVENTO_CLIMATICO },
+        { name: 'fechaDesde', label: 'Desde', tipo: 'date' },
+        { name: 'fechaHasta', label: 'Hasta', tipo: 'date' },
+      ],
+      columnas: [
+        { titulo: 'Fecha', valor: f => f.fecha },
+        { titulo: 'Tipo', valor: f => pill(f.tipoEvento) },
+        {
+          titulo: 'Lotes afectados',
+          valor: f => (f.lotesAfectados || []).map(l => `${ref('/lotes-territorio', l.loteId)} (${l.porcentajeDano ?? 0}%)`).join(', '),
+        },
+        { titulo: 'Descripción', valor: f => texto(f.descripcion) },
+      ],
+      campos: [
+        fecha('fecha', 'Fecha del siniestro', { req: true, defecto: () => hoy() }),
+        { name: 'tipoEvento', label: 'Tipo de siniestro', tipo: 'select', req: true, opciones: TIPOS_EVENTO_CLIMATICO },
+        { name: 'descripcion', label: 'Descripción general', tipo: 'area', req: true, ancho: 'completo', min: 5 },
+        responsable(),
+        {
+          name: 'lotesAfectados',
+          label: 'Lotes afectados y daños (CU69)',
+          tipo: 'lineas',
+          req: true,
+          textoLinea: 'lote afectado',
+          sub: [
+            { name: 'loteId', label: 'Lote', tipo: 'select', remoto: remoto('lotes') },
+            { name: 'descripcionDano', label: 'Descripción del daño' },
+            { name: 'porcentajeDano', label: '% Daño', tipo: 'number' },
+            { name: 'superficieAfectadaHa', label: 'Superficie (ha)', tipo: 'number' },
+          ],
+        },
+      ],
+      cuerpo: async (v) => ({
+        fincaId: await fincaActual(),
+        tipoEvento: v.tipoEvento,
+        fecha: v.fecha,
+        descripcion: v.descripcion,
+        responsableId: v.responsableId || undefined,
+        lotesAfectados: (v.lotesAfectados || []).map(l => ({
+          loteId: l.loteId,
+          descripcionDano: l.descripcionDano || 'Daño verificado en campo',
+          porcentajeDano: l.porcentajeDano ? Number(l.porcentajeDano) : null,
+          superficieAfectadaHa: l.superficieAfectadaHa ? Number(l.superficieAfectadaHa) : null,
+        })),
+      }),
+    };
+    pantallaListado(eventosClimaticosCfg);
   }
 
   document.addEventListener('agrul:sesion', () => { if (A.ui && (A.puedeVer('ADMINISTRADOR') || A.puedeVer('ENCARGADO_CAMPO'))) configurar(); });
