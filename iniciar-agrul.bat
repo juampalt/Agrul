@@ -32,6 +32,15 @@ if not exist "node_modules\" (
     echo.
 )
 
+netstat -ano | findstr ":5433" >nul 2>nul
+if %errorlevel% neq 0 (
+    echo [INFO] Iniciando motor PostgreSQL en puerto 5433...
+    if exist "C:\Program Files\PostgreSQL\18\bin\postgres.exe" (
+        start "Agrul PostgreSQL" /B "C:\Program Files\PostgreSQL\18\bin\postgres.exe" -D "%USERPROFILE%\.agrul_data" -p 5433
+        timeout /t 2 /nobreak >nul
+    )
+)
+
 echo [1/3] Iniciando el servidor Fastify en segundo plano...
 start "Agrul Traceability Server" /D "%~dp0" cmd.exe /k npm run dev
 

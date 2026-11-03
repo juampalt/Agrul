@@ -467,7 +467,7 @@
     cargarOpciones, pill, texto, numero, nombreDe, hoy, fincaActual, nuevaOperacion };
 
   document.addEventListener('agrul:sesion', () => {
-    if (A.puedeVer('ADMINISTRADOR')) configurar();
+    if (A.puedeVer('ADMINISTRADOR') || A.puedeVer('ADMIN_SISTEMA')) configurar();
     if (A.puedeVer('ADMIN_SISTEMA')) inicioAdminSistema();
   });
 })();

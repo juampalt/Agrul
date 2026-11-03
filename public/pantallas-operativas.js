@@ -513,5 +513,5 @@
     pantallaListado(eventosClimaticosCfg);
   }
 
-  document.addEventListener('agrul:sesion', () => { if (A.ui && (A.puedeVer('ADMINISTRADOR') || A.puedeVer('ENCARGADO_CAMPO'))) configurar(); });
+  document.addEventListener('agrul:sesion', () => { if (A.ui && (A.puedeVer('ADMINISTRADOR') || A.puedeVer('ENCARGADO_CAMPO') || A.puedeVer('ADMIN_SISTEMA'))) configurar(); });
 })();

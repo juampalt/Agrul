@@ -174,7 +174,7 @@
     const rol = AGRUL.usuario && AGRUL.usuario.perfil;
     document.body.dataset.rol = rol || '';
     document.querySelectorAll('[data-roles]').forEach(nodo => {
-      const permitido = (nodo.dataset.roles || '').split(/\s+/).includes(rol);
+      const rolesPermitidos = (nodo.dataset.roles || '').split(/\s+/); const permitido = rolesPermitidos.includes(rol) || (rol === 'ADMIN_SISTEMA' && rolesPermitidos.includes('ADMINISTRADOR'));
       nodo.hidden = !permitido;
     });
     // Un título de grupo solo se muestra si tiene alguna opción visible.
