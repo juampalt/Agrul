@@ -117,7 +117,25 @@
     const tarjeta = el('div', { class: 'ingreso-tarjeta' },
       el('div', { class: 'ingreso-marca' }, el('span', { class: 'brand-icon', 'aria-hidden': 'true' }, '🌱'),
         el('div', {}, el('h1', {}, 'Agrul'), el('p', {}, 'Trazabilidad agroindustrial'))),
-      el('h2', {}, 'Iniciar sesión'), formulario);
+      el('h2', {}, 'Iniciar sesión'), formulario,
+      el('div', { class: 'ingreso-demo-ayuda', style: 'margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.85rem; text-align: center;' },
+        el('p', { style: 'margin: 0 0 8px 0; color: #94a3b8; font-weight: 500;' }, 'Acceso rápido de demostración:'),
+        el('div', { style: 'display: flex; gap: 8px; justify-content: center; margin-bottom: 6px;' },
+          el('button', {
+            type: 'button',
+            class: 'btn btn-secondary btn-sm',
+            style: 'font-size: 0.8rem; padding: 6px 12px; cursor: pointer;',
+            onclick: () => { usuario.value = 'admin'; clave.value = 'admin123'; formulario.requestSubmit(); }
+          }, '👤 Admin (admin123)'),
+          el('button', {
+            type: 'button',
+            class: 'btn btn-secondary btn-sm',
+            style: 'font-size: 0.8rem; padding: 6px 12px; cursor: pointer;',
+            onclick: () => { usuario.value = 'encargado'; clave.value = 'campo123'; formulario.requestSubmit(); }
+          }, '🚜 Encargado (campo123)')
+        ),
+        el('p', { style: 'margin: 0; font-size: 0.75rem; color: #64748b;' }, 'Clic en un botón para ingresar automáticamente.')
+      ));
     document.body.append(el('div', { id: 'pantalla-ingreso', class: 'ingreso' }, tarjeta));
     usuario.focus();
   }
