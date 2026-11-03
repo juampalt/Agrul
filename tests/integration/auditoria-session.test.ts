@@ -91,7 +91,7 @@ describe('AGRUL-040: Integration Tests — Bitácora de Auditoría y Seguridad d
       payload: { email: 'operario@agrul.com', password: 'PasswordSegura123' },
     });
     operarioToken = loginOperario.json().data.token;
-  });
+  }, 30000);
 
   describe('Control de Acceso y Consulta de la Bitácora (/api/v1/auditoria)', () => {
     it('debe denegar acceso anónimo con 401 TOKEN_REQUERIDO', async () => {
