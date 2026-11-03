@@ -25,6 +25,7 @@ import { StockMovimientosController } from '../controllers/stock-movimientos.con
 import { ControlVencimientosInventariosController } from '../controllers/control-vencimientos-inventarios.controller.js';
 import { ClimaController } from '../controllers/clima.controller.js';
 import { TerritorioController } from '../controllers/territorio.controller.js';
+import { MeteorologiaSGTAController } from '../controllers/meteorologia-sgta.controller.js';
 import { LocalizacionTucumanService } from '../../../core/domain/services/localizacion-tucuman.service.js';
 import { PoliticaRetencionBpaService } from '../../../core/domain/services/politica-retencion-bpa.service.js';
 import {
@@ -63,6 +64,7 @@ export interface ApiRoutesDependencies {
   controlVencimientosInventariosController?: ControlVencimientosInventariosController;
   climaController?: ClimaController;
   territorioController?: TerritorioController;
+  meteorologiaSGTAController?: MeteorologiaSGTAController;
 }
 
 
@@ -446,6 +448,24 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         );
         v1.get('/lotes/:loteId/serie-climatica', (req, rep) =>
           deps.climaController!.obtenerSerieHistorica(req, rep)
+        );
+      }
+
+      if (deps.meteorologiaSGTAController) {
+        // CU67 & CU68: Observaciones Meteorológicas Formales (RN-28 / RN-30)
+        v1.post('/meteorologia', (req, rep) =>
+          deps.meteorologiaSGTAController!.confirmarRegistroMeteorologico(req, rep)
+        );
+        v1.get('/meteorologia', (req, rep) =>
+          deps.meteorologiaSGTAController!.consultarObservaciones(req, rep)
+        );
+
+        // CU69 & CU70: Eventos Climáticos Adversos SGTA Multilote (RN-28)
+        v1.post('/eventos-climaticos', (req, rep) =>
+          deps.meteorologiaSGTAController!.confirmarRegistroEvento(req, rep)
+        );
+        v1.get('/eventos-climaticos', (req, rep) =>
+          deps.meteorologiaSGTAController!.consultarEventos(req, rep)
         );
       }
 

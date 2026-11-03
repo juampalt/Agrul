@@ -1122,15 +1122,25 @@
 
 ### `[AGRUL-057]` Módulo 10: Meteorología y Eventos Climáticos Adversos (CU67 - CU70)
 - **GitHub Issue:** [#51](https://github.com/juampalt/Agrul/issues/51)
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Media (P2)
 - **Módulo:** Módulo 10: Clima
 - **Casos de Uso:** CU67 a CU70
 - **Contratos:** `confirmarRegistroMeteorologico`, `confirmarRegistroEvento`
 - **Reglas de Negocio:** RN-28
 - **Skills:** [.cursor/skills/database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md), [.cursor/skills/api-contracts.md](file:///c:/AGRUL/.cursor/skills/api-contracts.md)
-- **Etiquetas:** `clima`, `eventos-adversos`, `cu67-cu70`, `ready-for-agent`
+- **Etiquetas:** `clima`, `eventos-adversos`, `cu67-cu70`, `status:done`
 - **Descripción:** Registro manual de condiciones meteorológicas (temp, humedad, lluvia) y eventos adversos con daño y superficie afectada por lote.
+- **Tareas Técnicas:**
+  1. Definir tablas Drizzle `observaciones_meteorologicas`, `eventos_climaticos` y `eventos_climaticos_lotes` con índices y relaciones.
+  2. Implementar entidades de dominio (`ObservacionMeteorologica`, `EventoClimaticoSGTA`) y puertos de persistencia (`MeteorologiaRepositoryPort`, `EventosClimaticosRepositoryPort`).
+  3. Crear casos de uso SGTA: `ConfirmarRegistroMeteorologicoUseCase` (CU67), `ConsultarObservacionesMeteorologicasUseCase` (CU68), `ConfirmarRegistroEventoUseCase` (CU69) y `ConsultarEventosClimaticosUseCase` (CU70).
+  4. Exponer endpoints REST Fastify con schemas Zod estrictos en `/api/v1/meteorologia` y `/api/v1/eventos-climaticos`.
+  5. Escribir suite de pruebas unitarias y de integración en Vitest.
+- **Criterios de Aceptación:**
+  - [x] RN-28: Validación física de magnitudes meteorológicas (humedad 0-100%, lluvia >= 0 mm) y rechazo de duplicados en misma finca y timestamp.
+  - [x] CU69: Asociación multilote de eventos climáticos adversos con discriminación de daño por parcela.
+  - [x] CU67-CU70: 100% de tests unitarios y de integración pasando en verde (32 tests específicos).
 
 ### `[AGRUL-058]` Módulos 6 & 7: Trazabilidad Integral e Indicadores Productivos (CU56, CU58)
 - **GitHub Issue:** [#52](https://github.com/juampalt/Agrul/issues/52)

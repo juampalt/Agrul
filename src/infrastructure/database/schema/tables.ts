@@ -787,6 +787,80 @@ export const eventosClimaticosAdversosTable = pgTable('eventos_climaticos_advers
   index('idx_eventos_adv_tipo').on(table.tipoSiniestro),
 ]);
 
+// TABLA MÓDULO 10 SGTA (CU67 / CU68 / RN-28): Observaciones Meteorológicas Formales
+export const observacionesMeteorologicasTable = pgTable('observaciones_meteorologicas', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  fincaId: uuid('finca_id').notNull().references(() => fincasTable.id, { onDelete: 'cascade' }),
+  fechaHoraObservacion: timestamp('fecha_hora_observacion', { withTimezone: true, mode: 'string' }).notNull(),
+  temperaturaC: numeric('temperatura_c', { precision: 4, scale: 1 }).notNull(),
+  humedadRelativa: numeric('humedad_relativa', { precision: 5, scale: 2 }).notNull(),
+  precipitacionesMm: numeric('precipitaciones_mm', { precision: 6, scale: 1 }).notNull().default('0'),
+  observaciones: text('observaciones'),
+  responsableId: uuid('responsable_id'),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_obs_meteo_finca').on(table.fincaId),
+  index('idx_obs_meteo_fecha_hora').on(table.fechaHoraObservacion),
+  uniqueIndex('idx_obs_meteo_finca_fecha_hora_uk').on(table.fincaId, table.fechaHoraObservacion),
+]);
+
+// TABLA MÓDULO 10 SGTA (CU69 / CU70): Eventos Climáticos Adversos
+export const eventosClimaticosTable = pgTable('eventos_climaticos', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  fincaId: uuid('finca_id').notNull().references(() => fincasTable.id, { onDelete: 'cascade' }),
+  tipoEvento: varchar('tipo_evento', { length: 50 }).notNull(), // HELADA | GRANIZO | LLUVIA_INTENSA | VIENTO_FUERTE | OTRO
+  fecha: varchar('fecha', { length: 30 }).notNull(),
+  descripcion: text('descripcion').notNull(),
+  responsableId: uuid('responsable_id'),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_evt_clim_finca').on(table.fincaId),
+  index('idx_evt_clim_fecha').on(table.fecha),
+  index('idx_evt_clim_tipo').on(table.tipoEvento),
+]);
+
+// TABLA MÓDULO 10 SGTA (CU69 / CU70): Detalle y Daño por Lote en Eventos Climáticos
+export const eventosClimaticosLotesTable = pgTable('eventos_climaticos_lotes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  eventoId: uuid('evento_id').notNull().references(() => eventosClimaticosTable.id, { onDelete: 'cascade' }),
+  loteId: uuid('lote_id').notNull().references(() => lotesTable.id, { onDelete: 'cascade' }),
+  descripcionDano: text('descripcion_dano').notNull(),
+  superficieAfectadaHa: numeric('superficie_afectada_ha', { precision: 8, scale: 2 }),
+  porcentajeDano: numeric('porcentaje_dano', { precision: 5, scale: 2 }),
+  creadoEn: timestamp('creado_en', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_evt_clim_lotes_evento').on(table.eventoId),
+  index('idx_evt_clim_lotes_lote').on(table.loteId),
+]);
+
+export const observacionesMeteorologicasRelations = relations(observacionesMeteorologicasTable, ({ one }) => ({
+  finca: one(fincasTable, {
+    fields: [observacionesMeteorologicasTable.fincaId],
+    references: [fincasTable.id],
+  }),
+}));
+
+export const eventosClimaticosRelations = relations(eventosClimaticosTable, ({ one, many }) => ({
+  finca: one(fincasTable, {
+    fields: [eventosClimaticosTable.fincaId],
+    references: [fincasTable.id],
+  }),
+  lotesAfectados: many(eventosClimaticosLotesTable),
+}));
+
+export const eventosClimaticosLotesRelations = relations(eventosClimaticosLotesTable, ({ one }) => ({
+  evento: one(eventosClimaticosTable, {
+    fields: [eventosClimaticosLotesTable.eventoId],
+    references: [eventosClimaticosTable.id],
+  }),
+  lote: one(lotesTable, {
+    fields: [eventosClimaticosLotesTable.loteId],
+    references: [lotesTable.id],
+  }),
+}));
+
 
 
 

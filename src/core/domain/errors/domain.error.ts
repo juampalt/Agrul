@@ -389,6 +389,28 @@ export class EventoClimaticoNoEncontradoError extends EntidadNoEncontradaError {
   }
 }
 
+export class ObservacionMeteorologicaInvalidaError extends DomainError {
+  public readonly code = 'OBSERVACION_METEOROLOGICA_INVALIDA';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
+export class ObservacionMeteorologicaDuplicadaError extends DomainError {
+  public readonly code = 'OBSERVACION_METEOROLOGICA_DUPLICADA';
+
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
+export class ObservacionMeteorologicaNoEncontradaError extends EntidadNoEncontradaError {
+  constructor(id: string) {
+    super('ObservacionMeteorologica', id);
+  }
+}
+
 
 
 

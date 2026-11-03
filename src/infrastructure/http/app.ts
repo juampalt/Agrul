@@ -246,6 +246,18 @@ import {
   CalcularResumenClimaticoCicloUseCase,
   ObtenerSerieHistoricaClimaticaLoteUseCase,
 } from '../../application/use-cases/clima.use-cases.js';
+import { InMemoryFincasRepository } from '../../../tests/mocks/in-memory-fincas.repository.js';
+import { MeteorologiaRepositoryPort } from '../../core/ports/meteorologia-repository.port.js';
+import { InMemoryMeteorologiaRepository } from '../../../tests/mocks/in-memory-meteorologia.repository.js';
+import { EventosClimaticosRepositoryPort } from '../../core/ports/eventos-climaticos-repository.port.js';
+import { InMemoryEventosClimaticosRepository } from '../../../tests/mocks/in-memory-eventos-climaticos.repository.js';
+import { MeteorologiaSGTAController } from './controllers/meteorologia-sgta.controller.js';
+import {
+  ConfirmarRegistroMeteorologicoUseCase,
+  ConsultarObservacionesMeteorologicasUseCase,
+  ConfirmarRegistroEventoUseCase,
+  ConsultarEventosClimaticosUseCase,
+} from '../../application/use-cases/meteorologia-sgta.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { TerritorioController } from './controllers/territorio.controller.js';
 import { ConsultarFincaUseCase, ModificarFincaUseCase } from '../../application/use-cases/finca-territorial.use-cases.js';
@@ -314,6 +326,8 @@ export interface BuildAppOptions {
   inventariosFisicosRepo?: InventariosFisicosRepositoryPort;
   medicionesClimaticasRepo?: MedicionesClimaticasRepositoryPort;
   eventosClimaticosAdversosRepo?: EventosClimaticosAdversosRepositoryPort;
+  meteorologiaRepo?: MeteorologiaRepositoryPort;
+  eventosClimaticosRepo?: EventosClimaticosRepositoryPort;
   logger?: boolean;
 }
 
@@ -976,6 +990,32 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     obtenerSerieHistoricaUC
   );
 
+  // MÓDULO 10 SGTA (CU67 - CU70)
+  const effectiveFincasRepo = options.fincasRepo ?? new InMemoryFincasRepository();
+  const meteorologiaRepo = options.meteorologiaRepo ?? new InMemoryMeteorologiaRepository();
+  const eventosClimaticosRepo = options.eventosClimaticosRepo ?? new InMemoryEventosClimaticosRepository();
+
+  const confirmarRegistroMeteorologicoUC = new ConfirmarRegistroMeteorologicoUseCase(
+    meteorologiaRepo,
+    effectiveFincasRepo
+  );
+  const consultarObservacionesUC = new ConsultarObservacionesMeteorologicasUseCase(
+    meteorologiaRepo,
+    effectiveFincasRepo
+  );
+  const confirmarRegistroEventoUC = new ConfirmarRegistroEventoUseCase(
+    eventosClimaticosRepo,
+    effectiveFincasRepo,
+    options.lotesRepo
+  );
+  const consultarEventosUC = new ConsultarEventosClimaticosUseCase(eventosClimaticosRepo);
+
+  const meteorologiaSGTAController = new MeteorologiaSGTAController(
+    confirmarRegistroMeteorologicoUC,
+    consultarObservacionesUC,
+    confirmarRegistroEventoUC,
+    consultarEventosUC
+  );
 
   // Registro de Rutas
   if (options.insumosCanonicosRepo) registrarRutasInsumos(app, options.insumosCanonicosRepo);
@@ -1039,6 +1079,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     stockMovimientosController,
     controlVencimientosInventariosController,
     climaController,
+    meteorologiaSGTAController,
   });
 
   return app;
