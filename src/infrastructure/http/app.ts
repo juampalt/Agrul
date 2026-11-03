@@ -670,9 +670,10 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   }
 
   let trazabilidadController: TrazabilidadController | undefined;
-  if (options.cosechasRepo) {
+  if (options.cosechasRepo || options.cosechasRegistroRepo) {
+    const cosechasRepoActivo = options.cosechasRepo ?? (options.cosechasRegistroRepo as any);
     const obtenerRecorridoUC = new ObtenerRecorridoTrazabilidadUseCase({
-      cosechasRepo: options.cosechasRepo,
+      cosechasRepo: cosechasRepoActivo,
       lotesRepo: options.lotesRepo,
       ciclosRepo: options.ciclosRepo,
       actividadesRepo: options.actividadesRepo,
@@ -681,6 +682,13 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       destinatariosRepo: options.destinatariosRepo,
       fincasRepo: options.fincasRepo,
       insumosRepo: options.insumosRepo,
+      cosechasRegistroRepo: options.cosechasRegistroRepo,
+      clasificacionesRepo: options.clasificacionesRepo,
+      poscosechaRepo: options.poscosechaRepo,
+      almacenamientoRepo: options.almacenamientoRepo,
+      destinosRepo: options.destinosProduccionRepo,
+      monitoreosRepo: options.monitoreosRepo,
+      plantacionesRepo: options.plantacionesRepo,
     });
     const informesRepo = options.informesRepo ?? new InMemoryInformesTrazabilidadRepository();
     const emitirInformeUC = new EmitirInformeTrazabilidadUseCase({
@@ -695,7 +703,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
         insumosRepo: options.insumosRepo,
         aplicacionesRepo: options.aplicacionesRepo,
         lotesRepo: options.lotesRepo,
-        cosechasRepo: options.cosechasRepo,
+        cosechasRepo: cosechasRepoActivo,
         despachosRepo: options.despachosRepo,
         fincasRepo: options.fincasRepo,
         destinatariosRepo: options.destinatariosRepo,
@@ -712,11 +720,12 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   }
 
   let indicadoresController: IndicadoresController | undefined;
-  if (options.ciclosRepo && options.cosechasRepo) {
+  if (options.ciclosRepo && (options.cosechasRepo || options.cosechasRegistroRepo)) {
+    const cosechasRepoActivo = options.cosechasRepo ?? (options.cosechasRegistroRepo as any);
     const calcularMetricasUC = new CalcularMetricasProduccionUseCase({
       lotesRepo: options.lotesRepo,
       ciclosRepo: options.ciclosRepo,
-      cosechasRepo: options.cosechasRepo,
+      cosechasRepo: cosechasRepoActivo,
       actividadesRepo: options.actividadesRepo,
       catalogosRepo: options.catalogosRepo,
       fincasRepo: options.fincasRepo,
@@ -727,7 +736,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       compararCampanasUC = new CompararCampanasUseCase({
         ciclosRepo: options.ciclosRepo,
         lotesRepo: options.lotesRepo,
-        cosechasRepo: options.cosechasRepo,
+        cosechasRepo: cosechasRepoActivo,
         aplicacionesRepo: options.aplicacionesRepo,
         insumosRepo: options.insumosRepo,
         fincasRepo: options.fincasRepo,

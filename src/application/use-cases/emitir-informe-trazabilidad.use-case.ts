@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { InformesTrazabilidadRepositoryPort } from '../../core/ports/informes-trazabilidad-repository.port.js';
 import { InformeTrazabilidadLog } from '../../core/domain/entities/informe-trazabilidad-log.entity.js';
 import { ObtenerRecorridoTrazabilidadUseCase } from './recorrido-trazabilidad.use-case.js';
@@ -88,7 +88,7 @@ export class EmitirInformeTrazabilidadUseCase {
         incluirCostos,
       },
       emitidoEn: timestampEmision,
-      hashContenido: null,
+      hashContenido: createHash('sha256').update(contenido).digest('hex'),
     });
 
     await this.deps.informesRepo.guardar(log);

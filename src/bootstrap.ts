@@ -32,6 +32,8 @@ import { InMemoryInsumosCatalogoRepository } from '../tests/mocks/in-memory-insu
 import { InMemoryAplicacionesRepository } from '../tests/mocks/in-memory-aplicaciones.repository.js';
 import { InMemoryActividadesRepository } from '../tests/mocks/in-memory-actividades.repository.js';
 import { InMemoryCatalogosActividadesRepository } from '../tests/mocks/in-memory-catalogos-actividades.repository.js';
+import { InMemoryCosechasRepository } from '../tests/mocks/in-memory-cosechas.repository.js';
+import { DrizzleInformesTrazabilidadRepository } from './infrastructure/database/repositories/drizzle-informes-trazabilidad.repository.js';
 
 export interface ServidorProduccionOptions {
   connectionString?: string;
@@ -70,6 +72,8 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
     poscosechaRepo,
     almacenamientoRepo,
     destinosProduccionRepo: almacenamientoRepo,
+    cosechasRepo: new InMemoryCosechasRepository(),
+    informesRepo: new DrizzleInformesTrazabilidadRepository(db),
     actividadesRealizadasRepo: new DrizzleActividadesRealizadasRepository(db),
     monitoreosRepo: new DrizzleMonitoreosRepository(db),
     accesoRecursosAgricolasRepo: new DrizzleAccesoRecursosAgricolasRepository(db),

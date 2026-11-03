@@ -26,9 +26,21 @@ export interface ResumenMeteorologicoDto {
   observacionesClimaticas: string[];
 }
 
+export type TipoHitoTimeline =
+  | 'INICIO_CICLO'
+  | 'LABOR_CULTURAL'
+  | 'MONITOREO'
+  | 'APLICACION'
+  | 'COSECHA'
+  | 'CLASIFICACION'
+  | 'ACONDICIONAMIENTO'
+  | 'ALMACENAMIENTO'
+  | 'DESPACHO'
+  | 'DESTINO';
+
 export interface HitoTimelineBaseDto {
   id: string;
-  tipo: 'INICIO_CICLO' | 'LABOR_CULTURAL' | 'APLICACION' | 'COSECHA' | 'DESPACHO';
+  tipo: TipoHitoTimeline;
   fecha: string;
   titulo: string;
   descripcion: string;
@@ -42,8 +54,62 @@ export interface BalanceMasaCosechaDto {
   totalCosechadoKg: number;
   comercializableKg: number;
   descarteKg: number;
+  acondicionadoKg?: number;
+  almacenadoCamaraKg?: number;
   despachadoKg: number;
   saldoRemanenteKg: number;
+}
+
+export interface DetallePoscosechaTrazabilidadDto {
+  clasificaciones?: Array<{
+    id: string;
+    fechaClasificacion: string;
+    cantidadRecibidaKg: number;
+    kgFresco: number;
+    kgIndustria: number;
+    kgDescarte: number;
+    motivosDescarte?: any;
+    partidas?: Array<{
+      id: string;
+      categoria: 'FRESCO' | 'INDUSTRIA';
+      cantidadInicialKg: number;
+      cantidadDisponibleKg: number;
+    }>;
+  }>;
+  partidasProduccion?: Array<{
+    id: string;
+    categoria: 'FRESCO' | 'INDUSTRIA';
+    cantidadInicialKg: number;
+    cantidadDisponibleKg: number;
+    cantidadAcondicionadaKg?: number;
+    cantidadEnCamaraKg?: number;
+    cantidadDestinadaKg?: number;
+  }>;
+  acondicionamientos?: Array<{
+    id: string;
+    partidaProduccionId: string;
+    fechaAcondicionamiento: string;
+    tipoAcondicionamiento: string;
+    tipoEnvase: string;
+    cantidadKg: number;
+    cantidadEnvases: number;
+  }>;
+  movimientosAlmacenamiento?: Array<{
+    id: string;
+    partidaProduccionId: string;
+    camaraSectorId: string;
+    tipoMovimiento: 'INGRESO' | 'SALIDA';
+    cantidadKg: number;
+    fechaMovimiento: string;
+  }>;
+  destinos?: Array<{
+    id: string;
+    partidaProduccionId: string;
+    fechaDestino: string;
+    tipoDestino: string;
+    destinoEspecifico: string;
+    cantidadDestinadaKg: number;
+  }>;
 }
 
 export interface RecorridoTrazabilidadOutputDto {
@@ -84,6 +150,7 @@ export interface RecorridoTrazabilidadOutputDto {
     estado: string;
   };
   origenPlantines: OrigenPlantinesDto | null;
+  poscosecha?: DetallePoscosechaTrazabilidadDto;
   balanceMasa: BalanceMasaCosechaDto;
   resumenMeteorologico: ResumenMeteorologicoDto;
   auditoriaCalidad: AuditoriaCalidadTrazabilidadDto;

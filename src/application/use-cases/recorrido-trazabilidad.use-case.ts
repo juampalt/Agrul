@@ -7,6 +7,17 @@ import { DespachosRepositoryPort } from '../../core/ports/despachos-repository.p
 import { DestinatariosRepositoryPort } from '../../core/ports/destinatarios-repository.port.js';
 import { FincasRepositoryPort } from '../../core/ports/fincas-repository.port.js';
 import { InsumosCatalogoRepository } from '../../core/ports/insumos-catalogo-repository.port.js';
+import { ClasificacionesRepositoryPort } from '../../core/ports/clasificaciones-repository.port.js';
+import {
+  PoscosechaAlmacenamientoRepositoryPort,
+  AlmacenamientoProduccionRepositoryPort,
+} from '../../core/ports/poscosecha-almacenamiento-repository.port.js';
+import { DestinosRepositoryPort } from '../../core/ports/destinos-repository.port.js';
+import { MonitoreosRepositoryPort } from '../../core/ports/monitoreos-repository.port.js';
+import { PlantacionesRepositoryPort } from '../../core/ports/plantaciones-repository.port.js';
+import { CosechasRegistroRepositoryPort } from '../../core/ports/cosechas-registro-repository.port.js';
+import { ActorCosechas } from '../../core/domain/entities/cosecha-registrada.js';
+import { CodigoTrazabilidadCosecha } from '../../core/domain/value-objects/codigo-trazabilidad-cosecha.vo.js';
 import { EntidadNoEncontradaError } from '../../core/domain/errors/domain.error.js';
 import {
   RecorridoTrazabilidadOutputDto,
@@ -14,10 +25,11 @@ import {
   LagunaInformacionDto,
   ResumenMeteorologicoDto,
   BalanceMasaCosechaDto,
+  DetallePoscosechaTrazabilidadDto,
 } from '../dtos/recorrido-trazabilidad.dto.js';
 
 export interface ObtenerRecorridoTrazabilidadParams {
-  identificador: string; // ID o código de trazabilidad de cosecha, o ID/código de lote
+  identificador: string; // ID o código de cosecha, lote, ciclo, partida, clasificación o destino
 }
 
 export interface ObtenerRecorridoTrazabilidadDependencies {
@@ -30,6 +42,13 @@ export interface ObtenerRecorridoTrazabilidadDependencies {
   destinatariosRepo?: DestinatariosRepositoryPort;
   fincasRepo?: FincasRepositoryPort;
   insumosRepo?: InsumosCatalogoRepository;
+  cosechasRegistroRepo?: CosechasRegistroRepositoryPort;
+  clasificacionesRepo?: ClasificacionesRepositoryPort;
+  poscosechaRepo?: PoscosechaAlmacenamientoRepositoryPort;
+  almacenamientoRepo?: AlmacenamientoProduccionRepositoryPort;
+  destinosRepo?: DestinosRepositoryPort;
+  monitoreosRepo?: MonitoreosRepositoryPort;
+  plantacionesRepo?: PlantacionesRepositoryPort;
 }
 
 export class ObtenerRecorridoTrazabilidadUseCase {
@@ -42,14 +61,92 @@ export class ObtenerRecorridoTrazabilidadUseCase {
     }
 
     const idLimpio = identificador.trim();
+    const actorInterno: ActorCosechas = { usuarioId: 'sistema-trazabilidad' };
 
-    // 1. Localizar la cosecha (por ID, código de trazabilidad o por lote)
-    let cosecha = await this.deps.cosechasRepo.buscarPorId(idLimpio);
+    // 1. Localización bidireccional de la cosecha (RN-25: Trace-back desde cualquier punto de la cadena)
+    let cosecha: any = await this.deps.cosechasRepo.buscarPorId(idLimpio);
     if (!cosecha) {
       cosecha = await this.deps.cosechasRepo.buscarPorCodigo(idLimpio);
     }
 
-    // Si aún no se encontró, probar si el identificador corresponde a un lote
+    // 1.1 Si no se encontró por ID/código directo, verificar en cosechasRegistroRepo (AGRUL-056)
+    if (!cosecha && this.deps.cosechasRegistroRepo) {
+      try {
+        const cr = await this.deps.cosechasRegistroRepo.buscarPorId(idLimpio, actorInterno);
+        if (cr) {
+          cosecha = {
+            id: cr.id,
+            codigoTrazabilidad: CodigoTrazabilidadCosecha.crear(cr.codigoTrazabilidad),
+            cicloId: cr.cicloId,
+            loteId: cr.loteId,
+            fecha: cr.fechaEfectiva ?? cr.fecha,
+            cantidadCosechadaKg: cr.cantidadCosechadaKg,
+            cantidadComercializableKg: cr.cantidadComercializableKg ?? cr.cantidadCosechadaKg,
+            cantidadDescarteKg: cr.cantidadDescarteKg ?? 0,
+            responsableId: cr.responsableId,
+            cuadrillaId: null,
+            motivoDescarte: null,
+            observacionesCalidad: cr.observaciones,
+            recipientes: [],
+            superficieCosechadaHa: null,
+            estado: cr.estado,
+            toJSON: () => ({ historialModificaciones: [] }),
+          };
+        }
+      } catch {
+        // Continuar con resolución alternativa
+      }
+    }
+
+    // 1.2 Resolución desde Destinos de Producción (Trace-back desde el cliente/despacho)
+    if (!cosecha && this.deps.destinosRepo) {
+      try {
+        const destino = await this.deps.destinosRepo.obtenerDestino(idLimpio, actorInterno);
+        if (destino && this.deps.poscosechaRepo) {
+          const partida = await this.deps.poscosechaRepo.obtenerPartida(destino.partidaProduccionId, actorInterno);
+          if (partida?.clasificacionId && this.deps.clasificacionesRepo) {
+            const clasif = await this.deps.clasificacionesRepo.obtenerClasificacion(partida.clasificacionId, actorInterno);
+            if (clasif?.cosechaId) {
+              cosecha = await this.deps.cosechasRepo.buscarPorId(clasif.cosechaId) ??
+                await this.deps.cosechasRepo.buscarPorCodigo(clasif.cosechaId);
+            }
+          }
+        }
+      } catch {
+        // Continuar
+      }
+    }
+
+    // 1.3 Resolución desde Partida de Producción
+    if (!cosecha && this.deps.poscosechaRepo) {
+      try {
+        const partida = await this.deps.poscosechaRepo.obtenerPartida(idLimpio, actorInterno);
+        if (partida?.clasificacionId && this.deps.clasificacionesRepo) {
+          const clasif = await this.deps.clasificacionesRepo.obtenerClasificacion(partida.clasificacionId, actorInterno);
+          if (clasif?.cosechaId) {
+            cosecha = await this.deps.cosechasRepo.buscarPorId(clasif.cosechaId) ??
+              await this.deps.cosechasRepo.buscarPorCodigo(clasif.cosechaId);
+          }
+        }
+      } catch {
+        // Continuar
+      }
+    }
+
+    // 1.4 Resolución desde Clasificación de Cosecha
+    if (!cosecha && this.deps.clasificacionesRepo) {
+      try {
+        const clasif = await this.deps.clasificacionesRepo.obtenerClasificacion(idLimpio, actorInterno);
+        if (clasif?.cosechaId) {
+          cosecha = await this.deps.cosechasRepo.buscarPorId(clasif.cosechaId) ??
+            await this.deps.cosechasRepo.buscarPorCodigo(clasif.cosechaId);
+        }
+      } catch {
+        // Continuar
+      }
+    }
+
+    // 1.5 Resolución desde Lote (loteId o codigoLote)
     if (!cosecha) {
       let loteEncontrado = await this.deps.lotesRepo.buscarPorId(idLimpio);
       if (!loteEncontrado) {
@@ -58,9 +155,26 @@ export class ObtenerRecorridoTrazabilidadUseCase {
       if (loteEncontrado) {
         const cosechasDelLote = await this.deps.cosechasRepo.listar({ loteId: loteEncontrado.id });
         if (cosechasDelLote.length > 0) {
-          // Tomar la cosecha más reciente del lote
           cosecha = cosechasDelLote.sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
         }
+      }
+    }
+
+    // 1.6 Resolución desde Ciclo Productivo (cicloId o codigoCiclo)
+    if (!cosecha && this.deps.ciclosRepo) {
+      try {
+        let cicloEncontrado = await this.deps.ciclosRepo.buscarPorId(idLimpio);
+        if (!cicloEncontrado && typeof (this.deps.ciclosRepo as any).buscarPorCodigo === 'function') {
+          cicloEncontrado = await (this.deps.ciclosRepo as any).buscarPorCodigo(idLimpio);
+        }
+        if (cicloEncontrado) {
+          const cosechasDelCiclo = await this.deps.cosechasRepo.listar({ cicloId: cicloEncontrado.id });
+          if (cosechasDelCiclo.length > 0) {
+            cosecha = cosechasDelCiclo.sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
+          }
+        }
+      } catch {
+        // Continuar
       }
     }
 
@@ -86,7 +200,7 @@ export class ObtenerRecorridoTrazabilidadUseCase {
       }
     }
 
-    // 3. Obtener Ciclo Productivo
+    // 3. Obtener Ciclo Productivo y Plantación
     let ciclo = this.deps.ciclosRepo ? await this.deps.ciclosRepo.buscarPorId(cosecha.cicloId) : null;
     const cicloProps = ciclo
       ? {
@@ -110,6 +224,31 @@ export class ObtenerRecorridoTrazabilidadUseCase {
           estado: 'ABIERTO',
         };
 
+    // Origen de plantines / plantación
+    let origenPlantinesData = {
+      codigoPartida: null as string | null,
+      proveedor: null as string | null,
+      variedad: cicloProps.variedad,
+      cantidadPlantines: null as number | null,
+    };
+
+    if (this.deps.plantacionesRepo && ciclo && (ciclo as any).plantacionId) {
+      try {
+        const plantacion = await this.deps.plantacionesRepo.buscarPorId((ciclo as any).plantacionId);
+        if (plantacion) {
+          const pProps = plantacion.toJSON();
+          origenPlantinesData = {
+            codigoPartida: pProps.id,
+            proveedor: pProps.procedencia ?? null,
+            variedad: cicloProps.variedad,
+            cantidadPlantines: pProps.cantidadInicialPlantas ?? null,
+          };
+        }
+      } catch {
+        // Continuar
+      }
+    }
+
     // 4. Labores culturales
     const actividades = this.deps.actividadesRepo
       ? await this.deps.actividadesRepo.listar({ loteId: cosecha.loteId, cicloId: cosecha.cicloId })
@@ -120,12 +259,95 @@ export class ObtenerRecorridoTrazabilidadUseCase {
       ? await this.deps.aplicacionesRepo.listar({ loteId: cosecha.loteId, cicloId: cosecha.cicloId })
       : [];
 
-    // 6. Despachos asociados a esta cosecha
+    // 6. Despachos asociados
     const despachos = this.deps.despachosRepo
       ? await this.deps.despachosRepo.listarPorCosecha(cosecha.id)
       : [];
 
-    // 7. Auditoría de Lagunas (RF-M6-06)
+    // 7. Monitoreos fitosanitarios (RF-M3-11)
+    let monitoreos: any[] = [];
+    if (this.deps.monitoreosRepo) {
+      try {
+        monitoreos = await this.deps.monitoreosRepo.listar(
+          { cicloId: cosecha.cicloId, limit: 100, offset: 0 }
+        );
+      } catch {
+        monitoreos = [];
+      }
+    }
+
+    // 8. Poscosecha: Clasificaciones, Acondicionamientos, Almacenamiento y Destinos (CU47–CU54)
+    let clasificacionesList: any[] = [];
+    let acondicionamientosList: any[] = [];
+    let almacenamientoList: any[] = [];
+    let destinosList: any[] = [];
+
+    if (this.deps.clasificacionesRepo) {
+      try {
+        clasificacionesList = await this.deps.clasificacionesRepo.listarClasificaciones(
+          { cosechaId: cosecha.id, limit: 100, offset: 0 },
+          actorInterno
+        );
+      } catch {
+        clasificacionesList = [];
+      }
+    }
+
+    if (this.deps.poscosechaRepo && clasificacionesList.length > 0) {
+      try {
+        for (const cl of clasificacionesList) {
+          if (cl.partidas && Array.isArray(cl.partidas)) {
+            for (const part of cl.partidas) {
+              const acons = await this.deps.poscosechaRepo.listarAcondicionamientos(
+                { partidaProduccionId: part.id, limit: 100, offset: 0 },
+                actorInterno
+              );
+              acondicionamientosList.push(...acons);
+            }
+          }
+        }
+      } catch {
+        // Continuar
+      }
+    }
+
+    if (this.deps.almacenamientoRepo && clasificacionesList.length > 0) {
+      try {
+        for (const cl of clasificacionesList) {
+          if (cl.partidas && Array.isArray(cl.partidas)) {
+            for (const part of cl.partidas) {
+              const movs = await this.deps.almacenamientoRepo.listarMovimientos(
+                { partidaProduccionId: part.id, limit: 100, offset: 0 },
+                actorInterno
+              );
+              almacenamientoList.push(...movs);
+            }
+          }
+        }
+      } catch {
+        // Continuar
+      }
+    }
+
+    if (this.deps.destinosRepo && clasificacionesList.length > 0) {
+      try {
+        for (const cl of clasificacionesList) {
+          if (cl.partidas && Array.isArray(cl.partidas)) {
+            for (const part of cl.partidas) {
+              const dests = await this.deps.destinosRepo.listarDestinos(
+                { partidaProduccionId: part.id, limit: 100, offset: 0 },
+                actorInterno
+              );
+              destinosList.push(...dests);
+            }
+          }
+        }
+      } catch {
+        // Continuar
+      }
+    }
+
+    // 9. Auditoría de Lagunas (RF-M6-06)
     const todasLasLagunas: LagunaInformacionDto[] = [];
 
     // Lagunas en origen / plantines
@@ -194,6 +416,29 @@ export class ObtenerRecorridoTrazabilidadUseCase {
         estado: cicloProps.estado,
       },
     });
+
+    // Hitos: Monitoreos de Campo
+    for (const mon of monitoreos) {
+      timeline.push({
+        id: `mon-${mon.id}`,
+        tipo: 'MONITOREO',
+        fecha: mon.fechaInspeccion,
+        titulo: `Monitoreo de Campo: ${mon.problemaDetectado ?? mon.tipoObservacion}`,
+        descripcion: `Inspección en sector ${mon.sectorObservado}. Hallazgos: ${mon.descripcionHallazgos}${mon.accionRecomendada ? ' | Acción recomendada: ' + mon.accionRecomendada : ''}`,
+        responsable: mon.responsableId,
+        tieneLagunas: false,
+        lagunasHito: [],
+        detalles: {
+          sectorObservado: mon.sectorObservado,
+          etapaFenologica: mon.etapaFenologica,
+          estadoGeneralCultivo: mon.estadoGeneralCultivo,
+          tipoObservacion: mon.tipoObservacion,
+          problemaDetectado: mon.problemaDetectado,
+          descripcionHallazgos: mon.descripcionHallazgos,
+          accionRecomendada: mon.accionRecomendada,
+        },
+      });
+    }
 
     // Hitos: Labores Culturales
     for (const act of actividades) {
@@ -275,7 +520,6 @@ export class ObtenerRecorridoTrazabilidadUseCase {
         if (app.condicionesClima.observaciones) observacionesClima.push(app.condicionesClima.observaciones);
       }
 
-      // Detalle enriquecido de líneas de insumos
       const lineasDetalle = [];
       for (const lin of app.lineas) {
         let insumoInfo: any = null;
@@ -351,7 +595,59 @@ export class ObtenerRecorridoTrazabilidadUseCase {
       },
     });
 
-    // Hitos: Despachos a Destino
+    // Hitos: Clasificaciones Poscosecha (CU47 / CU48 / RN-20)
+    for (const cl of clasificacionesList) {
+      timeline.push({
+        id: `clasif-${cl.id}`,
+        tipo: 'CLASIFICACION',
+        fecha: cl.fechaClasificacion,
+        titulo: `Clasificación Poscosecha (${cl.cantidadRecibidaKg} kg)`,
+        descripcion: `Fresco: ${cl.kgFresco} kg | Industria: ${cl.kgIndustria} kg | Descarte: ${cl.kgDescarte} kg`,
+        responsable: cl.responsableId,
+        tieneLagunas: false,
+        lagunasHito: [],
+        detalles: {
+          clasificacionId: cl.id,
+          cantidadRecibidaKg: cl.cantidadRecibidaKg,
+          kgFresco: cl.kgFresco,
+          kgIndustria: cl.kgIndustria,
+          kgDescarte: cl.kgDescarte,
+          motivosDescarte: cl.motivosDescarte,
+        },
+      });
+    }
+
+    // Hitos: Acondicionamientos (CU49 / CU50 / RN-21)
+    for (const ac of acondicionamientosList) {
+      timeline.push({
+        id: `acon-${ac.id}`,
+        tipo: 'ACONDICIONAMIENTO',
+        fecha: ac.fechaAcondicionamiento,
+        titulo: `Acondicionamiento: ${ac.tipoAcondicionamiento} (${ac.cantidadKg} kg)`,
+        descripcion: `${ac.cantidadEnvases} envases (${ac.tipoEnvase}) acondicionados para partida ${ac.partidaProduccionId.slice(0, 8)}.`,
+        responsable: ac.responsableId,
+        tieneLagunas: false,
+        lagunasHito: [],
+        detalles: ac,
+      });
+    }
+
+    // Hitos: Movimientos en Cámaras Frigoríficas (CU51 / CU52 / RN-23)
+    for (const mov of almacenamientoList) {
+      timeline.push({
+        id: `cam-${mov.id}`,
+        tipo: 'ALMACENAMIENTO',
+        fecha: mov.fechaMovimiento,
+        titulo: `Cámara Frigorífica: ${mov.tipoMovimiento} (${mov.cantidadKg} kg)`,
+        descripcion: `${mov.tipoMovimiento} de ${mov.cantidadKg} kg en sector de cámara ${mov.camaraSectorId.slice(0, 8)}.`,
+        responsable: mov.responsableId,
+        tieneLagunas: false,
+        lagunasHito: [],
+        detalles: mov,
+      });
+    }
+
+    // Hitos: Despachos y Destinos Comerciales (CU53 / CU54 / RN-24 / RN-25)
     let totalDespachadoKg = 0;
     for (const desp of despachos) {
       totalDespachadoKg += desp.cantidadEnviadaKg;
@@ -400,15 +696,58 @@ export class ObtenerRecorridoTrazabilidadUseCase {
       });
     }
 
+    // Destinos Poscosecha directos (CU53 / CU54)
+    for (const dest of destinosList) {
+      totalDespachadoKg += dest.cantidadDestinadaKg;
+      timeline.push({
+        id: `dest-${dest.id}`,
+        tipo: 'DESTINO',
+        fecha: dest.fechaDestino,
+        titulo: `Destino Comercial: ${dest.tipoDestino} (${dest.cantidadDestinadaKg} kg)`,
+        descripcion: `Asignación de ${dest.cantidadDestinadaKg} kg con destino específico '${dest.destinoEspecifico}'.`,
+        responsable: dest.responsableId,
+        tieneLagunas: false,
+        lagunasHito: [],
+        detalles: dest,
+      });
+    }
+
     // Ordenar timeline cronológicamente de forma ascendente
     timeline.sort((a, b) => a.fecha.localeCompare(b.fecha));
 
     // Balance de masa final
-    const saldoRemanenteKg = Math.max(0, cosecha.cantidadComercializableKg - totalDespachadoKg);
+    let comercializableKg = cosecha.cantidadComercializableKg;
+    let descarteKg = cosecha.cantidadDescarteKg;
+    let acondicionadoKg = 0;
+    let almacenadoCamaraKg = 0;
+
+    if (clasificacionesList.length > 0) {
+      const sumFresco = clasificacionesList.reduce((s, c) => s + (Number(c.kgFresco) || 0), 0);
+      const sumIndustria = clasificacionesList.reduce((s, c) => s + (Number(c.kgIndustria) || 0), 0);
+      const sumDescarte = clasificacionesList.reduce((s, c) => s + (Number(c.kgDescarte) || 0), 0);
+      comercializableKg = sumFresco + sumIndustria;
+      descarteKg = sumDescarte;
+    }
+
+    if (acondicionamientosList.length > 0) {
+      acondicionadoKg = acondicionamientosList.reduce((s, a) => s + (Number(a.cantidadKg) || 0), 0);
+    }
+
+    if (almacenamientoList.length > 0) {
+      almacenadoCamaraKg = almacenamientoList.reduce(
+        (s, m) => s + (m.tipoMovimiento === 'INGRESO' ? Number(m.cantidadKg) : -Number(m.cantidadKg)),
+        0
+      );
+      if (almacenadoCamaraKg < 0) almacenadoCamaraKg = 0;
+    }
+
+    const saldoRemanenteKg = Math.max(0, comercializableKg - totalDespachadoKg);
     const balanceMasa: BalanceMasaCosechaDto = {
       totalCosechadoKg: cosecha.cantidadCosechadaKg,
-      comercializableKg: cosecha.cantidadComercializableKg,
-      descarteKg: cosecha.cantidadDescarteKg,
+      comercializableKg,
+      descarteKg,
+      acondicionadoKg: acondicionadoKg > 0 ? acondicionadoKg : undefined,
+      almacenadoCamaraKg: almacenadoCamaraKg > 0 ? almacenadoCamaraKg : undefined,
       despachadoKg: totalDespachadoKg,
       saldoRemanenteKg,
     };
@@ -428,6 +767,24 @@ export class ObtenerRecorridoTrazabilidadUseCase {
       registrosClimaticosContados: temperaturas.length + vientos.length + (lluviaAcumulada > 0 ? 1 : 0),
       observacionesClimaticas: observacionesClima,
     };
+
+    const partidasProduccionList: any[] = [];
+    for (const cl of clasificacionesList) {
+      if (cl.partidas && Array.isArray(cl.partidas)) {
+        partidasProduccionList.push(...cl.partidas);
+      }
+    }
+
+    const poscosechaDto: DetallePoscosechaTrazabilidadDto | undefined =
+      clasificacionesList.length > 0 || acondicionamientosList.length > 0 || almacenamientoList.length > 0 || destinosList.length > 0
+        ? {
+            clasificaciones: clasificacionesList,
+            partidasProduccion: partidasProduccionList,
+            acondicionamientos: acondicionamientosList,
+            movimientosAlmacenamiento: almacenamientoList,
+            destinos: destinosList,
+          }
+        : undefined;
 
     return {
       identificadorConsultado: idLimpio,
@@ -457,12 +814,8 @@ export class ObtenerRecorridoTrazabilidadUseCase {
         superficieHa: lote.superficieHa ?? null,
       },
       ciclo: cicloProps,
-      origenPlantines: {
-        codigoPartida: null,
-        proveedor: null,
-        variedad: cicloProps.variedad,
-        cantidadPlantines: null,
-      },
+      origenPlantines: origenPlantinesData,
+      poscosecha: poscosechaDto,
       balanceMasa,
       resumenMeteorologico,
       auditoriaCalidad: {
