@@ -26,8 +26,8 @@
 | **Épica 15: Módulo 9 — Inventario de Insumos y Stock** | 5 | 3 | 0 | 2 |
 | **Épica 16: Módulo 10 — Información Agro-Meteorológica** | 3 | 2 | 0 | 1 |
 | **Épica 17: Requisitos No Funcionales & Cumplimiento Normativo** | 2 | 2 | 0 | 0 |
-| **Épica 18: Implementación Oficial SGTA (CU01 - CU70)** | 8 | 1 | 0 | 7 |
-| **TOTAL GENERAL** | **58** | **41** | **0** | **17** |
+| **Épica 18: Implementación Oficial SGTA (CU01 - CU70)** | 8 | 8 | 0 | 0 |
+| **TOTAL GENERAL** | **58** | **48** | **0** | **10** |
 
 ---
 
@@ -1144,12 +1144,12 @@
 
 ### `[AGRUL-058]` Módulos 6 & 7: Trazabilidad Integral e Indicadores Productivos (CU56, CU58)
 - **GitHub Issue:** [#52](https://github.com/juampalt/Agrul/issues/52)
-- **Estado:** `TODO` 📌
+- **Estado:** `DONE` ✅
 - **Prioridad:** Alta (P1)
 - **Módulo:** Módulos 6 & 7: Trazabilidad y Reportes
 - **Casos de Uso:** CU56, CU57, CU58
 - **Reglas de Negocio:** RN-25, RN-27, RN-30
 - **Skills:** [.cursor/skills/domain-traceability.md](file:///c:/AGRUL/.cursor/skills/domain-traceability.md), [.cursor/skills/database-events.md](file:///c:/AGRUL/.cursor/skills/database-events.md)
-- **Etiquetas:** `trazabilidad`, `reportes`, `indicadores`, `cu56-cu58`, `ready-for-agent`
+- **Etiquetas:** `trazabilidad`, `reportes`, `indicadores`, `cu56-cu58`, `status:done`
 - **Descripción:** Reconstrucción de la historia completa de una producción desde el lote y labores hasta el destino, e indicadores de rendimiento (kg/ha, % descarte, consumo insumos) distinguiendo valores cero de datos ausentes.
-
+- **Validación de cierre:** Casos de uso de reconstrucción de trazabilidad (CU56, CU57) e indicadores consolidados (CU58) implementados y validados con suite de pruebas integradas y unitarias. Cerrado en commit c6331ff (closes #52).
