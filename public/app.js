@@ -326,25 +326,25 @@ document.addEventListener('DOMContentLoaded', () => {
             <input type="checkbox" class="lote-checkbox" data-id="${l.id}" aria-label="Seleccionar lote ${l.codigoLote}">
           </td>
           <td>
-            <div style="font-weight: 700; color: #f8fafc; font-size: 14px;">${zoneName}</div>
-            <span class="batch-code" style="font-size: 11px; margin-top: 2px;">${l.codigoLote}</span>
+            <div style="font-weight: 700; color: #0f172a; font-size: 14px;">${zoneName}</div>
+            <span class="batch-code" style="font-size: 11px; margin-top: 2px; background: #f1f5f9; color: #065f46; border: 1px solid #e2e8f0;">${l.codigoLote}</span>
           </td>
           <td>
-            <div class="product-title" style="font-weight: 600;">${l.producto} ${surfaceBadge}</div>
-            <div class="product-variety" style="font-size: 12px; color: #94a3b8;">${l.variedad || 'Sin variedad especificada'}</div>
+            <div class="product-title" style="font-weight: 600; color: #0f172a;">${l.producto} ${surfaceBadge}</div>
+            <div class="product-variety" style="font-size: 12px; color: #64748b;">${l.variedad || 'Sin variedad especificada'}</div>
           </td>
           <td>
             ${healthBadge}
             <span class="status-badge ${estadoClase}" style="font-size: 10px; margin-left: 4px;">${l.estadoActual}</span>
           </td>
           <td>
-            <strong style="color: #f8fafc; font-size: 13.5px;">${moistureVal}%</strong>
+            <strong style="color: #0f172a; font-size: 13.5px;">${moistureVal}%</strong>
           </td>
           <td>
-            <span style="color: #cbd5e1; font-size: 13.5px;">${tempVal}°C</span>
+            <span style="color: #334155; font-size: 13.5px;">${tempVal}°C</span>
           </td>
           <td>
-            <span style="color: #94a3b8; font-size: 12.5px; font-weight: 500;">${growthStage}</span>
+            <span style="color: #64748b; font-size: 12.5px; font-weight: 500;">${growthStage}</span>
           </td>
           <td>
             <div class="action-buttons">

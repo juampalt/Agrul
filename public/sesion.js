@@ -114,8 +114,15 @@
         boton.disabled = false; boton.textContent = 'Ingresar';
       }
     });
+    const logoSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    logoSvg.setAttribute('viewBox', '0 0 40 40');
+    logoSvg.setAttribute('width', '38');
+    logoSvg.setAttribute('height', '38');
+    logoSvg.innerHTML = '<path d="M14 6L24 4L28 15L18 17Z" fill="#6ee7b7"/><path d="M18 17L28 15L34 24L24 26Z" fill="#10b981"/><path d="M24 26L18 36L10 30L16 20Z" fill="#047857"/><path d="M6 14L14 12L18 20L10 22Z" fill="#065f46"/>';
+
     const tarjeta = el('div', { class: 'ingreso-tarjeta' },
-      el('div', { class: 'ingreso-marca' }, el('span', { class: 'brand-icon', 'aria-hidden': 'true' }, '🌱'),
+      el('div', { class: 'ingreso-marca' },
+        el('div', { class: 'brand-logo-photo', title: 'Agrul TraceEngine' }, logoSvg),
         el('div', {}, el('h1', {}, 'Agrul'), el('p', {}, 'Trazabilidad agroindustrial'))),
       el('h2', {}, 'Iniciar sesión'), formulario,
       el('div', { class: 'ingreso-demo-ayuda', style: 'margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.85rem; text-align: center;' },

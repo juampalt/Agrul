@@ -18,77 +18,149 @@
     <aside id="menu-lateral" class="app-sidebar" aria-label="Navegación principal">
       <div class="side-brand">
         <div class="brand">
-          <div class="brand-badge-modern" title="Agrul TraceEngine">
-            <svg viewBox="0 0 32 32" fill="none" class="brand-svg-badge">
-              <rect width="32" height="32" rx="10" fill="#10b981" />
-              <path d="M16 6C16 6 12 11 12 16C12 18.2 13.8 20 16 20C18.2 20 20 18.2 20 16C20 11 16 6 16 6Z" fill="#ffffff" />
-              <path d="M16 26V18" stroke="#064e3b" stroke-width="2.5" stroke-linecap="round" />
-              <path d="M12 15C10 13 8 13.5 7 14.5C6 16.5 7.5 19 12 17" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" fill="none" />
+          <div class="brand-logo-photo" title="Agrul TraceEngine">
+            <svg viewBox="0 0 40 40" width="34" height="34" fill="none">
+              <path d="M14 6L24 4L28 15L18 17Z" fill="#6ee7b7" />
+              <path d="M18 17L28 15L34 24L24 26Z" fill="#10b981" />
+              <path d="M24 26L18 36L10 30L16 20Z" fill="#047857" />
+              <path d="M6 14L14 12L18 20L10 22Z" fill="#065f46" />
             </svg>
           </div>
           <div class="brand-info">
             <h1>Agrul <span>TraceEngine</span></h1>
-            <p class="tagline">Trazabilidad Agroindustrial de Precisión</p>
+            <p class="tagline">Trazabilidad Agroindustrial</p>
           </div>
         </div>
       </div>
       <nav class="side-nav">
         <p class="side-title">Vistas</p>
-        <button class="nav-item" data-roles="ADMIN_SISTEMA" data-nav="inicio" data-titulo="Inicio" data-subtitulo="Accesos del administrador del sistema" type="button"><span class="btn-icon">🏠</span> Inicio</button>
-        <button class="nav-item active" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="lotes" data-titulo="Trazabilidad de lotes" data-subtitulo="Inventario de lotes, estados y stock" type="button"><span class="btn-icon">🌾</span> Trazabilidad de lotes</button>
-        <button id="btn-toggle-dashboard" class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="tablero" data-titulo="Tablero ejecutivo" data-subtitulo="Resumen operativo: producción, stock, labores y costos" type="button" title="Tablero Ejecutivo de Inicio con Resumen Operativo y Gráficos"><span class="btn-icon">📈</span> Tablero ejecutivo</button>
+        <button class="nav-item" data-roles="ADMIN_SISTEMA" data-nav="inicio" data-titulo="Inicio" data-subtitulo="Accesos del administrador del sistema" type="button">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </span>
+          Inicio
+        </button>
+        <button class="nav-item active" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="lotes" data-titulo="Trazabilidad de lotes" data-subtitulo="Inventario de lotes, estados y stock" type="button">
+          <span class="btn-icon icon-dashboard-grid">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+              <rect x="3" y="3" width="7.5" height="7.5" rx="2.5"/>
+              <rect x="13.5" y="3" width="7.5" height="7.5" rx="2.5"/>
+              <rect x="3" y="13.5" width="7.5" height="7.5" rx="2.5"/>
+              <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2.5"/>
+            </svg>
+          </span>
+          Dashboard
+        </button>
+        <button id="btn-toggle-dashboard" class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="tablero" data-titulo="Tablero ejecutivo" data-subtitulo="Resumen operativo: producción, stock, labores y costos" type="button" title="Tablero Ejecutivo de Inicio">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </span>
+          Tablero
+        </button>
 
-        <p class="side-title">Finca y catálogos</p>
-        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="finca" data-titulo="Finca" data-subtitulo="Datos generales de la finca" type="button"><span class="btn-icon">🏡</span> Finca</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="lotes-territorio" data-titulo="Lotes de la finca" data-subtitulo="Alta, modificación y baja de lotes" type="button"><span class="btn-icon">🗺️</span> Lotes de la finca</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="cultivos" data-titulo="Cultivos" data-subtitulo="Catálogo de cultivos" type="button"><span class="btn-icon">🌱</span> Cultivos</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="variedades" data-titulo="Variedades" data-subtitulo="Variedades de cada cultivo" type="button"><span class="btn-icon">🧬</span> Variedades</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="tipos-actividad" data-titulo="Tipos de actividad" data-subtitulo="Labores que se pueden programar" type="button"><span class="btn-icon">🛠️</span> Tipos de actividad</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="insumos" data-titulo="Insumos" data-subtitulo="Catálogo de insumos y sus antecedentes de uso" type="button"><span class="btn-icon">🧪</span> Insumos</button>
+        <p class="side-title">Cultivos y campo</p>
+        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="cultivos" data-titulo="Cultivos" data-subtitulo="Catálogo de cultivos" type="button">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-8"/><path d="M12 14c-3-3-6-3.5-8-1.5s1.5 5.5 8 1.5z"/><path d="M12 12c3-3 6-3.5 8-1.5s-1.5 5.5-8 1.5z"/></svg>
+          </span>
+          Cultivos
+        </button>
+        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="variedades" data-titulo="Variedades" data-subtitulo="Variedades de cada cultivo" type="button">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-7-7M5 12a7 7 0 0 0 7 7"/></svg>
+          </span>
+          Variedades
+        </button>
+        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="plantaciones" data-titulo="Plantaciones" data-subtitulo="Cultivo y variedad plantados en cada lote" type="button">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-9"/><path d="M12 13a5 5 0 0 0 5-5c0-3-5-5-5-5s-5 2-5 5a5 5 0 0 0 5 5z"/></svg>
+          </span>
+          Plantaciones
+        </button>
 
-        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="plantaciones" data-titulo="Plantaciones" data-subtitulo="Cultivo y variedad plantados en cada lote" type="button"><span class="btn-icon">🌿</span> Plantaciones</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="ciclos" data-titulo="Ciclos productivos" data-subtitulo="Planificación, inicio y cierre de ciclos" type="button"><span class="btn-icon">🔄</span> Ciclos productivos</button>
+        <p class="side-title">Clima y Ambiente</p>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="meteorologia" data-titulo="Meteorología" data-subtitulo="Observaciones climáticas de la finca" type="button">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M20 12h2"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M15.9 8.2a5 5 0 0 0-7.8 2.2 4 4 0 0 0-4.1 4.6 4 4 0 0 0 3 3h10a4 4 0 0 0 0-8c-.3 0-.7.1-1.1.2z"/></svg>
+          </span>
+          Meteorología
+        </button>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="eventos-climaticos" data-titulo="Eventos climáticos" data-subtitulo="Siniestros y daños adversos en parcelas" type="button">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </span>
+          Eventos climáticos
+        </button>
 
-        <p class="side-title">Planificación y campo</p>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="actividades-programadas" data-titulo="Actividades programadas" data-subtitulo="Labores planificadas para cada ciclo" type="button"><span class="btn-icon">📅</span> Actividades programadas</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="actividades-realizadas" data-titulo="Actividades realizadas" data-subtitulo="Labores ejecutadas" type="button"><span class="btn-icon">✅</span> Actividades realizadas</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="monitoreos" data-titulo="Monitoreos" data-subtitulo="Inspecciones de cultivo" type="button"><span class="btn-icon">🔎</span> Monitoreos</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="aplicaciones-insumos" data-titulo="Aplicaciones de insumos" data-subtitulo="Insumos aplicados y su corrección" type="button"><span class="btn-icon">💧</span> Aplicaciones de insumos</button>
+        <p class="side-title">Trazabilidad y Registros</p>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="actividades-programadas" data-titulo="Actividades programadas" data-subtitulo="Labores planificadas para cada ciclo" type="button">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </span>
+          Labores
+        </button>
+        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="cosechas" data-titulo="Cosechas realizadas" data-subtitulo="Pesajes reales por pasada" type="button">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </span>
+          Cosechas
+        </button>
 
-        <p class="side-title">Inventario</p>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="inventario-existencias" data-titulo="Existencias" data-subtitulo="Stock de insumos y alertas" type="button"><span class="btn-icon">📦</span> Existencias</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="inventario-movimientos" data-titulo="Movimientos" data-subtitulo="Ingresos, egresos y ajustes de insumos" type="button"><span class="btn-icon">↔️</span> Movimientos</button>
+        <p class="side-title">Personal</p>
+        <button id="btn-usuarios-roles" data-roles="ADMIN_SISTEMA" class="nav-item" type="button" title="Gestión de Usuarios y Cuadrillas">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+          Cuadrillas
+        </button>
 
-        <p class="side-title">Cosecha y poscosecha</p>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="cosechas-programadas" data-titulo="Cosechas programadas" data-subtitulo="Jornadas de cosecha previstas" type="button"><span class="btn-icon">🗓️</span> Cosechas programadas</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="cosechas" data-titulo="Cosechas realizadas" data-subtitulo="Pesajes reales por pasada" type="button"><span class="btn-icon">🧺</span> Cosechas realizadas</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="clasificaciones" data-titulo="Clasificación y pérdidas" data-subtitulo="Fresco, industria y descarte" type="button"><span class="btn-icon">⚖️</span> Clasificación y pérdidas</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="acondicionamientos" data-titulo="Acondicionamiento" data-subtitulo="Preparación y envasado" type="button"><span class="btn-icon">📥</span> Acondicionamiento</button>
+        <p class="side-title">Territorio</p>
+        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="lotes-territorio" data-titulo="Lotes de la finca" data-subtitulo="Alta, modificación y baja de lotes" type="button">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+          </span>
+          Territorio
+        </button>
+        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="finca" data-titulo="Finca" data-subtitulo="Datos generales de la finca" type="button">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          </span>
+          Finca
+        </button>
 
-        <p class="side-title">Almacenamiento y destinos</p>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="camaras" data-titulo="Cámaras" data-subtitulo="Cámaras y sectores de conservación" type="button"><span class="btn-icon">❄️</span> Cámaras</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="almacenamiento-movimientos" data-titulo="Movimientos de cámara" data-subtitulo="Ingresos y salidas de producción" type="button"><span class="btn-icon">🔁</span> Movimientos de cámara</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="almacenamiento-saldos" data-titulo="Saldos en cámara" data-subtitulo="Kg almacenados hoy" type="button"><span class="btn-icon">📊</span> Saldos en cámara</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="destinos" data-titulo="Destinos" data-subtitulo="Destino de la producción" type="button"><span class="btn-icon">🚚</span> Destinos</button>
+        <p class="side-title">Métricas</p>
+        <button id="btn-indicadores-produccion" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" class="nav-item" type="button" title="Métricas de Producción y Rendimiento">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </span>
+          Rendimientos
+        </button>
 
-        <p class="side-title">Clima y Meteorología</p>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="meteorologia" data-titulo="Meteorología" data-subtitulo="Observaciones climáticas de la finca" type="button"><span class="btn-icon">🌦️</span> Meteorología</button>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="eventos-climaticos" data-titulo="Eventos climáticos" data-subtitulo="Siniestros y daños adversos en parcelas" type="button"><span class="btn-icon">⚡</span> Eventos climáticos</button>
-
-        <p class="side-title">Atajos</p>
-        <button id="btn-nuevo-lote" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" class="nav-item nav-primary" type="button"><span class="btn-icon">+</span> Nuevo lote</button>
-        <button id="btn-cosecha-rapida" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" class="nav-item" type="button" title="Cosecha ultrarrápida para operarios de campo"><span class="btn-icon">⚡</span> Cosecha rápida</button>
-        <button id="btn-abrir-escaner" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" class="nav-item" type="button"><span class="btn-icon">📷</span> Escanear QR</button>
-
-        <p class="side-title">Análisis</p>
-        <button id="btn-indicadores-produccion" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" class="nav-item" type="button" title="Métricas de Producción, Rendimiento por Hectárea y Descarte"><span class="btn-icon">📊</span> Rendimientos</button>
-        <button id="btn-recall-insumo" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" class="nav-item" type="button" title="Consulta Inversa de Trazabilidad para Retiro Preventivo de Insumos (Recall)"><span class="btn-icon">🚨</span> Recall de insumos</button>
-
-        <p class="side-title">Administración</p>
-        <button id="btn-usuarios-roles" data-roles="ADMIN_SISTEMA" class="nav-item" type="button" title="Gestión de Usuarios, Autenticación y Control de Acceso por Finca"><span class="btn-icon">🔐</span> Usuarios y roles</button>
-        <button id="btn-bitacora-auditoria" data-roles="ADMIN_SISTEMA ADMINISTRADOR" class="nav-item" type="button" title="Bitácora Centralizada de Auditoría y Seguridad de Sesión"><span class="btn-icon">📜</span> Auditoría y sesión</button>
+        <p class="side-title">Configuración</p>
+        <button id="btn-bitacora-auditoria" data-roles="ADMIN_SISTEMA ADMINISTRADOR" class="nav-item" type="button" title="Auditoría del Sistema">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </span>
+          Ajustes
+        </button>
+        <button id="btn-info-sistema" class="nav-item" type="button" title="Información de Agrul">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </span>
+          Info
+        </button>
       </nav>
-      <div id="side-usuario" class="side-usuario"></div>
+      <div id="side-usuario" class="side-usuario">
+        <button id="btn-theme-toggle" class="btn-side-tool" title="Alternar tema">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button id="btn-side-logout" class="btn-side-tool btn-side-logout" title="Cerrar sesión">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ef4444" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+        <div class="side-avatar" title="Usuario conectado">
+          <span class="avatar-initials">AG</span>
+        </div>
+      </div>
     </aside>
 
     <!-- Barra Superior / Header -->
