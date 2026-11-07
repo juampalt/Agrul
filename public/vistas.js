@@ -37,7 +37,10 @@
   }
   function cerrarMenuMovil() { document.body.classList.remove('menu-abierto'); estadoMenu(); }
 
-  try { if (localStorage.getItem(CLAVE) === '1') document.body.classList.add('menu-colapsado'); } catch (_) { /* sin almacenamiento */ }
+  try { 
+    if (localStorage.getItem(CLAVE) === null) localStorage.setItem(CLAVE, '1');
+    if (localStorage.getItem(CLAVE) === '1') document.body.classList.add('menu-colapsado'); 
+  } catch (_) { /* sin almacenamiento */ }
   if (btnMenu) btnMenu.addEventListener('click', alternarMenu);
   if (overlay) overlay.addEventListener('click', cerrarMenuMovil);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && MOVIL.matches) cerrarMenuMovil(); });

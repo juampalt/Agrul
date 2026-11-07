@@ -50,3 +50,4 @@ Agrul no es un simple cuaderno de campo o ERP genérico: es un motor de trazabil
 - Contraste visual adecuado para pantallas operadas bajo luz solar directa o en galpones con iluminación variable.
 - Áreas de toque generosas para dispositivos táctiles en formularios de campo (botones grandes, campos de entrada claros).
 - Mensajes de validación y error explícitos en español rioplatense claro (ej. "Ingresá el lote", "La cantidad supera el disponible").
+

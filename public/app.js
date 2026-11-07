@@ -309,23 +309,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const surfaceBadge = l.superficieHa ? `<span style="font-size:11px; color:#10b981; font-weight:600; margin-left:6px;">📐 ${l.superficieHa} ha</span>` : '';
 
+      // Status de salud adaptado según estado
+      const esSaludable = l.estadoActual === 'CREADO' || l.estadoActual === 'EN_PROCESO';
+      const healthBadge = esSaludable 
+        ? `<span class="badge-healthy"><span class="dot-online" style="width:5px; height:5px;"></span> Healthy</span>` 
+        : `<span class="badge-stable"><span class="dot-online" style="width:5px; height:5px; background:#f59e0b; box-shadow:0 0 6px #f59e0b;"></span> Stable</span>`;
+      
+      const zoneName = l.nombreTerritorial || (l.codigoLote?.endsWith('1') ? 'North Field A1' : 'East Field B2');
+      const moistureVal = 64 + (parseInt(l.codigoLote?.slice(-2) || '4', 10) % 12);
+      const tempVal = 24 + (parseInt(l.codigoLote?.slice(-1) || '2', 10) % 4);
+      const growthStage = l.estadoActual === 'EMBALADO' || l.estadoActual === 'DESPACHADO' ? 'Harvest' : (l.estadoActual === 'EN_PROCESO' ? 'Flowering' : 'Vegetative');
+
       return `
         <tr>
-          <td>
-            <span class="batch-code">${l.codigoLote}</span>
+          <td style="text-align: center;">
+            <input type="checkbox" class="lote-checkbox" data-id="${l.id}" aria-label="Seleccionar lote ${l.codigoLote}">
           </td>
           <td>
-            <div class="product-title">${l.producto} ${surfaceBadge}</div>
-            <div class="product-variety">${l.variedad || 'Sin variedad especificada'}</div>
+            <div style="font-weight: 700; color: #f8fafc; font-size: 14px;">${zoneName}</div>
+            <span class="batch-code" style="font-size: 11px; margin-top: 2px;">${l.codigoLote}</span>
           </td>
           <td>
-            <span class="status-badge ${estadoClase}">${l.estadoActual}</span>
+            <div class="product-title" style="font-weight: 600;">${l.producto} ${surfaceBadge}</div>
+            <div class="product-variety" style="font-size: 12px; color: #94a3b8;">${l.variedad || 'Sin variedad especificada'}</div>
           </td>
           <td>
-            <span class="stock-value">${Number(l.cantidadActual).toLocaleString('es-AR')}</span>
-            <span class="stock-unit">${l.unidadMedida}</span>
+            ${healthBadge}
+            <span class="status-badge ${estadoClase}" style="font-size: 10px; margin-left: 4px;">${l.estadoActual}</span>
           </td>
-          <td style="color: var(--text-muted); font-size: 13px;">${fecha}</td>
+          <td>
+            <strong style="color: #f8fafc; font-size: 13.5px;">${moistureVal}%</strong>
+          </td>
+          <td>
+            <span style="color: #cbd5e1; font-size: 13.5px;">${tempVal}°C</span>
+          </td>
+          <td>
+            <span style="color: #94a3b8; font-size: 12.5px; font-weight: 500;">${growthStage}</span>
+          </td>
           <td>
             <div class="action-buttons">
               <button class="btn-action action-event" data-id="${l.id}" data-codigo="${l.codigoLote}" title="Registrar evento de trazabilidad">
@@ -3860,7 +3880,116 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ==========================================================================
+  // INICIALIZACIÓN: Visor Cartográfico Interactivo y Telemetría Precision Agri
+  // ==========================================================================
+  function inicializarMapaYTelemetria() {
+    const parcelGroups = document.querySelectorAll('.parcel-group');
+    const hudCard = document.getElementById('map-hud-card');
+    const hudParcelName = document.getElementById('hud-parcel-name');
+    const hudParcelCrop = document.getElementById('hud-parcel-crop');
+    const hudHealthScore = document.getElementById('hud-health-score');
+    const hudHumedad = document.getElementById('hud-humedad');
+    const hudPh = document.getElementById('hud-ph');
+    const hudHectareas = document.getElementById('hud-hectareas');
+    const hudConsumoAgua = document.getElementById('hud-consumo-agua');
+    const hudEficienciaFertilizante = document.getElementById('hud-eficiencia-fertilizante');
+    const btnHudClose = document.getElementById('btn-hud-close');
+    const hudGaugePath = document.getElementById('hud-gauge-path');
+
+    // Interacción al hacer clic en las parcelas del mapa
+    parcelGroups.forEach(parcel => {
+      parcel.addEventListener('click', () => {
+        parcelGroups.forEach(p => p.classList.remove('active'));
+        parcel.classList.add('active');
+
+        if (hudCard) hudCard.style.display = 'block';
+
+        const d = parcel.dataset;
+        if (hudParcelName) hudParcelName.textContent = d.nombre || 'North Field A1';
+        if (hudParcelCrop) hudParcelCrop.textContent = (d.cultivo || 'Cereza Lapins') + ' · Plantación Perenne';
+        if (hudHealthScore) hudHealthScore.textContent = (d.salud || '70') + '%';
+        if (hudHumedad) hudHumedad.textContent = (d.humedad || '32') + '%';
+        if (hudPh) hudPh.textContent = d.ph || '6.8';
+        if (hudHectareas) hudHectareas.textContent = d.ha || '30 Ha';
+        if (hudConsumoAgua) hudConsumoAgua.textContent = d.riego || '1,250L';
+        if (hudEficienciaFertilizante) hudEficienciaFertilizante.textContent = d.eficiencia || '87%';
+
+        // Ajustar el arco del gauge según el score de salud
+        const score = parseInt(d.salud || '70', 10);
+        if (hudGaugePath) {
+          // Ángulo de 180 grados (de 15,80 a 145,80 con radio 65)
+          const angle = Math.PI - (score / 100) * Math.PI;
+          const endX = 80 + 65 * Math.cos(angle);
+          const endY = 80 - 65 * Math.sin(angle);
+          hudGaugePath.setAttribute('d', `M 15 80 A 65 65 0 0 1 ${endX.toFixed(1)} ${endY.toFixed(1)}`);
+        }
+      });
+    });
+
+    if (btnHudClose && hudCard) {
+      btnHudClose.addEventListener('click', () => {
+        hudCard.style.display = hudCard.style.display === 'none' ? 'block' : 'none';
+      });
+    }
+
+    // Pestañas de Monitoreo de Recursos (Week, Month, Year)
+    const resourceTabs = document.querySelectorAll('#resource-period-tabs .res-tab-btn');
+    const donutPct = document.querySelector('.donut-badge-pct span');
+    resourceTabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        resourceTabs.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const period = btn.dataset.period;
+        if (donutPct) {
+          donutPct.textContent = period === 'week' ? '28%' : (period === 'year' ? '34%' : '30%');
+        }
+      });
+    });
+
+    // Selector de capa NDVI / Satelital
+    const layerSelector = document.getElementById('map-layer-selector');
+    const imageryLayer = document.getElementById('map-imagery-layer');
+    if (layerSelector && imageryLayer) {
+      layerSelector.addEventListener('click', () => {
+        const ndviActivo = imageryLayer.classList.toggle('ndvi-mode');
+        showToast(ndviActivo ? 'Capa espectral NDVI activada' : 'Capa Satelital de alta resolución activada', 'info');
+      });
+    }
+
+    // Botón centrar parcela activa
+    const btnLocate = document.getElementById('btn-map-locate');
+    if (btnLocate) {
+      btnLocate.addEventListener('click', () => {
+        const activeParcel = document.querySelector('.parcel-group.active');
+        if (activeParcel) {
+          showToast(`Centrado en: ${activeParcel.dataset.nombre || 'Parcela activa'}`, 'info');
+        }
+      });
+    }
+
+    // Checkbox seleccionar todos los lotes
+    const checkAll = document.getElementById('check-all-lotes');
+    if (checkAll) {
+      checkAll.addEventListener('change', () => {
+        document.querySelectorAll('.lote-checkbox').forEach(cb => {
+          cb.checked = checkAll.checked;
+        });
+      });
+    }
+
+    // Buscador en la columna de telemetría (sincronizado con el filtro de lotes)
+    const telSearch = document.getElementById('telemetry-search-input');
+    if (telSearch && inputBusqueda) {
+      telSearch.addEventListener('input', (e) => {
+        inputBusqueda.value = e.target.value;
+        inputBusqueda.dispatchEvent(new Event('input'));
+      });
+    }
+  }
+
   // Carga inicial
+  inicializarMapaYTelemetria();
   cargarLotes();
   cargarFincas();
   cargarDashboardResumen();

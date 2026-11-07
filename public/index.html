@@ -17,8 +17,15 @@
     <!-- Menú lateral: cada acción abre su propia vista o ventana -->
     <aside id="menu-lateral" class="app-sidebar" aria-label="Navegación principal">
       <div class="side-brand">
-      <div class="brand">
-          <div class="brand-icon">🌱</div>
+        <div class="brand">
+          <div class="brand-badge-modern" title="Agrul TraceEngine">
+            <svg viewBox="0 0 32 32" fill="none" class="brand-svg-badge">
+              <rect width="32" height="32" rx="10" fill="#10b981" />
+              <path d="M16 6C16 6 12 11 12 16C12 18.2 13.8 20 16 20C18.2 20 20 18.2 20 16C20 11 16 6 16 6Z" fill="#ffffff" />
+              <path d="M16 26V18" stroke="#064e3b" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M12 15C10 13 8 13.5 7 14.5C6 16.5 7.5 19 12 17" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" fill="none" />
+            </svg>
+          </div>
           <div class="brand-info">
             <h1>Agrul <span>TraceEngine</span></h1>
             <p class="tagline">Trazabilidad Agroindustrial de Precisión</p>
@@ -415,33 +422,206 @@
     <section id="vista-meteorologia" class="pantalla" data-view="meteorologia"></section>
     <section id="vista-eventos-climaticos" class="pantalla" data-view="eventos-climaticos"></section>
 
-    <!-- Barra de Controles y Filtros -->
-    <section class="table-controls glass" data-view="lotes">
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="input-busqueda" placeholder="Buscar por código de lote, producto o variedad..." aria-label="Buscar lote">
-      </div>
-      <div class="filter-tabs" id="filter-tabs" role="tablist">
-        <button class="tab-btn active" data-filter="TODOS">Todos</button>
-        <button class="tab-btn" data-filter="CREADO">Creados</button>
-        <button class="tab-btn" data-filter="EN_PROCESO">En Proceso</button>
-        <button class="tab-btn" data-filter="EMBALADO">Embalados</button>
-        <button class="tab-btn" data-filter="DESPACHADO">Despachados</button>
-        <button class="tab-btn" data-filter="CERRADO">Cerrados</button>
-      </div>
-      <div class="advanced-filters">
-        <select id="filtro-finca" class="filter-select" aria-label="Filtrar por finca">
-          <option value="">Todas las Fincas</option>
-        </select>
-        <div class="surface-filter-inputs">
-          <input type="number" id="filtro-sup-min" placeholder="Min Ha" step="0.1" min="0" title="Superficie mínima (ha)">
-          <span class="range-sep">-</span>
-          <input type="number" id="filtro-sup-max" placeholder="Max Ha" step="0.1" min="0" title="Superficie máxima (ha)">
+    <!-- VISOR CARTOGRÁFICO DE PRECISIÓN Y HUD DE SALUD DE PARCELAS (Inspirado en Precision Agri UI) -->
+    <section class="precision-map-section glass" data-view="lotes" id="seccion-mapa-precision">
+      <div class="precision-map-card" id="agri-map-card">
+        <!-- Barra de herramientas superior del mapa -->
+        <div class="map-top-bar">
+          <div class="map-tags">
+            <span class="map-tag live-badge"><span class="pulse-dot"></span> Satelital HD · NDVI Activo</span>
+            <span class="map-tag finca-badge" id="map-finca-nombre">Finca La Esperanza · Tupungato, Mendoza</span>
+          </div>
+          <div class="map-actions">
+            <button type="button" class="btn-map-action" id="btn-map-export" title="Exportar capas cartográficas y NDVI">Export</button>
+            <button type="button" class="btn-map-action btn-icon-only" id="btn-map-layers" title="Selector de capas cartográficas">⋯</button>
+          </div>
+        </div>
+
+        <!-- Visor interactivo de parcelas con mapa satelital y capas térmicas -->
+        <div class="map-viewport" id="map-viewport">
+          <!-- Capa satelital de fondo con textura agronómica -->
+          <div class="map-imagery-layer" id="map-imagery-layer"></div>
+
+          <!-- Capa vectorial SVG interactiva de parcelas -->
+          <svg class="map-parcels-svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid slice" id="parcels-svg">
+            <defs>
+              <filter id="hud-glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+              <!-- Gradientes térmicos NDVI para zonas de vigor/humedad -->
+              <radialGradient id="heat-ndvi-orange" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#ea580c" stop-opacity="0.85" />
+                <stop offset="45%" stop-color="#f97316" stop-opacity="0.6" />
+                <stop offset="75%" stop-color="#eab308" stop-opacity="0.25" />
+                <stop offset="100%" stop-color="#22c55e" stop-opacity="0" />
+              </radialGradient>
+              <radialGradient id="heat-ndvi-amber" cx="45%" cy="55%" r="50%">
+                <stop offset="0%" stop-color="#f97316" stop-opacity="0.8" />
+                <stop offset="50%" stop-color="#eab308" stop-opacity="0.4" />
+                <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
+              </radialGradient>
+            </defs>
+
+            <!-- Parcela 1: Cuadro Norte / North Field A1 (Cereza Lapins) -->
+            <g class="parcel-group active" id="parcel-cuadro-norte" data-lote-id="b1000000-0000-4000-8000-000000000001" data-codigo="LOT-2026-00001" data-nombre="North Field A1" data-cuadro="Cuadro Norte" data-cultivo="Cereza Lapins" data-ha="30" data-salud="70" data-humedad="32" data-ph="6.8" data-riego="1,250L" data-eficiencia="87%">
+              <!-- Polígono de la parcela -->
+              <polygon class="parcel-polygon" points="200,230 430,190 490,290 430,490 230,480 180,330" />
+              <!-- Manchas térmicas NDVI de estrés y actividad -->
+              <circle cx="360" cy="275" r="85" fill="url(#heat-ndvi-orange)" class="heat-spot pulse" />
+              <circle cx="270" cy="410" r="70" fill="url(#heat-ndvi-amber)" class="heat-spot" />
+              <!-- Borde punteado luminoso de selección -->
+              <polygon class="parcel-outline-dashed" points="200,230 430,190 490,290 430,490 230,480 180,330" />
+              <!-- Etiqueta central de la parcela -->
+              <g class="parcel-label" transform="translate(325, 340)">
+                <circle cx="0" cy="-6" r="14" class="parcel-icon-bg" />
+                <text x="0" y="-2" text-anchor="middle" class="parcel-emoji">🌱</text>
+                <text x="0" y="16" text-anchor="middle" class="parcel-title-text">North Field A1</text>
+                <text x="0" y="29" text-anchor="middle" class="parcel-sub-text">Cereza Lapins · 30 Ha</text>
+              </g>
+            </g>
+
+            <!-- Parcela 2: Cuadro Sur / East Field B2 (Vid Malbec) -->
+            <g class="parcel-group" id="parcel-cuadro-sur" data-lote-id="b1000000-0000-4000-8000-000000000002" data-codigo="LOT-2026-00002" data-nombre="East Field B2" data-cuadro="Cuadro Sur" data-cultivo="Vid Malbec" data-ha="45" data-salud="82" data-humedad="40" data-ph="7.1" data-riego="1,400L" data-eficiencia="92%">
+              <polygon class="parcel-polygon secondary" points="520,200 790,170 850,380 730,480 540,440" />
+              <circle cx="680" cy="300" r="80" fill="url(#heat-ndvi-amber)" class="heat-spot" />
+              <polygon class="parcel-outline-dashed secondary" points="520,200 790,170 850,380 730,480 540,440" />
+              <g class="parcel-label" transform="translate(680, 320)">
+                <circle cx="0" cy="-6" r="14" class="parcel-icon-bg" />
+                <text x="0" y="-2" text-anchor="middle" class="parcel-emoji">🍇</text>
+                <text x="0" y="16" text-anchor="middle" class="parcel-title-text">East Field B2</text>
+                <text x="0" y="29" text-anchor="middle" class="parcel-sub-text">Vid Malbec · 45 Ha</text>
+              </g>
+            </g>
+          </svg>
+
+          <!-- TARJETA FLOTANTE HUD: Diagnóstico y Rendimiento de Parcela -->
+          <div class="map-hud-card" id="map-hud-card">
+            <div class="hud-header">
+              <div class="hud-title-wrap">
+                <h4 id="hud-parcel-name">North Field A1</h4>
+                <p id="hud-parcel-crop">Cereza Lapins · Plantación Perenne</p>
+              </div>
+              <button type="button" class="btn-hud-close" id="btn-hud-close" aria-label="Minimizar panel HUD">✕</button>
+            </div>
+
+            <!-- Arco semi-circular de Health Score con puntos -->
+            <div class="hud-gauge-wrap">
+              <div class="gauge-arc-meter">
+                <svg viewBox="0 0 160 90" class="gauge-svg">
+                  <!-- Pistas de puntos punteados (arc) -->
+                  <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="10" stroke-linecap="round" stroke-dasharray="3 5" />
+                  <path id="hud-gauge-path" d="M 15 80 A 65 65 0 0 1 120 28" fill="none" stroke="url(#gauge-grad-green)" stroke-width="10" stroke-linecap="round" stroke-dasharray="3 5" />
+                  <defs>
+                    <linearGradient id="gauge-grad-green" x1="0%" y1="100%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#10b981" />
+                      <stop offset="60%" stop-color="#22c55e" />
+                      <stop offset="100%" stop-color="#86efac" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div class="gauge-center-content">
+                  <span class="gauge-value" id="hud-health-score">70%</span>
+                  <span class="gauge-caption">Health Score</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Métricas rápidas (Humedad, pH, Hectáreas) -->
+            <div class="hud-metrics-trio">
+              <div class="hud-metric-col">
+                <span class="hud-metric-val" id="hud-humedad">32%</span>
+                <span class="hud-metric-lbl">Humidity</span>
+              </div>
+              <div class="hud-metric-divider"></div>
+              <div class="hud-metric-col">
+                <span class="hud-metric-val" id="hud-ph">2.8</span>
+                <span class="hud-metric-lbl">Ph Level</span>
+              </div>
+              <div class="hud-metric-divider"></div>
+              <div class="hud-metric-col">
+                <span class="hud-metric-val" id="hud-hectareas">2.3</span>
+                <span class="hud-metric-lbl">Hectare</span>
+              </div>
+            </div>
+
+            <!-- Telemetría detallada de recursos -->
+            <div class="hud-telemetry-list">
+              <div class="hud-tel-item">
+                <span class="tel-label">Water Consumption</span>
+                <span class="tel-val" id="hud-consumo-agua">1,250L</span>
+              </div>
+              <div class="hud-tel-item">
+                <span class="tel-label">Fertilizer Efficiency</span>
+                <span class="tel-val" id="hud-eficiencia-fertilizante">87%</span>
+              </div>
+              <div class="hud-tel-item">
+                <span class="tel-label">Equipment Status</span>
+                <span class="tel-val status-pill-active"><span class="dot-online"></span> Active</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selector de capa miniatura (esquina inferior izquierda) -->
+          <div class="map-layer-selector" id="map-layer-selector" title="Alternar capa NDVI / Satelital">
+            <div class="layer-thumb-preview"></div>
+          </div>
+
+          <!-- Controles de navegación y zoom (esquina inferior derecha) -->
+          <div class="map-view-controls">
+            <button type="button" class="btn-ctrl-item" id="btn-map-expand" title="Vista ampliada">⤢</button>
+            <button type="button" class="btn-ctrl-item" id="btn-map-locate" title="Centrar parcela activa">🧭</button>
+          </div>
         </div>
       </div>
-      <button id="btn-recargar" class="btn btn-secondary" title="Actualizar datos">
-        🔄 Refrescar
-      </button>
+    </section>
+
+    <!-- Barra de Controles y Filtros (Field Monitoring Overview) -->
+    <section class="table-controls glass" data-view="lotes">
+      <div class="overview-header-row">
+        <div class="overview-title-group">
+          <h3>Field Monitoring Overview</h3>
+          <span class="overview-counter" id="overview-counter">2 parcelas activas</span>
+        </div>
+        <div class="overview-filters-group">
+          <div class="date-badge-picker">
+            <span class="picker-label">Junio 2026</span>
+            <span class="picker-icon">📅</span>
+          </div>
+          <div class="filter-dropdown-btn">
+            <span>Filter</span>
+            <span class="dropdown-chevron">▾</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="search-and-tabs-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="input-busqueda" placeholder="Buscar por código de lote, producto o variedad..." aria-label="Buscar lote">
+        </div>
+        <div class="filter-tabs" id="filter-tabs" role="tablist">
+          <button class="tab-btn active" data-filter="TODOS">Todos</button>
+          <button class="tab-btn" data-filter="CREADO">Creados</button>
+          <button class="tab-btn" data-filter="EN_PROCESO">En Proceso</button>
+          <button class="tab-btn" data-filter="EMBALADO">Embalados</button>
+          <button class="tab-btn" data-filter="DESPACHADO">Despachados</button>
+          <button class="tab-btn" data-filter="CERRADO">Cerrados</button>
+        </div>
+        <div class="advanced-filters">
+          <select id="filtro-finca" class="filter-select" aria-label="Filtrar por finca">
+            <option value="">Todas las Fincas</option>
+          </select>
+          <div class="surface-filter-inputs">
+            <input type="number" id="filtro-sup-min" placeholder="Min Ha" step="0.1" min="0" title="Superficie mínima (ha)">
+            <span class="range-sep">-</span>
+            <input type="number" id="filtro-sup-max" placeholder="Max Ha" step="0.1" min="0" title="Superficie máxima (ha)">
+          </div>
+        </div>
+        <button id="btn-recargar" class="btn btn-secondary" title="Actualizar datos">
+          🔄 Refrescar
+        </button>
+      </div>
     </section>
 
     <!-- Tabla Operativa de Lotes -->
@@ -449,24 +629,164 @@
       <table class="lotes-table" id="tabla-lotes">
         <thead>
           <tr>
-            <th>Código de Lote</th>
-            <th>Producto & Variedad</th>
-            <th>Estado</th>
-            <th>Stock Actual</th>
-            <th>Fecha Alta</th>
+            <th style="width: 38px; text-align: center;"><input type="checkbox" id="check-all-lotes" title="Seleccionar todos"></th>
+            <th>Field Zone / Lote</th>
+            <th>Crop Type & Variedad</th>
+            <th>Status</th>
+            <th>Soil Moisture</th>
+            <th>Temp.</th>
+            <th>Growth Stage</th>
             <th class="text-right">Acciones</th>
           </tr>
         </thead>
         <tbody id="lotes-tbody">
           <!-- Renderizado dinámico desde app.js -->
           <tr class="empty-row">
-            <td colspan="6" class="text-center loading-indicator">
+            <td colspan="8" class="text-center loading-indicator">
               <span class="spinner"></span> Cargando lotes del sistema...
             </td>
           </tr>
         </tbody>
       </table>
     </main>
+
+    <!-- COLUMNA DERECHA DE TELEMETRÍA Y ANALÍTICAS (Inspirado en la referencia) -->
+    <aside id="telemetry-sidebar" class="telemetry-sidebar">
+      <!-- Buscador superior -->
+      <div class="telemetry-search-box">
+        <span class="search-ico">🔍</span>
+        <input type="text" id="telemetry-search-input" placeholder="Type to search..." aria-label="Buscar en telemetría">
+      </div>
+
+      <!-- Tarjeta de Clima y Pronóstico -->
+      <div class="telemetry-card weather-card glass">
+        <div class="weather-loc-row">
+          <span class="loc-ico">📍</span>
+          <span class="loc-text" id="weather-location-text">Purwokerto, Central Java, Indonesia</span>
+        </div>
+        <div class="weather-temp-display">
+          <div class="temp-big-wrap">
+            <span class="temp-number" id="weather-temp-number">26°C</span>
+          </div>
+          <div class="temp-condition-wrap">
+            <span class="condition-badge"><span class="sun-icon">☀️</span> Sunny Day</span>
+            <span class="condition-time" id="weather-time-clock">8.45 AM | Jan 26</span>
+          </div>
+        </div>
+        <div class="weather-metrics-trio">
+          <div class="weather-metric-col">
+            <span class="weather-metric-ico">💧</span>
+            <span class="weather-metric-lbl">Humidity</span>
+            <span class="weather-metric-val" id="weather-humidity-val">35%</span>
+          </div>
+          <div class="weather-metric-col">
+            <span class="weather-metric-ico">🌧️</span>
+            <span class="weather-metric-lbl">Rain Forecast</span>
+            <span class="weather-metric-val" id="weather-rain-val">26°C</span>
+          </div>
+          <div class="weather-metric-col">
+            <span class="weather-metric-ico">💨</span>
+            <span class="weather-metric-lbl">Wind</span>
+            <span class="weather-metric-val" id="weather-wind-val">8m/s</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta de Monitoreo de Recursos (Donut Chart) -->
+      <div class="telemetry-card resource-card glass">
+        <div class="telemetry-card-head">
+          <h4>Resource Monitoring</h4>
+          <div class="resource-period-tabs" id="resource-period-tabs">
+            <button type="button" class="res-tab-btn" data-period="week">Week</button>
+            <button type="button" class="res-tab-btn active" data-period="month">Month</button>
+            <button type="button" class="res-tab-btn" data-period="year">Year</button>
+          </div>
+        </div>
+        <div class="resource-chart-layout">
+          <!-- Leyenda de colores -->
+          <div class="resource-legend-list">
+            <div class="legend-row"><span class="legend-bullet bullet-irrigation"></span> Irrigation Systems</div>
+            <div class="legend-row"><span class="legend-bullet bullet-nutrition"></span> Crop Nutrition</div>
+            <div class="legend-row"><span class="legend-bullet bullet-maintenance"></span> Equipment Maintenance</div>
+            <div class="legend-row"><span class="legend-bullet bullet-pest"></span> Pest Control</div>
+            <div class="legend-row"><span class="legend-bullet bullet-logistics"></span> Logistics & Distribution</div>
+          </div>
+          <!-- Gráfico circular SVG Donut -->
+          <div class="donut-chart-container">
+            <svg class="donut-svg" viewBox="0 0 140 140">
+              <circle cx="70" cy="70" r="50" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="22" />
+              <!-- Segmento 1: Irrigation Systems (30%) -->
+              <circle cx="70" cy="70" r="50" fill="none" stroke="#064e3b" stroke-width="22" stroke-dasharray="94.2 220" stroke-dashoffset="0" />
+              <!-- Segmento 2: Crop Nutrition (23%) -->
+              <circle cx="70" cy="70" r="50" fill="none" stroke="#10b981" stroke-width="22" stroke-dasharray="72.2 242" stroke-dashoffset="-94.2" />
+              <!-- Segmento 3: Equipment Maintenance (19%) -->
+              <circle cx="70" cy="70" r="50" fill="none" stroke="#86efac" stroke-width="22" stroke-dasharray="59.6 254" stroke-dashoffset="-166.4" />
+              <!-- Segmento 4: Pest Control (17%) -->
+              <circle cx="70" cy="70" r="50" fill="none" stroke="#f59e0b" stroke-width="22" stroke-dasharray="53.4 260" stroke-dashoffset="-226" />
+              <!-- Segmento 5: Logistics & Distribution (11%) -->
+              <circle cx="70" cy="70" r="50" fill="none" stroke="#ef4444" stroke-width="22" stroke-dasharray="34.5 280" stroke-dashoffset="-279.4" />
+            </svg>
+            <div class="donut-badge-pct">
+              <span>30%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta de Rendimiento Semanal (Weekly Performance Matrix) -->
+      <div class="telemetry-card performance-card glass">
+        <div class="telemetry-card-head">
+          <h4>Weekly Performance</h4>
+          <span class="card-arrow-link" title="Ver detalle">↗</span>
+        </div>
+        <div class="performance-matrix-wrapper">
+          <div class="matrix-days-cols">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+          </div>
+          <div class="matrix-grid-cells">
+            <!-- 1 pm row -->
+            <div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div>
+            <!-- 2 pm row -->
+            <div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-2"></div><div class="matrix-cell lvl-3"></div><div class="matrix-cell lvl-2"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-0"></div>
+            <!-- 3 pm row -->
+            <div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-3"></div><div class="matrix-cell lvl-4"></div><div class="matrix-cell lvl-4"></div><div class="matrix-cell lvl-3"></div><div class="matrix-cell lvl-2"></div><div class="matrix-cell lvl-0"></div>
+            <!-- 4 pm row -->
+            <div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-2"></div><div class="matrix-cell lvl-4"></div><div class="matrix-cell lvl-4"></div><div class="matrix-cell lvl-3"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div>
+            <!-- 5 pm row -->
+            <div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-2"></div><div class="matrix-cell lvl-3"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div>
+            <!-- 6 pm row -->
+            <div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div>
+          </div>
+          <div class="matrix-scale-legend">
+            <span class="scale-text">Less</span>
+            <div class="scale-dots">
+              <span class="scale-dot lvl-1"></span>
+              <span class="scale-dot lvl-2"></span>
+              <span class="scale-dot lvl-3"></span>
+              <span class="scale-dot lvl-4"></span>
+            </div>
+            <span class="scale-text">More</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta de Desempeño Analítico (Analytics Performance) -->
+      <div class="telemetry-card analytics-card glass">
+        <div class="telemetry-card-head">
+          <h4>Analytics Performance</h4>
+          <span class="card-arrow-link" title="Ver análisis">↗</span>
+        </div>
+        <div class="analytics-tags-row">
+          <span class="analytics-tag"><span class="tag-dot dot-stocks"></span> Stocks</span>
+          <span class="analytics-tag"><span class="tag-dot dot-bonds"></span> Bonds</span>
+          <span class="analytics-tag"><span class="tag-dot dot-other"></span> Other Instruments</span>
+        </div>
+        <div class="analytics-total-metric">
+          <span class="analytics-amount">$830,450</span>
+          <span class="analytics-trend positive">↑ +14.2%</span>
+        </div>
+      </div>
+    </aside>
 
     <!-- Footer -->
     <footer class="app-footer">
