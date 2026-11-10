@@ -2784,7 +2784,7 @@ document.addEventListener('DOMContentLoaded', () => {
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              labels: { color: '#cbd5e1', font: { family: 'Outfit, sans-serif', size: 11 } },
+              labels: { color: '#334155', font: { family: 'Plus Jakarta Sans, sans-serif', size: 11, weight: '600' } },
             },
             tooltip: {
               callbacks: {
@@ -2794,12 +2794,12 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           scales: {
             x: {
-              grid: { color: 'rgba(255, 255, 255, 0.06)' },
-              ticks: { color: '#94a3b8', font: { size: 10 } },
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: { color: '#64748b', font: { size: 10 } },
             },
             y: {
-              grid: { color: 'rgba(255, 255, 255, 0.06)' },
-              ticks: { color: '#94a3b8', font: { size: 10 } },
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: { color: '#64748b', font: { size: 10 } },
             },
           },
         },
@@ -2823,8 +2823,8 @@ document.addEventListener('DOMContentLoaded', () => {
             data: tieneDatos ? dataVol : [1],
             backgroundColor: tieneDatos
               ? ['#10b981', '#38bdf8', '#f59e0b', '#a855f7', '#ec4899', '#64748b']
-              : ['rgba(255, 255, 255, 0.1)'],
-            borderColor: 'rgba(15, 23, 42, 0.9)',
+              : ['#e2e8f0'],
+            borderColor: '#ffffff',
             borderWidth: 2,
           }],
         },
@@ -2835,7 +2835,7 @@ document.addEventListener('DOMContentLoaded', () => {
           plugins: {
             legend: {
               position: 'bottom',
-              labels: { color: '#cbd5e1', font: { family: 'Outfit, sans-serif', size: 11 } },
+              labels: { color: '#334155', font: { family: 'Plus Jakarta Sans, sans-serif', size: 11, weight: '600' } },
             },
             tooltip: {
               callbacks: {
@@ -2862,7 +2862,7 @@ document.addEventListener('DOMContentLoaded', () => {
       chartRendimientoCultivo = new Chart(ctxRendimiento, {
         type: 'bar',
         data: {
-          labels: cultivos.length > 0 ? cultivos : ['Sin datos'],
+          labels: cultivos.length > 0 ? cultivos : ['Sin cosechas'],
           datasets: [
             {
               label: 'Rendimiento Bruto (kg/ha)',
@@ -2887,7 +2887,7 @@ document.addEventListener('DOMContentLoaded', () => {
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              labels: { color: '#cbd5e1', font: { family: 'Outfit, sans-serif', size: 11 } },
+              labels: { color: '#334155', font: { family: 'Plus Jakarta Sans, sans-serif', size: 11, weight: '600' } },
             },
             tooltip: {
               callbacks: {
@@ -2897,12 +2897,12 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           scales: {
             x: {
-              grid: { color: 'rgba(255, 255, 255, 0.06)' },
-              ticks: { color: '#94a3b8', font: { size: 10 } },
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: { color: '#64748b', font: { size: 10 } },
             },
             y: {
-              grid: { color: 'rgba(255, 255, 255, 0.06)' },
-              ticks: { color: '#94a3b8', font: { size: 10 } },
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: { color: '#64748b', font: { size: 10 } },
             },
           },
         },
@@ -3662,9 +3662,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnBitacoraAuditoria && modalAuditoriaSeguridad) {
     btnBitacoraAuditoria.addEventListener('click', () => {
-      modalAuditoriaSeguridad.classList.add('active');
+      openModal(modalAuditoriaSeguridad);
+      modalAuditoriaSeguridad.classList.add('active', 'open');
       cargarBitacoraAuditoria();
       actualizarEstadoSesionUI();
+    });
+  }
+
+  const btnInfoSistema = document.getElementById('btn-info-sistema');
+  const modalManualUsuario = document.getElementById('modal-manual-usuario');
+  if (btnInfoSistema && modalManualUsuario) {
+    btnInfoSistema.addEventListener('click', () => {
+      openModal(modalManualUsuario);
+      modalManualUsuario.classList.add('active', 'open');
+    });
+
+    const manualTabBtns = modalManualUsuario.querySelectorAll('.manual-tab-btn');
+    const manualPanes = modalManualUsuario.querySelectorAll('.manual-pane');
+    manualTabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        manualTabBtns.forEach(b => {
+          b.classList.remove('active', 'btn-outline-primary');
+          b.classList.add('btn-outline-secondary');
+        });
+        btn.classList.add('active', 'btn-outline-primary');
+        btn.classList.remove('btn-outline-secondary');
+        const target = btn.dataset.mantab;
+        manualPanes.forEach(pane => {
+          pane.style.display = pane.id === target ? 'block' : 'none';
+        });
+      });
     });
   }
 

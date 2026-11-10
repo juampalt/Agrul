@@ -6049,4 +6049,236 @@ body:not(.sin-sesion) #user-login-box { display: none !important; }
   }
 }
 
+/* ==========================================================================
+   TABLERO EJECUTIVO (Light AgTech Aesthetic)
+   ========================================================================== */
+.dashboard-ejecutivo {
+  background: #ffffff !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+  padding: 24px !important;
+  color: #0f172a !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.dash-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  padding-bottom: 18px !important;
+}
+
+.dash-title-group h2 {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  font-size: 1.35rem !important;
+  letter-spacing: -0.02em !important;
+}
+
+.dash-subtitle {
+  color: #64748b !important;
+  font-size: 0.85rem !important;
+}
+
+.dash-badge-icon {
+  background: #dcfce7 !important;
+  border: 1px solid #bbf7d0 !important;
+  color: #15803d !important;
+  box-shadow: none !important;
+  border-radius: 12px !important;
+}
+
+.dash-filters-bar {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  padding: 14px 18px !important;
+}
+
+.dash-filter-item label {
+  color: #475569 !important;
+  font-weight: 700 !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.04em !important;
+}
+
+.dash-filter-item .form-control {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+}
+
+.dash-filter-item .form-control:focus {
+  border-color: #10b981 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+.kpi-card-dash {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02) !important;
+  padding: 20px !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.kpi-card-dash:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06) !important;
+}
+
+.kpi-title-dash {
+  color: #64748b !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.kpi-value-dash {
+  color: #0f172a !important;
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.kpi-submetrics-dash {
+  border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+  margin-top: 14px !important;
+  padding-top: 12px !important;
+}
+
+.kpi-subitem-dash {
+  display: flex !important;
+  justify-content: space-between !important;
+  font-size: 0.82rem !important;
+  margin-bottom: 4px !important;
+}
+
+.kpi-subitem-dash span:first-child {
+  color: #64748b !important;
+}
+
+.kpi-subitem-dash span:last-child {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+.dash-charts-section {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 18px !important;
+  padding: 20px !important;
+  margin-top: 16px !important;
+}
+
+.dash-section-title h3 {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+.dash-section-hint {
+  color: #94a3b8 !important;
+}
+
+.dash-chart-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  padding: 16px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02) !important;
+}
+
+.dash-chart-card-header h4 {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.dash-chart-badge {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+}
+
+.dash-subpanel {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 16px !important;
+  padding: 18px !important;
+  margin-top: 14px !important;
+}
+
+.dash-subpanel-header h4 {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.dash-table {
+  color: #0f172a !important;
+}
+
+.dash-table th {
+  background: #f8fafc !important;
+  color: #64748b !important;
+  font-weight: 700 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 10px 14px !important;
+}
+
+.dash-table td {
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #1e293b !important;
+  padding: 10px 14px !important;
+}
+
+.dash-table tr:hover td {
+  background: #f8fafc !important;
+}
+
+/* Modales en modo claro */
+.modal-content.glass {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25) !important;
+  border-radius: 24px !important;
+}
+
+.modal-content.glass h2,
+.modal-content.glass h3,
+.modal-content.glass h4 {
+  color: #0f172a !important;
+}
+
+.modal-content.glass .comp-tab {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.modal-content.glass .comp-tab.active {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+}
+
+.modal-content.glass table {
+  color: #0f172a !important;
+}
+
+.modal-content.glass th {
+  background: #f8fafc !important;
+  color: #64748b !important;
+}
+
+.modal-content.glass td {
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
 

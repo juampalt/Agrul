@@ -128,22 +128,14 @@
           Finca
         </button>
 
-        <p class="side-title">Métricas</p>
-        <button id="btn-indicadores-produccion" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" class="nav-item" type="button" title="Métricas de Producción y Rendimiento">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          </span>
-          Rendimientos
-        </button>
-
         <p class="side-title">Configuración</p>
-        <button id="btn-bitacora-auditoria" data-roles="ADMIN_SISTEMA ADMINISTRADOR" class="nav-item" type="button" title="Auditoría del Sistema">
+        <button id="btn-bitacora-auditoria" data-roles="ADMIN_SISTEMA ADMINISTRADOR ENCARGADO_CAMPO" class="nav-item" type="button" title="Auditoría y Configuración del Sistema">
           <span class="btn-icon">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </span>
           Ajustes
         </button>
-        <button id="btn-info-sistema" class="nav-item" type="button" title="Información de Agrul">
+        <button id="btn-info-sistema" class="nav-item" type="button" title="Manual de Usuario y Guía de Agrul">
           <span class="btn-icon">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           </span>
@@ -493,160 +485,6 @@
     <section id="vista-destinos" class="pantalla" data-view="destinos"></section>
     <section id="vista-meteorologia" class="pantalla" data-view="meteorologia"></section>
     <section id="vista-eventos-climaticos" class="pantalla" data-view="eventos-climaticos"></section>
-
-    <!-- VISOR CARTOGRÁFICO DE PRECISIÓN Y HUD DE SALUD DE PARCELAS (Inspirado en Precision Agri UI) -->
-    <section class="precision-map-section glass" data-view="lotes" id="seccion-mapa-precision">
-      <div class="precision-map-card" id="agri-map-card">
-        <!-- Barra de herramientas superior del mapa -->
-        <div class="map-top-bar">
-          <div class="map-tags">
-            <span class="map-tag live-badge"><span class="pulse-dot"></span> Satelital HD · NDVI Activo</span>
-            <span class="map-tag finca-badge" id="map-finca-nombre">Finca La Esperanza · Tupungato, Mendoza</span>
-          </div>
-          <div class="map-actions">
-            <button type="button" class="btn-map-action" id="btn-map-export" title="Exportar capas cartográficas y NDVI">Export</button>
-            <button type="button" class="btn-map-action btn-icon-only" id="btn-map-layers" title="Selector de capas cartográficas">⋯</button>
-          </div>
-        </div>
-
-        <!-- Visor interactivo de parcelas con mapa satelital y capas térmicas -->
-        <div class="map-viewport" id="map-viewport">
-          <!-- Capa satelital de fondo con textura agronómica -->
-          <div class="map-imagery-layer" id="map-imagery-layer"></div>
-
-          <!-- Capa vectorial SVG interactiva de parcelas -->
-          <svg class="map-parcels-svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid slice" id="parcels-svg">
-            <defs>
-              <filter id="hud-glow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="5" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-              <!-- Gradientes térmicos NDVI para zonas de vigor/humedad -->
-              <radialGradient id="heat-ndvi-orange" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#ea580c" stop-opacity="0.85" />
-                <stop offset="45%" stop-color="#f97316" stop-opacity="0.6" />
-                <stop offset="75%" stop-color="#eab308" stop-opacity="0.25" />
-                <stop offset="100%" stop-color="#22c55e" stop-opacity="0" />
-              </radialGradient>
-              <radialGradient id="heat-ndvi-amber" cx="45%" cy="55%" r="50%">
-                <stop offset="0%" stop-color="#f97316" stop-opacity="0.8" />
-                <stop offset="50%" stop-color="#eab308" stop-opacity="0.4" />
-                <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
-              </radialGradient>
-            </defs>
-
-            <!-- Parcela 1: Cuadro Norte / North Field A1 (Cereza Lapins) -->
-            <g class="parcel-group active" id="parcel-cuadro-norte" data-lote-id="b1000000-0000-4000-8000-000000000001" data-codigo="LOT-2026-00001" data-nombre="North Field A1" data-cuadro="Cuadro Norte" data-cultivo="Cereza Lapins" data-ha="30" data-salud="70" data-humedad="32" data-ph="6.8" data-riego="1,250L" data-eficiencia="87%">
-              <!-- Polígono de la parcela -->
-              <polygon class="parcel-polygon" points="200,230 430,190 490,290 430,490 230,480 180,330" />
-              <!-- Manchas térmicas NDVI de estrés y actividad -->
-              <circle cx="360" cy="275" r="85" fill="url(#heat-ndvi-orange)" class="heat-spot pulse" />
-              <circle cx="270" cy="410" r="70" fill="url(#heat-ndvi-amber)" class="heat-spot" />
-              <!-- Borde punteado luminoso de selección -->
-              <polygon class="parcel-outline-dashed" points="200,230 430,190 490,290 430,490 230,480 180,330" />
-              <!-- Etiqueta central de la parcela -->
-              <g class="parcel-label" transform="translate(325, 340)">
-                <circle cx="0" cy="-6" r="14" class="parcel-icon-bg" />
-                <text x="0" y="-2" text-anchor="middle" class="parcel-emoji">🌱</text>
-                <text x="0" y="16" text-anchor="middle" class="parcel-title-text">North Field A1</text>
-                <text x="0" y="29" text-anchor="middle" class="parcel-sub-text">Cereza Lapins · 30 Ha</text>
-              </g>
-            </g>
-
-            <!-- Parcela 2: Cuadro Sur / East Field B2 (Vid Malbec) -->
-            <g class="parcel-group" id="parcel-cuadro-sur" data-lote-id="b1000000-0000-4000-8000-000000000002" data-codigo="LOT-2026-00002" data-nombre="East Field B2" data-cuadro="Cuadro Sur" data-cultivo="Vid Malbec" data-ha="45" data-salud="82" data-humedad="40" data-ph="7.1" data-riego="1,400L" data-eficiencia="92%">
-              <polygon class="parcel-polygon secondary" points="520,200 790,170 850,380 730,480 540,440" />
-              <circle cx="680" cy="300" r="80" fill="url(#heat-ndvi-amber)" class="heat-spot" />
-              <polygon class="parcel-outline-dashed secondary" points="520,200 790,170 850,380 730,480 540,440" />
-              <g class="parcel-label" transform="translate(680, 320)">
-                <circle cx="0" cy="-6" r="14" class="parcel-icon-bg" />
-                <text x="0" y="-2" text-anchor="middle" class="parcel-emoji">🍇</text>
-                <text x="0" y="16" text-anchor="middle" class="parcel-title-text">East Field B2</text>
-                <text x="0" y="29" text-anchor="middle" class="parcel-sub-text">Vid Malbec · 45 Ha</text>
-              </g>
-            </g>
-          </svg>
-
-          <!-- TARJETA FLOTANTE HUD: Diagnóstico y Rendimiento de Parcela -->
-          <div class="map-hud-card" id="map-hud-card">
-            <div class="hud-header">
-              <div class="hud-title-wrap">
-                <h4 id="hud-parcel-name">North Field A1</h4>
-                <p id="hud-parcel-crop">Cereza Lapins · Plantación Perenne</p>
-              </div>
-              <button type="button" class="btn-hud-close" id="btn-hud-close" aria-label="Minimizar panel HUD">✕</button>
-            </div>
-
-            <!-- Arco semi-circular de Health Score con puntos -->
-            <div class="hud-gauge-wrap">
-              <div class="gauge-arc-meter">
-                <svg viewBox="0 0 160 90" class="gauge-svg">
-                  <!-- Pistas de puntos punteados (arc) -->
-                  <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="10" stroke-linecap="round" stroke-dasharray="3 5" />
-                  <path id="hud-gauge-path" d="M 15 80 A 65 65 0 0 1 120 28" fill="none" stroke="url(#gauge-grad-green)" stroke-width="10" stroke-linecap="round" stroke-dasharray="3 5" />
-                  <defs>
-                    <linearGradient id="gauge-grad-green" x1="0%" y1="100%" x2="100%" y2="0%">
-                      <stop offset="0%" stop-color="#10b981" />
-                      <stop offset="60%" stop-color="#22c55e" />
-                      <stop offset="100%" stop-color="#86efac" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div class="gauge-center-content">
-                  <span class="gauge-value" id="hud-health-score">70%</span>
-                  <span class="gauge-caption">Health Score</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Métricas rápidas (Humedad, pH, Hectáreas) -->
-            <div class="hud-metrics-trio">
-              <div class="hud-metric-col">
-                <span class="hud-metric-val" id="hud-humedad">32%</span>
-                <span class="hud-metric-lbl">Humidity</span>
-              </div>
-              <div class="hud-metric-divider"></div>
-              <div class="hud-metric-col">
-                <span class="hud-metric-val" id="hud-ph">2.8</span>
-                <span class="hud-metric-lbl">Ph Level</span>
-              </div>
-              <div class="hud-metric-divider"></div>
-              <div class="hud-metric-col">
-                <span class="hud-metric-val" id="hud-hectareas">2.3</span>
-                <span class="hud-metric-lbl">Hectare</span>
-              </div>
-            </div>
-
-            <!-- Telemetría detallada de recursos -->
-            <div class="hud-telemetry-list">
-              <div class="hud-tel-item">
-                <span class="tel-label">Water Consumption</span>
-                <span class="tel-val" id="hud-consumo-agua">1,250L</span>
-              </div>
-              <div class="hud-tel-item">
-                <span class="tel-label">Fertilizer Efficiency</span>
-                <span class="tel-val" id="hud-eficiencia-fertilizante">87%</span>
-              </div>
-              <div class="hud-tel-item">
-                <span class="tel-label">Equipment Status</span>
-                <span class="tel-val status-pill-active"><span class="dot-online"></span> Active</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Selector de capa miniatura (esquina inferior izquierda) -->
-          <div class="map-layer-selector" id="map-layer-selector" title="Alternar capa NDVI / Satelital">
-            <div class="layer-thumb-preview"></div>
-          </div>
-
-          <!-- Controles de navegación y zoom (esquina inferior derecha) -->
-          <div class="map-view-controls">
-            <button type="button" class="btn-ctrl-item" id="btn-map-expand" title="Vista ampliada">⤢</button>
-            <button type="button" class="btn-ctrl-item" id="btn-map-locate" title="Centrar parcela activa">🧭</button>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <!-- Barra de Controles y Filtros (Field Monitoring Overview) -->
     <section class="table-controls glass" data-view="lotes">
@@ -2548,6 +2386,110 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL: MANUAL DE USUARIO Y GUÍA OPERATIVA AGRUL -->
+  <div id="modal-manual-usuario" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-manual-title">
+    <div class="modal-backdrop" data-close="modal-manual-usuario"></div>
+    <div class="modal-content glass modal-lg" style="max-width: 1040px; max-height: 88vh; display: flex; flex-direction: column; background: #ffffff; color: #0f172a; border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.25);">
+      <div class="modal-header" style="border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="brand-logo-photo" style="width: 38px; height: 38px;">
+            <svg viewBox="0 0 40 40" width="28" height="28" fill="none">
+              <path d="M14 6L24 4L28 15L18 17Z" fill="#6ee7b7" />
+              <path d="M18 17L28 15L34 24L24 26Z" fill="#10b981" />
+              <path d="M24 26L18 36L10 30L16 20Z" fill="#047857" />
+              <path d="M6 14L14 12L18 20L10 22Z" fill="#065f46" />
+            </svg>
+          </div>
+          <div>
+            <h3 id="modal-manual-title" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #0f172a;">Manual de Usuario y Guía Operativa de Agrul</h3>
+            <p style="margin: 2px 0 0; font-size: 12.5px; color: #64748b;">Motor de Trazabilidad Agroindustrial y Cadena de Suministro · Versión 2.0</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" data-close="modal-manual-usuario" style="font-size: 24px; background: none; border: none; cursor: pointer; color: #64748b;">&times;</button>
+      </div>
+
+      <div class="modal-body" style="overflow-y: auto; padding: 20px 8px;">
+        <div class="comp-tabs-nav" id="manual-tabs-nav" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+          <button type="button" class="btn btn-sm btn-outline-primary manual-tab-btn active" data-mantab="manual-trazabilidad">🌱 1. Trazabilidad y Linaje</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary manual-tab-btn" data-mantab="manual-cultivos">🌾 2. Cultivos y Cuadros</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary manual-tab-btn" data-mantab="manual-labores">🚜 3. Labores e Insumos</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary manual-tab-btn" data-mantab="manual-cosecha">🧺 4. Cosecha y Pesaje</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary manual-tab-btn" data-mantab="manual-despacho">📦 5. Poscosecha y Despacho</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary manual-tab-btn" data-mantab="manual-seguridad">🔐 6. Roles y Seguridad</button>
+        </div>
+
+        <div id="manual-trazabilidad" class="manual-pane" style="line-height: 1.6; color: #334155;">
+          <h4 style="color: #0f172a; margin-top: 0; font-size: 1.1rem; font-weight: 700;">1. Modelo Inmutable de Trazabilidad y Linaje</h4>
+          <p>Agrul implementa un modelo de trazabilidad <em>append-only</em> que registra de forma inalterable cada evento que ocurre sobre el cultivo, los lotes de cosecha y los insumos desde el campo hasta la entrega al cliente.</p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin: 12px 0;">
+            <strong style="color: #0f172a;">Conceptos Clave:</strong>
+            <ul style="margin: 8px 0 0 20px;">
+              <li><strong>Lote Territorial:</strong> Parcela física delimitada dentro de una finca donde se establece una plantación.</li>
+              <li><strong>Ciclo Productivo:</strong> Temporada agronómica activa (ej. Campaña 2025/2026) que agrupa labores, cosechas y costos.</li>
+              <li><strong>Linaje y Árbol Genealógico:</strong> Visualización gráfica interactiva que documenta divisiones (splits) de lotes, uniones (merges) y transformaciones poscosecha.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div id="manual-cultivos" class="manual-pane" style="display: none; line-height: 1.6; color: #334155;">
+          <h4 style="color: #0f172a; margin-top: 0; font-size: 1.1rem; font-weight: 700;">2. Gestión de Cultivos, Variedades y Plantaciones</h4>
+          <p>Permite administrar el catálogo taxonómico y agronómico de las especies explotadas en la empresa agropecuaria.</p>
+          <ul style="margin-left: 20px;">
+            <li><strong>Catálogo de Cultivos:</strong> Definición de especie (ej. Cerezo, Vid, Olivo) con parámetros de rendimiento esperado.</li>
+            <li><strong>Variedades:</strong> Variedades específicas (ej. Cereza Lapins, Vid Malbec, Olivo Arauco) con curvas de maduración y destino comercial.</li>
+            <li><strong>Plantaciones:</strong> Vinculación entre un cultivo/variedad y un lote territorial, registrando densidad de plantas, portainjerto y año de plantación.</li>
+          </ul>
+        </div>
+
+        <div id="manual-labores" class="manual-pane" style="display: none; line-height: 1.6; color: #334155;">
+          <h4 style="color: #0f172a; margin-top: 0; font-size: 1.1rem; font-weight: 700;">3. Labores Agrícolas, Recetas y Períodos de Carencia</h4>
+          <p>Control riguroso de buenas prácticas agrícolas (BPA) y seguridad alimentaria.</p>
+          <ul style="margin-left: 20px;">
+            <li><strong>Depósito e Inventario de Insumos:</strong> Stock con lotes de proveedor, fecha de vencimiento y unidades estandarizadas.</li>
+            <li><strong>Recetas Agronómicas y Aplicación:</strong> Emisión de órdenes con cálculo automático de dosis por hectárea y volumen de agua.</li>
+            <li><strong>Bloqueo por Carencia:</strong> El sistema bloquea automáticamente cualquier cosecha si el lote se encuentra dentro del período de carencia de un fitosanitario aplicado.</li>
+          </ul>
+        </div>
+
+        <div id="manual-cosecha" class="manual-pane" style="display: none; line-height: 1.6; color: #334155;">
+          <h4 style="color: #0f172a; margin-top: 0; font-size: 1.1rem; font-weight: 700;">4. Cosecha, Pesajes y Rendimientos</h4>
+          <p>Registro en tiempo real de recolección en finca y pesaje en báscula.</p>
+          <ul style="margin-left: 20px;">
+            <li><strong>Jornadas de Cosecha:</strong> Planificación por pasadas, cuadrillas y sectores del lote.</li>
+            <li><strong>Pesaje Oficial:</strong> Registro de kilos brutos, tara de envases (bines/cajas) y kilos netos.</li>
+            <li><strong>Emisión de Ticket de Trazabilidad:</strong> Cada bulto recibe un código único que acompaña a la fruta en todo su transporte.</li>
+          </ul>
+        </div>
+
+        <div id="manual-despacho" class="manual-pane" style="display: none; line-height: 1.6; color: #334155;">
+          <h4 style="color: #0f172a; margin-top: 0; font-size: 1.1rem; font-weight: 700;">5. Poscosecha, Cámaras de Frío y Despacho</h4>
+          <p>Control de empaque, calidad y logística de distribución comercial.</p>
+          <ul style="margin-left: 20px;">
+            <li><strong>Clasificación:</strong> Separación por calibres, calidad comercial (Primera, Segunda) y porcentaje de descarte.</li>
+            <li><strong>Cámaras de Frío:</strong> Registro de ingresos, egresos y control térmico para garantizar la cadena de frío.</li>
+            <li><strong>Remitos y Despacho:</strong> Emisión de documentos con código QR trazable hacia atrás (origen, fitosanitarios) y hacia adelante (destinatario).</li>
+          </ul>
+        </div>
+
+        <div id="manual-seguridad" class="manual-pane" style="display: none; line-height: 1.6; color: #334155;">
+          <h4 style="color: #0f172a; margin-top: 0; font-size: 1.1rem; font-weight: 700;">6. Roles de Usuario, Seguridad y Auditoría</h4>
+          <p>Mecanismos de protección de datos y control de accesos por roles (RBAC).</p>
+          <ul style="margin-left: 20px;">
+            <li><strong>Administrador Agrícola:</strong> Acceso a indicadores de rentabilidad, exportación de reportes y aprobación de despachos.</li>
+            <li><strong>Encargado de Campo:</strong> Registro de labores, pesaje de cosechas y monitoreo de parcelas asignadas.</li>
+            <li><strong>Administrador del Sistema:</strong> Gestión de usuarios, configuración de timeout de sesión y consulta de la bitácora de auditoría.</li>
+            <li><strong>Seguridad de Sesión:</strong> Expiración automática tras inactividad y contraseñas cifradas con Argon2.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="border-top: 1px solid rgba(0,0,0,0.06); padding: 14px 20px; display: flex; justify-content: flex-end; background: #f8fafc; border-radius: 0 0 24px 24px;">
+        <button type="button" class="btn btn-primary" data-close="modal-manual-usuario">Cerrar Guía</button>
+      </div>
+    </div>
+  </div>
+
 
   <!-- MODAL SECUNDARIO: VISUALIZADOR DE DELTA JSON (RN-06) -->
   <div id="modal-delta-auditoria" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-delta-title">

@@ -96,7 +96,7 @@ import {
 } from '../../application/use-cases/aplicaciones.use-cases.js';
 import { VerificarCarenciaLoteUseCase } from '../../application/use-cases/verificar-carencia.use-case.js';
 import { CalcularConsumoInsumosCicloUseCase } from '../../application/use-cases/consumo-insumos.use-cases.js';
-import { CosechasRepositoryPort } from '../../core/ports/cosechas-repository.port.js';
+import { CosechasRepositoryPort, ListarCosechasFiltros } from '../../core/ports/cosechas-repository.port.js';
 import { CosechasController } from './controllers/cosechas.controller.js';
 import {
   RegistrarCosechaUseCase,
@@ -734,12 +734,44 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   }
 
   let indicadoresController: IndicadoresController | undefined;
+  let dashboardController: DashboardController | undefined;
+
+  const cosechasAdapter: CosechasRepositoryPort = options.cosechasRepo ?? {
+    async listar(filtros?: ListarCosechasFiltros) {
+      if (!options.cosechasRegistroRepo) return [];
+      const registros = await options.cosechasRegistroRepo.listar({
+        cicloId: filtros?.cicloId,
+        loteId: filtros?.loteId,
+        desde: filtros?.fechaDesde,
+        hasta: filtros?.fechaHasta,
+        limit: 1000,
+        offset: 0,
+      }, { actorId: 'dashboard-system', rol: 'ADMIN_SISTEMA', fincaIds: undefined } as any);
+      return registros.map(r => ({
+        id: r.id,
+        codigo: r.codigoTrazabilidad,
+        cicloId: r.cicloId,
+        loteId: r.loteId,
+        fecha: r.fecha,
+        cantidadCosechadaKg: r.cantidadCosechadaKg,
+        cantidadComercializableKg: r.cantidadComercializableKg ?? r.cantidadCosechadaKg,
+        cantidadDescarteKg: (r as any).cantidadDescarteKg ?? Math.max(0, r.cantidadCosechadaKg - (r.cantidadComercializableKg ?? r.cantidadCosechadaKg)),
+        estado: (r as any).estado ?? 'APROBADA',
+        estaActiva: () => true,
+      } as any));
+    },
+    async guardar() {},
+    async buscarPorId() { return null; },
+    async buscarPorCodigo() { return null; },
+    async buscarPorClaveIdempotencia() { return null; },
+    async contarPorLoteYFecha() { return 0; },
+  };
+
   if (options.ciclosRepo && (options.cosechasRepo || options.cosechasRegistroRepo)) {
-    const cosechasRepoActivo = options.cosechasRepo ?? (options.cosechasRegistroRepo as any);
     const calcularMetricasUC = new CalcularMetricasProduccionUseCase({
       lotesRepo: options.lotesRepo,
       ciclosRepo: options.ciclosRepo,
-      cosechasRepo: cosechasRepoActivo,
+      cosechasRepo: cosechasAdapter,
       actividadesRepo: options.actividadesRepo,
       catalogosRepo: options.catalogosRepo,
       fincasRepo: options.fincasRepo,
@@ -750,7 +782,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       compararCampanasUC = new CompararCampanasUseCase({
         ciclosRepo: options.ciclosRepo,
         lotesRepo: options.lotesRepo,
-        cosechasRepo: cosechasRepoActivo,
+        cosechasRepo: cosechasAdapter,
         aplicacionesRepo: options.aplicacionesRepo,
         insumosRepo: options.insumosRepo,
         fincasRepo: options.fincasRepo,
@@ -760,10 +792,9 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     indicadoresController = new IndicadoresController(calcularMetricasUC, compararCampanasUC);
   }
 
-  let dashboardController: DashboardController | undefined;
   if (
     options.ciclosRepo &&
-    options.cosechasRepo &&
+    (options.cosechasRepo || options.cosechasRegistroRepo) &&
     options.insumosRepo &&
     options.aplicacionesRepo &&
     options.actividadesRepo
@@ -771,7 +802,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     const obtenerDashboardResumenUC = new ObtenerDashboardResumenUseCase({
       lotesRepo: options.lotesRepo,
       ciclosRepo: options.ciclosRepo,
-      cosechasRepo: options.cosechasRepo,
+      cosechasRepo: cosechasAdapter,
       insumosRepo: options.insumosRepo,
       aplicacionesRepo: options.aplicacionesRepo,
       actividadesRepo: options.actividadesRepo,
