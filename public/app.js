@@ -460,12 +460,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Manejo de Modales
   function openModal(modal) {
-    modal.classList.add('open');
+    if (!modal) return;
+    modal.classList.add('open', 'active');
+    modal.style.display = 'flex';
     modal.setAttribute('aria-hidden', 'false');
   }
 
   function closeModal(modal) {
+    if (!modal) return;
     modal.classList.remove('open', 'active');
+    modal.style.display = 'none';
     modal.setAttribute('aria-hidden', 'true');
   }
 
@@ -480,12 +484,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Modal Nuevo Lote
-  btnNuevoLote.addEventListener('click', () => {
-    formNuevoLote.reset();
-    openModal(modalNuevoLote);
-  });
+  if (btnNuevoLote) {
+    btnNuevoLote.addEventListener('click', () => {
+      formNuevoLote?.reset();
+      if (modalNuevoLote) openModal(modalNuevoLote);
+    });
+  }
 
-  formNuevoLote.addEventListener('submit', async (e) => {
+  formNuevoLote?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const codigoLote = document.getElementById('nuevo-codigo').value.trim() || undefined;
     const producto = document.getElementById('nuevo-producto').value.trim();
@@ -539,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
     openModal(modalRegistrarEvento);
   }
 
-  formRegistrarEvento.addEventListener('submit', async (e) => {
+  formRegistrarEvento?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const loteId = eventoLoteIdInput.value;
     const tipoEvento = document.getElementById('evento-tipo').value;
@@ -693,17 +699,17 @@ document.addEventListener('DOMContentLoaded', () => {
     lineageZoomGroup.setAttribute('transform', `translate(${panOffsetX}, ${panOffsetY}) scale(${zoomLevel})`);
   }
 
-  btnZoomIn.addEventListener('click', () => {
+  btnZoomIn?.addEventListener('click', () => {
     zoomLevel = Math.min(2.5, zoomLevel + 0.2);
     aplicarTransformacionGrafo();
   });
 
-  btnZoomOut.addEventListener('click', () => {
+  btnZoomOut?.addEventListener('click', () => {
     zoomLevel = Math.max(0.4, zoomLevel - 0.2);
     aplicarTransformacionGrafo();
   });
 
-  btnZoomReset.addEventListener('click', () => {
+  btnZoomReset?.addEventListener('click', () => {
     zoomLevel = 1;
     panOffsetX = 0;
     panOffsetY = 0;
@@ -711,7 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Paneo con el ratón
-  graphViewportContainer.addEventListener('mousedown', (e) => {
+  graphViewportContainer?.addEventListener('mousedown', (e) => {
     if (e.target.closest('.graph-node')) return; // Permitir clic en nodos
     isDraggingGraph = true;
     graphViewportContainer.classList.add('grabbing');
@@ -728,10 +734,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('mouseup', () => {
     isDraggingGraph = false;
-    graphViewportContainer.classList.remove('grabbing');
+    graphViewportContainer?.classList.remove('grabbing');
   });
 
-  graphViewportContainer.addEventListener('wheel', (e) => {
+  graphViewportContainer?.addEventListener('wheel', (e) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     zoomLevel = Math.min(2.5, Math.max(0.4, zoomLevel + delta));
@@ -739,15 +745,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }, { passive: false });
 
   // Toggle Recall Simulator
-  btnToggleRecall.addEventListener('click', () => {
+  btnToggleRecall?.addEventListener('click', () => {
     isRecallActive = !isRecallActive;
     if (isRecallActive) {
       btnToggleRecall.classList.add('active');
-      recallAlertBanner.style.display = 'flex';
+      if (recallAlertBanner) recallAlertBanner.style.display = 'flex';
       showToast('🚨 Recall Simulator Activado: Se destacan en rojo los lotes derivados en riesgo.', 'error');
     } else {
       btnToggleRecall.classList.remove('active');
-      recallAlertBanner.style.display = 'none';
+      if (recallAlertBanner) recallAlertBanner.style.display = 'none';
       showToast('Recall Simulator Desactivado.', 'success');
     }
     if (currentLinajeData) {
@@ -756,7 +762,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Centrar en lote seleccionado desde el inspector
-  btnRecenterGraph.addEventListener('click', () => {
+  btnRecenterGraph?.addEventListener('click', () => {
     if (selectedInspectorLote && selectedInspectorLote.id) {
       abrirModalLinaje(selectedInspectorLote.id, selectedInspectorLote.codigoLote);
     }
@@ -3660,10 +3666,40 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Delegación de clics globales para Auditoría y Manual de Usuario (fase de captura prioritaria)
+  document.addEventListener('click', (e) => {
+    const btnAudit = e.target.closest('#btn-bitacora-auditoria');
+    if (btnAudit) {
+      e.preventDefault();
+      const modal = document.getElementById('modal-auditoria-seguridad');
+      if (modal) {
+        openModal(modal);
+        modal.classList.add('active', 'open');
+        modal.style.display = 'flex';
+        cargarBitacoraAuditoria();
+        actualizarEstadoSesionUI();
+      }
+      return;
+    }
+
+    const btnInfo = e.target.closest('#btn-info-sistema');
+    if (btnInfo) {
+      e.preventDefault();
+      const modal = document.getElementById('modal-manual-usuario');
+      if (modal) {
+        openModal(modal);
+        modal.classList.add('active', 'open');
+        modal.style.display = 'flex';
+      }
+      return;
+    }
+  }, true);
+
   if (btnBitacoraAuditoria && modalAuditoriaSeguridad) {
     btnBitacoraAuditoria.addEventListener('click', () => {
       openModal(modalAuditoriaSeguridad);
       modalAuditoriaSeguridad.classList.add('active', 'open');
+      modalAuditoriaSeguridad.style.display = 'flex';
       cargarBitacoraAuditoria();
       actualizarEstadoSesionUI();
     });
@@ -3675,6 +3711,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnInfoSistema.addEventListener('click', () => {
       openModal(modalManualUsuario);
       modalManualUsuario.classList.add('active', 'open');
+      modalManualUsuario.style.display = 'flex';
     });
 
     const manualTabBtns = modalManualUsuario.querySelectorAll('.manual-tab-btn');
