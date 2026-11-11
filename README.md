@@ -28,10 +28,12 @@ Una vez iniciado:
 
 ---
 
-## 🧪 Pruebas Automatizadas
+## 🧪 Pruebas y Manuales de Usuario
+
+- **Manual de Pruebas de Usuario (UAT):** Guía operativa paso a paso con 10 casos de prueba funcionales en [docs/MANUAL_DE_PRUEBAS_USUARIO.md](docs/MANUAL_DE_PRUEBAS_USUARIO.md).
 
 ```bash
-# Correr suite de 100 tests (Vitest)
+# Correr suite de tests (Vitest)
 npm test
 
 # Verificación de tipos estricta (TypeScript)
