@@ -31,6 +31,7 @@ Una vez iniciado:
 ## 🧪 Pruebas y Manuales de Usuario
 
 - **Manual de Pruebas de Usuario (UAT):** Guía operativa paso a paso con 10 casos de prueba funcionales en [docs/MANUAL_DE_PRUEBAS_USUARIO.md](docs/MANUAL_DE_PRUEBAS_USUARIO.md).
+- **Casos de Uso de Prueba por Módulo:** Caso de uso formal y verificable para cada uno de los 11 módulos del sistema en [docs/CASOS_DE_USO_PRUEBA_MODULOS.md](docs/CASOS_DE_USO_PRUEBA_MODULOS.md).
 
 ```bash
 # Correr suite de tests (Vitest)
