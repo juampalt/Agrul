@@ -194,11 +194,22 @@
     });
     const caja = document.getElementById('side-usuario');
     if (caja && AGRUL.usuario) {
+      const nombreFull = (AGRUL.usuario.nombreCompleto || AGRUL.usuario.nombre || 'AG').trim();
+      const iniciales = nombreFull.split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || 'AG';
+      const svgLogout = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svgLogout.setAttribute('viewBox', '0 0 24 24');
+      svgLogout.setAttribute('width', '16');
+      svgLogout.setAttribute('height', '16');
+      svgLogout.setAttribute('fill', 'none');
+      svgLogout.setAttribute('stroke', 'currentColor');
+      svgLogout.setAttribute('stroke-width', '2');
+      svgLogout.setAttribute('stroke-linecap', 'round');
+      svgLogout.setAttribute('stroke-linejoin', 'round');
+      svgLogout.innerHTML = '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line>';
+      caja.classList.add('side-usuario-compact');
       caja.replaceChildren(
-        el('div', { class: 'side-usuario-datos' },
-          el('strong', {}, AGRUL.usuario.nombreCompleto || AGRUL.usuario.nombre),
-          el('span', {}, ROLES[rol] || rol)),
-        el('button', { class: 'btn btn-secondary side-salir', type: 'button', title: 'Cerrar sesión', onclick: cerrarSesion }, 'Salir'));
+        el('div', { class: 'side-avatar-badge', title: `${nombreFull} · ${ROLES[rol] || rol}` }, iniciales),
+        el('button', { class: 'side-salir side-salir-icon', type: 'button', title: 'Cerrar sesión', onclick: cerrarSesion }, svgLogout));
     }
   }
   AGRUL.puedeVer = (roles) => Boolean(AGRUL.usuario) && (roles || '').split(/\s+/).includes(AGRUL.usuario.perfil);

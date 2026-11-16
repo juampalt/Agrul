@@ -12,698 +12,540 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <div class="app-container">
-    <div id="menu-overlay" class="menu-overlay" hidden></div>
-    <!-- Menú lateral: cada acción abre su propia vista o ventana -->
-    <aside id="menu-lateral" class="app-sidebar" aria-label="Navegación principal">
-      <div class="side-brand">
-        <div class="brand">
-          <div class="brand-logo-photo" title="Agrul TraceEngine">
-            <svg viewBox="0 0 40 40" width="34" height="34" fill="none">
-              <path d="M14 6L24 4L28 15L18 17Z" fill="#6ee7b7" />
-              <path d="M18 17L28 15L34 24L24 26Z" fill="#10b981" />
-              <path d="M24 26L18 36L10 30L16 20Z" fill="#047857" />
-              <path d="M6 14L14 12L18 20L10 22Z" fill="#065f46" />
-            </svg>
-          </div>
-          <div class="brand-info">
-            <h1>Agrul <span>TraceEngine</span></h1>
-            <p class="tagline">Trazabilidad Agroindustrial</p>
-          </div>
-        </div>
-      </div>
-      <nav class="side-nav">
-        <p class="side-title">Vistas</p>
-        <button class="nav-item" data-roles="ADMIN_SISTEMA" data-nav="inicio" data-titulo="Inicio" data-subtitulo="Accesos del administrador del sistema" type="button">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          </span>
-          Inicio
-        </button>
-        <button class="nav-item active" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="lotes" data-titulo="Trazabilidad de lotes" data-subtitulo="Inventario de lotes, estados y stock" type="button">
-          <span class="btn-icon icon-dashboard-grid">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-              <rect x="3" y="3" width="7.5" height="7.5" rx="2.5"/>
-              <rect x="13.5" y="3" width="7.5" height="7.5" rx="2.5"/>
-              <rect x="3" y="13.5" width="7.5" height="7.5" rx="2.5"/>
-              <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2.5"/>
-            </svg>
-          </span>
-          Dashboard
-        </button>
-        <button id="btn-toggle-dashboard" class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="tablero" data-titulo="Tablero ejecutivo" data-subtitulo="Resumen operativo: producción, stock, labores y costos" type="button" title="Tablero Ejecutivo de Inicio">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          </span>
-          Tablero
-        </button>
+      <div class="app-container">
+          <div id="menu-overlay" class="menu-overlay" hidden></div>
+          <!-- Menú lateral: cada acción abre su propia vista o ventana -->
+          <aside id="menu-lateral" class="app-sidebar" aria-label="Navegación principal">
+            <div class="side-brand">
+              <div class="brand">
+                <div class="brand-logo-photo" title="Agrul TraceEngine">
+                  <svg viewBox="0 0 40 40" width="34" height="34" fill="none">
+                    <path d="M14 6L24 4L28 15L18 17Z" fill="#6ee7b7" />
+                    <path d="M18 17L28 15L34 24L24 26Z" fill="#10b981" />
+                    <path d="M24 26L18 36L10 30L16 20Z" fill="#047857" />
+                    <path d="M6 14L14 12L18 20L10 22Z" fill="#065f46" />
+                  </svg>
+                </div>
+                <div class="brand-info">
+                  <h1>Agrul <span>TraceEngine</span></h1>
+                  <p class="tagline">Trazabilidad Agroindustrial</p>
+                </div>
+              </div>
+            </div>
+            <nav class="side-nav">
+              <p class="side-title">Vistas</p>
+              <button class="nav-item" data-roles="ADMIN_SISTEMA" data-nav="inicio" data-titulo="Inicio" data-subtitulo="Accesos del administrador del sistema" type="button">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </span>
+                Inicio
+              </button>
+              <button class="nav-item active" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="lotes" data-titulo="Trazabilidad de lotes" data-subtitulo="Inventario de lotes, estados y stock" type="button">
+                <span class="btn-icon icon-dashboard-grid">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <rect x="3" y="3" width="7.5" height="7.5" rx="2.5"/>
+                    <rect x="13.5" y="3" width="7.5" height="7.5" rx="2.5"/>
+                    <rect x="3" y="13.5" width="7.5" height="7.5" rx="2.5"/>
+                    <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2.5"/>
+                  </svg>
+                </span>
+                Dashboard
+              </button>
+              <button id="btn-toggle-dashboard" class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="tablero" data-titulo="Tablero ejecutivo" data-subtitulo="Resumen operativo: producción, stock, labores y costos" type="button" title="Tablero Ejecutivo de Inicio">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </span>
+                Tablero
+              </button>
 
-        <p class="side-title">Cultivos y campo</p>
-        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="cultivos" data-titulo="Cultivos" data-subtitulo="Catálogo de cultivos" type="button">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-8"/><path d="M12 14c-3-3-6-3.5-8-1.5s1.5 5.5 8 1.5z"/><path d="M12 12c3-3 6-3.5 8-1.5s-1.5 5.5-8 1.5z"/></svg>
-          </span>
-          Cultivos
-        </button>
-        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="variedades" data-titulo="Variedades" data-subtitulo="Variedades de cada cultivo" type="button">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-7-7M5 12a7 7 0 0 0 7 7"/></svg>
-          </span>
-          Variedades
-        </button>
-        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="plantaciones" data-titulo="Plantaciones" data-subtitulo="Cultivo y variedad plantados en cada lote" type="button">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-9"/><path d="M12 13a5 5 0 0 0 5-5c0-3-5-5-5-5s-5 2-5 5a5 5 0 0 0 5 5z"/></svg>
-          </span>
-          Plantaciones
-        </button>
+              <p class="side-title">Cultivos y campo</p>
+              <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="cultivos" data-titulo="Cultivos" data-subtitulo="Catálogo de cultivos" type="button">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-8"/><path d="M12 14c-3-3-6-3.5-8-1.5s1.5 5.5 8 1.5z"/><path d="M12 12c3-3 6-3.5 8-1.5s-1.5 5.5-8 1.5z"/></svg>
+                </span>
+                Cultivos
+              </button>
+              <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="variedades" data-titulo="Variedades" data-subtitulo="Variedades de cada cultivo" type="button">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-7-7M5 12a7 7 0 0 0 7 7"/></svg>
+                </span>
+                Variedades
+              </button>
+              <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="plantaciones" data-titulo="Plantaciones" data-subtitulo="Cultivo y variedad plantados en cada lote" type="button">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-9"/><path d="M12 13a5 5 0 0 0 5-5c0-3-5-5-5-5s-5 2-5 5a5 5 0 0 0 5 5z"/></svg>
+                </span>
+                Plantaciones
+              </button>
 
-        <p class="side-title">Clima y Ambiente</p>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="meteorologia" data-titulo="Meteorología" data-subtitulo="Observaciones climáticas de la finca" type="button">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M20 12h2"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M15.9 8.2a5 5 0 0 0-7.8 2.2 4 4 0 0 0-4.1 4.6 4 4 0 0 0 3 3h10a4 4 0 0 0 0-8c-.3 0-.7.1-1.1.2z"/></svg>
-          </span>
-          Meteorología
-        </button>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="eventos-climaticos" data-titulo="Eventos climáticos" data-subtitulo="Siniestros y daños adversos en parcelas" type="button">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          </span>
-          Eventos climáticos
-        </button>
+              <p class="side-title">Clima y Ambiente</p>
+              <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="meteorologia" data-titulo="Meteorología" data-subtitulo="Observaciones climáticas de la finca" type="button">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M20 12h2"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M15.9 8.2a5 5 0 0 0-7.8 2.2 4 4 0 0 0-4.1 4.6 4 4 0 0 0 3 3h10a4 4 0 0 0 0-8c-.3 0-.7.1-1.1.2z"/></svg>
+                </span>
+                Meteorología
+              </button>
+              <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="eventos-climaticos" data-titulo="Eventos climáticos" data-subtitulo="Siniestros y daños adversos en parcelas" type="button">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </span>
+                Eventos climáticos
+              </button>
 
-        <p class="side-title">Trazabilidad y Registros</p>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="actividades-programadas" data-titulo="Actividades programadas" data-subtitulo="Labores planificadas para cada ciclo" type="button">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          </span>
-          Labores
-        </button>
-        <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="cosechas" data-titulo="Cosechas realizadas" data-subtitulo="Pesajes reales por pasada" type="button">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          </span>
-          Cosechas
-        </button>
+              <p class="side-title">Trazabilidad y Registros</p>
+              <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="actividades-programadas" data-titulo="Actividades programadas" data-subtitulo="Labores planificadas para cada ciclo" type="button">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </span>
+                Labores
+              </button>
+              <button class="nav-item" data-roles="ADMINISTRADOR ENCARGADO_CAMPO" data-nav="cosechas" data-titulo="Cosechas realizadas" data-subtitulo="Pesajes reales por pasada" type="button">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </span>
+                Cosechas
+              </button>
 
-        <p class="side-title">Personal</p>
-        <button id="btn-usuarios-roles" data-roles="ADMIN_SISTEMA" class="nav-item" type="button" title="Gestión de Usuarios y Cuadrillas">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </span>
-          Cuadrillas
-        </button>
+              <p class="side-title">Personal</p>
+              <button id="btn-usuarios-roles" data-roles="ADMIN_SISTEMA" class="nav-item" type="button" title="Gestión de Usuarios y Cuadrillas">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </span>
+                Cuadrillas
+              </button>
 
-        <p class="side-title">Territorio</p>
-        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="lotes-territorio" data-titulo="Lotes de la finca" data-subtitulo="Alta, modificación y baja de lotes" type="button">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
-          </span>
-          Territorio
-        </button>
-        <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="finca" data-titulo="Finca" data-subtitulo="Datos generales de la finca" type="button">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-          </span>
-          Finca
-        </button>
+              <p class="side-title">Territorio</p>
+              <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="lotes-territorio" data-titulo="Lotes de la finca" data-subtitulo="Alta, modificación y baja de lotes" type="button">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+                </span>
+                Territorio
+              </button>
+              <button class="nav-item" data-roles="ADMINISTRADOR" data-nav="finca" data-titulo="Finca" data-subtitulo="Datos generales de la finca" type="button">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                </span>
+                Finca
+              </button>
 
-        <p class="side-title">Configuración</p>
-        <button id="btn-bitacora-auditoria" class="nav-item" type="button" title="Auditoría y Configuración del Sistema">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          </span>
-          Ajustes
-        </button>
-        <button id="btn-info-sistema" class="nav-item" type="button" title="Manual de Usuario y Guía de Agrul">
-          <span class="btn-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          </span>
-          Info
-        </button>
-      </nav>
-      <div id="side-usuario" class="side-usuario">
-        <button id="btn-theme-toggle" class="btn-side-tool" title="Alternar tema">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        </button>
-        <button id="btn-side-logout" class="btn-side-tool btn-side-logout" title="Cerrar sesión">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ef4444" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        </button>
-        <div class="side-avatar" title="Usuario conectado">
-          <span class="avatar-initials">AG</span>
-        </div>
-      </div>
+              <p class="side-title">Configuración</p>
+              <button id="btn-bitacora-auditoria" class="nav-item" type="button" title="Auditoría y Configuración del Sistema">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </span>
+                Ajustes
+              </button>
+              <button id="btn-info-sistema" class="nav-item" type="button" title="Manual de Usuario y Guía de Agrul">
+                <span class="btn-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                </span>
+                Info
+              </button>
+            </nav>
+            <div id="side-usuario" class="side-usuario side-usuario-compact">
+                <div class="side-avatar-badge" title="Administrador Agrícola · Administrador">AA</div>
+                <button class="side-salir side-salir-icon" type="button" title="Cerrar sesión" onclick="window.AGRUL && window.AGRUL.cerrarSesion && window.AGRUL.cerrarSesion()">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </button>
+              </div>
     </aside>
 
-    <!-- Barra Superior / Header -->
-    <header class="app-header">
-      <button id="btn-menu" class="menu-toggle" type="button" aria-label="Mostrar u ocultar el menú" aria-controls="menu-lateral" aria-expanded="true">
-        <span class="menu-toggle-barras" aria-hidden="true"></span>
-      </button>
-      <div class="topbar-title">
-        <h2 id="vista-titulo">Lotes</h2>
-        <p id="vista-subtitulo">Inventario de lotes, estados y stock</p>
-      </div>
-      <div class="header-actions">
-        <div id="connection-badge" class="connection-badge" title="Estado de conectividad y modo offline de campo">
-          <span id="connection-status-dot" class="status-dot"></span> <span id="connection-status-text">API v1 Online</span>
-        </div>
-        <button id="btn-forzar-sync" class="btn btn-sync-header" style="display: none;" title="Sincronizar inmediatamente operaciones pendientes capturadas en campo">
-          <span class="btn-icon">🔄</span> Sincronizar (<span id="count-sync-pendientes">0</span>)
-        </button>
-      </div>
-    </header>
+          <!-- Barra Superior / Header -->
+          <header class="app-header header-collapsed" hidden aria-hidden="true">
+              <button id="btn-menu" class="menu-toggle" type="button" aria-label="Mostrar u ocultar el menú" aria-controls="menu-lateral" aria-expanded="true"><span class="menu-toggle-barras" aria-hidden="true"></span></button>
+              <div class="topbar-title"><h2 id="vista-titulo">Lotes</h2><p id="vista-subtitulo">Inventario de lotes, estados y stock</p></div>
+              <div class="header-actions"><div id="connection-badge" class="connection-badge connection-badge-removed" hidden><span id="connection-status-dot" class="status-dot"></span> <span id="connection-status-text">API v1 Online</span></div><button id="btn-forzar-sync" class="btn btn-sync-header" style="display: none;"><span class="btn-icon">🔄</span> Sincronizar (<span id="count-sync-pendientes">0</span>)</button></div>
+            </header>
 
-    <!-- TABLERO EJECUTIVO DE INICIO (AGRUL-037 / RF-M7-12 / RF-M7-13 / RF-M7-14) -->
-    <section id="dashboard-ejecutivo" class="dashboard-ejecutivo glass" data-view="tablero">
-      <!-- Barra Superior del Tablero -->
-      <div class="dash-header">
-        <div class="dash-title-group">
-          <div class="dash-badge-icon">📈</div>
-          <div>
-            <h2>Tablero Ejecutivo de Inicio &bull; Resumen Operativo</h2>
-            <p class="dash-subtitle">Monitoreo integral en tiempo real: lotes en producción, cosechas acumuladas, stock de insumos, labores urgentes y estructura de costos</p>
-          </div>
-        </div>
-        <div class="dash-header-actions">
-          <button id="btn-dash-exportar-csv" class="btn btn-secondary btn-sm" title="Exportar resumen del tablero a archivo CSV">
-            <span class="btn-icon">📄</span> Exportar CSV
-          </button>
-          <button id="btn-dash-exportar-pdf" class="btn btn-secondary btn-sm" title="Exportar reporte ejecutivo a PDF o imprimir">
-            <span class="btn-icon">🖨️</span> Exportar PDF / Imprimir
-          </button>
-          <button id="btn-dash-refrescar" class="btn btn-primary btn-sm" title="Actualizar datos del tablero">
-            <span class="btn-icon">🔄</span> Actualizar
-          </button>
-        </div>
-      </div>
+          <!-- TABLERO EJECUTIVO DE INICIO (AGRUL-037 / RF-M7-12 / RF-M7-13 / RF-M7-14) -->
+          <section id="dashboard-ejecutivo" class="dashboard-ejecutivo glass" data-view="tablero">
+                    <!-- Barra Superior del Tablero -->
+                    <div class="dash-header">
+                                            <div class="dash-title-group">
+                                              <div class="dash-badge-icon">📈</div>
+                                              <div>
+                                                <h2>Tablero Ejecutivo de Inicio &bull; Resumen Operativo</h2>
+                                                <p class="dash-subtitle">Monitoreo integral en tiempo real: lotes en producción, cosechas acumuladas, stock de insumos, labores urgentes y estructura de costos</p>
+                                              </div>
+                                            </div>
+                                            <div class="dash-header-actions">
+                                              <button id="btn-dash-exportar-csv" class="btn btn-formal-sec" type="button" title="Exportar resumen del tablero a archivo CSV"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> <span>Exportar CSV</span></button>
+                                              <button id="btn-dash-exportar-pdf" class="btn btn-formal-sec" type="button" title="Exportar reporte ejecutivo a PDF o imprimir"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> <span>Exportar PDF</span></button>
+                                              <button id="btn-dash-refrescar" class="btn btn-formal-pri" type="button" title="Actualizar datos del tablero"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> <span>Actualizar</span></button>
+                                            </div>
+                                          </div>
 
-      <!-- Barra de Filtros del Tablero -->
-      <div class="dash-filters-bar glass">
-        <div class="dash-filter-item">
-          <label for="dash-filtro-finca">Finca:</label>
-          <select id="dash-filtro-finca" class="form-control form-control-sm">
-            <option value="">Todas las Fincas</option>
-          </select>
-        </div>
-        <div class="dash-filter-item">
-          <label for="dash-filtro-temporada">Temporada:</label>
-          <input type="text" id="dash-filtro-temporada" class="form-control form-control-sm" placeholder="Ej: 2025/2026">
-        </div>
-        <div class="dash-filter-item">
-          <label for="dash-filtro-desde">Desde:</label>
-          <input type="date" id="dash-filtro-desde" class="form-control form-control-sm">
-        </div>
-        <div class="dash-filter-item">
-          <label for="dash-filtro-hasta">Hasta:</label>
-          <input type="date" id="dash-filtro-hasta" class="form-control form-control-sm">
-        </div>
-        <div class="dash-filter-buttons">
-          <button id="btn-dash-aplicar-filtros" class="btn btn-secondary btn-sm">Filtrar</button>
-          <button id="btn-dash-limpiar-filtros" class="btn btn-link btn-sm">Limpiar</button>
-        </div>
-      </div>
+                    <!-- Barra de Filtros del Tablero -->
+                    <div class="dash-filters-bar glass">
+                      <div class="dash-filter-item">
+                        <label for="dash-filtro-finca">Finca:</label>
+                        <select id="dash-filtro-finca" class="form-control form-control-sm">
+                          <option value="">Todas las Fincas</option>
+                        </select>
+                      </div>
+                      <div class="dash-filter-item">
+                        <label for="dash-filtro-temporada">Temporada:</label>
+                        <input type="text" id="dash-filtro-temporada" class="form-control form-control-sm" placeholder="Ej: 2025/2026">
+                      </div>
+                      <div class="dash-filter-item">
+                        <label for="dash-filtro-desde">Desde:</label>
+                        <input type="date" id="dash-filtro-desde" class="form-control form-control-sm">
+                      </div>
+                      <div class="dash-filter-item">
+                        <label for="dash-filtro-hasta">Hasta:</label>
+                        <input type="date" id="dash-filtro-hasta" class="form-control form-control-sm">
+                      </div>
+                      <div class="dash-filter-buttons">
+                        <button id="btn-dash-aplicar-filtros" class="btn btn-secondary btn-sm">Filtrar</button>
+                        <button id="btn-dash-limpiar-filtros" class="btn btn-link btn-sm">Limpiar</button>
+                      </div>
+                    </div>
 
-      <!-- Los 4 KPIs Clave del Tablero Ejecutivo (RF-M7-12) -->
-      <div class="dash-kpi-grid">
-        <!-- KPI 1: Lotes en Producción -->
-        <div class="dash-kpi-card glass emerald" id="card-kpi-lotes">
-          <div class="dash-kpi-card-header">
-            <div class="dash-kpi-icon">🌾</div>
-            
-          </div>
-          <span class="dash-kpi-label">Lotes en Producción</span>
-          <div class="dash-kpi-val" id="dash-kpi-lotes-prod-val">0</div>
-          <div class="dash-kpi-meta">
-            <div class="meta-row"><span>Superficie en Prod.:</span> <strong id="dash-kpi-sup-prod">0 ha</strong></div>
-            <div class="meta-row"><span>Superficie Total:</span> <strong id="dash-kpi-sup-total">0 ha</strong></div>
-            <div class="meta-row"><span>Ciclos en Curso:</span> <strong id="dash-kpi-ciclos-curso">0</strong></div>
-            <div class="meta-row"><span>Lotes Activos / Totales:</span> <strong id="dash-kpi-lotes-activos-totales">0 / 0</strong></div>
-          </div>
-        </div>
+                    <!-- Los 4 KPIs Clave del Tablero Ejecutivo (RF-M7-12) -->
+                    <div class="dash-kpi-grid">
+                      <!-- KPI 1: Lotes en Producción -->
+                      <div class="dash-kpi-card glass emerald" id="card-kpi-lotes">
+                        <div class="dash-kpi-card-header">
+                          <div class="dash-kpi-icon">🌾</div>
 
-        <!-- KPI 2: Producción Acumulada -->
-        <div class="dash-kpi-card glass blue" id="card-kpi-produccion">
-          <div class="dash-kpi-card-header">
-            <div class="dash-kpi-icon">⚖️</div>
-            
-          </div>
-          <span class="dash-kpi-label">Producción Acumulada</span>
-          <div class="dash-kpi-val" id="dash-kpi-kilos-totales">0 kg</div>
-          <div class="dash-kpi-meta">
-            <div class="meta-row"><span>Comercializable:</span> <strong id="dash-kpi-kilos-comercializables" style="color: #34d399;">0 kg</strong></div>
-            <div class="meta-row"><span>Descarte:</span> <strong id="dash-kpi-kilos-descarte" style="color: #fbbf24;">0 kg</strong></div>
-            <div class="meta-row"><span>% Descarte:</span> <span id="dash-kpi-porcentaje-descarte" class="dash-pill-descarte">0.0%</span></div>
-            <div class="meta-row"><span>Cosechas Activas:</span> <strong id="dash-kpi-total-cosechas">0</strong></div>
-          </div>
-        </div>
+                        </div>
+                        <span class="dash-kpi-label">Lotes en Producción</span>
+                        <div class="dash-kpi-val" id="dash-kpi-lotes-prod-val">0</div>
+                        <div class="dash-kpi-meta">
+                          <div class="meta-row"><span>Superficie en Prod.:</span> <strong id="dash-kpi-sup-prod">0 ha</strong></div>
+                          <div class="meta-row"><span>Superficie Total:</span> <strong id="dash-kpi-sup-total">0 ha</strong></div>
+                          <div class="meta-row"><span>Ciclos en Curso:</span> <strong id="dash-kpi-ciclos-curso">0</strong></div>
+                          <div class="meta-row"><span>Lotes Activos / Totales:</span> <strong id="dash-kpi-lotes-activos-totales">0 / 0</strong></div>
+                        </div>
+                      </div>
 
-        <!-- KPI 3: Alertas de Stock de Insumos -->
-        <div class="dash-kpi-card glass amber" id="card-kpi-stock">
-          <div class="dash-kpi-card-header">
-            <div class="dash-kpi-icon">🚨</div>
-            
-          </div>
-          <span class="dash-kpi-label">Alertas de Stock</span>
-          <div class="dash-kpi-val" id="dash-kpi-alertas-total">0</div>
-          <div class="dash-kpi-meta">
-            <div class="meta-row"><span>Stock Crítico (≤40% mín):</span> <span id="dash-kpi-stock-critico" class="dash-pill-critico">0</span></div>
-            <div class="meta-row"><span>Stock Bajo (≤mínimo):</span> <span id="dash-kpi-stock-bajo" class="dash-pill-bajo">0</span></div>
-            <div class="meta-row"><span>Insumos Monitoreados:</span> <strong id="dash-kpi-insumos-monitoreados">0</strong></div>
-            <button type="button" class="dash-subpanel-toggle-btn" id="btn-toggle-subpanel-stock">Ver Insumos en Alerta ↓</button>
-          </div>
-        </div>
+                      <!-- KPI 2: Producción Acumulada -->
+                      <div class="dash-kpi-card glass blue" id="card-kpi-produccion">
+                        <div class="dash-kpi-card-header">
+                          <div class="dash-kpi-icon">⚖️</div>
 
-        <!-- KPI 4: Labores Vencidas y Pendientes -->
-        <div class="dash-kpi-card glass purple" id="card-kpi-actividades">
-          <div class="dash-kpi-card-header">
-            <div class="dash-kpi-icon">📅</div>
-            
-          </div>
-          <span class="dash-kpi-label">Labores Urgentes</span>
-          <div class="dash-kpi-val" id="dash-kpi-act-vencidas">0</div>
-          <div class="dash-kpi-meta">
-            <div class="meta-row"><span>Vencidas (con retraso):</span> <span id="dash-kpi-act-vencidas-pill" class="dash-pill-critico">0</span></div>
-            <div class="meta-row"><span>Próximas a vencer (7d):</span> <span id="dash-kpi-act-proximas" class="dash-pill-proxima">0</span></div>
-            <div class="meta-row"><span>Planificadas Totales:</span> <strong id="dash-kpi-act-planificadas">0</strong></div>
-            <button type="button" class="dash-subpanel-toggle-btn" id="btn-toggle-subpanel-actividades">Ver Labores Urgentes ↓</button>
-          </div>
-        </div>
-      </div>
+                        </div>
+                        <span class="dash-kpi-label">Producción Acumulada</span>
+                        <div class="dash-kpi-val" id="dash-kpi-kilos-totales">0 kg</div>
+                        <div class="dash-kpi-meta">
+                          <div class="meta-row"><span>Comercializable:</span> <strong id="dash-kpi-kilos-comercializables" style="color: #34d399;">0 kg</strong></div>
+                          <div class="meta-row"><span>Descarte:</span> <strong id="dash-kpi-kilos-descarte" style="color: #fbbf24;">0 kg</strong></div>
+                          <div class="meta-row"><span>% Descarte:</span> <span id="dash-kpi-porcentaje-descarte" class="dash-pill-descarte">0.0%</span></div>
+                          <div class="meta-row"><span>Cosechas Activas:</span> <strong id="dash-kpi-total-cosechas">0</strong></div>
+                        </div>
+                      </div>
 
-      <!-- Gráficos Interactivos Chart.js (RF-M7-13) -->
-      <div class="dash-charts-section">
-        <div class="dash-section-title">
-          <h3>📊 Análisis Visual y Gráficos Interactivos (Chart.js)</h3>
-          <span class="dash-section-hint">Haga clic en las leyendas de los gráficos para filtrar series</span>
-        </div>
-        <div class="dash-charts-grid">
-          <!-- Gráfico 1: Evolución Temporal Mensual de Cosecha -->
-          <div class="dash-chart-card glass">
-            <div class="dash-chart-card-header">
-              <h4>Evolución Mensual de Cosecha (kg)</h4>
-              <span class="dash-chart-badge">Bruto &bull; Neto &bull; Descarte</span>
+                      <!-- KPI 3: Alertas de Stock de Insumos -->
+                      <div class="dash-kpi-card glass amber" id="card-kpi-stock">
+                        <div class="dash-kpi-card-header">
+                          <div class="dash-kpi-icon">🚨</div>
+
+                        </div>
+                        <span class="dash-kpi-label">Alertas de Stock</span>
+                        <div class="dash-kpi-val" id="dash-kpi-alertas-total">0</div>
+                        <div class="dash-kpi-meta">
+                          <div class="meta-row"><span>Stock Crítico (≤40% mín):</span> <span id="dash-kpi-stock-critico" class="dash-pill-critico">0</span></div>
+                          <div class="meta-row"><span>Stock Bajo (≤mínimo):</span> <span id="dash-kpi-stock-bajo" class="dash-pill-bajo">0</span></div>
+                          <div class="meta-row"><span>Insumos Monitoreados:</span> <strong id="dash-kpi-insumos-monitoreados">0</strong></div>
+                          <button type="button" class="dash-subpanel-toggle-btn" id="btn-toggle-subpanel-stock">Ver Insumos en Alerta ↓</button>
+                        </div>
+                      </div>
+
+                      <!-- KPI 4: Labores Vencidas y Pendientes -->
+                      <div class="dash-kpi-card glass purple" id="card-kpi-actividades">
+                        <div class="dash-kpi-card-header">
+                          <div class="dash-kpi-icon">📅</div>
+
+                        </div>
+                        <span class="dash-kpi-label">Labores Urgentes</span>
+                        <div class="dash-kpi-val" id="dash-kpi-act-vencidas">0</div>
+                        <div class="dash-kpi-meta">
+                          <div class="meta-row"><span>Vencidas (con retraso):</span> <span id="dash-kpi-act-vencidas-pill" class="dash-pill-critico">0</span></div>
+                          <div class="meta-row"><span>Próximas a vencer (7d):</span> <span id="dash-kpi-act-proximas" class="dash-pill-proxima">0</span></div>
+                          <div class="meta-row"><span>Planificadas Totales:</span> <strong id="dash-kpi-act-planificadas">0</strong></div>
+                          <button type="button" class="dash-subpanel-toggle-btn" id="btn-toggle-subpanel-actividades">Ver Labores Urgentes ↓</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Gráficos Interactivos Chart.js (RF-M7-13) -->
+                    <div class="dash-charts-section">
+                      <div class="dash-section-title">
+                        <h3>📊 Análisis Visual y Gráficos Interactivos (Chart.js)</h3>
+                        <span class="dash-section-hint">Haga clic en las leyendas de los gráficos para filtrar series</span>
+                      </div>
+                      <div class="dash-charts-grid">
+                        <!-- Gráfico 1: Evolución Temporal Mensual de Cosecha -->
+                        <div class="dash-chart-card glass">
+                          <div class="dash-chart-card-header">
+                            <h4>Evolución Mensual de Cosecha (kg)</h4>
+                            <span class="dash-chart-badge">Bruto &bull; Neto &bull; Descarte</span>
+                          </div>
+                          <div class="dash-chart-wrapper">
+                            <canvas id="chart-evolucion-cosecha"></canvas>
+                          </div>
+                        </div>
+
+                        <!-- Gráfico 2: Distribución de Consumo de Insumos -->
+                        <div class="dash-chart-card glass">
+                          <div class="dash-chart-card-header">
+                            <h4>Consumo de Insumos por Categoría</h4>
+                            <span class="dash-chart-badge">Distribución Porcentual</span>
+                          </div>
+                          <div class="dash-chart-wrapper">
+                            <canvas id="chart-consumo-insumos"></canvas>
+                          </div>
+                        </div>
+
+                        <!-- Gráfico 3: Rendimiento Promedio por Cultivo -->
+                        <div class="dash-chart-card glass">
+                          <div class="dash-chart-card-header">
+                            <h4>Rendimiento por Cultivo (kg/ha)</h4>
+                            <span class="dash-chart-badge">Bruto vs Comercial</span>
+                          </div>
+                          <div class="dash-chart-wrapper">
+                            <canvas id="chart-rendimiento-cultivo"></canvas>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Paneles Detallados Desplegables -->
+                    <div class="dash-subpanels-container">
+                      <!-- Subpanel: Alertas de Stock de Insumos -->
+                      <div class="dash-subpanel glass" id="subpanel-stock-insumos" style="display: none;">
+                        <div class="dash-subpanel-header">
+                          <h4>🚨 Monitor Detallado de Stock y Puntos de Reposición</h4>
+                          <button type="button" class="btn-close-subpanel" data-close-subpanel="subpanel-stock-insumos">&times;</button>
+                        </div>
+                        <div class="table-responsive">
+                          <table class="data-table">
+                            <thead>
+                              <tr>
+                                <th>Insumo</th>
+                                <th>Categoría</th>
+                                <th>Stock Actual</th>
+                                <th>Punto Reposición (Mín)</th>
+                                <th>Consumo Acumulado</th>
+                                <th>Nivel de Alerta</th>
+                              </tr>
+                            </thead>
+                            <tbody id="dash-tbody-stock">
+                              <tr><td colspan="6" class="text-center">Cargando estado de inventario...</td></tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <!-- Subpanel: Labores Vencidas y Próximas a Vencer -->
+                      <div class="dash-subpanel glass" id="subpanel-actividades-urgentes" style="display: none;">
+                        <div class="dash-subpanel-header">
+                          <h4>📅 Labores Planificadas Vencidas o Próximas a Vencer (7 días)</h4>
+                          <button type="button" class="btn-close-subpanel" data-close-subpanel="subpanel-actividades-urgentes">&times;</button>
+                        </div>
+                        <div class="table-responsive">
+                          <table class="data-table">
+                            <thead>
+                              <tr>
+                                <th>Código</th>
+                                <th>Lote</th>
+                                <th>Labor Agrícola</th>
+                                <th>Fecha Planificada</th>
+                                <th>Días de Retraso</th>
+                                <th>Urgencia</th>
+                              </tr>
+                            </thead>
+                            <tbody id="dash-tbody-actividades">
+                              <tr><td colspan="6" class="text-center">Cargando labores urgentes...</td></tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <!-- Subpanel: Estructura de Costos por Lote (RF-M7-14) -->
+                      <div class="dash-subpanel glass" id="subpanel-costos-lote">
+                        <div class="dash-subpanel-header">
+                          <div>
+                            <h4>💰 Estructura de Costos Operativos por Lote</h4>
+                            <p class="dash-subpanel-sub">Cómputo analítico: Insumos aplicados + Mano de obra (jornales) + Maquinaria (horas tractor)</p>
+                          </div>
+                          <button type="button" id="btn-toggle-tabla-costos" class="btn btn-secondary btn-sm">Ocultar / Mostrar</button>
+                        </div>
+                        <div class="dash-costos-resumen-strip">
+                          <div class="costo-res-pill"><span>Costo Total Explotación:</span> <strong id="dash-costo-total-global">$0</strong></div>
+                          <div class="costo-res-pill"><span>Costo Promedio / ha:</span> <strong id="dash-costo-promedio-ha" style="color: #38bdf8;">$0 / ha</strong></div>
+                          <div class="costo-res-pill"><span>Costo Promedio / kg Cosechado:</span> <strong id="dash-costo-promedio-kg" style="color: #34d399;">$0 / kg</strong></div>
+                        </div>
+                        <div class="table-responsive" id="dash-costos-table-wrap">
+                          <table class="data-table">
+                            <thead>
+                              <tr>
+                                <th>Lote</th>
+                                <th>Cultivo</th>
+                                <th>Superficie</th>
+                                <th>Cosechado</th>
+                                <th>Insumos</th>
+                                <th>Mano de Obra</th>
+                                <th>Maquinaria</th>
+                                <th>Costo Total</th>
+                                <th>Costo / ha</th>
+                                <th>Costo / kg</th>
+                              </tr>
+                            </thead>
+                            <tbody id="dash-tbody-costos">
+                              <tr><td colspan="10" class="text-center">Calculando estructura de costos...</td></tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+          <!-- Contadores / KPIs de Producción -->
+          <section class="kpi-grid" data-view="lotes">
+            <div class="kpi-card glass">
+              <div class="kpi-icon-wrap emerald">🌾</div>
+              <div class="kpi-data">
+                <span class="kpi-title">Lotes Totales</span>
+                <span class="kpi-value" id="kpi-total-lotes">0</span>
+                <span class="kpi-subtext">Registrados en sistema</span>
+              </div>
             </div>
-            <div class="dash-chart-wrapper">
-              <canvas id="chart-evolucion-cosecha"></canvas>
+            <div class="kpi-card glass">
+              <div class="kpi-icon-wrap blue">⚡</div>
+              <div class="kpi-data">
+                <span class="kpi-title">Lotes Activos</span>
+                <span class="kpi-value" id="kpi-lotes-activos">0</span>
+                <span class="kpi-subtext">En proceso / Creados</span>
+              </div>
             </div>
-          </div>
+            <div class="kpi-card glass">
+              <div class="kpi-icon-wrap amber">📦</div>
+              <div class="kpi-data">
+                <span class="kpi-title">Embalados / Despacho</span>
+                <span class="kpi-value" id="kpi-lotes-embalados">0</span>
+                <span class="kpi-subtext">Listos para distribución</span>
+              </div>
+            </div>
+            <div class="kpi-card glass">
+              <div class="kpi-icon-wrap purple">⚖️</div>
+              <div class="kpi-data">
+                <span class="kpi-title">Masa Disponible</span>
+                <span class="kpi-value" id="kpi-masa-total">0 kg</span>
+                <span class="kpi-subtext">Acumulada en lotes</span>
+              </div>
+            </div>
+          </section>
 
-          <!-- Gráfico 2: Distribución de Consumo de Insumos -->
-          <div class="dash-chart-card glass">
-            <div class="dash-chart-card-header">
-              <h4>Consumo de Insumos por Categoría</h4>
-              <span class="dash-chart-badge">Distribución Porcentual</span>
-            </div>
-            <div class="dash-chart-wrapper">
-              <canvas id="chart-consumo-insumos"></canvas>
-            </div>
-          </div>
+          <section id="vista-inicio" class="pantalla" data-view="inicio"></section>
+          <section id="vista-finca" class="pantalla" data-view="finca"></section>
+          <section id="vista-lotes-territorio" class="pantalla" data-view="lotes-territorio"></section>
+          <section id="vista-cultivos" class="pantalla" data-view="cultivos"></section>
+          <section id="vista-variedades" class="pantalla" data-view="variedades"></section>
+          <section id="vista-tipos-actividad" class="pantalla" data-view="tipos-actividad"></section>
+          <section id="vista-insumos" class="pantalla" data-view="insumos"></section>
+          <section id="vista-plantaciones" class="pantalla" data-view="plantaciones"></section>
+          <section id="vista-ciclos" class="pantalla" data-view="ciclos"></section>
+          <section id="vista-actividades-programadas" class="pantalla" data-view="actividades-programadas"></section>
+          <section id="vista-actividades-realizadas" class="pantalla" data-view="actividades-realizadas"></section>
+          <section id="vista-monitoreos" class="pantalla" data-view="monitoreos"></section>
+          <section id="vista-aplicaciones-insumos" class="pantalla" data-view="aplicaciones-insumos"></section>
+          <section id="vista-inventario-existencias" class="pantalla" data-view="inventario-existencias"></section>
+          <section id="vista-inventario-movimientos" class="pantalla" data-view="inventario-movimientos"></section>
+          <section id="vista-cosechas-programadas" class="pantalla" data-view="cosechas-programadas"></section>
+          <section id="vista-cosechas" class="pantalla" data-view="cosechas"></section>
+          <section id="vista-clasificaciones" class="pantalla" data-view="clasificaciones"></section>
+          <section id="vista-acondicionamientos" class="pantalla" data-view="acondicionamientos"></section>
+          <section id="vista-camaras" class="pantalla" data-view="camaras"></section>
+          <section id="vista-almacenamiento-movimientos" class="pantalla" data-view="almacenamiento-movimientos"></section>
+          <section id="vista-almacenamiento-saldos" class="pantalla" data-view="almacenamiento-saldos"></section>
+          <section id="vista-destinos" class="pantalla" data-view="destinos"></section>
+          <section id="vista-meteorologia" class="pantalla" data-view="meteorologia"></section>
+          <section id="vista-eventos-climaticos" class="pantalla" data-view="eventos-climaticos"></section>
 
-          <!-- Gráfico 3: Rendimiento Promedio por Cultivo -->
-          <div class="dash-chart-card glass">
-            <div class="dash-chart-card-header">
-              <h4>Rendimiento por Cultivo (kg/ha)</h4>
-              <span class="dash-chart-badge">Bruto vs Comercial</span>
+          <!-- Barra de Controles y Filtros (Field Monitoring Overview) -->
+          <section class="table-controls glass" data-view="lotes">
+            <div class="overview-header-row">
+              <div class="overview-title-group">
+                <h3>Field Monitoring Overview</h3>
+                <span class="overview-counter" id="overview-counter">2 parcelas activas</span>
+              </div>
+              <div class="overview-filters-group">
+                <button id="btn-nuevo-lote" class="btn btn-primary btn-sm" type="button" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-radius: 10px; padding: 7px 14px; background: #10b981; color: #fff; border: none; cursor: pointer;" title="Registrar un nuevo lote de cultivo"><span style="font-size: 16px;">+</span> Nuevo Lote</button>
+                <div class="date-badge-picker">
+                  <span class="picker-label">Junio 2026</span>
+                  <span class="picker-icon">📅</span>
+                </div>
+                <div class="filter-dropdown-btn">
+                  <span>Filter</span>
+                  <span class="dropdown-chevron">▾</span>
+                </div>
+              </div>
             </div>
-            <div class="dash-chart-wrapper">
-              <canvas id="chart-rendimiento-cultivo"></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Paneles Detallados Desplegables -->
-      <div class="dash-subpanels-container">
-        <!-- Subpanel: Alertas de Stock de Insumos -->
-        <div class="dash-subpanel glass" id="subpanel-stock-insumos" style="display: none;">
-          <div class="dash-subpanel-header">
-            <h4>🚨 Monitor Detallado de Stock y Puntos de Reposición</h4>
-            <button type="button" class="btn-close-subpanel" data-close-subpanel="subpanel-stock-insumos">&times;</button>
-          </div>
-          <div class="table-responsive">
-            <table class="data-table">
+            <div class="search-and-tabs-bar">
+              <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="input-busqueda" placeholder="Buscar por código de lote, producto o variedad..." aria-label="Buscar lote">
+              </div>
+              <div class="filter-tabs" id="filter-tabs" role="tablist">
+                <button class="tab-btn active" data-filter="TODOS">Todos</button>
+                <button class="tab-btn" data-filter="CREADO">Creados</button>
+                <button class="tab-btn" data-filter="EN_PROCESO">En Proceso</button>
+                <button class="tab-btn" data-filter="EMBALADO">Embalados</button>
+                <button class="tab-btn" data-filter="DESPACHADO">Despachados</button>
+                <button class="tab-btn" data-filter="CERRADO">Cerrados</button>
+              </div>
+              <div class="advanced-filters">
+                <select id="filtro-finca" class="filter-select" aria-label="Filtrar por finca">
+                  <option value="">Todas las Fincas</option>
+                </select>
+                <div class="surface-filter-inputs">
+                  <input type="number" id="filtro-sup-min" placeholder="Min Ha" step="0.1" min="0" title="Superficie mínima (ha)">
+                  <span class="range-sep">-</span>
+                  <input type="number" id="filtro-sup-max" placeholder="Max Ha" step="0.1" min="0" title="Superficie máxima (ha)">
+                </div>
+              </div>
+              <button id="btn-recargar" class="btn btn-secondary" title="Actualizar datos">
+                🔄 Refrescar
+              </button>
+            </div>
+          </section>
+
+          <!-- Tabla Operativa de Lotes -->
+          <main class="table-container glass" data-view="lotes">
+            <table class="lotes-table" id="tabla-lotes">
               <thead>
                 <tr>
-                  <th>Insumo</th>
-                  <th>Categoría</th>
-                  <th>Stock Actual</th>
-                  <th>Punto Reposición (Mín)</th>
-                  <th>Consumo Acumulado</th>
-                  <th>Nivel de Alerta</th>
+                  <th style="width: 38px; text-align: center;"><input type="checkbox" id="check-all-lotes" title="Seleccionar todos"></th>
+                  <th>Field Zone / Lote</th>
+                  <th>Crop Type & Variedad</th>
+                  <th>Status</th>
+                  <th>Soil Moisture</th>
+                  <th>Temp.</th>
+                  <th>Growth Stage</th>
+                  <th class="text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody id="dash-tbody-stock">
-                <tr><td colspan="6" class="text-center">Cargando estado de inventario...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Subpanel: Labores Vencidas y Próximas a Vencer -->
-        <div class="dash-subpanel glass" id="subpanel-actividades-urgentes" style="display: none;">
-          <div class="dash-subpanel-header">
-            <h4>📅 Labores Planificadas Vencidas o Próximas a Vencer (7 días)</h4>
-            <button type="button" class="btn-close-subpanel" data-close-subpanel="subpanel-actividades-urgentes">&times;</button>
-          </div>
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Lote</th>
-                  <th>Labor Agrícola</th>
-                  <th>Fecha Planificada</th>
-                  <th>Días de Retraso</th>
-                  <th>Urgencia</th>
+              <tbody id="lotes-tbody">
+                <!-- Renderizado dinámico desde app.js -->
+                <tr class="empty-row">
+                  <td colspan="8" class="text-center loading-indicator">
+                    <span class="spinner"></span> Cargando lotes del sistema...
+                  </td>
                 </tr>
-              </thead>
-              <tbody id="dash-tbody-actividades">
-                <tr><td colspan="6" class="text-center">Cargando labores urgentes...</td></tr>
               </tbody>
             </table>
-          </div>
-        </div>
+          </main>
 
-        <!-- Subpanel: Estructura de Costos por Lote (RF-M7-14) -->
-        <div class="dash-subpanel glass" id="subpanel-costos-lote">
-          <div class="dash-subpanel-header">
-            <div>
-              <h4>💰 Estructura de Costos Operativos por Lote</h4>
-              <p class="dash-subpanel-sub">Cómputo analítico: Insumos aplicados + Mano de obra (jornales) + Maquinaria (horas tractor)</p>
-            </div>
-            <button type="button" id="btn-toggle-tabla-costos" class="btn btn-secondary btn-sm">Ocultar / Mostrar</button>
-          </div>
-          <div class="dash-costos-resumen-strip">
-            <div class="costo-res-pill"><span>Costo Total Explotación:</span> <strong id="dash-costo-total-global">$0</strong></div>
-            <div class="costo-res-pill"><span>Costo Promedio / ha:</span> <strong id="dash-costo-promedio-ha" style="color: #38bdf8;">$0 / ha</strong></div>
-            <div class="costo-res-pill"><span>Costo Promedio / kg Cosechado:</span> <strong id="dash-costo-promedio-kg" style="color: #34d399;">$0 / kg</strong></div>
-          </div>
-          <div class="table-responsive" id="dash-costos-table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Lote</th>
-                  <th>Cultivo</th>
-                  <th>Superficie</th>
-                  <th>Cosechado</th>
-                  <th>Insumos</th>
-                  <th>Mano de Obra</th>
-                  <th>Maquinaria</th>
-                  <th>Costo Total</th>
-                  <th>Costo / ha</th>
-                  <th>Costo / kg</th>
-                </tr>
-              </thead>
-              <tbody id="dash-tbody-costos">
-                <tr><td colspan="10" class="text-center">Calculando estructura de costos...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
+          <!-- COLUMNA DERECHA DE TELEMETRÍA Y ANALÍTICAS (Inspirado en la referencia) -->
+          <aside id="telemetry-sidebar" class="telemetry-sidebar telemetry-removed-compact" hidden aria-hidden="true"></aside>
 
-    <!-- Contadores / KPIs de Producción -->
-    <section class="kpi-grid" data-view="lotes">
-      <div class="kpi-card glass">
-        <div class="kpi-icon-wrap emerald">🌾</div>
-        <div class="kpi-data">
-          <span class="kpi-title">Lotes Totales</span>
-          <span class="kpi-value" id="kpi-total-lotes">0</span>
-          <span class="kpi-subtext">Registrados en sistema</span>
+          <!-- Footer -->
+          <footer class="app-footer">
+            <p>Agrul Engine &copy; 2026 — Lules, Tucumán. Motor de trazabilidad inmutable conforme BPA y SENASA.</p>
+          </footer>
         </div>
-      </div>
-      <div class="kpi-card glass">
-        <div class="kpi-icon-wrap blue">⚡</div>
-        <div class="kpi-data">
-          <span class="kpi-title">Lotes Activos</span>
-          <span class="kpi-value" id="kpi-lotes-activos">0</span>
-          <span class="kpi-subtext">En proceso / Creados</span>
-        </div>
-      </div>
-      <div class="kpi-card glass">
-        <div class="kpi-icon-wrap amber">📦</div>
-        <div class="kpi-data">
-          <span class="kpi-title">Embalados / Despacho</span>
-          <span class="kpi-value" id="kpi-lotes-embalados">0</span>
-          <span class="kpi-subtext">Listos para distribución</span>
-        </div>
-      </div>
-      <div class="kpi-card glass">
-        <div class="kpi-icon-wrap purple">⚖️</div>
-        <div class="kpi-data">
-          <span class="kpi-title">Masa Disponible</span>
-          <span class="kpi-value" id="kpi-masa-total">0 kg</span>
-          <span class="kpi-subtext">Acumulada en lotes</span>
-        </div>
-      </div>
-    </section>
-
-    <section id="vista-inicio" class="pantalla" data-view="inicio"></section>
-    <section id="vista-finca" class="pantalla" data-view="finca"></section>
-    <section id="vista-lotes-territorio" class="pantalla" data-view="lotes-territorio"></section>
-    <section id="vista-cultivos" class="pantalla" data-view="cultivos"></section>
-    <section id="vista-variedades" class="pantalla" data-view="variedades"></section>
-    <section id="vista-tipos-actividad" class="pantalla" data-view="tipos-actividad"></section>
-    <section id="vista-insumos" class="pantalla" data-view="insumos"></section>
-    <section id="vista-plantaciones" class="pantalla" data-view="plantaciones"></section>
-    <section id="vista-ciclos" class="pantalla" data-view="ciclos"></section>
-    <section id="vista-actividades-programadas" class="pantalla" data-view="actividades-programadas"></section>
-    <section id="vista-actividades-realizadas" class="pantalla" data-view="actividades-realizadas"></section>
-    <section id="vista-monitoreos" class="pantalla" data-view="monitoreos"></section>
-    <section id="vista-aplicaciones-insumos" class="pantalla" data-view="aplicaciones-insumos"></section>
-    <section id="vista-inventario-existencias" class="pantalla" data-view="inventario-existencias"></section>
-    <section id="vista-inventario-movimientos" class="pantalla" data-view="inventario-movimientos"></section>
-    <section id="vista-cosechas-programadas" class="pantalla" data-view="cosechas-programadas"></section>
-    <section id="vista-cosechas" class="pantalla" data-view="cosechas"></section>
-    <section id="vista-clasificaciones" class="pantalla" data-view="clasificaciones"></section>
-    <section id="vista-acondicionamientos" class="pantalla" data-view="acondicionamientos"></section>
-    <section id="vista-camaras" class="pantalla" data-view="camaras"></section>
-    <section id="vista-almacenamiento-movimientos" class="pantalla" data-view="almacenamiento-movimientos"></section>
-    <section id="vista-almacenamiento-saldos" class="pantalla" data-view="almacenamiento-saldos"></section>
-    <section id="vista-destinos" class="pantalla" data-view="destinos"></section>
-    <section id="vista-meteorologia" class="pantalla" data-view="meteorologia"></section>
-    <section id="vista-eventos-climaticos" class="pantalla" data-view="eventos-climaticos"></section>
-
-    <!-- Barra de Controles y Filtros (Field Monitoring Overview) -->
-    <section class="table-controls glass" data-view="lotes">
-      <div class="overview-header-row">
-        <div class="overview-title-group">
-          <h3>Field Monitoring Overview</h3>
-          <span class="overview-counter" id="overview-counter">2 parcelas activas</span>
-        </div>
-        <div class="overview-filters-group">
-          <button id="btn-nuevo-lote" class="btn btn-primary btn-sm" type="button" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-radius: 10px; padding: 7px 14px; background: #10b981; color: #fff; border: none; cursor: pointer;" title="Registrar un nuevo lote de cultivo"><span style="font-size: 16px;">+</span> Nuevo Lote</button>
-          <div class="date-badge-picker">
-            <span class="picker-label">Junio 2026</span>
-            <span class="picker-icon">📅</span>
-          </div>
-          <div class="filter-dropdown-btn">
-            <span>Filter</span>
-            <span class="dropdown-chevron">▾</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="search-and-tabs-bar">
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="input-busqueda" placeholder="Buscar por código de lote, producto o variedad..." aria-label="Buscar lote">
-        </div>
-        <div class="filter-tabs" id="filter-tabs" role="tablist">
-          <button class="tab-btn active" data-filter="TODOS">Todos</button>
-          <button class="tab-btn" data-filter="CREADO">Creados</button>
-          <button class="tab-btn" data-filter="EN_PROCESO">En Proceso</button>
-          <button class="tab-btn" data-filter="EMBALADO">Embalados</button>
-          <button class="tab-btn" data-filter="DESPACHADO">Despachados</button>
-          <button class="tab-btn" data-filter="CERRADO">Cerrados</button>
-        </div>
-        <div class="advanced-filters">
-          <select id="filtro-finca" class="filter-select" aria-label="Filtrar por finca">
-            <option value="">Todas las Fincas</option>
-          </select>
-          <div class="surface-filter-inputs">
-            <input type="number" id="filtro-sup-min" placeholder="Min Ha" step="0.1" min="0" title="Superficie mínima (ha)">
-            <span class="range-sep">-</span>
-            <input type="number" id="filtro-sup-max" placeholder="Max Ha" step="0.1" min="0" title="Superficie máxima (ha)">
-          </div>
-        </div>
-        <button id="btn-recargar" class="btn btn-secondary" title="Actualizar datos">
-          🔄 Refrescar
-        </button>
-      </div>
-    </section>
-
-    <!-- Tabla Operativa de Lotes -->
-    <main class="table-container glass" data-view="lotes">
-      <table class="lotes-table" id="tabla-lotes">
-        <thead>
-          <tr>
-            <th style="width: 38px; text-align: center;"><input type="checkbox" id="check-all-lotes" title="Seleccionar todos"></th>
-            <th>Field Zone / Lote</th>
-            <th>Crop Type & Variedad</th>
-            <th>Status</th>
-            <th>Soil Moisture</th>
-            <th>Temp.</th>
-            <th>Growth Stage</th>
-            <th class="text-right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="lotes-tbody">
-          <!-- Renderizado dinámico desde app.js -->
-          <tr class="empty-row">
-            <td colspan="8" class="text-center loading-indicator">
-              <span class="spinner"></span> Cargando lotes del sistema...
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </main>
-
-    <!-- COLUMNA DERECHA DE TELEMETRÍA Y ANALÍTICAS (Inspirado en la referencia) -->
-    <aside id="telemetry-sidebar" class="telemetry-sidebar">
-      <!-- Buscador superior -->
-      <div class="telemetry-search-box">
-        <span class="search-ico">🔍</span>
-        <input type="text" id="telemetry-search-input" placeholder="Type to search..." aria-label="Buscar en telemetría">
-      </div>
-
-      <!-- Tarjeta de Clima y Pronóstico -->
-      <div class="telemetry-card weather-card glass">
-        <div class="weather-loc-row">
-          <span class="loc-ico">📍</span>
-          <span class="loc-text" id="weather-location-text">Purwokerto, Central Java, Indonesia</span>
-        </div>
-        <div class="weather-temp-display">
-          <div class="temp-big-wrap">
-            <span class="temp-number" id="weather-temp-number">26°C</span>
-          </div>
-          <div class="temp-condition-wrap">
-            <span class="condition-badge"><span class="sun-icon">☀️</span> Sunny Day</span>
-            <span class="condition-time" id="weather-time-clock">8.45 AM | Jan 26</span>
-          </div>
-        </div>
-        <div class="weather-metrics-trio">
-          <div class="weather-metric-col">
-            <span class="weather-metric-ico">💧</span>
-            <span class="weather-metric-lbl">Humidity</span>
-            <span class="weather-metric-val" id="weather-humidity-val">35%</span>
-          </div>
-          <div class="weather-metric-col">
-            <span class="weather-metric-ico">🌧️</span>
-            <span class="weather-metric-lbl">Rain Forecast</span>
-            <span class="weather-metric-val" id="weather-rain-val">26°C</span>
-          </div>
-          <div class="weather-metric-col">
-            <span class="weather-metric-ico">💨</span>
-            <span class="weather-metric-lbl">Wind</span>
-            <span class="weather-metric-val" id="weather-wind-val">8m/s</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tarjeta de Monitoreo de Recursos (Donut Chart) -->
-      <div class="telemetry-card resource-card glass">
-        <div class="telemetry-card-head">
-          <h4>Resource Monitoring</h4>
-          <div class="resource-period-tabs" id="resource-period-tabs">
-            <button type="button" class="res-tab-btn" data-period="week">Week</button>
-            <button type="button" class="res-tab-btn active" data-period="month">Month</button>
-            <button type="button" class="res-tab-btn" data-period="year">Year</button>
-          </div>
-        </div>
-        <div class="resource-chart-layout">
-          <!-- Leyenda de colores -->
-          <div class="resource-legend-list">
-            <div class="legend-row"><span class="legend-bullet bullet-irrigation"></span> Irrigation Systems</div>
-            <div class="legend-row"><span class="legend-bullet bullet-nutrition"></span> Crop Nutrition</div>
-            <div class="legend-row"><span class="legend-bullet bullet-maintenance"></span> Equipment Maintenance</div>
-            <div class="legend-row"><span class="legend-bullet bullet-pest"></span> Pest Control</div>
-            <div class="legend-row"><span class="legend-bullet bullet-logistics"></span> Logistics & Distribution</div>
-          </div>
-          <!-- Gráfico circular SVG Donut -->
-          <div class="donut-chart-container">
-            <svg class="donut-svg" viewBox="0 0 140 140">
-              <circle cx="70" cy="70" r="50" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="22" />
-              <!-- Segmento 1: Irrigation Systems (30%) -->
-              <circle cx="70" cy="70" r="50" fill="none" stroke="#064e3b" stroke-width="22" stroke-dasharray="94.2 220" stroke-dashoffset="0" />
-              <!-- Segmento 2: Crop Nutrition (23%) -->
-              <circle cx="70" cy="70" r="50" fill="none" stroke="#10b981" stroke-width="22" stroke-dasharray="72.2 242" stroke-dashoffset="-94.2" />
-              <!-- Segmento 3: Equipment Maintenance (19%) -->
-              <circle cx="70" cy="70" r="50" fill="none" stroke="#86efac" stroke-width="22" stroke-dasharray="59.6 254" stroke-dashoffset="-166.4" />
-              <!-- Segmento 4: Pest Control (17%) -->
-              <circle cx="70" cy="70" r="50" fill="none" stroke="#f59e0b" stroke-width="22" stroke-dasharray="53.4 260" stroke-dashoffset="-226" />
-              <!-- Segmento 5: Logistics & Distribution (11%) -->
-              <circle cx="70" cy="70" r="50" fill="none" stroke="#ef4444" stroke-width="22" stroke-dasharray="34.5 280" stroke-dashoffset="-279.4" />
-            </svg>
-            <div class="donut-badge-pct">
-              <span>30%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tarjeta de Rendimiento Semanal (Weekly Performance Matrix) -->
-      <div class="telemetry-card performance-card glass">
-        <div class="telemetry-card-head">
-          <h4>Weekly Performance</h4>
-          <span class="card-arrow-link" title="Ver detalle">↗</span>
-        </div>
-        <div class="performance-matrix-wrapper">
-          <div class="matrix-days-cols">
-            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-          </div>
-          <div class="matrix-grid-cells">
-            <!-- 1 pm row -->
-            <div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div>
-            <!-- 2 pm row -->
-            <div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-2"></div><div class="matrix-cell lvl-3"></div><div class="matrix-cell lvl-2"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-0"></div>
-            <!-- 3 pm row -->
-            <div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-3"></div><div class="matrix-cell lvl-4"></div><div class="matrix-cell lvl-4"></div><div class="matrix-cell lvl-3"></div><div class="matrix-cell lvl-2"></div><div class="matrix-cell lvl-0"></div>
-            <!-- 4 pm row -->
-            <div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-2"></div><div class="matrix-cell lvl-4"></div><div class="matrix-cell lvl-4"></div><div class="matrix-cell lvl-3"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div>
-            <!-- 5 pm row -->
-            <div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-2"></div><div class="matrix-cell lvl-3"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div>
-            <!-- 6 pm row -->
-            <div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-1"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div><div class="matrix-cell lvl-0"></div>
-          </div>
-          <div class="matrix-scale-legend">
-            <span class="scale-text">Less</span>
-            <div class="scale-dots">
-              <span class="scale-dot lvl-1"></span>
-              <span class="scale-dot lvl-2"></span>
-              <span class="scale-dot lvl-3"></span>
-              <span class="scale-dot lvl-4"></span>
-            </div>
-            <span class="scale-text">More</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tarjeta de Desempeño Analítico (Analytics Performance) -->
-      <div class="telemetry-card analytics-card glass">
-        <div class="telemetry-card-head">
-          <h4>Analytics Performance</h4>
-          <span class="card-arrow-link" title="Ver análisis">↗</span>
-        </div>
-        <div class="analytics-tags-row">
-          <span class="analytics-tag"><span class="tag-dot dot-stocks"></span> Stocks</span>
-          <span class="analytics-tag"><span class="tag-dot dot-bonds"></span> Bonds</span>
-          <span class="analytics-tag"><span class="tag-dot dot-other"></span> Other Instruments</span>
-        </div>
-        <div class="analytics-total-metric">
-          <span class="analytics-amount">$830,450</span>
-          <span class="analytics-trend positive">↑ +14.2%</span>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Footer -->
-    <footer class="app-footer">
-      <p>Agrul Engine &copy; 2026 — Lules, Tucumán. Motor de trazabilidad inmutable conforme BPA y SENASA.</p>
-    </footer>
-  </div>
 
   <!-- MODAL: Crear Nuevo Lote -->
   <div class="modal-backdrop" id="modal-nuevo-lote" aria-hidden="true">
