@@ -374,7 +374,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     return reply.status(404).send('Not Found');
   });
 
-  for (const script of ['vistas.js', 'sesion.js', 'pantallas.js', 'pantallas-operativas.js']) {
+  for (const script of ['vistas.js', 'sesion.js', 'pantallas.js', 'pantallas-operativas.js', 'modulos-unificados.js']) {
     app.get(`/${script}`, async (_req, reply) => {
       const jsPath = resolve(publicPath, script);
       if (existsSync(jsPath)) {
