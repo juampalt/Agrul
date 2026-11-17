@@ -24,6 +24,7 @@ import {
   aplicacionesInsumoTable,
   aplicacionesInsumoItemsTable,
 } from './schema/insumos.js';
+import { movimientosInventarioTable } from './schema/movimientos-inventario.js';
 import { DomainError, EntidadNoEncontradaError } from '../../core/domain/errors/domain.error.js';
 
 export type TipoRegistroUnificado = 'FUMIGACION' | 'COSECHA' | 'LABOR' | 'OBSERVACION' | 'EDICION';
@@ -39,6 +40,15 @@ class ProduccionDomainError extends DomainError {
   }
 }
 
+export interface FincaDistribucionItem {
+  id: string;
+  codigo: string;
+  cultivoNombre: string;
+  variedadNombre: string;
+  hectareas: number;
+  porcentajeFinca: number;
+}
+
 export interface FincaResumenDto {
   id: string;
   nombre: string;
@@ -51,6 +61,7 @@ export interface FincaResumenDto {
   hectareasAsignadas: number;
   hectareasDisponibles: number;
   produccionesActivas: number;
+  distribucion: FincaDistribucionItem[];
 }
 
 export interface ProduccionResumenDto {
@@ -128,14 +139,21 @@ export class ProduccionesService {
   private async calcularHectareasAsignadas(
     tx: AgrulDatabase | AgrulTransaction,
     fincaId: string,
-  ): Promise<{ asignadas: number; activas: number }> {
+    hectareasTotales: number,
+  ): Promise<{ asignadas: number; activas: number; distribucion: FincaDistribucionItem[] }> {
     const rows = await tx
       .select({
+        id: ciclosProductivosTable.id,
+        codigo: ciclosProductivosTable.nombreCodigo,
+        cultivoNombre: cultivosTable.nombre,
+        variedadNombre: variedadesTable.nombre,
         superficieHa: plantacionesTable.superficieHa,
       })
       .from(ciclosProductivosTable)
       .innerJoin(plantacionesTable, eq(ciclosProductivosTable.plantacionId, plantacionesTable.id))
       .innerJoin(lotesTable, eq(plantacionesTable.loteId, lotesTable.id))
+      .innerJoin(cultivosTable, eq(plantacionesTable.cultivoId, cultivosTable.id))
+      .innerJoin(variedadesTable, eq(plantacionesTable.variedadId, variedadesTable.id))
       .where(
         and(
           eq(lotesTable.fincaId, fincaId),
@@ -144,17 +162,26 @@ export class ProduccionesService {
       );
 
     let asignadas = 0;
-    for (const r of rows) {
-      asignadas += Number(r.superficieHa || 0);
-    }
-    return { asignadas: Number(asignadas.toFixed(2)), activas: rows.length };
+    const distribucion: FincaDistribucionItem[] = rows.map((r) => {
+      const ha = Number(r.superficieHa || 0);
+      asignadas += ha;
+      return {
+        id: r.id,
+        codigo: r.codigo,
+        cultivoNombre: r.cultivoNombre,
+        variedadNombre: r.variedadNombre,
+        hectareas: Number(ha.toFixed(2)),
+        porcentajeFinca: hectareasTotales > 0 ? Number(((ha / hectareasTotales) * 100).toFixed(1)) : 0,
+      };
+    });
+    return { asignadas: Number(asignadas.toFixed(2)), activas: rows.length, distribucion };
   }
 
   async obtenerFincaResumen(txOpt?: AgrulDatabase | AgrulTransaction): Promise<FincaResumenDto> {
     const runner = txOpt ?? this.db;
     const finca = await this.obtenerFincaPrincipal(runner);
-    const { asignadas, activas } = await this.calcularHectareasAsignadas(runner, finca.id);
     const totales = Number(finca.superficieTotalHa || 0);
+    const { asignadas, activas, distribucion } = await this.calcularHectareasAsignadas(runner, finca.id, totales);
     return {
       id: finca.id,
       nombre: finca.nombre,
@@ -167,6 +194,7 @@ export class ProduccionesService {
       hectareasAsignadas: asignadas,
       hectareasDisponibles: Number(Math.max(0, totales - asignadas).toFixed(2)),
       produccionesActivas: activas,
+      distribucion,
     };
   }
 
@@ -184,7 +212,7 @@ export class ProduccionesService {
   ): Promise<FincaResumenDto> {
     return this.db.transaction(async (tx) => {
       const finca = await this.obtenerFincaPrincipal(tx);
-      const { asignadas } = await this.calcularHectareasAsignadas(tx, finca.id);
+      const { asignadas } = await this.calcularHectareasAsignadas(tx, finca.id, Number(finca.superficieTotalHa || 0));
       if (input.hectareasTotales < asignadas) {
         throw new ProduccionDomainError(
           'SUPERFICIE_INSUFICIENTE',
@@ -339,7 +367,7 @@ export class ProduccionesService {
 
     return this.db.transaction(async (tx) => {
       const finca = await this.obtenerFincaPrincipal(tx);
-      const { asignadas } = await this.calcularHectareasAsignadas(tx, finca.id);
+      const { asignadas } = await this.calcularHectareasAsignadas(tx, finca.id, Number(finca.superficieTotalHa || 0));
       const disponibles = Number(finca.superficieTotalHa || 0) - asignadas;
 
       if (input.hectareas > disponibles + 0.0001) {
@@ -359,7 +387,7 @@ export class ProduccionesService {
         .where(and(eq(variedadesTable.id, input.variedadId), eq(variedadesTable.cultivoId, input.cultivoId)));
       if (!variedad) throw new EntidadNoEncontradaError('Variedad', input.variedadId);
 
-      const sufijo = Math.floor(1000 + Math.random() * 9000);
+      const sufijo = randomUUID().slice(0, 6).toUpperCase();
       const anio = input.fechaInicio.slice(0, 4);
       const codigo = `PROD-${anio}-${sufijo}`;
 
@@ -375,7 +403,7 @@ export class ProduccionesService {
           fincaId: finca.id,
           superficieHa: input.hectareas.toFixed(2),
           nombreTerritorial: `${cultivo.nombre} ${variedad.nombre}`,
-          estadoTerritorial: 'OCUPADO',
+          estadoTerritorial: 'EN_PRODUCCION',
           fechaRegistro: input.fechaInicio.slice(0, 10),
         })
         .returning();
@@ -1030,6 +1058,7 @@ export class ProduccionesService {
     id: string;
     codigo: string;
     nombre: string;
+    marca: string;
     categoria: string;
     unidadMedida: string;
     stockDisponible: number;
@@ -1050,6 +1079,7 @@ export class ProduccionesService {
         id: ins.id,
         codigo: ins.codigo,
         nombre: ins.nombre,
+        marca: ins.fabricanteMarca || '',
         categoria: ins.categoria,
         unidadMedida: ins.unidadMedida,
         stockDisponible: Number(stockDisponible.toFixed(2)),
@@ -1106,19 +1136,16 @@ export class ProduccionesService {
       const [insumo] = await tx.select().from(insumosTable).where(eq(insumosTable.id, input.insumoId));
       if (!insumo) throw new EntidadNoEncontradaError('Insumo', input.insumoId);
 
-      const [partida] = await tx
-        .insert(partidasInsumoTable)
-        .values({
-          fincaId: finca.id,
-          insumoId: insumo.id,
-          unidadMedida: insumo.unidadMedida,
-          fechaIngreso: hoyIsoTucuman(),
-          cantidadInicial: input.cantidad.toFixed(2),
-          cantidadDisponible: input.cantidad.toFixed(2),
-          proveedor: input.proveedor?.trim() || 'Proveedor General BPA',
-          fechaVencimiento: input.fechaVencimiento || null,
-        })
-        .returning();
+      const partida = await this.registrarPartidaConMovimientoIngreso(tx, {
+        fincaId: finca.id,
+        insumoId: insumo.id,
+        unidadMedida: insumo.unidadMedida,
+        cantidad: input.cantidad,
+        proveedor: input.proveedor?.trim() || 'Proveedor General BPA',
+        fechaVencimiento: input.fechaVencimiento || null,
+        motivo: 'Ingreso de stock',
+        actorId,
+      });
 
       await this.registrarAuditoria(tx, actorId, 'CREAR', 'INGRESO_STOCK', partida.id, {
         insumo: insumo.nombre,
@@ -1127,6 +1154,128 @@ export class ProduccionesService {
       });
 
       return partida;
+    });
+  }
+
+  private async registrarPartidaConMovimientoIngreso(
+    tx: AgrulTransaction,
+    params: {
+      fincaId: string;
+      insumoId: string;
+      unidadMedida: string;
+      cantidad: number;
+      proveedor: string;
+      fechaVencimiento: string | null;
+      motivo: string;
+      actorId: string;
+    },
+  ) {
+    const fecha = hoyIsoTucuman();
+    const cantidadStr = params.cantidad.toFixed(2);
+    const [partida] = await tx
+      .insert(partidasInsumoTable)
+      .values({
+        fincaId: params.fincaId,
+        insumoId: params.insumoId,
+        unidadMedida: params.unidadMedida,
+        fechaIngreso: fecha,
+        cantidadInicial: cantidadStr,
+        cantidadDisponible: '0',
+        proveedor: params.proveedor,
+        fechaVencimiento: params.fechaVencimiento,
+      })
+      .returning();
+
+    await tx.insert(movimientosInventarioTable).values({
+      id: randomUUID(),
+      partidaId: partida.id,
+      fincaId: params.fincaId,
+      insumoId: params.insumoId,
+      cantidad: cantidadStr,
+      unidadMedida: params.unidadMedida,
+      tipoMovimiento: 'INGRESO',
+      fechaMovimiento: fecha,
+      motivo: params.motivo,
+      responsableId: params.actorId,
+      solicitud: {
+        fincaId: params.fincaId,
+        insumoId: params.insumoId,
+        cantidad: params.cantidad,
+        unidadMedida: params.unidadMedida,
+        proveedor: params.proveedor,
+        responsableId: params.actorId,
+      },
+    });
+
+    return partida;
+  }
+
+  async crearInsumoConStock(
+    input: {
+      codigo: string;
+      nombre: string;
+      unidadMedida: string;
+      marca?: string | null;
+      categoria: 'FERTILIZANTE' | 'FITOSANITARIO' | 'ENMIENDA' | 'OTRO';
+      cantidad: number;
+    },
+    actorId: string,
+  ) {
+    const codigo = input.codigo.trim().toUpperCase();
+    const nombre = input.nombre.trim();
+    const unidadMedida = input.unidadMedida.trim();
+    const marca = input.marca?.trim() || null;
+
+    if (!codigo || !nombre || !unidadMedida) {
+      throw new ProduccionDomainError('DATOS_INVALIDOS', 'Código, nombre y unidad de medida son obligatorios.', 400);
+    }
+    if (input.cantidad < 0) {
+      throw new ProduccionDomainError('CANTIDAD_INVALIDA', 'La cantidad inicial no puede ser negativa.', 400);
+    }
+
+    return this.db.transaction(async (tx) => {
+      const [existente] = await tx.select().from(insumosTable).where(eq(insumosTable.codigo, codigo)).limit(1);
+      if (existente) {
+        throw new ProduccionDomainError('CODIGO_INSUMO_DUPLICADO', `Ya existe un insumo registrado con el código ${codigo}.`, 409);
+      }
+
+      const [insumo] = await tx
+        .insert(insumosTable)
+        .values({
+          codigo,
+          nombre,
+          categoria: input.categoria,
+          unidadMedida,
+          fabricanteMarca: marca,
+          nivelMinimo: '0.00',
+          estado: 'ACTIVO',
+        })
+        .returning();
+
+      if (input.cantidad > 0) {
+        const finca = await this.obtenerFincaPrincipal(tx);
+        await this.registrarPartidaConMovimientoIngreso(tx, {
+          fincaId: finca.id,
+          insumoId: insumo.id,
+          unidadMedida,
+          cantidad: input.cantidad,
+          proveedor: marca || 'Stock Inicial',
+          fechaVencimiento: null,
+          motivo: 'Stock inicial al crear insumo',
+          actorId,
+        });
+      }
+
+      await this.registrarAuditoria(tx, actorId, 'CREAR', 'INSUMO', insumo.id, {
+        codigo,
+        nombre,
+        categoria: input.categoria,
+        unidadMedida,
+        marca,
+        stockInicial: input.cantidad,
+      });
+
+      return insumo;
     });
   }
 

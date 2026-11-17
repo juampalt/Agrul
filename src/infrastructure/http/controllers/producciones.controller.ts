@@ -48,6 +48,15 @@ const VariedadRapidoSchema = z.object({
   nombre: z.string().trim().min(1).max(40),
 });
 
+const CrearInsumoConStockSchema = z.object({
+  codigo: z.string().trim().min(1).max(15),
+  nombre: z.string().trim().min(1).max(200),
+  unidadMedida: z.string().trim().min(1).max(30),
+  marca: z.string().trim().max(150).nullable().optional(),
+  categoria: z.enum(['FERTILIZANTE', 'FITOSANITARIO', 'ENMIENDA', 'OTRO']),
+  cantidad: z.coerce.number().min(0),
+});
+
 function ok(reply: FastifyReply, data: unknown, status = 200) {
   return reply.status(status).send({
     success: true,
@@ -139,6 +148,12 @@ export class ProduccionesController {
   async crearVariedadRapido(req: FastifyRequest, reply: FastifyReply) {
     const body = VariedadRapidoSchema.parse(req.body);
     const data = await this.service.crearVariedadRapido(body.cultivoId, body.nombre);
+    return ok(reply, data, 201);
+  }
+
+  async crearInsumoConStock(req: FastifyRequest, reply: FastifyReply) {
+    const body = CrearInsumoConStockSchema.parse(req.body);
+    const data = await this.service.crearInsumoConStock(body, req.usuario!.sub);
     return ok(reply, data, 201);
   }
 }

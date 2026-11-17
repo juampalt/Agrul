@@ -504,6 +504,7 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         // Módulo 3: Insumos y Stock Unificado (Solo admin)
         v1.get('/insumos/resumen-unificado', soloAdmin, (req, rep) => deps.produccionesController!.resumenInsumos(req, rep));
         v1.post('/insumos/ingreso-rapido', soloAdmin, (req, rep) => deps.produccionesController!.ingresoStockRapido(req, rep));
+        v1.post('/insumos/crear-con-stock', soloAdmin, (req, rep) => deps.produccionesController!.crearInsumoConStock(req, rep));
       }
 
     },

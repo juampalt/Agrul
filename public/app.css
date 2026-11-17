@@ -6671,6 +6671,167 @@ body:not(.sin-sesion) #user-login-box { display: none !important; }
   }
 }
 
+/* ===== 1. Barra Lateral Expandible al Hover (nombre debajo de cada ícono) ===== */
+.app-container > .app-sidebar {
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+.app-sidebar .nav-item .nav-label {
+  display: none;
+}
+@media (min-width: 901px) {
+  .app-container > .app-sidebar:hover {
+    width: 108px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    z-index: 30;
+  }
+  .app-container:has(> .app-sidebar:hover) {
+    grid-template-columns: 108px minmax(0, 1fr) !important;
+  }
+  .app-sidebar:hover .nav-item {
+    width: 92px;
+    height: auto;
+    min-height: 54px;
+    padding: 8px 6px;
+    flex-direction: column;
+    gap: 4px;
+    border-radius: 14px !important;
+  }
+  .app-sidebar:hover .nav-item.active {
+    border-radius: 14px !important;
+  }
+  .app-sidebar:hover .nav-item .nav-label {
+    display: block;
+    font-size: 11px !important;
+    font-weight: 600;
+    line-height: 1.15;
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+
+/* ===== 2. Botón CTA Principal Unificado (Nueva Producción / Nuevo Insumo) ===== */
+.btn-cta-hero {
+  background: linear-gradient(135deg, #064e3b 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 11px 20px !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 6px 18px -4px rgba(6, 78, 59, 0.45) !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-cta-hero:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px -4px rgba(6, 78, 59, 0.55) !important;
+}
+
+/* ===== 3. Finca: Badge de Contexto, Solo Lectura y Distribución de Hectáreas ===== */
+.finca-context-badge {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  margin-top: 6px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #064e3b;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.finca-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px 18px;
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+.finca-summary-field span {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.finca-summary-field strong {
+  display: block;
+  font-size: 15px;
+  color: #0f172a;
+  margin-top: 2px;
+}
+.uni-dist-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.uni-dist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.uni-dist-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.uni-dist-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+/* ===== 4. Insumos: Buscador Incremental Único y Panel de Filtros ===== */
+.uni-search-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.uni-search-input-wrap {
+  flex: 1 1 260px;
+  position: relative;
+}
+.uni-search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 14px;
+}
+.uni-search-input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+}
+.uni-filter-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+
 .app-container:has(.telemetry-removed-compact) {
   grid-template-columns: 68px minmax(0, 1fr) !important;
   max-width: 1360px !important;

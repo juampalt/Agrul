@@ -67,48 +67,117 @@
   /* =========================================================================
      MÓDULO 1: FINCA (Solo ADMINISTRADOR)
      ========================================================================= */
+  let fincaEditando = false;
+
   pantallas.finca = async function renderFinca(raiz) {
     raiz.innerHTML = '<div class="pantalla-cab"><div><h2>Finca</h2><p>Cargando configuración territorial...</p></div></div>';
     try {
       const finca = await apiJson('/finca-resumen');
+      const sinDatosIniciales = !finca.nombre || !(finca.hectareasTotales > 0);
+      const mostrarFormulario = fincaEditando || sinDatosIniciales;
       const pct = finca.hectareasTotales > 0
         ? Math.min(100, Math.round((finca.hectareasAsignadas / finca.hectareasTotales) * 100))
         : 0;
 
-      const form = el('form', { class: 'form-grid glass tarjeta-form', novalidate: true },
-        el('div', { class: 'campo' }, el('label', {}, 'Nombre de la Finca *'), el('input', { id: 'f-nombre', type: 'text', value: finca.nombre, required: true })),
-        el('div', { class: 'campo' }, el('label', {}, 'Propietario'), el('input', { id: 'f-propietario', type: 'text', value: finca.propietario || '' })),
-        el('div', { class: 'campo' }, el('label', {}, 'Hectáreas Totales (ha) *'), el('input', { id: 'f-hectareas', type: 'number', step: '0.01', min: finca.hectareasAsignadas, value: finca.hectareasTotales, required: true })),
-        el('div', { class: 'campo' }, el('label', {}, 'Localidad *'), el('input', { id: 'f-localidad', type: 'text', value: finca.localidad, required: true })),
-        el('div', { class: 'campo' }, el('label', {}, 'Provincia *'), el('input', { id: 'f-provincia', type: 'text', value: finca.provincia, required: true })),
-        el('div', { class: 'campo campo-completo' }, el('label', {}, 'Observaciones'), el('textarea', { id: 'f-obs', rows: 3 }, finca.observaciones || '')),
-        el('div', { class: 'form-acciones' }, el('button', { class: 'btn btn-primary', type: 'submit' }, 'Guardar Configuración de Finca'))
+      const contextoBadge = el('div', { class: 'finca-context-badge' },
+        `📍 ${finca.nombre || 'Sin nombre'} · ${finca.localidad || '—'}, ${finca.provincia || '—'}${finca.propietario ? ` · Prop.: ${finca.propietario}` : ''}`
       );
 
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-          await apiJson('/finca-resumen', {
-            method: 'PUT',
-            body: {
-              nombre: form.querySelector('#f-nombre').value.trim(),
-              propietario: form.querySelector('#f-propietario').value.trim() || null,
-              hectareasTotales: Number(form.querySelector('#f-hectareas').value),
-              localidad: form.querySelector('#f-localidad').value.trim(),
-              provincia: form.querySelector('#f-provincia').value.trim(),
-              observaciones: form.querySelector('#f-obs').value.trim() || null,
-            },
-          });
-          avisar('Configuración de la finca actualizada.');
-          renderFinca(raiz);
-        } catch (err) {
-          avisar(err.message, 'error');
-        }
-      });
+      const cabBtn = !mostrarFormulario
+        ? el('button', {
+            type: 'button',
+            class: 'btn btn-secondary',
+            onclick: () => { fincaEditando = true; renderFinca(raiz); },
+          }, '✏️ Editar datos de la Finca')
+        : el('button', {
+            type: 'button',
+            class: 'btn btn-secondary',
+            onclick: () => { fincaEditando = false; renderFinca(raiz); },
+          }, 'Cancelar edición');
+
+      const distItems = (finca.distribucion || []).map(d =>
+        el('div', { class: 'uni-dist-row' },
+          el('div', { class: 'uni-dist-meta' },
+            el('strong', {}, `${d.cultivoNombre} · ${d.variedadNombre} (${d.codigo})`),
+            el('span', {}, `${d.hectareas} ha (${d.porcentajeFinca}%)`)
+          ),
+          el('div', { class: 'uni-progress-track' },
+            el('div', { class: 'uni-progress-fill', style: `width:${Math.min(100, d.porcentajeFinca)}%` })
+          )
+        )
+      );
+      const pctDisp = finca.hectareasTotales > 0
+        ? Number(((finca.hectareasDisponibles / finca.hectareasTotales) * 100).toFixed(1))
+        : 0;
+      distItems.push(
+        el('div', { class: 'uni-dist-row' },
+          el('div', { class: 'uni-dist-meta' },
+            el('strong', { style: 'color:#0369a1' }, 'Remanente Disponible sin Asignar'),
+            el('span', { style: 'color:#0369a1;font-weight:700' }, `${finca.hectareasDisponibles} ha (${pctDisp}%)`)
+          ),
+          el('div', { class: 'uni-progress-track' },
+            el('div', { class: 'uni-progress-fill', style: `width:${Math.min(100, pctDisp)}%;background:#0284c7` })
+          )
+        )
+      );
+
+      const bloqueDistribucion = el('div', { class: 'uni-dist-card' },
+        el('h3', { style: 'margin:0 0 4px 0;font-size:15px' }, 'Distribución de Hectáreas por Producción Activa'),
+        el('p', { class: 'ayuda', style: 'margin:0' }, 'Desglose en tiempo real de superficie ocupada por cada producción activa y remanente libre.'),
+        el('div', { class: 'uni-dist-list' }, ...distItems)
+      );
+
+      let bloqueDetalle;
+      if (mostrarFormulario) {
+        const form = el('form', { class: 'form-grid glass tarjeta-form', novalidate: true },
+          el('div', { class: 'campo' }, el('label', {}, 'Nombre de la Finca *'), el('input', { id: 'f-nombre', type: 'text', value: finca.nombre, required: true })),
+          el('div', { class: 'campo' }, el('label', {}, 'Propietario'), el('input', { id: 'f-propietario', type: 'text', value: finca.propietario || '' })),
+          el('div', { class: 'campo' }, el('label', {}, 'Hectáreas Totales (ha) *'), el('input', { id: 'f-hectareas', type: 'number', step: '0.01', min: finca.hectareasAsignadas, value: finca.hectareasTotales, required: true })),
+          el('div', { class: 'campo' }, el('label', {}, 'Localidad *'), el('input', { id: 'f-localidad', type: 'text', value: finca.localidad, required: true })),
+          el('div', { class: 'campo' }, el('label', {}, 'Provincia *'), el('input', { id: 'f-provincia', type: 'text', value: finca.provincia, required: true })),
+          el('div', { class: 'campo campo-completo' }, el('label', {}, 'Observaciones'), el('textarea', { id: 'f-obs', rows: 3 }, finca.observaciones || '')),
+          el('div', { class: 'form-acciones' },
+            !sinDatosIniciales ? el('button', { type: 'button', class: 'btn btn-secondary', onclick: () => { fincaEditando = false; renderFinca(raiz); } }, 'Cancelar') : null,
+            el('button', { class: 'btn btn-primary', type: 'submit' }, 'Guardar Configuración de Finca')
+          )
+        );
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          try {
+            await apiJson('/finca-resumen', {
+              method: 'PUT',
+              body: {
+                nombre: form.querySelector('#f-nombre').value.trim(),
+                propietario: form.querySelector('#f-propietario').value.trim() || null,
+                hectareasTotales: Number(form.querySelector('#f-hectareas').value),
+                localidad: form.querySelector('#f-localidad').value.trim(),
+                provincia: form.querySelector('#f-provincia').value.trim(),
+                observaciones: form.querySelector('#f-obs').value.trim() || null,
+              },
+            });
+            fincaEditando = false;
+            avisar('Configuración de la finca actualizada.');
+            renderFinca(raiz);
+          } catch (err) {
+            avisar(err.message, 'error');
+          }
+        });
+        bloqueDetalle = form;
+      } else {
+        bloqueDetalle = el('div', { class: 'finca-summary-grid' },
+          el('div', { class: 'finca-summary-field' }, el('span', {}, 'Nombre de la Finca'), el('strong', {}, finca.nombre)),
+          el('div', { class: 'finca-summary-field' }, el('span', {}, 'Propietario'), el('strong', {}, finca.propietario || 'No especificado')),
+          el('div', { class: 'finca-summary-field' }, el('span', {}, 'Ubicación'), el('strong', {}, `${finca.localidad}, ${finca.provincia}`)),
+          el('div', { class: 'finca-summary-field' }, el('span', {}, 'Superficie Declarada'), el('strong', {}, `${finca.hectareasTotales} ha`)),
+          finca.observaciones ? el('div', { class: 'finca-summary-field', style: 'grid-column:1/-1' }, el('span', {}, 'Observaciones'), el('strong', { style: 'font-weight:500' }, finca.observaciones)) : null
+        );
+      }
 
       raiz.replaceChildren(
         el('div', { class: 'pantalla-cab' },
-          el('div', {}, el('h2', {}, 'Finca'), el('p', {}, 'Configuración general de la explotación y control en tiempo real de hectáreas disponibles.'))),
+          el('div', {}, el('h2', {}, 'Finca'), contextoBadge),
+          cabBtn
+        ),
         el('div', { class: 'uni-kpi-strip' },
           el('div', { class: 'uni-kpi' }, el('span', {}, 'Hectáreas Totales'), el('strong', {}, `${finca.hectareasTotales} ha`)),
           el('div', { class: 'uni-kpi' }, el('span', {}, `Asignadas (${finca.produccionesActivas} activas)`), el('strong', { style: 'color:#047857' }, `${finca.hectareasAsignadas} ha`)),
@@ -118,7 +187,8 @@
           el('div', { class: 'uni-progress-labels' }, el('span', {}, `Ocupación territorial: ${pct}%`), el('span', {}, `${finca.hectareasAsignadas} / ${finca.hectareasTotales} ha`)),
           el('div', { class: 'uni-progress-track' }, el('div', { class: 'uni-progress-fill', style: `width:${pct}%` }))
         ),
-        form
+        bloqueDistribucion,
+        bloqueDetalle
       );
     } catch (err) {
       raiz.innerHTML = `<div class="pantalla-cab"><div><h2>Finca</h2><p class="ingreso-error">${err.message}</p></div></div>`;
@@ -150,16 +220,17 @@
         }, est === 'ACTIVA' ? 'Activas' : est === 'FINALIZADA' ? 'Finalizadas' : 'Todas')
       );
 
-      const accionesCab = el('div', { class: 'uni-actions-row' }, ...filtros);
+      const accionesCab = el('div', { class: 'uni-actions-row' });
       if (esAdmin()) {
         accionesCab.append(
           el('button', {
             type: 'button',
-            class: 'btn btn-primary btn-sm',
+            class: 'btn-cta-hero',
             onclick: () => abrirModalNuevaProduccion(raiz, finca),
           }, '+ Nueva Producción')
         );
       }
+      filtros.forEach(f => accionesCab.append(f));
 
       const cuerpo = producciones.length === 0
         ? el('div', { class: 'uni-empty' }, 'No hay producciones registradas en este estado.')
@@ -572,15 +643,31 @@
   /* =========================================================================
      MÓDULO 3: INSUMOS Y STOCK (Solo ADMINISTRADOR)
      ========================================================================= */
+  let insumoBusqueda = '';
+  let insumoFiltroCat = '';
+  let insumoFiltroUnidad = '';
+  let insumoSoloAlertas = false;
+  let insumoMostrarFiltros = false;
+
   pantallas.insumos = async function renderInsumos(raiz) {
     raiz.innerHTML = '<div class="pantalla-cab"><div><h2>Insumos y Stock</h2><p>Cargando inventario...</p></div></div>';
     try {
       const data = await apiJson('/insumos/resumen-unificado');
+      const unidadesDisp = [...new Set(data.insumos.map(i => i.unidadMedida).filter(Boolean))];
 
-      const acciones = el('div', { class: 'uni-actions-row' },
-        el('button', { type: 'button', class: 'btn btn-secondary btn-sm', onclick: () => abrirModalNuevoInsumo(raiz) }, '+ Nuevo Insumo'),
-        el('button', { type: 'button', class: 'btn btn-primary btn-sm', onclick: () => abrirModalIngresoStock(raiz, data.insumos) }, '+ Ingresar Stock')
-      );
+      const btnNuevo = el('button', {
+        type: 'button',
+        class: 'btn-cta-hero',
+        onclick: () => abrirModalNuevoInsumo(raiz),
+      }, '+ Nuevo Insumo');
+
+      const btnIngreso = el('button', {
+        type: 'button',
+        class: 'btn btn-secondary btn-sm',
+        onclick: () => abrirModalIngresoStock(raiz, data.insumos),
+      }, '+ Ingresar Stock');
+
+      const acciones = el('div', { class: 'uni-actions-row' }, btnNuevo, btnIngreso);
 
       const alertasBox = data.alertas.length > 0
         ? el('div', { class: 'uni-alert-box' },
@@ -589,26 +676,108 @@
           )
         : null;
 
+      const inputBuscar = el('input', {
+        type: 'search',
+        class: 'uni-search-input',
+        placeholder: 'Buscar por código, nombre, marca o categoría...',
+        value: insumoBusqueda,
+        'aria-label': 'Buscar insumos',
+      });
+
+      const panelFiltros = el('div', { class: 'uni-filter-panel', hidden: !insumoMostrarFiltros },
+        el('div', { class: 'campo' },
+          el('label', {}, 'Categoría'),
+          el('select', {
+            onchange: (e) => { insumoFiltroCat = e.target.value; filtrarTabla(); },
+          },
+            el('option', { value: '' }, 'Todas'),
+            ['FITOSANITARIO', 'FERTILIZANTE', 'ENMIENDA', 'OTRO'].map(c =>
+              el('option', { value: c, selected: insumoFiltroCat === c }, c)
+            )
+          )
+        ),
+        el('div', { class: 'campo' },
+          el('label', {}, 'Unidad de medida'),
+          el('select', {
+            onchange: (e) => { insumoFiltroUnidad = e.target.value; filtrarTabla(); },
+          },
+            el('option', { value: '' }, 'Todas'),
+            unidadesDisp.map(u => el('option', { value: u, selected: insumoFiltroUnidad === u }, u))
+          )
+        ),
+        el('div', { class: 'campo', style: 'justify-content:flex-end' },
+          el('label', { class: 'multi-op' },
+            el('input', {
+              type: 'checkbox',
+              checked: insumoSoloAlertas,
+              onchange: (e) => { insumoSoloAlertas = e.target.checked; filtrarTabla(); },
+            }),
+            ' Solo alertas de stock mínimo'
+          )
+        )
+      );
+
+      const btnFiltros = el('button', {
+        type: 'button',
+        class: `btn btn-sm ${insumoMostrarFiltros ? 'btn-primary' : 'btn-secondary'}`,
+        onclick: () => {
+          insumoMostrarFiltros = !insumoMostrarFiltros;
+          panelFiltros.hidden = !insumoMostrarFiltros;
+          btnFiltros.className = `btn btn-sm ${insumoMostrarFiltros ? 'btn-primary' : 'btn-secondary'}`;
+        },
+      }, 'Filtros');
+
+      const toolbar = el('div', { class: 'uni-search-toolbar' },
+        el('div', { class: 'uni-search-input-wrap' }, inputBuscar),
+        btnFiltros
+      );
+
+      const tbody = el('tbody', {});
+      function filtrarTabla() {
+        const q = insumoBusqueda.trim().toLowerCase();
+        const filtrados = data.insumos.filter(i => {
+          if (insumoFiltroCat && i.categoria !== insumoFiltroCat) return false;
+          if (insumoFiltroUnidad && i.unidadMedida !== insumoFiltroUnidad) return false;
+          if (insumoSoloAlertas && i.stockDisponible > i.nivelMinimo) return false;
+          if (!q) return true;
+          const texto = `${i.codigo} ${i.nombre} ${i.marca || ''} ${i.categoria}`.toLowerCase();
+          return texto.includes(q);
+        });
+        if (filtrados.length === 0) {
+          tbody.replaceChildren(el('tr', {}, el('td', { colspan: 7, class: 'text-center ayuda' }, 'No hay insumos que coincidan con la búsqueda.')));
+          return;
+        }
+        tbody.replaceChildren(...filtrados.map(i =>
+          el('tr', {},
+            el('td', {}, i.codigo),
+            el('td', {}, el('strong', {}, i.nombre)),
+            el('td', {}, i.marca || '—'),
+            el('td', {}, i.categoria),
+            el('td', {}, `${i.stockDisponible} ${i.unidadMedida}`),
+            el('td', {}, `${i.nivelMinimo} ${i.unidadMedida}`),
+            el('td', {}, el('span', { class: `pill ${i.stockDisponible <= i.nivelMinimo ? 'pill-alerta' : 'pill-ok'}` }, i.stockDisponible <= i.nivelMinimo ? 'REPOSICIÓN' : 'OK'))
+          )
+        ));
+      }
+
+      inputBuscar.addEventListener('input', (e) => {
+        insumoBusqueda = e.target.value;
+        filtrarTabla();
+      });
+      filtrarTabla();
+
       const tablaStock = el('div', { class: 'tabla-scroll', style: 'margin-bottom:18px' },
         el('table', { class: 'tabla-datos' },
           el('thead', {}, el('tr', {},
             el('th', {}, 'Código'),
             el('th', {}, 'Insumo'),
+            el('th', {}, 'Marca'),
             el('th', {}, 'Categoría'),
             el('th', {}, 'Stock Actual'),
             el('th', {}, 'Stock Mínimo'),
             el('th', {}, 'Estado')
           )),
-          el('tbody', {}, data.insumos.map(i =>
-            el('tr', {},
-              el('td', {}, i.codigo),
-              el('td', {}, el('strong', {}, i.nombre)),
-              el('td', {}, i.categoria),
-              el('td', {}, `${i.stockDisponible} ${i.unidadMedida}`),
-              el('td', {}, `${i.nivelMinimo} ${i.unidadMedida}`),
-              el('td', {}, el('span', { class: `pill ${i.stockDisponible <= i.nivelMinimo ? 'pill-alerta' : 'pill-ok'}` }, i.stockDisponible <= i.nivelMinimo ? 'REPOSICIÓN' : 'OK'))
-            )
-          ))
+          tbody
         )
       );
 
@@ -637,6 +806,8 @@
           acciones
         ),
         alertasBox,
+        toolbar,
+        panelFiltros,
         tablaStock,
         tablaEgresos
       );
@@ -647,7 +818,7 @@
 
   function abrirModalNuevoInsumo(raiz) {
     const overlay = el('div', { class: 'modal-backdrop', style: 'display:flex' },
-      el('div', { class: 'modal-dialog glass', style: 'max-width:480px;width:100%' },
+      el('div', { class: 'modal-dialog glass', style: 'max-width:540px;width:100%' },
         el('div', { class: 'modal-header' }, el('h2', {}, 'Nuevo Insumo'), el('button', { class: 'close-btn', type: 'button', onclick: () => overlay.remove() }, '×')),
         el('form', {
           class: 'form-grid', style: 'padding:18px 20px',
@@ -655,32 +826,40 @@
             e.preventDefault();
             try {
               const f = e.target;
-              await apiJson('/insumos', {
+              await apiJson('/insumos/crear-con-stock', {
                 method: 'POST',
                 body: {
                   codigo: f.querySelector('#ni-cod').value.trim(),
                   nombre: f.querySelector('#ni-nom').value.trim(),
+                  unidadMedida: f.querySelector('#ni-uni').value,
+                  marca: f.querySelector('#ni-marca').value.trim() || null,
                   categoria: f.querySelector('#ni-cat').value,
-                  unidadMedida: f.querySelector('#ni-uni').value.trim(),
-                  nivelMinimo: Number(f.querySelector('#ni-min').value || 0),
+                  cantidad: Number(f.querySelector('#ni-cant').value || 0),
                 },
               });
               overlay.remove();
-              avisar('Insumo creado en el catálogo.');
+              avisar('Insumo y stock inicial registrados.');
               renderInsumos(raiz);
             } catch (err) { avisar(err.message, 'error'); }
           },
         },
-          el('div', { class: 'campo' }, el('label', {}, 'Código *'), el('input', { id: 'ni-cod', type: 'text', placeholder: 'INS-010', required: true })),
-          el('div', { class: 'campo' }, el('label', {}, 'Nombre *'), el('input', { id: 'ni-nom', type: 'text', required: true })),
-          el('div', { class: 'campo' }, el('label', {}, 'Categoría *'), el('select', { id: 'ni-cat' },
+          el('div', { class: 'campo' }, el('label', {}, 'Código *'), el('input', { id: 'ni-cod', type: 'text', placeholder: 'Ej: INS-010', required: true })),
+          el('div', { class: 'campo' }, el('label', {}, 'Nombre *'), el('input', { id: 'ni-nom', type: 'text', placeholder: 'Ej: Glifosato', required: true })),
+          el('div', { class: 'campo' }, el('label', {}, 'Unidad de medida *'), el('select', { id: 'ni-uni', required: true },
+            el('option', { value: 'L' }, 'Litros (L)'),
+            el('option', { value: 'kg' }, 'Kilogramos (kg)'),
+            el('option', { value: 'g' }, 'Gramos (g)'),
+            el('option', { value: 'mL' }, 'Mililitros (mL)'),
+            el('option', { value: 'u' }, 'Unidades (u)')
+          )),
+          el('div', { class: 'campo' }, el('label', {}, 'Marca'), el('input', { id: 'ni-marca', type: 'text', placeholder: 'Ej: Bayer / Syngenta' })),
+          el('div', { class: 'campo' }, el('label', {}, 'Categoría *'), el('select', { id: 'ni-cat', required: true },
             el('option', { value: 'FITOSANITARIO' }, 'Fitosanitario'),
             el('option', { value: 'FERTILIZANTE' }, 'Fertilizante'),
             el('option', { value: 'ENMIENDA' }, 'Enmienda'),
             el('option', { value: 'OTRO' }, 'Otro')
           )),
-          el('div', { class: 'campo' }, el('label', {}, 'Unidad *'), el('input', { id: 'ni-uni', type: 'text', value: 'L', required: true })),
-          el('div', { class: 'campo campo-completo' }, el('label', {}, 'Stock Mínimo'), el('input', { id: 'ni-min', type: 'number', step: '0.1', min: '0', value: '10' })),
+          el('div', { class: 'campo' }, el('label', {}, 'Cantidad (stock inicial) *'), el('input', { id: 'ni-cant', type: 'number', step: '0.01', min: '0', value: '0', required: true })),
           el('div', { class: 'form-acciones' },
             el('button', { type: 'button', class: 'btn btn-secondary', onclick: () => overlay.remove() }, 'Cancelar'),
             el('button', { type: 'submit', class: 'btn btn-primary' }, 'Guardar Insumo')
