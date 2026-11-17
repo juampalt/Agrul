@@ -1005,25 +1005,15 @@
         sec.recargar = () => pantallas[nombre](sec);
       }
     });
-    const secTablero = document.getElementById('dashboard-ejecutivo');
-    if (secTablero) {
-      secTablero.recargar = () => {
-        const btn = document.getElementById('btn-dash-refrescar') || document.getElementById('btn-dash-aplicar-filtros');
-        if (btn) btn.click();
-      };
+    const navTablero = document.querySelector('.side-nav [data-nav="tablero"]');
+    if (navTablero && !navTablero.dataset.tableroBound) {
+      navTablero.dataset.tableroBound = '1';
+      navTablero.addEventListener('click', () => {
+        setTimeout(() => {
+          if (typeof AGRUL.recargarTablero === 'function') AGRUL.recargarTablero();
+        }, 0);
+      });
     }
-    AGRUL.abrirProduccionPorCodigo = async (codigo) => {
-      try {
-        const lista = await apiJson('/producciones?estado=TODAS');
-        const encontrada = (lista || []).find((p) => p.codigo === codigo);
-        if (!encontrada) { avisar(`No se encontró la producción ${codigo}.`, 'error'); return; }
-        produccionAbiertaId = encontrada.id;
-        const navBtn = document.querySelector('.side-nav [data-nav="produccion"]');
-        if (navBtn) navBtn.click();
-      } catch (err) {
-        avisar(err.message, 'error');
-      }
-    };
     const actual = document.body.dataset.vista;
     if (actual && ['finca', 'produccion', 'insumos', 'auditoria'].includes(actual)) {
       const secActual = document.getElementById('vista-' + actual);

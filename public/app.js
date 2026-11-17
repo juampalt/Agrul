@@ -4102,7 +4102,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Carga inicial
+  // Carga inicial + recarga al iniciar sesión o volver a Estadísticas
+  if (window.AGRUL) window.AGRUL.recargarTablero = cargarDashboardResumen;
+  document.addEventListener('agrul:sesion', () => {
+    cargarFincas();
+    cargarDashboardResumen();
+  });
   inicializarMapaYTelemetria();
   cargarLotes();
   cargarFincas();
