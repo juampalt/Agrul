@@ -26,12 +26,14 @@ import { ControlVencimientosInventariosController } from '../controllers/control
 import { ClimaController } from '../controllers/clima.controller.js';
 import { TerritorioController } from '../controllers/territorio.controller.js';
 import { MeteorologiaSGTAController } from '../controllers/meteorologia-sgta.controller.js';
+import { ProduccionesController } from '../controllers/producciones.controller.js';
 import { LocalizacionTucumanService } from '../../../core/domain/services/localizacion-tucuman.service.js';
 import { PoliticaRetencionBpaService } from '../../../core/domain/services/politica-retencion-bpa.service.js';
 import {
   verificarAutenticacion,
   verificarAutenticacionOpcional,
   requerirRol,
+  denegarSiPerfil,
   requerirAccesoFinca,
   requerirPermisoAgronomo,
   verificarPasswordInicial,
@@ -65,6 +67,7 @@ export interface ApiRoutesDependencies {
   climaController?: ClimaController;
   territorioController?: TerritorioController;
   meteorologiaSGTAController?: MeteorologiaSGTAController;
+  produccionesController?: ProduccionesController;
 }
 
 
@@ -102,11 +105,12 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         timestamp: new Date().toISOString(),
       }));
 
-      // Fincas (Módulo 1)
+      // Fincas (Módulo 1 — bloqueado para encargado/sistema autenticados)
       if (deps.fincasController) {
-        v1.get('/fincas', (req, rep) => deps.fincasController!.listar(req, rep));
-        v1.post('/fincas', (req, rep) => deps.fincasController!.crear(req, rep));
-        v1.get('/fincas/:id', { preHandler: [verificarAutenticacionOpcional, requerirAccesoFinca()] }, (req, rep) => deps.fincasController!.obtenerPorId(req, rep));
+        const soloAdminSiAutenticado = { preHandler: [denegarSiPerfil('ENCARGADO_CAMPO', 'ADMIN_SISTEMA')] };
+        v1.get('/fincas', soloAdminSiAutenticado, (req, rep) => deps.fincasController!.listar(req, rep));
+        v1.post('/fincas', soloAdminSiAutenticado, (req, rep) => deps.fincasController!.crear(req, rep));
+        v1.get('/fincas/:id', { preHandler: [verificarAutenticacionOpcional, denegarSiPerfil('ENCARGADO_CAMPO', 'ADMIN_SISTEMA'), requerirAccesoFinca()] }, (req, rep) => deps.fincasController!.obtenerPorId(req, rep));
       }
 
       if (deps.territorioController) {
@@ -173,13 +177,14 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/monitoreo/:id', (req, rep) => deps.monitoreoController!.obtenerPorId(req, rep));
       }
 
-      // Catálogo de Insumos y Fichas Fitosanitarias (Módulo 4 — AGRUL-024 / RF-M4-01, RF-M4-02, RN-14)
+      // Catálogo de Insumos y Fichas Fitosanitarias (Módulo 3 consolidado — bloqueado para encargado/sistema)
       if (deps.insumosController) {
-        v1.post('/insumos', (req, rep) => deps.insumosController!.registrar(req, rep));
-        v1.get('/insumos', (req, rep) => deps.insumosController!.listar(req, rep));
-        v1.get('/insumos/:id', (req, rep) => deps.insumosController!.obtenerPorId(req, rep));
-        v1.patch('/insumos/:id/stock-minimo', (req, rep) => deps.insumosController!.configurarStockMinimo(req, rep));
-        v1.put('/insumos/:id/stock-minimo', (req, rep) => deps.insumosController!.configurarStockMinimo(req, rep));
+        const soloAdminInsumos = { preHandler: [denegarSiPerfil('ENCARGADO_CAMPO', 'ADMIN_SISTEMA')] };
+        v1.post('/insumos', soloAdminInsumos, (req, rep) => deps.insumosController!.registrar(req, rep));
+        v1.get('/insumos', soloAdminInsumos, (req, rep) => deps.insumosController!.listar(req, rep));
+        v1.get('/insumos/:id', soloAdminInsumos, (req, rep) => deps.insumosController!.obtenerPorId(req, rep));
+        v1.patch('/insumos/:id/stock-minimo', soloAdminInsumos, (req, rep) => deps.insumosController!.configurarStockMinimo(req, rep));
+        v1.put('/insumos/:id/stock-minimo', soloAdminInsumos, (req, rep) => deps.insumosController!.configurarStockMinimo(req, rep));
       }
 
       // Aplicaciones Agrícolas de Campo (Módulo 4 — AGRUL-025 / RF-M4-03 a RF-M4-12)
@@ -288,10 +293,11 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/ciclos/:cicloId/eficiencia-insumos', (req, rep) => deps.indicadoresController!.obtenerEficienciaInsumos(req, rep));
       }
 
-      // Dashboard Operativo y Tablero Ejecutivo (AGRUL-037 / RF-M7-12, RF-M7-13, RF-M7-14)
+      // Dashboard Operativo y Tablero Ejecutivo (Solo ADMINISTRADOR)
       if (deps.dashboardController) {
-        v1.get('/dashboard/resumen', (req, rep) => deps.dashboardController!.obtenerResumen(req, rep));
-        v1.get('/dashboard', (req, rep) => deps.dashboardController!.obtenerResumen(req, rep));
+        const soloAdminStats = { preHandler: [denegarSiPerfil('ENCARGADO_CAMPO', 'ADMIN_SISTEMA')] };
+        v1.get('/dashboard/resumen', soloAdminStats, (req, rep) => deps.dashboardController!.obtenerResumen(req, rep));
+        v1.get('/dashboard', soloAdminStats, (req, rep) => deps.dashboardController!.obtenerResumen(req, rep));
       }
 
       // Autenticación y Sesión (Módulo 8 — AGRUL-038 / RF-M8-03)
@@ -467,6 +473,37 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
         v1.get('/eventos-climaticos', (req, rep) =>
           deps.meteorologiaSGTAController!.consultarEventos(req, rep)
         );
+      }
+
+      // =========================================================================
+      // FACHADA UNIFICADA DE 5 MÓDULOS (Finca, Producción, Insumos/Stock, RBAC)
+      // =========================================================================
+      if (deps.produccionesController) {
+        const soloAdmin = { preHandler: [requerirRol('ADMINISTRADOR'), verificarPasswordInicial] };
+        const adminOEncargado = { preHandler: [requerirRol('ADMINISTRADOR', 'ENCARGADO_CAMPO'), verificarPasswordInicial] };
+
+        // Módulo 1: Finca
+        v1.get('/finca-resumen', soloAdmin, (req, rep) => deps.produccionesController!.obtenerFincaResumen(req, rep));
+        v1.put('/finca-resumen', soloAdmin, (req, rep) => deps.produccionesController!.actualizarFincaConfig(req, rep));
+
+        // Módulo 2: Producción Activa + Bitácora Unificada
+        v1.get('/producciones', adminOEncargado, (req, rep) => deps.produccionesController!.listarProducciones(req, rep));
+        v1.post('/producciones', soloAdmin, (req, rep) => deps.produccionesController!.crearProduccion(req, rep));
+        v1.post('/producciones/:id/finalizar', soloAdmin, (req, rep) => deps.produccionesController!.finalizarProduccion(req, rep));
+        v1.get('/producciones/:id/detalle', adminOEncargado, (req, rep) => deps.produccionesController!.obtenerDetalle(req, rep));
+        v1.post('/producciones/:id/registros', adminOEncargado, (req, rep) => deps.produccionesController!.registrarActualizacion(req, rep));
+        v1.post('/producciones/:id/registros/:regId/corregir', soloAdmin, (req, rep) => deps.produccionesController!.corregirRegistro(req, rep));
+
+        // Altas inline de Cultivos y Variedades desde Producción (Solo admin)
+        v1.post('/producciones/cultivos-rapido', soloAdmin, (req, rep) => deps.produccionesController!.crearCultivoRapido(req, rep));
+        v1.post('/producciones/variedades-rapido', soloAdmin, (req, rep) => deps.produccionesController!.crearVariedadRapido(req, rep));
+
+        // Selector mínimo de Insumos para Fumigación (admin y encargado)
+        v1.get('/insumos/selector', adminOEncargado, (req, rep) => deps.produccionesController!.selectorInsumos(req, rep));
+
+        // Módulo 3: Insumos y Stock Unificado (Solo admin)
+        v1.get('/insumos/resumen-unificado', soloAdmin, (req, rep) => deps.produccionesController!.resumenInsumos(req, rep));
+        v1.post('/insumos/ingreso-rapido', soloAdmin, (req, rep) => deps.produccionesController!.ingresoStockRapido(req, rep));
       }
 
     },

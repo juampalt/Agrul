@@ -8,8 +8,8 @@
     ADMINISTRADOR: 'Administrador',
     ENCARGADO_CAMPO: 'Encargado de campo',
   };
-  // Vista inicial de cada rol, si tiene acceso a ella.
-  const INICIO_POR_ROL = { ADMIN_SISTEMA: 'inicio', ADMINISTRADOR: 'finca', ENCARGADO_CAMPO: 'actividades-programadas' };
+  // Vista inicial de cada rol: admin -> produccion, encargado -> produccion, sistema -> auditoria.
+  const INICIO_POR_ROL = { ADMIN_SISTEMA: 'auditoria', ADMINISTRADOR: 'produccion', ENCARGADO_CAMPO: 'produccion' };
 
   const leer = (clave) => { try { return localStorage.getItem(clave); } catch (_) { return null; } };
   const guardar = (clave, valor) => { try { localStorage.setItem(clave, valor); } catch (_) { /* sin almacenamiento */ } };
@@ -181,7 +181,8 @@
     const rol = AGRUL.usuario && AGRUL.usuario.perfil;
     document.body.dataset.rol = rol || '';
     document.querySelectorAll('[data-roles]').forEach(nodo => {
-      const rolesPermitidos = (nodo.dataset.roles || '').split(/\s+/); const permitido = rolesPermitidos.includes(rol) || (rol === 'ADMIN_SISTEMA' && rolesPermitidos.includes('ADMINISTRADOR'));
+      const rolesPermitidos = (nodo.dataset.roles || '').split(/\s+/);
+      const permitido = rolesPermitidos.includes(rol);
       nodo.hidden = !permitido;
     });
     // Un título de grupo solo se muestra si tiene alguna opción visible.

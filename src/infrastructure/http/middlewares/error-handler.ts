@@ -135,7 +135,8 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
 
   // 4. Reglas de negocio de Dominio (422 Unprocessable Entity)
   if (error instanceof DomainError) {
-    return reply.status(422).send({
+    const status = (error as { statusCode?: number }).statusCode || 422;
+    return reply.status(status).send({
       success: false,
       data: null,
       error: {

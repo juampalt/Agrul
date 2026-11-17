@@ -10,6 +10,8 @@ import { DrizzleTiposActividadRepository } from './infrastructure/database/repos
 import { DrizzleActividadesProgramadasRepository } from './infrastructure/database/repositories/drizzle-actividades-programadas.repository.js';
 import { DrizzleCosechasProgramadasRepository } from './infrastructure/database/repositories/drizzle-cosechas-programadas.repository.js';
 import { DrizzleCosechasRegistroRepository } from './infrastructure/database/repositories/drizzle-cosechas-registro.repository.js';
+import { ProduccionesService } from './infrastructure/database/producciones.service.js';
+import { ProduccionesController } from './infrastructure/http/controllers/producciones.controller.js';
 import { DrizzlePoscosechaRepository } from './infrastructure/database/repositories/drizzle-poscosecha.repository.js';
 import { DrizzleAlmacenamientoProduccionRepository } from './infrastructure/database/repositories/drizzle-almacenamiento-produccion.repository.js';
 import { DrizzleActividadesRealizadasRepository } from './infrastructure/database/repositories/drizzle-actividades-realizadas.repository.js';
@@ -59,6 +61,7 @@ export function crearServidorProduccion(options: ServidorProduccionOptions = {})
     sesionesRepo: new DrizzleSesionesRepository(db),
     revalidarSesiones: true,
     registroCambiosRepo: new DrizzleRegistroCambiosRepository(db),
+    produccionesController: new ProduccionesController(new ProduccionesService(db)),
     cultivosRepo: new DrizzleCultivosRepository(db),
     variedadesRepo: new DrizzleVariedadesRepository(db),
     plantacionesRepo: new DrizzlePlantacionesRepository(db),

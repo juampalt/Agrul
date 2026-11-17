@@ -260,6 +260,7 @@ import {
 } from '../../application/use-cases/meteorologia-sgta.use-cases.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { TerritorioController } from './controllers/territorio.controller.js';
+import { ProduccionesController } from './controllers/producciones.controller.js';
 import { ConsultarFincaUseCase, ModificarFincaUseCase } from '../../application/use-cases/finca-territorial.use-cases.js';
 import {
   ConsultarLotesTerritorialesUseCase,
@@ -277,6 +278,7 @@ import { registrarAuditoriaCambios } from './auditoria-cambios.js';
 export interface BuildAppOptions {
   /** Trazabilidad de cambios (fecha, responsable, valores anteriores y nuevos). */
   registroCambiosRepo?: RegistroCambiosPort;
+  produccionesController?: ProduccionesController;
   lotesRepo: LotesRepositoryPort;
   eventosRepo: EventosRepositoryPort;
   genealogiaRepo: GenealogiaRepositoryPort;
@@ -1111,6 +1113,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     controlVencimientosInventariosController,
     climaController,
     meteorologiaSGTAController,
+    produccionesController: options.produccionesController,
   });
 
   return app;

@@ -149,6 +149,32 @@ export function requerirRol(...rolesPermitidos: PerfilUsuario[]) {
 }
 
 /**
+ * Middleware para denegar acceso explícito a perfiles específicos cuando la solicitud viene autenticada.
+ * Mantiene compatibilidad con tests heredados sin token mientras bloquea con 403 a roles restringidos.
+ */
+export function denegarSiPerfil(...rolesBloqueados: PerfilUsuario[]) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!request.usuario && request.headers.authorization) {
+      await verificarAutenticacion(request, reply);
+      if (reply.sent) return;
+    }
+
+    if (request.usuario && rolesBloqueados.includes(request.usuario.perfil)) {
+      return reply.status(403).send({
+        success: false,
+        data: null,
+        error: {
+          code: 'PERMISO_INSUFICIENTE',
+          message: `El perfil '${request.usuario.perfil}' no tiene autorización para acceder a este módulo.`,
+          details: null,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  };
+}
+
+/**
  * Factory middleware para exigir acceso a la finca solicitada (RF-M8-05 / RN-16).
  * Regla de negocio:
  * - ADMINISTRADOR: Acceso global transversal a todas las fincas.
