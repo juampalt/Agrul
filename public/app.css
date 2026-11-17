@@ -3744,17 +3744,17 @@ input:focus, select:focus {
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  border-radius: 8px;
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   font-size: 0.82rem;
-  color: #cbd5e1;
+  color: #475569;
 }
 
 .costo-res-pill strong {
   font-size: 0.95rem;
-  font-family: 'Outfit', sans-serif;
-  color: #f1f5f9;
+  font-family: inherit;
+  color: #064e3b;
 }
 
 /* ==========================================================================
@@ -6488,6 +6488,27 @@ body:not(.sin-sesion) #user-login-box { display: none !important; }
   border: 1px solid #e2e8f0 !important;
   border-radius: 14px;
   padding: 18px;
+  overflow-x: auto;
+}
+#dashboard-ejecutivo .dash-costos-panel table {
+  width: 100%;
+  border-collapse: collapse;
+}
+#dashboard-ejecutivo .dash-costos-panel th,
+#dashboard-ejecutivo .dash-costos-panel td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+  font-size: 13px;
+}
+#dashboard-ejecutivo .dash-costos-panel th {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #f8fafc;
 }
 @media (max-width: 760px) {
   #dashboard-ejecutivo .dash-filters-bar,

@@ -2985,22 +2985,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let sumaKilos = 0;
 
     dashTbodyCostos.innerHTML = costos.map(c => {
-      sumaTotal += c.costoTotalEstimado || 0;
-      sumaSuperficie += c.superficieHa || 0;
-      sumaKilos += c.kilosCosechados || 0;
+      const sup = Number(c.superficieHa || 0);
+      const kilos = Number(c.kilosCosechados || 0);
+      const ins = Number(c.costoInsumos || 0);
+      const mo = Number(c.costoManoObra || 0);
+      const maq = Number(c.costoMaquinaria || 0);
+      const totalEst = Number(c.costoTotalEstimado ?? c.costoTotal ?? (ins + mo + maq));
+      const porHa = Number(c.costoPorHectarea ?? c.costoPorHa ?? (sup > 0 ? totalEst / sup : 0));
+      const porKg = Number(c.costoPorKiloCosechado ?? (kilos > 0 ? totalEst / kilos : 0));
+
+      sumaTotal += totalEst;
+      sumaSuperficie += sup;
+      sumaKilos += kilos;
 
       return `
         <tr>
-          <td><strong>${c.codigoLote}</strong></td>
-          <td><span class="crop-tag">${c.cultivo}</span></td>
-          <td>${c.superficieHa} ha</td>
-          <td>${Number(c.kilosCosechados).toLocaleString('es-AR')} kg</td>
-          <td>$${Number(c.costoInsumos).toLocaleString('es-AR')}</td>
-          <td>$${Number(c.costoManoObra).toLocaleString('es-AR')}</td>
-          <td>$${Number(c.costoMaquinaria).toLocaleString('es-AR')}</td>
-          <td><strong style="color: #38bdf8;">$${Number(c.costoTotalEstimado).toLocaleString('es-AR')}</strong></td>
-          <td><strong style="color: #34d399;">$${Number(c.costoPorHectarea).toLocaleString('es-AR', { maximumFractionDigits: 2 })} / ha</strong></td>
-          <td><strong style="color: #fbbf24;">$${Number(c.costoPorKiloCosechado).toLocaleString('es-AR', { maximumFractionDigits: 3 })} / kg</strong></td>
+          <td><strong>${c.codigoLote || '—'}</strong></td>
+          <td><span class="crop-tag">${c.cultivo || c.nombreLote || '—'}</span></td>
+          <td>${sup.toLocaleString('es-AR')} ha</td>
+          <td>${kilos.toLocaleString('es-AR')} kg</td>
+          <td>$${ins.toLocaleString('es-AR')}</td>
+          <td>$${mo.toLocaleString('es-AR')}</td>
+          <td>$${maq.toLocaleString('es-AR')}</td>
+          <td><strong style="color: #0284c7;">$${totalEst.toLocaleString('es-AR')}</strong></td>
+          <td><strong style="color: #059669;">$${porHa.toLocaleString('es-AR', { maximumFractionDigits: 2 })} / ha</strong></td>
+          <td><strong style="color: #d97706;">$${porKg.toLocaleString('es-AR', { maximumFractionDigits: 3 })} / kg</strong></td>
         </tr>`;
     }).join('');
 

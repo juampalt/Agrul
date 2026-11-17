@@ -1468,8 +1468,8 @@ export class ProduccionesService {
       const mes = String(c.fecha || '').slice(0, 7) || hoyIsoTucuman().slice(0, 7);
       const cur = mesesMap.get(mes) || { bruto: 0, comercial: 0, descarte: 0 };
       cur.bruto += Number(c.cantidadCosechadaKg || 0);
-      cur.comercial += Number(c.cantidadComercializableKg || 0);
-      cur.descarte += Number(c.cantidadDescarteKg || 0);
+      cur.comercial += getComercial(c);
+      cur.descarte += getDescarte(c);
       mesesMap.set(mes, cur);
     }
     const labelsMeses = [...mesesMap.keys()].sort();
@@ -1480,6 +1480,7 @@ export class ProduccionesService {
 
     // Rendimiento por cultivo
     const cultMap = new Map<string, { ha: number; bruto: number; comercial: number }>();
+    const kilosPorCiclo = new Map<string, number>();
     for (const p of produccionesFiltradas) {
       const cur = cultMap.get(p.cultivoNombre) || { ha: 0, bruto: 0, comercial: 0 };
       cur.ha += p.hectareas;
@@ -1487,11 +1488,14 @@ export class ProduccionesService {
     }
     const prodByCiclo = new Map(produccionesFiltradas.map((p) => [p.id, p]));
     for (const c of cosechas) {
+      if (c.cicloId) {
+        kilosPorCiclo.set(c.cicloId, (kilosPorCiclo.get(c.cicloId) || 0) + Number(c.cantidadCosechadaKg || 0));
+      }
       const prod = c.cicloId ? prodByCiclo.get(c.cicloId) : undefined;
       if (!prod) continue;
       const cur = cultMap.get(prod.cultivoNombre) || { ha: prod.hectareas, bruto: 0, comercial: 0 };
       cur.bruto += Number(c.cantidadCosechadaKg || 0);
-      cur.comercial += Number(c.cantidadComercializableKg || 0);
+      cur.comercial += getComercial(c);
       cultMap.set(prod.cultivoNombre, cur);
     }
     const cultivosNombres = [...cultMap.keys()];
@@ -1557,17 +1561,22 @@ export class ProduccionesService {
           rendimientoComercialKgHa,
         },
       },
-      costosPorLote: produccionesFiltradas.map((p) => ({
-        loteId: p.loteId,
-        codigoLote: p.codigo,
-        nombreLote: `${p.cultivoNombre} (${p.variedadNombre})`,
-        superficieHa: p.hectareas,
-        costoInsumos: 0,
-        costoManoObra: 0,
-        costoMaquinaria: 0,
-        costoTotal: 0,
-        costoPorHa: 0,
-      })),
+      costosPorLote: produccionesFiltradas.map((p) => {
+        const kilos = Math.round((kilosPorCiclo.get(p.id) || 0) * 100) / 100;
+        return {
+          loteId: p.loteId,
+          codigoLote: p.codigo,
+          cultivo: `${p.cultivoNombre} (${p.variedadNombre})`,
+          superficieHa: p.hectareas,
+          kilosCosechados: kilos,
+          costoInsumos: 0,
+          costoManoObra: 0,
+          costoMaquinaria: 0,
+          costoTotalEstimado: 0,
+          costoPorHectarea: 0,
+          costoPorKiloCosechado: 0,
+        };
+      }),
     };
   }
 }
