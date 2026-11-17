@@ -335,3 +335,4 @@
 
 ### Postcondiciones Verificables
 * Lotes acondicionados en estado `EMBALADO` dentro de cámara frigorífica con trazabilidad intacta hasta el lote de origen en campo.
+
