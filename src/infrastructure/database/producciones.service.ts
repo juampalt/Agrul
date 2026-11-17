@@ -1408,29 +1408,48 @@ export class ProduccionesService {
 
     // Stock e insumos reales desde PostgreSQL
     const { insumos } = await this.obtenerResumenInsumosUnificado();
+    const itemsApl = await this.db.select().from(aplicacionesInsumoItemsTable);
+    const insumoCatMap = new Map(insumos.map((i) => [i.id, i]));
+    const consumoCat = new Map<string, number>();
+    const consumoPorInsumo = new Map<string, number>();
+    for (const it of itemsApl) {
+      const cant = Number(it.cantidadAplicada || 0);
+      consumoPorInsumo.set(it.insumoId, (consumoPorInsumo.get(it.insumoId) || 0) + cant);
+      const ins = insumoCatMap.get(it.insumoId);
+      const cat = ins ? ins.categoria : 'OTRO';
+      consumoCat.set(cat, (consumoCat.get(cat) || 0) + cant);
+    }
+
     const alertas: Array<{
       insumoId: string;
       codigo: string;
       nombre: string;
+      nombreComercial: string;
       categoria: string;
       unidadMedida: string;
       stockActual: number;
       nivelMinimo: number;
+      stockMinimo: number;
+      consumoAcumulado: number;
       nivelAlerta: 'CRITICO' | 'BAJO';
     }> = [];
     let insumosStockCritico = 0;
     let insumosStockBajo = 0;
     for (const ins of insumos) {
+      const consumoAcum = Math.round((consumoPorInsumo.get(ins.id) || 0) * 100) / 100;
       if (ins.nivelMinimo > 0 && ins.stockDisponible <= ins.nivelMinimo * 0.4) {
         insumosStockCritico += 1;
         alertas.push({
           insumoId: ins.id,
           codigo: ins.codigo,
           nombre: ins.nombre,
+          nombreComercial: `${ins.codigo} · ${ins.nombre}`,
           categoria: ins.categoria,
           unidadMedida: ins.unidadMedida,
           stockActual: ins.stockDisponible,
           nivelMinimo: ins.nivelMinimo,
+          stockMinimo: ins.nivelMinimo,
+          consumoAcumulado: consumoAcum,
           nivelAlerta: 'CRITICO',
         });
       } else if (ins.nivelMinimo > 0 && ins.stockDisponible <= ins.nivelMinimo) {
@@ -1439,24 +1458,18 @@ export class ProduccionesService {
           insumoId: ins.id,
           codigo: ins.codigo,
           nombre: ins.nombre,
+          nombreComercial: `${ins.codigo} · ${ins.nombre}`,
           categoria: ins.categoria,
           unidadMedida: ins.unidadMedida,
           stockActual: ins.stockDisponible,
           nivelMinimo: ins.nivelMinimo,
+          stockMinimo: ins.nivelMinimo,
+          consumoAcumulado: consumoAcum,
           nivelAlerta: 'BAJO',
         });
       }
     }
 
-    // Consumo por categoría desde aplicaciones_insumo_items + insumos
-    const itemsApl = await this.db.select().from(aplicacionesInsumoItemsTable);
-    const insumoCatMap = new Map(insumos.map((i) => [i.id, i]));
-    const consumoCat = new Map<string, number>();
-    for (const it of itemsApl) {
-      const ins = insumoCatMap.get(it.insumoId);
-      const cat = ins ? ins.categoria : 'OTRO';
-      consumoCat.set(cat, (consumoCat.get(cat) || 0) + Number(it.cantidadAplicada || 0));
-    }
     const categorias = [...consumoCat.keys()];
     const volumenTotal = categorias.map((c) => Math.round((consumoCat.get(c) || 0) * 100) / 100);
     const sumVol = volumenTotal.reduce((a, b) => a + b, 0);

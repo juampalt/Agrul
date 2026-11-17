@@ -2749,18 +2749,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const tooltipOscuro = {
-      backgroundColor: '#0F172A',
-      titleColor: '#F8FAFC',
-      bodyColor: '#E2E8F0',
-      borderColor: '#334155',
-      borderWidth: 1,
-      padding: 10,
-      cornerRadius: 8,
-      titleFont: { family: 'Plus Jakarta Sans, sans-serif', size: 12, weight: '700' },
-      bodyFont: { family: 'Plus Jakarta Sans, sans-serif', size: 12 },
-    };
-
     // Chart 1: Evolución Mensual de Cosecha
     const ctxEvolucion = document.getElementById('chart-evolucion-cosecha');
     if (ctxEvolucion) {
@@ -2774,23 +2762,26 @@ document.addEventListener('DOMContentLoaded', () => {
             {
               label: 'Kilos Brutos',
               data: graficos.evolucionCosecha.datasets.kilosBrutos,
-              backgroundColor: '#0284C7',
-              borderRadius: { topLeft: 6, topRight: 6 },
-              maxBarThickness: 44,
+              backgroundColor: 'rgba(56, 189, 248, 0.75)',
+              borderColor: '#38bdf8',
+              borderWidth: 1,
+              borderRadius: 4,
             },
             {
               label: 'Comercializable',
               data: graficos.evolucionCosecha.datasets.kilosComercializables,
-              backgroundColor: '#15803D',
-              borderRadius: { topLeft: 6, topRight: 6 },
-              maxBarThickness: 44,
+              backgroundColor: 'rgba(16, 185, 129, 0.75)',
+              borderColor: '#10b981',
+              borderWidth: 1,
+              borderRadius: 4,
             },
             {
               label: 'Descarte',
               data: graficos.evolucionCosecha.datasets.kilosDescarte,
-              backgroundColor: '#D97706',
-              borderRadius: { topLeft: 6, topRight: 6 },
-              maxBarThickness: 44,
+              backgroundColor: 'rgba(245, 158, 11, 0.75)',
+              borderColor: '#f59e0b',
+              borderWidth: 1,
+              borderRadius: 4,
             },
           ],
         },
@@ -2799,11 +2790,9 @@ document.addEventListener('DOMContentLoaded', () => {
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              position: 'bottom',
-              labels: { color: '#334155', boxWidth: 12, padding: 14, font: { family: 'Plus Jakarta Sans, sans-serif', size: 11, weight: '600' } },
+              labels: { color: '#334155', font: { family: 'Plus Jakarta Sans, sans-serif', size: 11, weight: '600' } },
             },
             tooltip: {
-              ...tooltipOscuro,
               callbacks: {
                 label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.raw).toLocaleString('es-AR')} kg`,
               },
@@ -2811,21 +2800,19 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           scales: {
             x: {
-              grid: { display: false },
-              ticks: { color: '#64748B', font: { size: 11, weight: '600' } },
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: { color: '#64748b', font: { size: 10 } },
             },
             y: {
-              beginAtZero: true,
-              border: { display: false, dash: [4, 4] },
-              grid: { color: 'rgba(148, 163, 184, 0.22)' },
-              ticks: { color: '#64748B', font: { size: 11 } },
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: { color: '#64748b', font: { size: 10 } },
             },
           },
         },
       });
     }
 
-    // Chart 2: Distribución de Consumo de Insumos (Dona con Total en el Centro)
+    // Chart 2: Distribución de Consumo de Insumos (Dona)
     const ctxConsumo = document.getElementById('chart-consumo-insumos');
     if (ctxConsumo) {
       if (chartConsumoInsumos) chartConsumoInsumos.destroy();
@@ -2833,27 +2820,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const dataVol = graficos.consumoInsumosPorCategoria.volumenTotal || [];
       const porcentajes = graficos.consumoInsumosPorCategoria.porcentajes || [];
       const tieneDatos = dataVol.some(v => v > 0);
-      const totalConsumo = dataVol.reduce((acc, v) => acc + Number(v || 0), 0);
-
-      const centerTotalPlugin = {
-        id: 'centerTotalPlugin',
-        afterDraw(chart) {
-          const { ctx, chartArea } = chart;
-          if (!chartArea) return;
-          const cx = (chartArea.left + chartArea.right) / 2;
-          const cy = (chartArea.top + chartArea.bottom) / 2;
-          ctx.save();
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = '#0F172A';
-          ctx.font = '700 20px Outfit, sans-serif';
-          ctx.fillText(tieneDatos ? totalConsumo.toLocaleString('es-AR') : '0', cx, cy - 7);
-          ctx.fillStyle = '#64748B';
-          ctx.font = '600 11px Plus Jakarta Sans, sans-serif';
-          ctx.fillText('TOTAL', cx, cy + 12);
-          ctx.restore();
-        },
-      };
 
       chartConsumoInsumos = new Chart(ctxConsumo, {
         type: 'doughnut',
@@ -2862,24 +2828,22 @@ document.addEventListener('DOMContentLoaded', () => {
           datasets: [{
             data: tieneDatos ? dataVol : [1],
             backgroundColor: tieneDatos
-              ? ['#15803D', '#0284C7', '#D97706', '#DC2626', '#64748B']
-              : ['#E2E8F0'],
-            borderColor: '#FFFFFF',
+              ? ['#10b981', '#38bdf8', '#f59e0b', '#a855f7', '#ec4899', '#64748b']
+              : ['#e2e8f0'],
+            borderColor: '#ffffff',
             borderWidth: 2,
           }],
         },
-        plugins: [centerTotalPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          cutout: '72%',
+          cutout: '65%',
           plugins: {
             legend: {
               position: 'bottom',
-              labels: { color: '#334155', boxWidth: 10, padding: 12, font: { family: 'Plus Jakarta Sans, sans-serif', size: 11, weight: '600' } },
+              labels: { color: '#334155', font: { family: 'Plus Jakarta Sans, sans-serif', size: 11, weight: '600' } },
             },
             tooltip: {
-              ...tooltipOscuro,
               callbacks: {
                 label: (ctx) => {
                   if (!tieneDatos) return 'Sin consumo registrado';
@@ -2909,16 +2873,18 @@ document.addEventListener('DOMContentLoaded', () => {
             {
               label: 'Rendimiento Bruto (kg/ha)',
               data: rendBruto.length > 0 ? rendBruto : [0],
-              backgroundColor: '#0284C7',
-              borderRadius: { topLeft: 6, topRight: 6 },
-              maxBarThickness: 36,
+              backgroundColor: 'rgba(56, 189, 248, 0.75)',
+              borderColor: '#0284c7',
+              borderWidth: 1,
+              borderRadius: 4,
             },
             {
               label: 'Rendimiento Comercial (kg/ha)',
               data: rendComercial.length > 0 ? rendComercial : [0],
-              backgroundColor: '#15803D',
-              borderRadius: { topLeft: 6, topRight: 6 },
-              maxBarThickness: 36,
+              backgroundColor: 'rgba(16, 185, 129, 0.85)',
+              borderColor: '#059669',
+              borderWidth: 1,
+              borderRadius: 4,
             },
           ],
         },
@@ -2927,11 +2893,9 @@ document.addEventListener('DOMContentLoaded', () => {
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              position: 'bottom',
-              labels: { color: '#334155', boxWidth: 12, padding: 12, font: { family: 'Plus Jakarta Sans, sans-serif', size: 11, weight: '600' } },
+              labels: { color: '#334155', font: { family: 'Plus Jakarta Sans, sans-serif', size: 11, weight: '600' } },
             },
             tooltip: {
-              ...tooltipOscuro,
               callbacks: {
                 label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.raw).toLocaleString('es-AR')} kg/ha`,
               },
@@ -2939,14 +2903,12 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           scales: {
             x: {
-              grid: { display: false },
-              ticks: { color: '#64748B', font: { size: 11, weight: '600' } },
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: { color: '#64748b', font: { size: 10 } },
             },
             y: {
-              beginAtZero: true,
-              border: { display: false, dash: [4, 4] },
-              grid: { color: 'rgba(148, 163, 184, 0.22)' },
-              ticks: { color: '#64748B', font: { size: 11 } },
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: { color: '#64748b', font: { size: 10 } },
             },
           },
         },
@@ -2969,13 +2931,19 @@ document.addEventListener('DOMContentLoaded', () => {
         badgeHtml = '<span class="dash-pill-bajo">⚠️ BAJO</span>';
       }
 
+      const nombre = item.nombreComercial || item.nombre || item.codigo || '—';
+      const stockAct = Number(item.stockActual || 0);
+      const stockMin = Number(item.stockMinimo ?? item.nivelMinimo ?? 0);
+      const consumo = Number(item.consumoAcumulado || 0);
+      const unidad = item.unidadMedida || '';
+
       return `
         <tr>
-          <td><strong>${item.nombreComercial}</strong></td>
-          <td><span class="badge-categoria">${item.categoria}</span></td>
-          <td><strong style="color: ${item.nivelAlerta === 'CRITICO' ? '#f87171' : item.nivelAlerta === 'BAJO' ? '#fbbf24' : '#e2e8f0'};">${Number(item.stockActual).toLocaleString('es-AR')} ${item.unidadMedida}</strong></td>
-          <td>${Number(item.stockMinimo).toLocaleString('es-AR')} ${item.unidadMedida}</td>
-          <td>${Number(item.consumoAcumulado).toLocaleString('es-AR')} ${item.unidadMedida}</td>
+          <td><strong>${nombre}</strong></td>
+          <td><span class="badge-categoria">${item.categoria || '—'}</span></td>
+          <td class="num"><strong style="color: ${item.nivelAlerta === 'CRITICO' ? '#dc2626' : item.nivelAlerta === 'BAJO' ? '#d97706' : '#0f172a'};">${stockAct.toLocaleString('es-AR')} ${unidad}</strong></td>
+          <td class="num">${stockMin.toLocaleString('es-AR')} ${unidad}</td>
+          <td class="num">${consumo.toLocaleString('es-AR')} ${unidad}</td>
           <td>${badgeHtml}</td>
         </tr>`;
     }).join('');
@@ -3038,27 +3006,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return `
         <tr>
-          <td><button type="button" class="bento-lot-badge" data-prod-codigo="${c.codigoLote || ''}" title="Abrir detalle de producción">${c.codigoLote || '—'}</button></td>
+          <td><strong>${c.codigoLote || '—'}</strong></td>
           <td><span class="crop-tag">${c.cultivo || c.nombreLote || '—'}</span></td>
           <td>${sup.toLocaleString('es-AR')} ha</td>
           <td>${kilos.toLocaleString('es-AR')} kg</td>
           <td>$${ins.toLocaleString('es-AR')}</td>
           <td>$${mo.toLocaleString('es-AR')}</td>
           <td>$${maq.toLocaleString('es-AR')}</td>
-          <td><strong style="color: #0284C7;">$${totalEst.toLocaleString('es-AR')}</strong></td>
-          <td><strong style="color: #15803D;">$${porHa.toLocaleString('es-AR', { maximumFractionDigits: 2 })} / ha</strong></td>
-          <td><strong style="color: #D97706;">$${porKg.toLocaleString('es-AR', { maximumFractionDigits: 3 })} / kg</strong></td>
+          <td><strong style="color: #0284c7;">$${totalEst.toLocaleString('es-AR')}</strong></td>
+          <td><strong style="color: #059669;">$${porHa.toLocaleString('es-AR', { maximumFractionDigits: 2 })} / ha</strong></td>
+          <td><strong style="color: #d97706;">$${porKg.toLocaleString('es-AR', { maximumFractionDigits: 3 })} / kg</strong></td>
         </tr>`;
     }).join('');
-
-    dashTbodyCostos.querySelectorAll('.bento-lot-badge[data-prod-codigo]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const codigo = btn.getAttribute('data-prod-codigo');
-        if (codigo && window.AGRUL && typeof window.AGRUL.abrirProduccionPorCodigo === 'function') {
-          window.AGRUL.abrirProduccionPorCodigo(codigo);
-        }
-      });
-    });
 
     const promHa = sumaSuperficie > 0 ? Math.round((sumaTotal / sumaSuperficie) * 100) / 100 : 0;
     const promKg = sumaKilos > 0 ? Math.round((sumaTotal / sumaKilos) * 1000) / 1000 : 0;
