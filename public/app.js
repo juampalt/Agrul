@@ -2671,9 +2671,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!dashFiltroProduccion) return;
     try {
       const fincaId = dashFiltroFinca?.value || '';
-      const res = await fetch('/api/v1/producciones?estado=TODAS');
-      const json = await res.json();
-      if (!json.success || !Array.isArray(json.data)) return;
+      let json;
+      if (window.AGRUL && typeof window.AGRUL.api === 'function') {
+        json = await window.AGRUL.api('/producciones?estado=TODAS');
+      } else {
+        const token = (window.AGRUL && window.AGRUL.token) || localStorage.getItem('agrul_auth_token') || '';
+        const res = await fetch('/api/v1/producciones?estado=TODAS', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        json = await res.json();
+      }
+      if (!json || !json.success || !Array.isArray(json.data)) return;
       const actual = dashFiltroProduccion.value;
       const lista = fincaId
         ? json.data.filter(p => !p.fincaId || p.fincaId === fincaId)
