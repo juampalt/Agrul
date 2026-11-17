@@ -1,338 +1,209 @@
-# 🧪 Agrul — Casos de Uso de Prueba por Módulo
+# 🧪 Agrul — Casos de Uso de Prueba (Sistema Consolidado de 5 Módulos)
 
-> **Versión:** 1.0.0  
-> **Propósito:** Proveer un **Caso de Uso de Prueba** formal, autocontenido y ejecutable para validar cada uno de los **11 módulos funcionales** del sistema Agrul (UI Web + API REST + Reglas de Negocio en PostgreSQL).  
-> **Complemento:** Ver también el manual operativo paso a paso en [MANUAL_DE_PRUEBAS_USUARIO.md](./MANUAL_DE_PRUEBAS_USUARIO.md).
+> **Versión:** 2.0.0  
+> **Propósito:** Guía formal y ejecutable de **Casos de Uso de Prueba** (flujos correctos y flujos alternativos/negativos) para validar de punta a punta los **5 módulos consolidados** de Agrul (`Finca`, `Producción`, `Insumos y Stock`, `Estadísticas e Indicadores`, `Auditoría`), su control de acceso por rol (RBAC), las transacciones ACID en PostgreSQL y la interfaz web.
 
 ---
 
-## 📑 Índice de Módulos
+## 📑 Índice de Casos de Uso
 
-| Código | Módulo del Sistema | Caso de Uso de Prueba | Actor Principal |
+| Código | Módulo / Área | Escenario Principal | Actor |
 | :--- | :--- | :--- | :--- |
-| **CU-TEST-01** | Módulo 1 — Estructura Territorial (Fincas, Lotes y Suelos) | Alta, validación de superficie y subdivisión territorial | `admin` (`ADMINISTRADOR`) |
-| **CU-TEST-02** | Módulo 2 — Cultivos, Variedades, Plantaciones y Ciclos | Apertura de ciclo multivariedad y control de campaña | `admin` (`ADMINISTRADOR`) |
-| **CU-TEST-03** | Módulo 3 — Actividades Agrícolas y Monitoreos | Planificación, ejecución de labor y monitoreo de plagas | `encargado` (`ENCARGADO_CAMPO`) |
-| **CU-TEST-04** | Módulo 4 — Insumos Fitosanitarios y Aplicaciones | Aplicación con receta y bloqueo por período de carencia | `encargado` (`ENCARGADO_CAMPO`) |
-| **CU-TEST-05** | Módulo 5 — Cosechas, Pesajes, Saldo y Despachos | Registro de cosecha, cálculo de saldo y despacho BPA | `encargado` / `admin` |
-| **CU-TEST-06** | Módulo 6 — Trazabilidad Integral, Linaje N:M, QR y Recall | Split 1:N, lectura de QR y trazabilidad inversa (Recall) | `admin` (`ADMINISTRADOR`) |
-| **CU-TEST-07** | Módulo 7 — Indicadores y Tablero Ejecutivo (Chart.js) | Validación de KPIs en tiempo real, filtros y exportación | `admin` (`ADMINISTRADOR`) |
-| **CU-TEST-08** | Módulo 8 — Usuarios, Roles (RBAC), Seguridad y Auditoría | Control de permisos, bitácora inmutable y bloqueo DELETE | `sistema` (`ADMIN_SISTEMA`) |
-| **CU-TEST-09** | Módulo 9 — Almacén, Proveedores, Compras y Stock FIFO/FEFO | Ingreso por compra, descuento FEFO y alerta de stock mínimo | `admin` (`ADMINISTRADOR`) |
-| **CU-TEST-10** | Módulo 10 — Meteorología y Eventos Climáticos Adversos | Registro climático en Lules/Finca y alerta de siniestro | `encargado` (`ENCARGADO_CAMPO`) |
-| **CU-TEST-11** | Módulo 11 — Poscosecha, Clasificación y Cámaras de Frío | Recepción en empaque, tipificación de calibre y frío | `admin` (`ADMINISTRADOR`) |
+| **CU-TEST-01** | **RBAC y Autenticación** | Acceso diferenciado por rol y bloqueo de rutas no autorizadas | `admin`, `encargado`, `sistema` |
+| **CU-TEST-02** | **Módulo 1 — Finca** | Vista resumen, edición bajo demanda y distribución de hectáreas | `admin` |
+| **CU-TEST-03** | **Módulo 2 — Producción (Ciclo)** | Alta de producción, catálogo inline y finalización con liberación de ha | `admin` |
+| **CU-TEST-04** | **Módulo 2 — Fumigación y Stock** | Aplicación de insumo con descuento atómico FEFO en inventario | `admin` / `encargado` |
+| **CU-TEST-05** | **Módulo 2 — Cosecha y Carencia** | Registro de cosecha y bloqueo estricto por período de carencia vigente | `admin` / `encargado` |
+| **CU-TEST-06** | **Módulo 2 — Labores, Clima, Corrección y QR** | Labor `Plantación` por unidad, evento climático, edición compensatoria y QR | `admin` / `encargado` |
+| **CU-TEST-07** | **Módulo 3 — Insumos y Stock** | Alta simplificada (6 campos), buscador incremental, filtros e ingreso rápido | `admin` |
+| **CU-TEST-08** | **Módulo 4 — Estadísticas e Indicadores** | KPIs en tiempo real, gráficos Chart.js, monitor de alertas y filtro por Producción | `admin` |
+| **CU-TEST-09** | **Módulo 5 — Auditoría** | Bitácora global inmutable y gestión de usuarios/roles | `admin` / `sistema` |
 
 ---
 
-## ⚙️ Credenciales de Referencia
+## ⚙️ Credenciales y Entorno de Prueba
 
-| Rol | Usuario | Contraseña |
-| :--- | :--- | :--- |
-| Administrador Agrícola (`ADMINISTRADOR`) | `admin` | `admin123` |
-| Encargado de Campo (`ENCARGADO_CAMPO`) | `encargado` | `campo123` |
-| Administrador de Sistema (`ADMIN_SISTEMA`) | `sistema` | `admin123` |
+| Rol | Email / Usuario | Contraseña | Módulos Visibles en Barra Lateral |
+| :--- | :--- | :--- | :--- |
+| **Administrador Agrícola** (`ADMINISTRADOR`) | `admin@agrul.local` | `admin123` | Finca, Producción, Insumos, Estadísticas, Auditoría |
+| **Encargado de Campo** (`ENCARGADO_CAMPO`) | `encargado@agrul.local` | `campo123` | **Solo Producción** (entra directo a Producciones Activas) |
+| **Administrador Sistema** (`ADMIN_SISTEMA`) | `sistema@agrul.local` | `admin123` | Auditoría (gestión de usuarios/roles y bitácora) |
 
-> **URL Base Local:** `http://localhost:3001` | **Zona Horaria Oficial:** `America/Argentina/Tucuman` (`UTC-3`)
+> **URL Local:** `http://localhost:3001` · **Zona Horaria Oficial:** `America/Argentina/Tucuman` (`UTC-3`)
 
 ---
 
-## CU-TEST-01: Módulo 1 — Estructura Territorial (Fincas, Lotes y Suelos)
+## CU-TEST-01: Autenticación y Control de Acceso (RBAC)
 
-* **Objetivo:** Validar la gestión catastral de la finca, el alta de un lote productivo y el control de integridad de superficie disponible.
-* **Actor:** Administrador Agrícola (`admin`).
-* **Precondiciones:** Sesión iniciada en `http://localhost:3001` con usuario `admin`. Finca base registrada (ej. *Finca La Esperanza*).
+* **Objetivo:** Verificar la separación estricta de vistas y endpoints según el rol autenticado.
+* **Precondiciones:** Servidor corriendo en `http://localhost:3001`.
+
+### Flujo Correcto (Happy Path)
+1. **Como `admin@agrul.local`:** Iniciar sesión → verificar en la barra lateral izquierda (hover para expandir) los **5 módulos**: *Finca*, *Producción*, *Insumos*, *Estadísticas*, *Auditoría*.
+2. **Cerrar sesión** e iniciar con **`encargado@agrul.local` (`campo123`)**:
+   - Verificar que aterriza directamente en **Producción** (lista de producciones activas).
+   - Verificar que la barra lateral muestra **únicamente** *Producción* (y el botón de salir).
+   - Verificar que no aparecen los botones **"+ Nueva Producción"** ni **"Finalizar Producción"**.
+
+### Flujos Alternativos / Casos Negativos
+1. **Contraseña incorrecta:** Ingresar clave errónea → el sistema muestra toast legible (fondo rojo claro, texto oscuro) con `"Email o contraseña incorrectos"` (HTTP `401`).
+2. **Bloqueo de endpoints para `encargado`:** Desde consola o cliente HTTP con el token de `encargado`, intentar `GET /api/v1/finca-resumen`, `POST /api/v1/producciones`, `GET /api/v1/insumos/resumen-unificado`, `GET /api/v1/dashboard/resumen` o `GET /api/v1/auditoria` → el backend rechaza todas con HTTP `403`.
+3. **Selector mínimo permitido para `encargado`:** `GET /api/v1/insumos/selector` responde `200` únicamente con `id`, `nombre`, `unidadMedida`, `stockDisponible` para poder cargar fumigaciones en campo.
+
+---
+
+## CU-TEST-02: Módulo 1 — Finca (Resumen, Edición y Distribución Territorial)
+
+* **Objetivo:** Validar el resumen de solo lectura, la edición controlada de datos de la finca y el desglose real de hectáreas por producción activa.
+* **Actor:** `admin@agrul.local`.
+
+### Flujo Correcto
+1. Ingresar al módulo **Finca** desde la barra lateral.
+2. Verificar en el encabezado el badge de contexto (*Nombre · Localidad, Provincia · Propietario*).
+3. Confirmar que la pantalla inicia en **modo solo lectura** (tarjetas de *Hectáreas Totales*, *Asignadas* y *Disponibles*, barra de ocupación territorial y bloque de *Distribución por Producción Activa* con `%` sobre el total).
+4. Hacer clic en **"Editar datos de la Finca"**, actualizar `Observaciones` o `Hectáreas Totales` (ej. de `150` a `180` ha) y guardar (`Guardar Configuración de Finca`).
+5. Verificar que regresa al modo solo lectura con los valores actualizados y el remanente disponible recalculado.
+
+### Flujos Alternativos / Casos Negativos
+1. **Reducción inválida de superficie:** Si hay `150 ha` asignadas a producciones activas, intentar editar *Hectáreas Totales* a `120 ha` (por debajo de lo ocupado) → validación HTML5 / backend (`400`/`422`) impide guardar y mantiene íntegra la superficie asignada.
+2. **Cancelar edición:** Hacer clic en **"Editar datos de la Finca"** y luego en **"Cancelar"** → vuelve al resumen sin enviar cambios ni perder información.
+
+---
+
+## CU-TEST-03: Módulo 2 — Producción (Alta, Catálogo Inline y Cierre de Ciclo)
+
+* **Objetivo:** Probar el ciclo de vida completo de una producción (creación transaccional Lote + Plantación + Ciclo, impacto en Finca y finalización).
+* **Actor:** `admin@agrul.local`.
+
+### Flujo Correcto
+1. Ir a **Producción** y hacer clic en el botón destacado **"+ Nueva Producción"** (primero en la barra superior).
+2. *(Opcional)* Usar el botón **`+ Nuevo`** junto a Cultivo o Variedad para crear un ítem inline (ej. Cultivo `Limón`, Variedad `Eureka`) y verificar que queda seleccionado automáticamente.
+3. Ingresar Fecha de inicio (hoy) y **Hectáreas** dentro del disponible (ej. `10`), y guardar.
+4. Verificar respuesta `201`, aparición inmediata en la tabla de **Activas** con estado `ACTIVA` y actualización instantánea en **Finca** (+10 ha asignadas y nueva fila en la distribución).
+5. Hacer clic en **"Finalizar Producción"** sobre esa producción de prueba, confirmar el motivo y verificar que pasa a la pestaña **Finalizadas** y libera nuevamente las `10 ha` en **Finca**.
+
+### Flujos Alternativos / Casos Negativos
+1. **Exceso de hectáreas disponibles:** Intentar crear una producción con más hectáreas que las disponibles en finca → backend responde `400`/`422` sin crear lote ni ciclo parcial.
+2. **Producción finalizada en solo lectura:** Abrir una producción `FINALIZADA` → no debe mostrar el formulario de *Nuevo Registro de Actualización*, solo el historial cronológico.
+
+---
+
+## CU-TEST-04: Módulo 2 — Fumigación / Aplicación con Descuento Automático de Stock
+
+* **Objetivo:** Verificar la transacción ACID que registra la aplicación fitosanitaria y descuenta automáticamente el stock FEFO en inventario.
+* **Actor:** `admin` o `encargado`.
 
 ### Datos de Prueba
-* **Código de Lote:** `LOT-2026-M01`
-* **Nombre / Cuartel:** `Cuartel Norte C3`
-* **Superficie:** `12.5 ha`
-* **Tipo de Suelo / Análisis:** `Franco-arcilloso (pH 6.4)`
+* **Insumo:** Cualquier insumo activo con stock > `0` (ej. `Insumo Smoke Test`, stock `5 L`).
+* **Cantidad utilizada:** `2` (`step="1"` con flechas).
+* **Superficie tratada:** `50` ha.
+* **Días de carencia:** `0` (para poder probar cosecha en CU-TEST-05) o `7` (para probar bloqueo de carencia).
 
-### Flujo Principal (Paso a Paso)
-1. En la barra lateral izquierda, ingresar a **Finca** (`data-nav="finca"`) y verificar los datos generales y la superficie total declarada de la finca.
-2. Navegar a **Lotes de la finca** (`data-nav="lotes-territorio"`).
-3. Hacer clic en **"+ Nuevo Lote"**, completar los datos de prueba (`LOT-2026-M01`, `12.5 ha`) y guardar.
-4. Filtrar la tabla por código `LOT-2026-M01` y abrir su ficha imprimible.
+### Flujo Correcto
+1. Entrar a una producción `ACTIVA` (**Abrir / Cargar Registro**).
+2. Seleccionar Tipo de Registro: **Fumigación / Aplicación (descuenta stock)**.
+3. Elegir el insumo, cargar cantidad `2`, superficie `50`, carencia `0` y pulsar **Guardar Registro**.
+4. Verificar toast de éxito (`Fumigación registrada y 2 L descontados del stock.`), aparición del evento en la línea de tiempo y reducción inmediata del stock disponible tanto en el selector como en **Insumos y Stock**.
 
-### Flujo Alternativo / Caso Negativo
-* Intentar crear un lote cuya superficie supere la superficie libre restante de la finca, o repetir el código `LOT-2026-M01`.
-* **Comportamiento esperado:** El sistema rechaza la operación (HTTP `400` / `409`) informando código duplicado o exceso de superficie territorial.
-
-### Postcondiciones Verificables
-* El lote `LOT-2026-M01` figura activo en el inventario territorial con estado inicial `CREADO` y disponible para asignar plantaciones.
+### Flujos Alternativos / Casos Negativos
+1. **Stock insuficiente:** Intentar registrar una cantidad mayor al stock disponible del insumo (ej. `999`) → el servidor responde `422 STOCK_INSUFICIENTE` con mensaje claro; el stock y el historial permanecen intactos.
+2. **Cantidad cero o negativa:** Ingresar `0` → bloqueado por validación (`min="1"` / backend `400`).
 
 ---
 
-## CU-TEST-02: Módulo 2 — Cultivos, Variedades, Plantaciones y Ciclos Productivos
+## CU-TEST-05: Módulo 2 — Cosecha y Bloqueo Estricto por Período de Carencia
 
-* **Objetivo:** Verificar el alta/consulta de cultivos y variedades, la vinculación a un lote mediante una plantación y la apertura de un ciclo productivo.
-* **Actor:** Administrador Agrícola (`admin`).
-* **Precondiciones:** Lote territorial activo disponible (ej. `LOT-2026-M01` o `LOT-2026-00001`).
+* **Objetivo:** Validar el registro de cosechas (comercializable + descarte) y el bloqueo sanitario estricto cuando existe un período de carencia vigente.
+* **Actor:** `admin` o `encargado`.
 
-### Datos de Prueba
-* **Cultivo:** `Cereza` (o `Limón` / `Vid`)
-* **Variedad:** `Lapins`
-* **Campaña / Ciclo:** `2026/2027`
-* **Superficie Implantada:** `12.5 ha`
+### Flujo Correcto (Sin carencia vigente)
+1. En una producción `ACTIVA` sin carencia vigente, seleccionar **Cosecha (verifica carencia)**.
+2. Ingresar Fecha (hoy), **Kg Comercializables:** `100`, **Kg Descarte:** `10`, **Destino:** `Empaque Central` y guardar.
+3. Verificar toast de éxito (`Cosecha COS-... registrada (110 kg).`), actualización del contador `Cosechado` en la cabecera de la producción, en la lista de producciones y en el KPI **Producción Acumulada** de **Estadísticas**.
+4. Cargar una **segunda cosecha** el mismo día en la misma producción → debe guardarse correctamente con pasada correlativa (`#2`, `#3`, etc.) sin error de duplicado.
 
-### Flujo Principal (Paso a Paso)
-1. Ingresar en el menú lateral a **Cultivos** (`data-nav="cultivos"`) y verificar la existencia del cultivo base; si no existe, darlo de alta.
-2. Ingresar a **Variedades** (`data-nav="variedades"`) y confirmar o registrar la variedad `Lapins` asociada al cultivo.
-3. Navegar a **Plantaciones** (`data-nav="plantaciones"`), seleccionar el lote destino e implantar el cultivo/variedad indicando fecha de plantación y densidad.
-4. Abrir o vincular el **Ciclo Productivo** `2026/2027` en estado `ABIERTO`.
-
-### Flujo Alternativo / Caso Negativo
-* Intentar registrar una variedad duplicada bajo el mismo cultivo o intentar asignar una plantación sobre un lote inactivo/cerrado.
-* **Comportamiento esperado:** Validación de unicidad (`VariedadDuplicadaError`) y rechazo de asignación en lotes no habilitados.
-
-### Postcondiciones Verificables
-* El lote queda vinculado al cultivo y variedad seleccionados y posee un ciclo productivo activo listo para recibir labores y cosechas.
+### Flujos Alternativos / Casos Negativos
+1. **Bloqueo por carencia activa:** En la misma producción, cargar una **Fumigación** con `Días de Carencia: 7`. Luego intentar registrar una **Cosecha** con fecha de hoy → el servidor bloquea la operación (`409 CARENCIA_FITOSANITARIA_ACTIVA`) indicando la fecha exacta hasta la cual rige la carencia, y en la cabecera del formulario aparece el aviso de carencia vigente.
+2. **Fecha inválida:** Intentar cosechar con fecha anterior al inicio de la producción o fecha futura → rechazo `400` descriptivo.
+3. **Total 0 kg:** Intentar guardar con `0` comercializable y `0` descarte → rechazo `400`.
 
 ---
 
-## CU-TEST-03: Módulo 3 — Actividades Agrícolas, Labores y Monitoreos
+## CU-TEST-06: Módulo 2 — Labores (`Plantación`), Clima, Corrección y QR
 
-* **Objetivo:** Validar el circuito completo de planificación de una actividad agrícola, ejecución por cuadrilla/maquinaria y registro de monitoreo fitosanitario de campo.
-* **Actor:** Encargado de Campo (`encargado`).
-* **Precondiciones:** Sesión iniciada como `encargado`. Lote con ciclo productivo abierto.
+* **Objetivo:** Validar labores dinámicas por unidad, eventos climáticos adversos, filtros de bitácora, edición compensatoria (`admin`) y trazabilidad/QR.
+* **Actor:** `admin` (para corrección compensatoria) y `encargado` (para cargas operativas).
 
-### Datos de Prueba
-* **Actividad Programada:** `Poda de formación / Raleo`
-* **Fecha Vencimiento:** Fecha actual + 3 días
-* **Cuadrilla / Responsable:** `Cuadrilla Norte - Operario J. Pérez`
-* **Monitoreo de Campo:** Plaga/Síntoma `Arañuela roja`, Severidad `BAJA`, Umbral `Sin intervención química`
+### Flujo Correcto
+1. **Labor `Plantación (por unidad)`:**
+   - Seleccionar Tipo de Registro **Labor / Actividad**.
+   - Verificar que al elegir **Plantación (por unidad)** aparece el campo obligatorio **Cantidad de Unidades / Plantas \*** (`step="1"`). Ingresar `250`, responsable `Cuadrilla Sur`, y guardar.
+   - Cambiar luego el selector a **Riego** o **Poda** y verificar que el campo de unidades se oculta automáticamente.
+2. **Observación / Clima:**
+   - Seleccionar **Observación / Clima**, elegir subtipo *Evento climático adverso (Helada/Granizo)*, escribir detalle `"Lluvia intensa en sector norte"`, marcar el checkbox **"Registrar también como evento climático adverso oficial"** y guardar → debe responder `201`.
+3. **Filtros y navegación:**
+   - Probar los botones de filtro del historial (`Todos`, `Fumigacion`, `Cosecha`, `Labor`, `Observacion`, `Edicion`).
+   - Hacer clic en **"← Volver a Producciones"** y confirmar que regresa al listado principal.
+4. **Corrección compensatoria (Solo `admin`):**
+   - Sobre un registro de la bitácora, ejecutar la acción de corrección indicando motivo obligatorio y nuevo valor → aparece bajo el filtro `Edicion` sin borrar ni sobrescribir el evento original.
+5. **Trazabilidad y QR:**
+   - Abrir la pestaña superior **"Trazabilidad y QR"** → verificar la generación del código QR y la URL pública del lote.
 
-### Flujo Principal (Paso a Paso)
-1. Ingresar a **Actividades programadas** (`data-nav="actividades-programadas"`).
-2. Crear una nueva actividad planificada sobre el lote objetivo con los datos de prueba.
-3. Cambiar el estado de la actividad a **Ejecutada**, registrando horas de mano de obra y maquinaria utilizada.
-4. En el módulo de **Monitoreo de Campo**, cargar una observación de plaga/síntoma sobre el mismo lote adjuntando severidad y observaciones técnicas.
-
-### Flujo Alternativo / Caso Negativo
-* Intentar ejecutar o modificar una labor sobre un ciclo productivo cerrado, o intentar eliminar físicamente (`DELETE`) una labor ya ejecutada.
-* **Comportamiento esperado:** El sistema impide modificaciones fuera de ciclo activo y bloquea el borrado físico por política de retención BPA.
-
-### Postcondiciones Verificables
-* La actividad pasa a estado `EJECUTADA` con atribución inalterable de ejecutor vs. cargador, y el monitoreo queda asentado en el historial del lote.
-
----
-
-## CU-TEST-04: Módulo 4 — Insumos Fitosanitarios, Recetas y Aplicaciones
-
-* **Objetivo:** Comprobar el registro de una aplicación fitosanitaria con cálculo de dosis y la validación automática del **período de carencia** (regla crítica de seguridad alimentaria).
-* **Actor:** Encargado de Campo (`encargado`).
-* **Precondiciones:** Insumo fitosanitario registrado en catálogo con principio activo, stock disponible y días de carencia > 0 (ej. `14 días`).
-
-### Datos de Prueba
-* **Insumo:** `Fungicida Óxido Cuproso 50%`
-* **Dosis:** `2.5 kg/ha` sobre `4 ha` (Consumo total: `10 kg`)
-* **Período de Carencia:** `14 días`
-* **Fecha de Aplicación:** Hoy
-
-### Flujo Principal (Paso a Paso)
-1. Seleccionar el lote objetivo y abrir el formulario de **Aplicación de Insumos**.
-2. Seleccionar el insumo, indicar dosis, superficie tratada y aplicador habilitado.
-3. Confirmar la aplicación verificando el cálculo automático de consumo total (`10 kg`).
-4. Consultar el estado sanitario del lote y verificar que figura **Carencia Activa** hasta `Hoy + 14 días`.
-
-### Flujo Alternativo / Caso Negativo (Bloqueo de Carencia)
-* Inmediatamente después de registrar la aplicación, dirigirse a **Cosechas realizadas** (`data-nav="cosechas"`) e intentar registrar una cosecha sobre ese mismo lote con fecha de hoy.
-* **Comportamiento esperado:** El motor de validación bloquea la operación con error de dominio (`CARENCIA_FITOSANITARIA_ACTIVA`), detallando los días restantes de carencia.
-
-### Postcondiciones Verificables
-* Se registra el evento inmutable de aplicación, se descuenta el stock en almacén y queda bloqueada la cosecha comercial hasta vencer la carencia.
+### Flujos Alternativos / Casos Negativos
+1. **Observación sin detalle:** Intentar guardar con *Detalle / Hallazgos* vacío → validación impide el envío / backend `400`.
+2. **Permiso de corrección:** Ingresar como `encargado` y verificar que no dispone de acciones de edición compensatoria sobre registros históricos.
 
 ---
 
-## CU-TEST-05: Módulo 5 — Cosechas, Pesajes, Destinos, Saldo y Despachos
+## CU-TEST-07: Módulo 3 — Insumos y Stock (Alta, Buscador Incremental y Filtros)
 
-* **Objetivo:** Validar el registro oficial de pesaje de cosecha, el cálculo de descarte y saldo comercializable, y la emisión de un despacho comercial conforme a BPA.
-* **Actor:** Encargado de Campo (`encargado`) para cosecha / Administrador (`admin`) para despacho.
-* **Precondiciones:** Lote habilitado **sin carencia activa** (ej. `LOT-2026-00002` Vid Malbec).
+* **Objetivo:** Validar la gestión unificada del catálogo simplificado, el buscador incremental letra por letra y los ingresos de stock.
+* **Actor:** `admin@agrul.local`.
 
-### Datos de Prueba
-* **Peso Bruto:** `10.000 kg` | **Tara:** `2.000 kg` | **Descarte:** `400 kg`
-* **Saldo Comercializable Esperado:** `7.600 kg`
-* **Ticket de Báscula:** `TCK-2026-091`
-* **Despacho Comercial:** Cliente `Frutícola del Sur S.A.`, Cantidad `3.000 kg`
+### Flujo Correcto
+1. Ingresar a **Insumos**.
+2. Hacer clic en **"+ Nuevo Insumo"** (botón primario con estética unificada).
+3. Verificar que el modal tiene fondo claro legible y **únicamente 6 campos**: `Código`, `Nombre`, `Unidad de medida` (`<select>`: `Litros (L)`, `Kilogramos (kg)`, `Gramos (g)`, `Mililitros (mL)`, `Unidades (u)`), `Marca`, `Categoría` y `Cantidad` (stock inicial).
+4. Crear por ejemplo `FUNG-99` · `Azoxistrobina 25%` · `Litros (L)` · `AgroSur` · `Fitosanitario` · `20`.
+5. Verificar en la tabla que aparece con stock disponible `20 L`.
+6. Probar el **buscador incremental único**: tipear letra por letra `azo`, luego `agrosur`, luego `fung` → la tabla filtra en tiempo real sin recargar la página.
+7. Abrir el botón **"Filtros"** y filtrar por categoría, unidad o *"Solo alertas de stock mínimo"*.
+8. Usar **"+ Ingresar Stock"** para sumar `10 L` adicionales y verificar que el saldo sube a `30 L`.
 
-### Flujo Principal (Paso a Paso)
-1. Ingresar a **Cosechas realizadas** (`data-nav="cosechas"`).
-2. Registrar una nueva pasada de cosecha con los pesos bruto, tara y descarte indicados.
-3. Verificar que el sistema calcula `Peso Neto = 8.000 kg` y `Saldo Comercializable = 7.600 kg`.
-4. Desde el lote cosechado, emitir un **Despacho BPA** por `3.000 kg` indicando destinatario, transporte y remito.
-5. Verificar que el saldo comercializable remanente del lote se actualiza a `4.600 kg`.
-
-### Flujo Alternativo / Caso Negativo
-* Intentar despachar `9.000 kg` (superior al saldo comercializable disponible de `7.600 kg`).
-* **Comportamiento esperado:** El sistema rechaza el despacho evitando saldo negativo y preservando la consistencia de masa.
-
-### Postcondiciones Verificables
-* Evento `COSECHA` y evento `DESPACHO` persistidos en la bitácora inmutable; saldo comercializable exactamente conciliado.
+### Flujos Alternativos / Casos Negativos
+1. **Código duplicado:** Intentar crear otro insumo con código `FUNG-99` → backend responde `409 CODIGO_INSUMO_DUPLICADO` con toast de error legible.
+2. **Búsqueda sin coincidencias:** Escribir `"ZZZZZ"` en el buscador → muestra la fila vacía *"No hay insumos que coincidan con la búsqueda."*.
 
 ---
 
-## CU-TEST-06: Módulo 6 — Motor de Trazabilidad, Linaje N:M, QR y Recall
+## CU-TEST-08: Módulo 4 — Estadísticas e Indicadores (Tablero Ejecutivo)
 
-* **Objetivo:** Validar la división atómica de lotes (`Split 1:N`), la generación/lectura de código QR y la consulta inversa de trazabilidad para retiro preventivo (**Recall**).
-* **Actor:** Administrador Agrícola (`admin`).
-* **Precondiciones:** Lote cosechado disponible con `4.600 kg` de saldo (del `CU-TEST-05` o equivalente).
+* **Objetivo:** Validar que todos los KPIs, gráficos Chart.js, alertas de stock y filtros por Finca/Producción reflejen datos reales de PostgreSQL.
+* **Actor:** `admin@agrul.local`.
 
-### Datos de Prueba
-* **Split 1:N sobre lote padre:**
-  - Hijo 1: `LOT-2026-SPLIT-A` — `3.000 kg` (Exportación)
-  - Hijo 2: `LOT-2026-SPLIT-B` — `1.500 kg` (Mercado Interno)
-  - Merma de proceso: `100 kg` (`3.000 + 1.500 + 100 = 4.600 kg`)
+### Flujo Correcto
+1. Ingresar a **Estadísticas**.
+2. Verificar los 4 KPIs superiores: *Lotes en Producción* (hectáreas ocupadas y activas reales), *Producción Acumulada* (kg totales, comercializables, descarte y `%`), *Alertas de Stock* y *Labores Urgentes*.
+3. Hacer clic en **"Ver Insumos en Alerta →"** y verificar que la tabla muestra código y nombre del insumo, categoría, stock actual, punto de reposición y consumo acumulado alineados correctamente (sin `NaN` ni `undefined`).
+4. Verificar los 3 gráficos Chart.js: *Evolución Mensual de Cosecha*, *Consumo de Insumos* y *Rendimiento por Cultivo*.
+5. En la barra de filtros, abrir el desplegable **Producción** y seleccionar una producción puntual (ej. `PROD-2026-DF1C10 · Nogal (Pecana)`):
+   - Verificar que todos los KPIs y gráficos se recalculan exclusivamente para esa producción.
+6. Probar **Limpiar** (vuelve a mostrar todas las producciones de la finca), **Exportar CSV** (descarga archivo `.csv` con BOM UTF-8) y **Exportar PDF** (dispara vista de impresión).
 
-### Flujo Principal (Paso a Paso)
-1. En **Trazabilidad de lotes** (`data-nav="lotes"`), ejecutar la operación **Dividir Lote (Split 1:N)** ingresando los dos lotes hijos y la merma.
-2. Abrir el **Visualizador Gráfico de Linaje** sobre `LOT-2026-SPLIT-A` y verificar el grafo dirigido que lo conecta con el lote padre y sus eventos previos.
-3. Generar el **Código QR** del lote hijo y verificar la vista de consulta pública de trazabilidad.
-4. Ejecutar una **Consulta Inversa (Recall)** ingresando el código del lote padre o de un insumo aplicado y verificar que el sistema lista ambos lotes descendientes (`SPLIT-A` y `SPLIT-B`) y su estado actual.
-
-### Flujo Alternativo / Caso Negativo
-* Intentar un Split donde la suma de hijos (`4.800 kg`) supere la cantidad disponible del padre (`4.600 kg`).
-* **Comportamiento esperado:** Rollback transaccional completo; ningún lote hijo es creado y el lote padre conserva su cantidad original.
-
-### Postcondiciones Verificables
-* Grafo de genealogía N:M íntegro sin ciclos, conservación exacta de masa y trazabilidad bidireccional (*trace-back* y *trace-forward*) operativa.
+### Flujos Alternativos / Casos Negativos
+1. **Filtro sin resultados en rango de fechas:** Seleccionar *Desde* y *Hasta* en un año sin movimientos (ej. `2020-01-01` a `2020-01-31`) → el tablero no falla; muestra `0 kg` en producción acumulada manteniendo el resto de la estructura estable.
 
 ---
 
-## CU-TEST-07: Módulo 7 — Indicadores Productivos y Tablero Ejecutivo (Chart.js)
+## CU-TEST-09: Módulo 5 — Auditoría (Bitácora Global y Usuarios)
 
-* **Objetivo:** Verificar el cálculo de métricas productivas, rendimiento por hectárea (`kg/ha`), porcentaje de descarte y renderizado interactivo de gráficos en el Tablero Ejecutivo.
-* **Actor:** Administrador Agrícola (`admin`).
-* **Precondiciones:** Datos de cosecha, insumos y labores registrados previamente (ej. tras ejecutar `CU-TEST-04` y `CU-TEST-05`).
+* **Objetivo:** Confirmar la trazabilidad de acciones administrativas/seguridad y la administración de cuentas.
+* **Actor:** `admin@agrul.local` o `sistema@agrul.local`.
 
-### Datos de Prueba
-* **Filtro Finca:** `Todas las Fincas` (y luego finca específica)
-* **Filtro Temporada:** `2025/2026` o `2026/2027`
+### Flujo Correcto
+1. Ingresar a **Auditoría**.
+2. En **Bitácora Global**, verificar que figuran los registros recientes (`CREAR PRODUCCION`, `CREAR FUMIGACION`, `CREAR COSECHA`, `CREAR INSUMO`, `FINALIZAR PRODUCCION`, etc.) con usuario, fecha/hora Tucumán y detalle JSON.
+3. Cambiar a la pestaña **Usuarios y Roles** y verificar el listado de usuarios (`admin`, `encargado`, `sistema`), sus perfiles y estados (`ACTIVO`).
 
-### Flujo Principal (Paso a Paso)
-1. Hacer clic en **Tablero ejecutivo** (`data-nav="tablero"` / botón `#btn-toggle-dashboard`).
-2. Verificar que las 4 tarjetas KPI superiores muestran valores reales coherentes con la base de datos:
-   - *Lotes en Producción*
-   - *Producción Acumulada (kg comercializable vs. descarte y %)*
-   - *Alertas de Stock*
-   - *Labores Urgentes*
-3. Comprobar que los 3 gráficos **Chart.js** renderizan datos visibles sin errores en consola:
-   - *Evolución Mensual de Cosecha (kg)*
-   - *Consumo de Insumos por Categoría*
-   - *Rendimiento por Cultivo (kg/ha)*
-4. Hacer clic en una leyenda del gráfico para filtrar una serie y presionar **Exportar CSV / PDF**.
-
-### Flujo Alternativo / Caso Negativo
-* Aplicar un rango de fechas futuro sin operaciones (`desde: 2029-01-01`, `hasta: 2029-12-31`).
-* **Comportamiento esperado:** El endpoint `/api/v1/dashboard/resumen` responde `200 OK` y las tarjetas muestran `0` de forma limpia sin romper los gráficos.
-
-### Postcondiciones Verificables
-* Las métricas del tablero coinciden matemáticamente con los registros transaccionales de cosechas, lotes e insumos.
-
----
-
-## CU-TEST-08: Módulo 8 — Usuarios, Roles (RBAC), Seguridad y Auditoría
-
-* **Objetivo:** Validar el control de acceso basado en roles (RBAC), la gestión de usuarios, la bitácora centralizada de seguridad y la prohibición de borrado físico (`DELETE`).
-* **Actor:** Administrador de Sistema (`sistema`).
-* **Precondiciones:** Sesión iniciada con `sistema` / `admin123`.
-
-### Datos de Prueba
-* **Usuario a inspeccionar:** `encargado` (`ENCARGADO_CAMPO`)
-* **Botones de barra lateral:** `#btn-usuarios-roles`, `#btn-bitacora-auditoria` (⚙️), `#btn-info-sistema` (ℹ️)
-
-### Flujo Principal (Paso a Paso)
-1. Verificar que el perfil `ADMIN_SISTEMA` visualiza las opciones de **Inicio** (`data-nav="inicio"`) y **Gestión de Usuarios y Cuadrillas** (`#btn-usuarios-roles`).
-2. Abrir **Auditoría y Configuración del Sistema** (botón ⚙️ `#btn-bitacora-auditoria`) y confirmar el registro cronológico de eventos de seguridad (`LOGIN_EXITOSO`, cambios de estado, etc.).
-3. Abrir el **Manual de Usuario** (botón ℹ️ `#btn-info-sistema`) y navegar por sus 6 pestañas.
-4. Cerrar sesión e iniciar sesión como `encargado`; verificar que **NO** tiene acceso a administración de usuarios ni configuración territorial de finca.
-
-### Flujo Alternativo / Caso Negativo (Política BPA de Retención)
-* Ejecutar una petición HTTP `DELETE` contra cualquier endpoint productivo bajo `/api/v1/*` (ej. `DELETE /api/v1/lotes/:id`).
-* **Comportamiento esperado:** El servidor responde HTTP `405 Method Not Allowed` bloqueando la eliminación física por política BPA de retención de 3 años.
-
-### Postcondiciones Verificables
-* Aislamiento estricto por rol garantizado, bitácora *append-only* inalterable y cero registros eliminables vía API.
-
----
-
-## CU-TEST-09: Módulo 9 — Almacén, Proveedores, Compras y Stock FIFO/FEFO
-
-* **Objetivo:** Validar el alta de proveedores, el ingreso de mercadería por remito/compra en un depósito BPA, la trazabilidad de lotes de insumo con vencimiento (FEFO) y las alertas de stock mínimo.
-* **Actor:** Administrador Agrícola (`admin`).
-* **Precondiciones:** Insumo configurado en catálogo con stock mínimo definido (ej. `20 kg`).
-
-### Datos de Prueba
-* **Proveedor:** `Agroquímicos Tucumán S.R.L.`
-* **Depósito BPA:** `Depósito Central Fitosanitarios`
-* **Compra / Ingreso:** `50 kg` en dos partidas:
-  - Partida A: Lote proveedor `P-001`, Vencimiento `2026-12-30`, Cantidad `20 kg`
-  - Partida B: Lote proveedor `P-002`, Vencimiento `2027-08-15`, Cantidad `30 kg`
-
-### Flujo Principal (Paso a Paso)
-1. Verificar/registrar el proveedor y el depósito segregado BPA.
-2. Registrar el ingreso por compra de ambas partidas con sus respectivas fechas de vencimiento y unidad de medida validada.
-3. Registrar una salida/aplicación de `25 kg` del insumo.
-4. Consultar el libro mayor de movimientos de stock y verificar el orden de consumo **FEFO** (Primero en Vencer, Primero en Salir): debe haberse consumido primero los `20 kg` completos de `P-001` y `5 kg` de `P-002`.
-
-### Flujo Alternativo / Caso Negativo
-* Enviar dos veces la misma operación de ingreso de compra con la misma clave de idempotencia, o intentar consumir más stock del disponible (`100 kg`).
-* **Comportamiento esperado:** La idempotencia evita duplicar el ingreso en el libro mayor; el exceso de consumo es rechazado atómicamente.
-
-### Postcondiciones Verificables
-* Stock remanente exacto (`25 kg` de `P-002`) y disparo automático de alerta si el remanente cae por debajo del mínimo configurado.
-
----
-
-## CU-TEST-10: Módulo 10 — Meteorología y Eventos Climáticos Adversos
-
-* **Objetivo:** Validar la carga de observaciones meteorológicas de finca y el registro de siniestros o eventos climáticos adversos que impactan sobre los lotes.
-* **Actor:** Encargado de Campo (`encargado`) o Administrador (`admin`).
-* **Precondiciones:** Lote activo en la finca.
-
-### Datos de Prueba
-* **Observación Meteorológica:** Fecha de hoy, Temperatura Máx `29.5 °C`, Mín `14.0 °C`, Humedad `68%`, Precipitación `12.5 mm`
-* **Evento Climático Adverso:** Tipo `Granizo` / `Helada`, Severidad `MODERADA`, Lote afectado `LOT-2026-00001`, Pérdida estimada `15%`
-
-### Flujo Principal (Paso a Paso)
-1. En el menú lateral, ingresar a **Meteorología** (`data-nav="meteorologia"`).
-2. Registrar la observación climática diaria con los datos de prueba (o consultar la integración climática local de Lules/Finca).
-3. Ingresar a **Eventos climáticos** (`data-nav="eventos-climaticos"`).
-4. Registrar un siniestro de granizo indicando fecha, lote afectado, severidad y porcentaje de daño estimado.
-
-### Flujo Alternativo / Caso Negativo
-* Intentar registrar dos observaciones meteorológicas duplicadas para la misma finca, fecha y fuente.
-* **Comportamiento esperado:** El sistema rechaza el duplicado (`ObservacionMeteorologicaDuplicadaError`).
-
-### Postcondiciones Verificables
-* La serie histórica climática del lote se actualiza y el evento adverso queda trazado como contexto oficial para justificar mermas de rendimiento.
-
----
-
-## CU-TEST-11: Módulo 11 — Poscosecha, Clasificación, Acondicionamiento y Cámaras de Frío
-
-* **Objetivo:** Validar el ingreso de fruta cosechada a planta de empaque, su clasificación por calibre/calidad, el acondicionamiento en pallets y la asignación a cámara frigorífica con control térmico.
-* **Actor:** Administrador Agrícola (`admin`) o Responsable de Empaque.
-* **Precondiciones:** Lote cosechado disponible pendiente de acondicionamiento (ej. `8.000 kg` netos).
-
-### Datos de Prueba
-* **Recepción en Empaque:** `8.000 kg`
-* **Clasificación:**
-  - Calibre `Exportación J+` — `5.200 kg` (520 cajas de 10 kg)
-  - Calibre `Comercial M` — `2.500 kg` (250 cajas de 10 kg)
-  - Descarte de empaque — `300 kg`
-* **Cámara de Frío Destino:** `Cámara Frigorífica N° 1` (`0.5 °C`)
-
-### Flujo Principal (Paso a Paso)
-1. Seleccionar el lote cosechado y registrar la **Recepción en Poscosecha**.
-2. Ejecutar la **Clasificación y Acondicionamiento** distribuyendo los kilos en calibres comerciales y declarando el descarte de línea.
-3. Asignar los pallets/cajas resultantes a la `Cámara Frigorífica N° 1`, registrando temperatura de ingreso (`0.5 °C`).
-4. Consultar el inventario de cámaras y verificar el stock embalado listo para despacho.
-
-### Flujo Alternativo / Caso Negativo
-* Intentar clasificar una cantidad total que no concilie con el peso ingresado a empaque (ej. sumar `8.500 kg` a partir de `8.000 kg` recibidos).
-* **Comportamiento esperado:** El sistema bloquea la operación por inconsistencia de balance de masa (`ConflictoPoscosechaError`).
-
-### Postcondiciones Verificables
-* Lotes acondicionados en estado `EMBALADO` dentro de cámara frigorífica con trazabilidad intacta hasta el lote de origen en campo.
-
+### Flujos Alternativos / Casos Negativos
+1. **Inmutabilidad de bitácora:** No existen botones de edición ni eliminación sobre los eventos de auditoría; toda corrección operativa queda trazada como evento nuevo.
