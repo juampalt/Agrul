@@ -760,12 +760,6 @@ export class ProduccionesService {
           if (restante <= 0) break;
           const disp = Number(p.cantidadDisponible);
           const usar = Math.min(disp, restante);
-          const nuevoDisp = Math.max(0, disp - usar);
-
-          await tx
-            .update(partidasInsumoTable)
-            .set({ cantidadDisponible: nuevoDisp.toFixed(2) })
-            .where(eq(partidasInsumoTable.id, p.id));
 
           await tx.insert(aplicacionesInsumoItemsTable).values({
             aplicacionId: apl.id,
@@ -895,8 +889,18 @@ export class ProduccionesService {
     if (tipo === 'LABOR') {
       const nombreLabor = String(payload.tipoLabor || 'Mantenimiento').trim();
       const responsableNombre = String(payload.responsable || '').trim();
-      const observaciones = String(payload.observaciones || '').trim();
-      const categoria = String(payload.categoria || 'MANTENIMIENTO').toUpperCase() as CategoriaTipoActividad;
+      const cantidadUnidades = Math.max(0, Math.round(Number(payload.cantidadUnidades || 0)));
+      const obsBase = String(payload.observaciones || '').trim();
+      const observaciones = cantidadUnidades > 0
+        ? [obsBase, `Cantidad: ${cantidadUnidades} unidades`].filter(Boolean).join(' · ')
+        : obsBase;
+      const categoria = (
+        payload.categoria
+          ? String(payload.categoria).toUpperCase()
+          : nombreLabor.toLowerCase().includes('plantac')
+            ? 'PLANTACION'
+            : 'MANTENIMIENTO'
+      ) as CategoriaTipoActividad;
 
       return this.db.transaction(async (tx) => {
         const tipoAct = await this.resolverTipoActividad(tx, nombreLabor, categoria);
@@ -909,8 +913,15 @@ export class ProduccionesService {
             fechaEjecucion: fecha,
             responsableId: usuario.sub,
             observaciones: observaciones || null,
-            descripcionTrabajo: responsableNombre ? `${nombreLabor} · Cuadrilla/Resp.: ${responsableNombre}` : nombreLabor,
-            datosEspecificos: { responsableNombre },
+            descripcionTrabajo: [
+              nombreLabor,
+              cantidadUnidades > 0 ? `${cantidadUnidades} u.` : null,
+              responsableNombre ? `Cuadrilla/Resp.: ${responsableNombre}` : null,
+            ].filter(Boolean).join(' · '),
+            datosEspecificos: {
+              responsableNombre,
+              ...(cantidadUnidades > 0 ? { cantidadUnidades } : {}),
+            },
           })
           .returning();
 
@@ -920,7 +931,12 @@ export class ProduccionesService {
           ubicacionId: lote.fincaId || lote.id,
           tipoEvento: 'LABOR_CAMPO',
           timestampCapturaLocal: new Date().toISOString(),
-          payloadEspecifico: { actividadId: act.id, labor: nombreLabor, responsableNombre },
+          payloadEspecifico: {
+            actividadId: act.id,
+            labor: nombreLabor,
+            responsableNombre,
+            ...(cantidadUnidades > 0 ? { cantidadUnidades } : {}),
+          },
         });
 
         return { id: act.id, tipo: 'LABOR', mensaje: `Labor "${nombreLabor}" registrada.` };
@@ -1309,5 +1325,206 @@ export class ProduccionesService {
       .values({ cultivoId, nombre: limpio, estado: 'ACTIVO' })
       .returning();
     return creado;
+  }
+
+  async obtenerDashboardResumenUnificado(filtros: {
+    fincaId?: string;
+    temporada?: string;
+    desde?: string;
+    hasta?: string;
+  } = {}) {
+    const finca = await this.obtenerFincaPrincipal();
+    const producciones = await this.listarProducciones('TODAS');
+    const produccionesFiltradas = filtros.temporada
+      ? producciones.filter((p) => p.fechaInicio.startsWith(filtros.temporada!.slice(0, 4)))
+      : producciones;
+
+    const activas = produccionesFiltradas.filter((p) => p.estado === 'ACTIVA');
+    const lotes = await this.db.select().from(lotesTable);
+    const lotesScope = filtros.fincaId ? lotes.filter((l) => l.fincaId === filtros.fincaId) : lotes;
+    const superficieFinca = Number(finca.superficieTotalHa || 0);
+    const superficieEnProduccionHa = Math.round(activas.reduce((acc, p) => acc + p.hectareas, 0) * 100) / 100;
+
+    // Cosechas reales desde PostgreSQL
+    const cicloIdsSet = new Set(produccionesFiltradas.map((p) => p.id));
+    const cosechasRows = await this.db.select().from(cosechasTable);
+    const cosechas = cosechasRows.filter((c) => {
+      if (c.estado === 'ANULADA') return false;
+      if (cicloIdsSet.size > 0 && c.cicloId && !cicloIdsSet.has(c.cicloId)) return false;
+      if (filtros.desde && c.fecha < filtros.desde) return false;
+      if (filtros.hasta && c.fecha > filtros.hasta) return false;
+      return true;
+    });
+
+    const totalKilosCosechados = Math.round(cosechas.reduce((a, c) => a + Number(c.cantidadCosechadaKg || 0), 0) * 100) / 100;
+    const totalKilosComercializables = Math.round(cosechas.reduce((a, c) => a + Number(c.cantidadComercializableKg || 0), 0) * 100) / 100;
+    const totalKilosDescarte = Math.round(cosechas.reduce((a, c) => a + Number(c.cantidadDescarteKg || 0), 0) * 100) / 100;
+    const porcentajeDescarte = totalKilosCosechados > 0
+      ? Math.round((totalKilosDescarte / totalKilosCosechados) * 10000) / 100
+      : 0;
+
+    // Stock e insumos reales desde PostgreSQL
+    const { insumos } = await this.obtenerResumenInsumosUnificado();
+    const alertas: Array<{
+      insumoId: string;
+      codigo: string;
+      nombre: string;
+      categoria: string;
+      unidadMedida: string;
+      stockActual: number;
+      nivelMinimo: number;
+      nivelAlerta: 'CRITICO' | 'BAJO';
+    }> = [];
+    let insumosStockCritico = 0;
+    let insumosStockBajo = 0;
+    for (const ins of insumos) {
+      if (ins.nivelMinimo > 0 && ins.stockDisponible <= ins.nivelMinimo * 0.4) {
+        insumosStockCritico += 1;
+        alertas.push({
+          insumoId: ins.id,
+          codigo: ins.codigo,
+          nombre: ins.nombre,
+          categoria: ins.categoria,
+          unidadMedida: ins.unidadMedida,
+          stockActual: ins.stockDisponible,
+          nivelMinimo: ins.nivelMinimo,
+          nivelAlerta: 'CRITICO',
+        });
+      } else if (ins.nivelMinimo > 0 && ins.stockDisponible <= ins.nivelMinimo) {
+        insumosStockBajo += 1;
+        alertas.push({
+          insumoId: ins.id,
+          codigo: ins.codigo,
+          nombre: ins.nombre,
+          categoria: ins.categoria,
+          unidadMedida: ins.unidadMedida,
+          stockActual: ins.stockDisponible,
+          nivelMinimo: ins.nivelMinimo,
+          nivelAlerta: 'BAJO',
+        });
+      }
+    }
+
+    // Consumo por categoría desde aplicaciones_insumo_items + insumos
+    const itemsApl = await this.db.select().from(aplicacionesInsumoItemsTable);
+    const insumoCatMap = new Map(insumos.map((i) => [i.id, i]));
+    const consumoCat = new Map<string, number>();
+    for (const it of itemsApl) {
+      const ins = insumoCatMap.get(it.insumoId);
+      const cat = ins ? ins.categoria : 'OTRO';
+      consumoCat.set(cat, (consumoCat.get(cat) || 0) + Number(it.cantidadAplicada || 0));
+    }
+    const categorias = [...consumoCat.keys()];
+    const volumenTotal = categorias.map((c) => Math.round((consumoCat.get(c) || 0) * 100) / 100);
+    const sumVol = volumenTotal.reduce((a, b) => a + b, 0);
+    const porcentajes = volumenTotal.map((v) => (sumVol > 0 ? Math.round((v / sumVol) * 1000) / 10 : 0));
+
+    // Evolución mensual de cosecha
+    const mesesMap = new Map<string, { bruto: number; comercial: number; descarte: number }>();
+    for (const c of cosechas) {
+      const mes = String(c.fecha || '').slice(0, 7) || hoyIsoTucuman().slice(0, 7);
+      const cur = mesesMap.get(mes) || { bruto: 0, comercial: 0, descarte: 0 };
+      cur.bruto += Number(c.cantidadCosechadaKg || 0);
+      cur.comercial += Number(c.cantidadComercializableKg || 0);
+      cur.descarte += Number(c.cantidadDescarteKg || 0);
+      mesesMap.set(mes, cur);
+    }
+    const labelsMeses = [...mesesMap.keys()].sort();
+    if (labelsMeses.length === 0) {
+      labelsMeses.push(hoyIsoTucuman().slice(0, 7));
+      mesesMap.set(labelsMeses[0], { bruto: 0, comercial: 0, descarte: 0 });
+    }
+
+    // Rendimiento por cultivo
+    const cultMap = new Map<string, { ha: number; bruto: number; comercial: number }>();
+    for (const p of produccionesFiltradas) {
+      const cur = cultMap.get(p.cultivoNombre) || { ha: 0, bruto: 0, comercial: 0 };
+      cur.ha += p.hectareas;
+      cultMap.set(p.cultivoNombre, cur);
+    }
+    const prodByCiclo = new Map(produccionesFiltradas.map((p) => [p.id, p]));
+    for (const c of cosechas) {
+      const prod = c.cicloId ? prodByCiclo.get(c.cicloId) : undefined;
+      if (!prod) continue;
+      const cur = cultMap.get(prod.cultivoNombre) || { ha: prod.hectareas, bruto: 0, comercial: 0 };
+      cur.bruto += Number(c.cantidadCosechadaKg || 0);
+      cur.comercial += Number(c.cantidadComercializableKg || 0);
+      cultMap.set(prod.cultivoNombre, cur);
+    }
+    const cultivosNombres = [...cultMap.keys()];
+    const rendimientoBrutoKgHa = cultivosNombres.map((k) => {
+      const v = cultMap.get(k)!;
+      return v.ha > 0 ? Math.round((v.bruto / v.ha) * 100) / 100 : 0;
+    });
+    const rendimientoComercialKgHa = cultivosNombres.map((k) => {
+      const v = cultMap.get(k)!;
+      return v.ha > 0 ? Math.round((v.comercial / v.ha) * 100) / 100 : 0;
+    });
+
+    const actividadesCountRows = await this.db.select().from(actividadesRealizadasTable);
+
+    return {
+      kpis: {
+        lotesEnProduccion: {
+          totalLotes: lotesScope.length,
+          lotesActivos: activas.length,
+          superficieTotalHa: superficieFinca,
+          superficieEnProduccionHa,
+          ciclosEnCurso: activas.length,
+        },
+        produccionAcumulada: {
+          totalKilosCosechados,
+          totalKilosComercializables,
+          totalKilosDescarte,
+          porcentajeDescarte,
+          totalCosechas: cosechas.length,
+        },
+        alertasStockInsumos: {
+          totalInsumosMonitoreados: insumos.length,
+          insumosStockCritico,
+          insumosStockBajo,
+          alertas,
+        },
+        actividadesVencidasOPendientes: {
+          totalActividades: actividadesCountRows.length,
+          pendientesPlanificadas: 0,
+          vencidas: 0,
+          proximasAVencer7Dias: 0,
+          items: [],
+        },
+      },
+      graficos: {
+        evolucionCosecha: {
+          labels: labelsMeses,
+          datasets: {
+            kilosBrutos: labelsMeses.map((m) => Math.round((mesesMap.get(m)?.bruto || 0) * 100) / 100),
+            kilosComercializables: labelsMeses.map((m) => Math.round((mesesMap.get(m)?.comercial || 0) * 100) / 100),
+            kilosDescarte: labelsMeses.map((m) => Math.round((mesesMap.get(m)?.descarte || 0) * 100) / 100),
+          },
+        },
+        consumoInsumosPorCategoria: {
+          categorias: categorias.length > 0 ? categorias : ['SIN_CONSUMO'],
+          volumenTotal: volumenTotal.length > 0 ? volumenTotal : [0],
+          porcentajes: porcentajes.length > 0 ? porcentajes : [0],
+          unidades: categorias.map(() => 'u'),
+        },
+        rendimientoPorCultivo: {
+          cultivos: cultivosNombres,
+          rendimientoBrutoKgHa,
+          rendimientoComercialKgHa,
+        },
+      },
+      costosPorLote: produccionesFiltradas.map((p) => ({
+        loteId: p.loteId,
+        codigoLote: p.codigo,
+        nombreLote: `${p.cultivoNombre} (${p.variedadNombre})`,
+        superficieHa: p.hectareas,
+        costoInsumos: 0,
+        costoManoObra: 0,
+        costoMaquinaria: 0,
+        costoTotal: 0,
+        costoPorHa: 0,
+      })),
+    };
   }
 }

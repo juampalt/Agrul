@@ -156,4 +156,10 @@ export class ProduccionesController {
     const data = await this.service.crearInsumoConStock(body, req.usuario!.sub);
     return ok(reply, data, 201);
   }
+
+  async dashboardResumen(req: FastifyRequest, reply: FastifyReply) {
+    const query = (req.query || {}) as { fincaId?: string; temporada?: string; desde?: string; hasta?: string };
+    const data = await this.service.obtenerDashboardResumenUnificado(query);
+    return ok(reply, data);
+  }
 }

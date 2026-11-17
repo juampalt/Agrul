@@ -294,7 +294,11 @@ export function registerApiRoutes(fastify: FastifyInstance, deps: ApiRoutesDepen
       }
 
       // Dashboard Operativo y Tablero Ejecutivo (Solo ADMINISTRADOR)
-      if (deps.dashboardController) {
+      if (deps.produccionesController) {
+        const soloAdminStats = { preHandler: [denegarSiPerfil('ENCARGADO_CAMPO', 'ADMIN_SISTEMA')] };
+        v1.get('/dashboard/resumen', soloAdminStats, (req, rep) => deps.produccionesController!.dashboardResumen(req, rep));
+        v1.get('/dashboard', soloAdminStats, (req, rep) => deps.produccionesController!.dashboardResumen(req, rep));
+      } else if (deps.dashboardController) {
         const soloAdminStats = { preHandler: [denegarSiPerfil('ENCARGADO_CAMPO', 'ADMIN_SISTEMA')] };
         v1.get('/dashboard/resumen', soloAdminStats, (req, rep) => deps.dashboardController!.obtenerResumen(req, rep));
         v1.get('/dashboard', soloAdminStats, (req, rep) => deps.dashboardController!.obtenerResumen(req, rep));

@@ -132,7 +132,7 @@
         const form = el('form', { class: 'form-grid glass tarjeta-form', novalidate: true },
           el('div', { class: 'campo' }, el('label', {}, 'Nombre de la Finca *'), el('input', { id: 'f-nombre', type: 'text', value: finca.nombre, required: true })),
           el('div', { class: 'campo' }, el('label', {}, 'Propietario'), el('input', { id: 'f-propietario', type: 'text', value: finca.propietario || '' })),
-          el('div', { class: 'campo' }, el('label', {}, 'Hectáreas Totales (ha) *'), el('input', { id: 'f-hectareas', type: 'number', step: '0.01', min: finca.hectareasAsignadas, value: finca.hectareasTotales, required: true })),
+          el('div', { class: 'campo' }, el('label', {}, 'Hectáreas Totales (ha) *'), el('input', { id: 'f-hectareas', type: 'number', step: '1', min: Math.ceil(finca.hectareasAsignadas || 1), value: finca.hectareasTotales, required: true })),
           el('div', { class: 'campo' }, el('label', {}, 'Localidad *'), el('input', { id: 'f-localidad', type: 'text', value: finca.localidad, required: true })),
           el('div', { class: 'campo' }, el('label', {}, 'Provincia *'), el('input', { id: 'f-provincia', type: 'text', value: finca.provincia, required: true })),
           el('div', { class: 'campo campo-completo' }, el('label', {}, 'Observaciones'), el('textarea', { id: 'f-obs', rows: 3 }, finca.observaciones || '')),
@@ -300,7 +300,7 @@
     const selCultivo = el('select', { id: 'np-cultivo', required: true });
     const selVariedad = el('select', { id: 'np-variedad', required: true });
     const inputFecha = el('input', { id: 'np-fecha', type: 'date', value: hoyInput(), required: true });
-    const inputHa = el('input', { id: 'np-ha', type: 'number', step: '0.01', min: '0.01', max: finca ? finca.hectareasDisponibles : '', placeholder: finca ? `Máx ${finca.hectareasDisponibles} ha` : 'Ej: 10', required: true });
+    const inputHa = el('input', { id: 'np-ha', type: 'number', step: '1', min: '1', max: finca ? finca.hectareasDisponibles : '', placeholder: finca ? `Máx ${finca.hectareasDisponibles} ha` : 'Ej: 10', required: true });
     const inputObs = el('textarea', { id: 'np-obs', rows: 2, placeholder: 'Notas iniciales de implantación...' });
 
     function poblarVariedades() {
@@ -488,32 +488,47 @@
             );
             camposCont.replaceChildren(
               el('div', { class: 'campo' }, el('label', {}, 'Insumo *'), selIns),
-              el('div', { class: 'campo' }, el('label', {}, 'Cantidad Utilizada *'), el('input', { id: 'reg-cantidad', type: 'number', step: '0.01', min: '0.01', required: true })),
-              el('div', { class: 'campo' }, el('label', {}, 'Superficie Tratada (ha) *'), el('input', { id: 'reg-sup', type: 'number', step: '0.01', min: '0.01', value: p.hectareas, required: true })),
-              el('div', { class: 'campo' }, el('label', {}, 'Días de Carencia'), el('input', { id: 'reg-carencia', type: 'number', min: '0', value: '0' })),
+              el('div', { class: 'campo' }, el('label', {}, 'Cantidad Utilizada *'), el('input', { id: 'reg-cantidad', type: 'number', step: '1', min: '1', required: true })),
+              el('div', { class: 'campo' }, el('label', {}, 'Superficie Tratada (ha) *'), el('input', { id: 'reg-sup', type: 'number', step: '1', min: '1', value: p.hectareas, required: true })),
+              el('div', { class: 'campo' }, el('label', {}, 'Días de Carencia'), el('input', { id: 'reg-carencia', type: 'number', step: '1', min: '0', value: '0' })),
               el('div', { class: 'campo campo-completo' }, el('label', {}, 'Observaciones'), el('input', { id: 'reg-obs', type: 'text', placeholder: 'Detalles de aplicación, dosis o clima' }))
             );
           } else if (tipoActual === 'COSECHA') {
             camposCont.replaceChildren(
               el('div', { class: 'campo' }, el('label', {}, 'Fecha *'), el('input', { id: 'reg-fecha', type: 'date', value: hoyInput(), required: true })),
-              el('div', { class: 'campo' }, el('label', {}, 'Kg Comercializables *'), el('input', { id: 'reg-kg-com', type: 'number', step: '0.1', min: '0.1', required: true })),
-              el('div', { class: 'campo' }, el('label', {}, 'Kg Descarte'), el('input', { id: 'reg-kg-desc', type: 'number', step: '0.1', min: '0', value: '0' })),
+              el('div', { class: 'campo' }, el('label', {}, 'Kg Comercializables *'), el('input', { id: 'reg-kg-com', type: 'number', step: '1', min: '1', required: true })),
+              el('div', { class: 'campo' }, el('label', {}, 'Kg Descarte'), el('input', { id: 'reg-kg-desc', type: 'number', step: '1', min: '0', value: '0' })),
               el('div', { class: 'campo' }, el('label', {}, 'Destino / Cliente'), el('input', { id: 'reg-destino', type: 'text', placeholder: 'Ej: Empaque Central / Mercado' })),
               el('div', { class: 'campo campo-completo' }, el('label', {}, 'Observaciones'), el('input', { id: 'reg-obs', type: 'text' }))
             );
           } else if (tipoActual === 'LABOR') {
+            const selLabor = el('select', { id: 'reg-labor' },
+              el('option', { value: 'Plantación' }, 'Plantación (por unidad)'),
+              el('option', { value: 'Riego' }, 'Riego'),
+              el('option', { value: 'Poda' }, 'Poda'),
+              el('option', { value: 'Preparación de suelo' }, 'Preparación de suelo'),
+              el('option', { value: 'Fertilización manual' }, 'Fertilización manual'),
+              el('option', { value: 'Desmalezado' }, 'Desmalezado'),
+              el('option', { value: 'Mantenimiento general' }, 'Mantenimiento general')
+            );
+            const campoUnidades = el('div', { class: 'campo', id: 'wrap-reg-unidades' },
+              el('label', {}, 'Cantidad de Unidades / Plantas *'),
+              el('input', { id: 'reg-unidades', type: 'number', step: '1', min: '1', placeholder: 'Ej: 250', required: true })
+            );
+            const actualizarLabor = () => {
+              const esPlantacion = selLabor.value === 'Plantación';
+              campoUnidades.style.display = esPlantacion ? '' : 'none';
+              const inpU = campoUnidades.querySelector('#reg-unidades');
+              if (inpU) inpU.required = esPlantacion;
+            };
+            selLabor.addEventListener('change', actualizarLabor);
+            actualizarLabor();
             camposCont.replaceChildren(
-              el('div', { class: 'campo' }, el('label', {}, 'Tipo de Labor *'), el('select', { id: 'reg-labor' },
-                el('option', { value: 'Riego' }, 'Riego'),
-                el('option', { value: 'Poda' }, 'Poda'),
-                el('option', { value: 'Preparación de suelo' }, 'Preparación de suelo'),
-                el('option', { value: 'Fertilización manual' }, 'Fertilización manual'),
-                el('option', { value: 'Desmalezado' }, 'Desmalezado'),
-                el('option', { value: 'Mantenimiento general' }, 'Mantenimiento general')
-              )),
+              el('div', { class: 'campo' }, el('label', {}, 'Tipo de Labor *'), selLabor),
+              campoUnidades,
               el('div', { class: 'campo' }, el('label', {}, 'Fecha *'), el('input', { id: 'reg-fecha', type: 'date', value: hoyInput(), required: true })),
               el('div', { class: 'campo' }, el('label', {}, 'Responsable / Cuadrilla'), el('input', { id: 'reg-resp', type: 'text', placeholder: 'Ej: Cuadrilla Sur' })),
-              el('div', { class: 'campo' }, el('label', {}, 'Observaciones'), el('input', { id: 'reg-obs', type: 'text' }))
+              el('div', { class: 'campo campo-completo' }, el('label', {}, 'Observaciones'), el('input', { id: 'reg-obs', type: 'text' }))
             );
           } else {
             camposCont.replaceChildren(
@@ -554,6 +569,10 @@
                 body.fecha = formReg.querySelector('#reg-fecha').value;
                 body.responsable = formReg.querySelector('#reg-resp').value;
                 body.observaciones = formReg.querySelector('#reg-obs').value;
+                const inpU = formReg.querySelector('#reg-unidades');
+                if (body.tipoLabor === 'Plantación' && inpU && inpU.value) {
+                  body.cantidadUnidades = Number(inpU.value);
+                }
               } else {
                 body.subtipo = formReg.querySelector('#reg-subtipo').value;
                 body.fecha = formReg.querySelector('#reg-fecha').value;
@@ -859,7 +878,7 @@
             el('option', { value: 'ENMIENDA' }, 'Enmienda'),
             el('option', { value: 'OTRO' }, 'Otro')
           )),
-          el('div', { class: 'campo' }, el('label', {}, 'Cantidad (stock inicial) *'), el('input', { id: 'ni-cant', type: 'number', step: '0.01', min: '0', value: '0', required: true })),
+          el('div', { class: 'campo' }, el('label', {}, 'Cantidad (stock inicial) *'), el('input', { id: 'ni-cant', type: 'number', step: '1', min: '0', value: '0', required: true })),
           el('div', { class: 'form-acciones' },
             el('button', { type: 'button', class: 'btn btn-secondary', onclick: () => overlay.remove() }, 'Cancelar'),
             el('button', { type: 'submit', class: 'btn btn-primary' }, 'Guardar Insumo')
@@ -897,7 +916,7 @@
           },
         },
           el('div', { class: 'campo campo-completo' }, el('label', {}, 'Insumo *'), sel),
-          el('div', { class: 'campo' }, el('label', {}, 'Cantidad *'), el('input', { id: 'is-cant', type: 'number', step: '0.01', min: '0.01', required: true })),
+          el('div', { class: 'campo' }, el('label', {}, 'Cantidad *'), el('input', { id: 'is-cant', type: 'number', step: '1', min: '1', required: true })),
           el('div', { class: 'campo' }, el('label', {}, 'Vencimiento (FEFO)'), el('input', { id: 'is-venc', type: 'date' })),
           el('div', { class: 'campo campo-completo' }, el('label', {}, 'Proveedor (opcional)'), el('input', { id: 'is-prov', type: 'text', placeholder: 'Proveedor General BPA' })),
           el('div', { class: 'form-acciones' },
@@ -986,6 +1005,13 @@
         sec.recargar = () => pantallas[nombre](sec);
       }
     });
+    const secTablero = document.getElementById('vista-tablero');
+    if (secTablero) {
+      secTablero.recargar = () => {
+        const btn = document.getElementById('btn-dash-filtrar');
+        if (btn) btn.click();
+      };
+    }
     const actual = document.body.dataset.vista;
     if (actual && ['finca', 'produccion', 'insumos', 'auditoria'].includes(actual)) {
       const secActual = document.getElementById('vista-' + actual);
