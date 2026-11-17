@@ -69,7 +69,7 @@
      ========================================================================= */
   let fincaEditando = false;
 
-  pantallas.finca = async function renderFinca(raiz) {
+  async function renderFinca(raiz) {
     raiz.innerHTML = '<div class="pantalla-cab"><div><h2>Finca</h2><p>Cargando configuración territorial...</p></div></div>';
     try {
       const finca = await apiJson('/finca-resumen');
@@ -201,7 +201,7 @@
   let estadoFiltroProd = 'ACTIVA';
   let produccionAbiertaId = null;
 
-  pantallas.produccion = async function renderProduccion(raiz) {
+  async function renderProduccion(raiz) {
     if (produccionAbiertaId) {
       return renderDetalleProduccion(raiz, produccionAbiertaId, 'TODOS', 'BITACORA');
     }
@@ -573,11 +573,11 @@
           el('div', { class: 'form-acciones' }, el('button', { type: 'submit', class: 'btn btn-primary' }, 'Guardar Registro'))
         );
 
-        bloqueForm.replaceChildren(
+        bloqueForm.replaceChildren(...[
           el('h3', { style: 'margin-bottom:12px' }, 'Nuevo Registro de Actualización'),
           p.carenciaActivaHasta ? el('p', { class: 'pill pill-pendiente', style: 'margin-bottom:12px' }, `⚠ Período de carencia vigente hasta ${p.carenciaActivaHasta} (cosechas bloqueadas)`) : null,
           formReg
-        );
+        ].filter(Boolean));
       } else {
         bloqueForm.replaceChildren(el('p', { class: 'ayuda' }, 'Esta producción está FINALIZADA. El historial es de solo lectura.'));
       }
@@ -649,7 +649,7 @@
   let insumoSoloAlertas = false;
   let insumoMostrarFiltros = false;
 
-  pantallas.insumos = async function renderInsumos(raiz) {
+  async function renderInsumos(raiz) {
     raiz.innerHTML = '<div class="pantalla-cab"><div><h2>Insumos y Stock</h2><p>Cargando inventario...</p></div></div>';
     try {
       const data = await apiJson('/insumos/resumen-unificado');
@@ -913,7 +913,7 @@
   /* =========================================================================
      MÓDULO 5: AUDITORÍA (ADMINISTRADOR y ADMIN_SISTEMA)
      ========================================================================= */
-  pantallas.auditoria = async function renderAuditoria(raiz, tab = 'LOGS') {
+  async function renderAuditoria(raiz, tab = 'LOGS') {
     raiz.innerHTML = '<div class="pantalla-cab"><div><h2>Auditoría</h2><p>Cargando bitácora inmutable y usuarios...</p></div></div>';
     try {
       const [audData, usuariosData] = await Promise.all([
@@ -973,6 +973,11 @@
     }
   };
 
+  pantallas.finca = renderFinca;
+  pantallas.produccion = renderProduccion;
+  pantallas.insumos = renderInsumos;
+  pantallas.auditoria = renderAuditoria;
+
   /* Vincular .recargar() en cada sección para que public/vistas.js las renderice al instante */
   function vincularVistas() {
     ['finca', 'produccion', 'insumos', 'auditoria'].forEach((nombre) => {
@@ -988,5 +993,5 @@
     }
   }
   vincularVistas();
-  document.addEventListener('agrul:sesion', () => setTimeout(vincularVistas, 0));
+  document.addEventListener('agrul:sesion', vincularVistas);
 })();

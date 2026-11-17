@@ -951,21 +951,25 @@ export class ProduccionesService {
           .returning();
 
         if (esClima && lote.fincaId) {
-          const [evClima] = await tx
-            .insert(eventosClimaticosTable)
-            .values({
-              fincaId: lote.fincaId,
-              tipoEvento: subtipo.slice(0, 50),
-              fecha,
-              descripcion: hallazgos,
-              responsableId: usuario.sub,
-            })
-            .returning();
-          await tx.insert(eventosClimaticosLotesTable).values({
-            eventoId: evClima.id,
-            loteId: lote.id,
-            descripcionDano: hallazgos,
-          });
+          const tablaClima = await tx.execute(sql`SELECT to_regclass('public.eventos_climaticos') AS reg`);
+          const existeTablaClima = Boolean((tablaClima.rows?.[0] as { reg?: string | null } | undefined)?.reg);
+          if (existeTablaClima) {
+            const [evClima] = await tx
+              .insert(eventosClimaticosTable)
+              .values({
+                fincaId: lote.fincaId,
+                tipoEvento: subtipo.slice(0, 50),
+                fecha,
+                descripcion: hallazgos,
+                responsableId: usuario.sub,
+              })
+              .returning();
+            await tx.insert(eventosClimaticosLotesTable).values({
+              eventoId: evClima.id,
+              loteId: lote.id,
+              descripcionDano: hallazgos,
+            });
+          }
         }
 
         await tx.insert(eventosTrazabilidadTable).values({

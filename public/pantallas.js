@@ -316,7 +316,7 @@
   const cultivosRemoto = { ruta: '/cultivos?estado=ACTIVO', etiqueta: f => f.nombre };
 
   async function configurar() {
-    pantallaFinca();
+    // Finca e Insumos son gestionados por modulos-unificados.js (5 módulos consolidados).
     try { await cargarOpciones({ remoto: { ruta: '/cultivos', etiqueta: f => f.nombre } }); } catch (_) { /* se muestra el id */ }
 
     pantallaListado({ id: 'lotes-territorio', titulo: 'Lotes de la finca', nombreSingular: 'lote', textoNuevo: 'Nuevo lote', mensajeAlta: 'Lote registrado.',
@@ -378,27 +378,6 @@
         { name: 'cultivoIds', label: 'Cultivos aplicables', tipo: 'multi', req: true, remoto: cultivosRemoto, ancho: 'completo' },
         { name: 'descripcion', label: 'Descripción', tipo: 'area', vacioComo: null, ancho: 'completo' }],
       desactivar: { activo: f => f.estado === 'ACTIVA', confirmar: f => `¿Desactivar el tipo «${f.nombre}»?` } });
-
-    pantallaListado({ id: 'insumos', titulo: 'Insumos', nombreSingular: 'insumo', textoNuevo: 'Nuevo insumo', mensajeAlta: 'Insumo registrado.',
-      descripcion: 'Catálogo de insumos. El código no se puede cambiar. Con «Detalle» ves dónde se aplicó cada insumo.',
-      ruta: '/insumos', vacio: 'Todavía no hay insumos registrados.',
-      filtros: [{ name: 'codigo', label: 'Código', max: 15 }, { name: 'nombre', label: 'Nombre', max: 200 },
-        { name: 'categoria', label: 'Categoría', tipo: 'select', opciones: CATEGORIAS_INSUMO },
-        { name: 'estado', label: 'Estado', tipo: 'select', opciones: ESTADOS_ACTIVO }],
-      columnas: [{ titulo: 'Código', valor: f => f.codigo }, { titulo: 'Nombre', valor: f => f.nombre },
-        { titulo: 'Categoría', valor: f => nombreDe(CATEGORIAS_INSUMO, f.categoria) }, { titulo: 'Unidad', valor: f => f.unidadMedida },
-        { titulo: 'Nivel mínimo', valor: f => numero(f.nivelMinimo) }, { titulo: 'Estado', valor: f => pill(f.estado) }],
-      campos: [{ name: 'codigo', label: 'Código', req: true, max: 15, soloLecturaAlEditar: true },
-        { name: 'nombre', label: 'Nombre', req: true, max: 200 },
-        { name: 'categoria', label: 'Categoría', tipo: 'select', req: true, opciones: CATEGORIAS_INSUMO },
-        { name: 'unidadMedida', label: 'Unidad de medida', req: true, max: 30, ayuda: 'Ej.: kg, L. No se puede cambiar una vez aplicado.' },
-        { name: 'tipoProducto', label: 'Tipo de producto', max: 150, vacioComo: null },
-        { name: 'fabricanteMarca', label: 'Fabricante o marca', max: 150, vacioComo: null },
-        { name: 'nivelMinimo', label: 'Nivel mínimo de existencias', tipo: 'number', req: true, min: 0 }],
-      // El código viaja siempre: el servidor exige que no cambie.
-      cuerpo: (valores, modo) => valores,
-      desactivar: { activo: f => f.estado === 'ACTIVO', confirmar: f => `¿Desactivar el insumo «${f.nombre}»? Conserva su historial.` },
-      accionesExtra: [{ label: 'Detalle', ejecutar: detalleInsumo }] });
   }
 
   async function detalleInsumo(insumo) {
