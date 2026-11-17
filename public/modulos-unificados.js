@@ -44,7 +44,10 @@
     }
   }
   async function apiJson(ruta, opts = {}) {
-    if (typeof AGRUL.api === 'function') return AGRUL.api(ruta, opts);
+    if (typeof AGRUL.api === 'function') {
+      const res = await AGRUL.api(ruta, opts);
+      return res && Object.prototype.hasOwnProperty.call(res, 'data') ? res.data : res;
+    }
     const token = AGRUL.token || localStorage.getItem('agrul_auth_token') || '';
     const res = await fetch('/api/v1' + ruta, {
       method: opts.method || 'GET',
