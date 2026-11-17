@@ -831,9 +831,35 @@ export class ProduccionesService {
         }
       }
 
+      if (ciclo.fechaInicioEfectiva && fecha < ciclo.fechaInicioEfectiva) {
+        throw new ProduccionDomainError(
+          'FECHA_COSECHA_INVALIDA',
+          `La fecha de cosecha (${fecha}) no puede ser anterior al inicio de la producción (${ciclo.fechaInicioEfectiva}).`,
+          400,
+        );
+      }
+      if (fecha > hoyIsoTucuman()) {
+        throw new ProduccionDomainError(
+          'FECHA_COSECHA_FUTURA',
+          `La fecha de cosecha (${fecha}) no puede ser futura.`,
+          400,
+        );
+      }
+
       return this.db.transaction(async (tx) => {
-        const codTraz = `COS-${fecha.replace(/-/g, '')}-${Math.floor(100 + Math.random() * 899)}`;
-        const obsFull = destino ? `Destino: ${destino}${observaciones ? ` · ${observaciones}` : ''}` : (observaciones || null);
+        const [{ maxPasada }] = await tx
+          .select({ maxPasada: sql<number>`coalesce(max(${cosechasTable.numeroPasada}), 0)` })
+          .from(cosechasTable)
+          .where(eq(cosechasTable.cicloId, ciclo.id));
+        const numeroPasada = Number(maxPasada || 0) + 1;
+        const codTraz = `COS-${fecha.replace(/-/g, '')}-${numeroPasada}-${Math.floor(100 + Math.random() * 899)}`;
+        const obsPartes = [
+          `Comercializable: ${comercializable} kg`,
+          descarte > 0 ? `Descarte: ${descarte} kg` : null,
+          destino ? `Destino: ${destino}` : null,
+          observaciones || null,
+        ].filter(Boolean);
+        const obsFull = obsPartes.join(' · ');
 
         const [cos] = await tx
           .insert(cosechasTable)
@@ -843,15 +869,28 @@ export class ProduccionesService {
             cicloId: ciclo.id,
             fecha,
             fechaEfectiva: fecha,
+            cosechaProgramadaId: null,
+            origen: 'NO_PROGRAMADA',
+            sector: 'Sector único',
+            numeroPasada,
             cantidadCosechadaKg: total.toFixed(4),
-            cantidadComercializableKg: comercializable.toFixed(4),
-            cantidadDescarteKg: descarte.toFixed(4),
+            cantidadComercializableKg: null,
+            cantidadDescarteKg: null,
             observaciones: obsFull,
             responsableId: usuario.sub,
             registradoPor: usuario.sub,
             estado: 'ACTIVA',
-            origen: 'NO_PROGRAMADA',
             timestampCapturaLocal: new Date().toISOString(),
+            solicitud: {
+              operacionId: randomUUID(),
+              cicloId: ciclo.id,
+              fechaEfectiva: fecha,
+              cantidadCosechadaKg: total,
+              cantidadComercializableKg: comercializable,
+              cantidadDescarteKg: descarte,
+              destino: destino || null,
+              registradoPor: usuario.sub,
+            },
           })
           .returning();
 
@@ -1356,9 +1395,13 @@ export class ProduccionesService {
       return true;
     });
 
+    const getComercial = (c: typeof cosechas[number]) =>
+      Number(c.cantidadComercializableKg ?? (c.solicitud as Record<string, unknown> | null)?.cantidadComercializableKg ?? c.cantidadCosechadaKg ?? 0);
+    const getDescarte = (c: typeof cosechas[number]) =>
+      Number(c.cantidadDescarteKg ?? (c.solicitud as Record<string, unknown> | null)?.cantidadDescarteKg ?? 0);
     const totalKilosCosechados = Math.round(cosechas.reduce((a, c) => a + Number(c.cantidadCosechadaKg || 0), 0) * 100) / 100;
-    const totalKilosComercializables = Math.round(cosechas.reduce((a, c) => a + Number(c.cantidadComercializableKg || 0), 0) * 100) / 100;
-    const totalKilosDescarte = Math.round(cosechas.reduce((a, c) => a + Number(c.cantidadDescarteKg || 0), 0) * 100) / 100;
+    const totalKilosComercializables = Math.round(cosechas.reduce((a, c) => a + getComercial(c), 0) * 100) / 100;
+    const totalKilosDescarte = Math.round(cosechas.reduce((a, c) => a + getDescarte(c), 0) * 100) / 100;
     const porcentajeDescarte = totalKilosCosechados > 0
       ? Math.round((totalKilosDescarte / totalKilosCosechados) * 10000) / 100
       : 0;
