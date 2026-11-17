@@ -790,4 +790,21 @@
       raiz.innerHTML = `<div class="pantalla-cab"><div><h2>Auditoría</h2><p class="ingreso-error">${err.message}</p></div></div>`;
     }
   };
+
+  /* Vincular .recargar() en cada sección para que public/vistas.js las renderice al instante */
+  function vincularVistas() {
+    ['finca', 'produccion', 'insumos', 'auditoria'].forEach((nombre) => {
+      const sec = document.getElementById('vista-' + nombre);
+      if (sec && typeof pantallas[nombre] === 'function') {
+        sec.recargar = () => pantallas[nombre](sec);
+      }
+    });
+    const actual = document.body.dataset.vista;
+    if (actual && ['finca', 'produccion', 'insumos', 'auditoria'].includes(actual)) {
+      const secActual = document.getElementById('vista-' + actual);
+      if (secActual && typeof secActual.recargar === 'function') secActual.recargar();
+    }
+  }
+  vincularVistas();
+  document.addEventListener('agrul:sesion', () => setTimeout(vincularVistas, 0));
 })();
