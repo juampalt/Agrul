@@ -2618,6 +2618,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnToggleDashboard = document.getElementById('btn-toggle-dashboard');
 
   const dashFiltroFinca = document.getElementById('dash-filtro-finca');
+  const dashFiltroProduccion = document.getElementById('dash-filtro-produccion');
   const dashFiltroTemporada = document.getElementById('dash-filtro-temporada');
   const dashFiltroDesde = document.getElementById('dash-filtro-desde');
   const dashFiltroHasta = document.getElementById('dash-filtro-hasta');
@@ -2666,10 +2667,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const dashCostoPromedioHa = document.getElementById('dash-costo-promedio-ha');
   const dashCostoPromedioKg = document.getElementById('dash-costo-promedio-kg');
 
+  async function cargarProduccionesFiltroDashboard() {
+    if (!dashFiltroProduccion) return;
+    try {
+      const fincaId = dashFiltroFinca?.value || '';
+      const res = await fetch('/api/v1/producciones?estado=TODAS');
+      const json = await res.json();
+      if (!json.success || !Array.isArray(json.data)) return;
+      const actual = dashFiltroProduccion.value;
+      const lista = fincaId
+        ? json.data.filter(p => !p.fincaId || p.fincaId === fincaId)
+        : json.data;
+      dashFiltroProduccion.innerHTML = '<option value="">Todas las Producciones</option>' +
+        lista.map(p => `<option value="${p.id}">${p.codigo} · ${p.cultivoNombre} (${p.variedadNombre}) — ${p.estado}</option>`).join('');
+      if (actual && lista.some(p => p.id === actual)) {
+        dashFiltroProduccion.value = actual;
+      }
+    } catch (_) { /* silencioso si no hay sesión aún */ }
+  }
+
   async function cargarDashboardResumen() {
     try {
+      await cargarProduccionesFiltroDashboard();
       const params = new URLSearchParams();
       if (dashFiltroFinca?.value) params.append('fincaId', dashFiltroFinca.value);
+      if (dashFiltroProduccion?.value) params.append('produccionId', dashFiltroProduccion.value);
       if (dashFiltroTemporada?.value.trim()) params.append('temporada', dashFiltroTemporada.value.trim());
       if (dashFiltroDesde?.value) params.append('desde', dashFiltroDesde.value);
       if (dashFiltroHasta?.value) params.append('hasta', dashFiltroHasta.value);
@@ -3163,9 +3185,22 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnDashLimpiarFiltros) {
     btnDashLimpiarFiltros.addEventListener('click', () => {
       if (dashFiltroFinca) dashFiltroFinca.value = '';
+      if (dashFiltroProduccion) dashFiltroProduccion.value = '';
       if (dashFiltroTemporada) dashFiltroTemporada.value = '';
       if (dashFiltroDesde) dashFiltroDesde.value = '';
       if (dashFiltroHasta) dashFiltroHasta.value = '';
+      cargarDashboardResumen();
+    });
+  }
+
+  if (dashFiltroFinca) {
+    dashFiltroFinca.addEventListener('change', () => {
+      if (dashFiltroProduccion) dashFiltroProduccion.value = '';
+      cargarDashboardResumen();
+    });
+  }
+  if (dashFiltroProduccion) {
+    dashFiltroProduccion.addEventListener('change', () => {
       cargarDashboardResumen();
     });
   }

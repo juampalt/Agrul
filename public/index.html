@@ -108,6 +108,7 @@
                               </div>
                               <div class="bento-filters">
                                 <div class="bento-filter-field"><label for="dash-filtro-finca">Finca</label><select id="dash-filtro-finca"><option value="">Todas las Fincas</option></select></div>
+                                <div class="bento-filter-field"><label for="dash-filtro-produccion">Producción</label><select id="dash-filtro-produccion"><option value="">Todas las Producciones</option></select></div>
                                 <div class="bento-filter-field"><label for="dash-filtro-temporada">Temporada</label><input type="text" id="dash-filtro-temporada" placeholder="Ej: 2025/2026"></div>
                                 <div class="bento-filter-field"><label for="dash-filtro-desde">Desde</label><input type="date" id="dash-filtro-desde"></div>
                                 <div class="bento-filter-field"><label for="dash-filtro-hasta">Hasta</label><input type="date" id="dash-filtro-hasta"></div>
@@ -171,20 +172,6 @@
                             <div class="bento-subpanels">
                               <div class="bento-card" id="subpanel-stock-insumos" style="display: none;"><div class="bento-subpanel-head"><h4>Monitor Detallado de Stock</h4><button type="button" class="btn-close-subpanel" data-close-subpanel="subpanel-stock-insumos">&times;</button></div><div class="bento-table-wrap"><table class="bento-table"><thead><tr><th>Insumo</th><th>Categoría</th><th class="num">Stock Actual</th><th class="num">Punto Reposición</th><th class="num">Consumo Acum.</th><th>Nivel de Alerta</th></tr></thead><tbody id="dash-tbody-stock"><tr><td colspan="6" class="text-center">Cargando...</td></tr></tbody></table></div></div>
                               <div class="bento-card" id="subpanel-actividades-urgentes" style="display: none;"><div class="bento-subpanel-head"><h4>Labores Planificadas Urgentes</h4><button type="button" class="btn-close-subpanel" data-close-subpanel="subpanel-actividades-urgentes">&times;</button></div><div class="bento-table-wrap"><table class="bento-table"><thead><tr><th>Código</th><th>Lote</th><th>Labor Agrícola</th><th>Fecha Planificada</th><th class="num">Días de Retraso</th><th>Urgencia</th></tr></thead><tbody id="dash-tbody-actividades"><tr><td colspan="6" class="text-center">Cargando...</td></tr></tbody></table></div></div>
-                              <div class="bento-card" id="subpanel-costos-lote">
-                                <div class="bento-subpanel-head"><div><h4>Estructura de Costos Operativos por Lote</h4><p class="bento-sub">Cómputo analítico: Insumos aplicados + Mano de obra + Maquinaria</p></div><button type="button" id="btn-toggle-tabla-costos" class="btn-bento-sec">Ocultar / Mostrar</button></div>
-                                <div class="bento-cost-strip">
-                                  <div class="bento-cost-pill"><span>Costo Total Explotación</span><strong id="dash-costo-total-global">$0</strong></div>
-                                  <div class="bento-cost-pill"><span>Costo Promedio / ha</span><strong class="txt-info" id="dash-costo-promedio-ha">$0 / ha</strong></div>
-                                  <div class="bento-cost-pill"><span>Costo Promedio / kg</span><strong class="txt-pos" id="dash-costo-promedio-kg">$0 / kg</strong></div>
-                                </div>
-                                <div class="bento-table-wrap" id="dash-costos-table-wrap">
-                                  <table class="bento-table bento-table-financial">
-                                    <thead><tr><th>Lote</th><th>Cultivo</th><th class="num">Superficie</th><th class="num">Cosechado</th><th class="num">Insumos</th><th class="num">Mano de Obra</th><th class="num">Maquinaria</th><th class="num">Costo Total</th><th class="num">Costo / ha</th><th class="num">Costo / kg</th></tr></thead>
-                                    <tbody id="dash-tbody-costos"><tr><td colspan="10" class="text-center">Calculando estructura de costos...</td></tr></tbody>
-                                  </table>
-                                </div>
-                              </div>
                             </div>
                           </div>
                                           </section>

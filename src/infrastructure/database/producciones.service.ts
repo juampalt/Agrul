@@ -1368,20 +1368,30 @@ export class ProduccionesService {
 
   async obtenerDashboardResumenUnificado(filtros: {
     fincaId?: string;
+    produccionId?: string;
     temporada?: string;
     desde?: string;
     hasta?: string;
   } = {}) {
     const finca = await this.obtenerFincaPrincipal();
     const producciones = await this.listarProducciones('TODAS');
-    const produccionesFiltradas = filtros.temporada
+    let produccionesFiltradas = filtros.temporada
       ? producciones.filter((p) => p.fechaInicio.startsWith(filtros.temporada!.slice(0, 4)))
       : producciones;
+    if (filtros.produccionId) {
+      produccionesFiltradas = produccionesFiltradas.filter((p) => p.id === filtros.produccionId);
+    }
 
     const activas = produccionesFiltradas.filter((p) => p.estado === 'ACTIVA');
     const lotes = await this.db.select().from(lotesTable);
-    const lotesScope = filtros.fincaId ? lotes.filter((l) => l.fincaId === filtros.fincaId) : lotes;
-    const superficieFinca = Number(finca.superficieTotalHa || 0);
+    let lotesScope = filtros.fincaId ? lotes.filter((l) => l.fincaId === filtros.fincaId) : lotes;
+    if (filtros.produccionId) {
+      const loteIdsProd = new Set(produccionesFiltradas.map((p) => p.loteId));
+      lotesScope = lotesScope.filter((l) => loteIdsProd.has(l.id));
+    }
+    const superficieFinca = filtros.produccionId
+      ? Math.round(produccionesFiltradas.reduce((acc, p) => acc + p.hectareas, 0) * 100) / 100
+      : Number(finca.superficieTotalHa || 0);
     const superficieEnProduccionHa = Math.round(activas.reduce((acc, p) => acc + p.hectareas, 0) * 100) / 100;
 
     // Cosechas reales desde PostgreSQL
@@ -1389,7 +1399,11 @@ export class ProduccionesService {
     const cosechasRows = await this.db.select().from(cosechasTable);
     const cosechas = cosechasRows.filter((c) => {
       if (c.estado === 'ANULADA') return false;
-      if (cicloIdsSet.size > 0 && c.cicloId && !cicloIdsSet.has(c.cicloId)) return false;
+      if (filtros.produccionId) {
+        if (c.cicloId !== filtros.produccionId) return false;
+      } else if (cicloIdsSet.size > 0 && c.cicloId && !cicloIdsSet.has(c.cicloId)) {
+        return false;
+      }
       if (filtros.desde && c.fecha < filtros.desde) return false;
       if (filtros.hasta && c.fecha > filtros.hasta) return false;
       return true;
@@ -1408,7 +1422,20 @@ export class ProduccionesService {
 
     // Stock e insumos reales desde PostgreSQL
     const { insumos } = await this.obtenerResumenInsumosUnificado();
-    const itemsApl = await this.db.select().from(aplicacionesInsumoItemsTable);
+    const allItemsApl = await this.db.select().from(aplicacionesInsumoItemsTable);
+    let itemsApl = allItemsApl;
+    if (filtros.produccionId) {
+      const actsProd = await this.db
+        .select({ id: actividadesRealizadasTable.id })
+        .from(actividadesRealizadasTable)
+        .where(eq(actividadesRealizadasTable.cicloId, filtros.produccionId));
+      const actIds = new Set(actsProd.map((a) => a.id));
+      const aplsAll = await this.db
+        .select({ id: aplicacionesInsumoTable.id, actividadRealizadaId: aplicacionesInsumoTable.actividadRealizadaId })
+        .from(aplicacionesInsumoTable);
+      const aplIdsProd = new Set(aplsAll.filter((a) => actIds.has(a.actividadRealizadaId)).map((a) => a.id));
+      itemsApl = allItemsApl.filter((it) => aplIdsProd.has(it.aplicacionId));
+    }
     const insumoCatMap = new Map(insumos.map((i) => [i.id, i]));
     const consumoCat = new Map<string, number>();
     const consumoPorInsumo = new Map<string, number>();

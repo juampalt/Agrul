@@ -158,7 +158,7 @@ export class ProduccionesController {
   }
 
   async dashboardResumen(req: FastifyRequest, reply: FastifyReply) {
-    const query = (req.query || {}) as { fincaId?: string; temporada?: string; desde?: string; hasta?: string };
+    const query = (req.query || {}) as { fincaId?: string; produccionId?: string; temporada?: string; desde?: string; hasta?: string };
     const data = await this.service.obtenerDashboardResumenUnificado(query);
     return ok(reply, data);
   }
