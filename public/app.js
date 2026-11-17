@@ -2681,11 +2681,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         json = await res.json();
       }
-      if (!json || !json.success || !Array.isArray(json.data)) return;
+      const rows = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : null;
+      if (!rows) return;
       const actual = dashFiltroProduccion.value;
       const lista = fincaId
-        ? json.data.filter(p => !p.fincaId || p.fincaId === fincaId)
-        : json.data;
+        ? rows.filter(p => !p.fincaId || p.fincaId === fincaId)
+        : rows;
       dashFiltroProduccion.innerHTML = '<option value="">Todas las Producciones</option>' +
         lista.map(p => `<option value="${p.id}">${p.codigo} · ${p.cultivoNombre} (${p.variedadNombre}) — ${p.estado}</option>`).join('');
       if (actual && lista.some(p => p.id === actual)) {
