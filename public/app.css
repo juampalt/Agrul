@@ -1797,7 +1797,8 @@ input:focus, select:focus {
   }
 
   /* Ocultar toda la interfaz interactiva y backdrops */
-  .app-container,
+  body:not(.printing-dashboard) .app-container,
+  body.printing-dashboard .side-nav,
   .modal-header,
   .modal-actions,
   .close-btn,

@@ -340,11 +340,18 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   });
 
   // Configuración de archivos estáticos para el Dashboard Web
-  const publicPath = fileURLToPath(new URL('../../../public', import.meta.url));
+  const candidateDev = fileURLToPath(new URL('../../../public', import.meta.url));
+  const candidateDist = fileURLToPath(new URL('../../../../public', import.meta.url));
+  const publicPath = existsSync(candidateDev)
+    ? candidateDev
+    : existsSync(candidateDist)
+      ? candidateDist
+      : resolve(process.cwd(), 'public');
 
   app.get('/', async (_req, reply) => {
     const indexPath = resolve(publicPath, 'index.html');
     if (existsSync(indexPath)) {
+      reply.header('Cache-Control', 'no-cache, no-store, must-revalidate');
       return reply.type('text/html; charset=utf-8').send(readFileSync(indexPath, 'utf-8'));
     }
     return reply.status(404).send('Not Found');
@@ -353,6 +360,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   app.get('/dashboard', async (_req, reply) => {
     const indexPath = resolve(publicPath, 'index.html');
     if (existsSync(indexPath)) {
+      reply.header('Cache-Control', 'no-cache, no-store, must-revalidate');
       return reply.type('text/html; charset=utf-8').send(readFileSync(indexPath, 'utf-8'));
     }
     return reply.status(404).send('Not Found');
@@ -361,6 +369,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   app.get('/app.css', async (_req, reply) => {
     const cssPath = resolve(publicPath, 'app.css');
     if (existsSync(cssPath)) {
+      reply.header('Cache-Control', 'no-cache, no-store, must-revalidate');
       return reply.type('text/css; charset=utf-8').send(readFileSync(cssPath, 'utf-8'));
     }
     return reply.status(404).send('Not Found');
@@ -369,6 +378,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   app.get('/app.js', async (_req, reply) => {
     const jsPath = resolve(publicPath, 'app.js');
     if (existsSync(jsPath)) {
+      reply.header('Cache-Control', 'no-cache, no-store, must-revalidate');
       return reply.type('application/javascript; charset=utf-8').send(readFileSync(jsPath, 'utf-8'));
     }
     return reply.status(404).send('Not Found');
@@ -378,6 +388,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     app.get(`/${script}`, async (_req, reply) => {
       const jsPath = resolve(publicPath, script);
       if (existsSync(jsPath)) {
+        reply.header('Cache-Control', 'no-cache, no-store, must-revalidate');
         return reply.type('application/javascript; charset=utf-8').send(readFileSync(jsPath, 'utf-8'));
       }
       return reply.status(404).send('Not Found');
@@ -387,6 +398,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   app.get('/offline-manager.js', async (_req, reply) => {
     const jsPath = resolve(publicPath, 'offline-manager.js');
     if (existsSync(jsPath)) {
+      reply.header('Cache-Control', 'no-cache, no-store, must-revalidate');
       return reply.type('application/javascript; charset=utf-8').send(readFileSync(jsPath, 'utf-8'));
     }
     return reply.status(404).send('Not Found');

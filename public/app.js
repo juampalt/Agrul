@@ -3134,7 +3134,13 @@ document.addEventListener('DOMContentLoaded', () => {
     lineas.push('6. ALERTAS DE STOCK DE INSUMOS');
     lineas.push('Insumo;Categoría;Stock Actual;Stock Mínimo;Consumo Acumulado;Nivel Alerta');
     for (const a of kpis.alertasStockInsumos.alertas || []) {
-      lineas.push(`${a.nombreComercial};${a.categoria};${a.stockActual} ${a.unidadMedida};${a.stockMinimo} ${a.unidadMedida};${a.consumoAcumulado} ${a.unidadMedida};${a.nivelAlerta}`);
+      const nombre = a.nombreComercial || a.nombre || 'Insumo';
+      const stockAct = Number(a.stockActual ?? a.stockDisponible ?? 0);
+      const stockMin = Number(a.stockMinimo ?? a.nivelMinimo ?? 0);
+      const consumo = Number(a.consumoAcumulado ?? 0);
+      const u = a.unidadMedida || '';
+      const nivel = a.nivelAlerta || (stockAct <= 0 ? 'CRITICO' : 'BAJO');
+      lineas.push(`${nombre};${a.categoria || 'OTRO'};${stockAct} ${u};${stockMin} ${u};${consumo} ${u};${nivel}`);
     }
     lineas.push('');
 
@@ -3165,7 +3171,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (subpanelActividadesUrgentes) subpanelActividadesUrgentes.style.display = 'block';
     if (dashCostosTableWrap) dashCostosTableWrap.style.display = 'block';
 
+    document.body.classList.add('printing-dashboard');
+    const cleanup = () => {
+      document.body.classList.remove('printing-dashboard');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
     window.print();
+    setTimeout(cleanup, 1500);
   }
 
   // Listeners del Tablero Ejecutivo

@@ -24,6 +24,8 @@ import { Usuario } from './core/domain/entities/usuario.entity.js';
 import { Finca } from './core/domain/entities/finca.entity.js';
 import { Lote } from './core/domain/entities/lote.entity.js';
 import { CryptoAuthService } from './infrastructure/services/crypto-auth.service.js';
+import { ProduccionesController } from './infrastructure/http/controllers/producciones.controller.js';
+import { InMemoryProduccionesService } from '../tests/mocks/in-memory-producciones.service.js';
 
 export async function crearServidorDemo(options: { logger?: boolean } = {}) {
   const lotesRepo = new InMemoryLotesRepository();
@@ -53,16 +55,30 @@ export async function crearServidorDemo(options: { logger?: boolean } = {}) {
   const usuarioAdmin = Usuario.crear({
     id: 'a0000000-0000-4000-8000-000000000001',
     nombre: 'Administrador',
-    apellido: 'Sistema',
+    apellido: 'Agrícola',
     nombreUsuario: 'admin',
     email: 'admin@agrul.local',
+    passwordHash: hashAdmin,
+    salt: saltAdmin,
+    perfil: 'ADMINISTRADOR',
+    estado: 'ACTIVO',
+    debeCambiarPassword: false,
+  });
+  await usuariosRepo.guardar(usuarioAdmin);
+
+  const usuarioSistema = Usuario.crear({
+    id: 'a0000000-0000-4000-8000-000000000003',
+    nombre: 'Administrador',
+    apellido: 'Sistema',
+    nombreUsuario: 'sistema',
+    email: 'sistema@agrul.local',
     passwordHash: hashAdmin,
     salt: saltAdmin,
     perfil: 'ADMIN_SISTEMA',
     estado: 'ACTIVO',
     debeCambiarPassword: false,
   });
-  await usuariosRepo.guardar(usuarioAdmin);
+  await usuariosRepo.guardar(usuarioSistema);
 
   const { hash: hashCampo, salt: saltCampo } = CryptoAuthService.hashPassword('campo123');
   const usuarioCampo = Usuario.crear({
@@ -92,8 +108,9 @@ export async function crearServidorDemo(options: { logger?: boolean } = {}) {
   });
   await fincasRepo.guardar(fincaDemo);
 
-  // Asignar finca al encargado y al admin
+  // Asignar finca al encargado, admin y sistema
   await usuarioFincasRepo.asignarFincas(usuarioAdmin.id, [fincaId]);
+  await usuarioFincasRepo.asignarFincas(usuarioSistema.id, [fincaId]);
   await usuarioFincasRepo.asignarFincas(usuarioCampo.id, [fincaId]);
 
   // Semilla de Lotes Demo
@@ -147,6 +164,7 @@ export async function crearServidorDemo(options: { logger?: boolean } = {}) {
     meteorologiaRepo,
     eventosClimaticosRepo,
     informesRepo,
+    produccionesController: new ProduccionesController(new InMemoryProduccionesService() as any),
     logger: options.logger ?? false,
   });
 

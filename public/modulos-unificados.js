@@ -83,17 +83,11 @@
         `📍 ${finca.nombre || 'Sin nombre'} · ${finca.localidad || '—'}, ${finca.provincia || '—'}${finca.propietario ? ` · Prop.: ${finca.propietario}` : ''}`
       );
 
-      const cabBtn = !mostrarFormulario
-        ? el('button', {
-            type: 'button',
-            class: 'btn btn-secondary',
-            onclick: () => { fincaEditando = true; renderFinca(raiz); },
-          }, '✏️ Editar datos de la Finca')
-        : el('button', {
-            type: 'button',
-            class: 'btn btn-secondary',
-            onclick: () => { fincaEditando = false; renderFinca(raiz); },
-          }, 'Cancelar edición');
+      const cabBtn = el('button', {
+        type: 'button',
+        class: 'btn btn-secondary',
+        onclick: () => abrirModalEditarFinca(raiz, finca),
+      }, '✏️ Editar datos de la Finca');
 
       const distItems = (finca.distribucion || []).map(d =>
         el('div', { class: 'uni-dist-row' },
@@ -127,50 +121,17 @@
         el('div', { class: 'uni-dist-list' }, ...distItems)
       );
 
-      let bloqueDetalle;
-      if (mostrarFormulario) {
-        const form = el('form', { class: 'form-grid glass tarjeta-form', novalidate: true },
-          el('div', { class: 'campo' }, el('label', {}, 'Nombre de la Finca *'), el('input', { id: 'f-nombre', type: 'text', value: finca.nombre, required: true })),
-          el('div', { class: 'campo' }, el('label', {}, 'Propietario'), el('input', { id: 'f-propietario', type: 'text', value: finca.propietario || '' })),
-          el('div', { class: 'campo' }, el('label', {}, 'Hectáreas Totales (ha) *'), el('input', { id: 'f-hectareas', type: 'number', step: '1', min: Math.ceil(finca.hectareasAsignadas || 1), value: finca.hectareasTotales, required: true })),
-          el('div', { class: 'campo' }, el('label', {}, 'Localidad *'), el('input', { id: 'f-localidad', type: 'text', value: finca.localidad, required: true })),
-          el('div', { class: 'campo' }, el('label', {}, 'Provincia *'), el('input', { id: 'f-provincia', type: 'text', value: finca.provincia, required: true })),
-          el('div', { class: 'campo campo-completo' }, el('label', {}, 'Observaciones'), el('textarea', { id: 'f-obs', rows: 3 }, finca.observaciones || '')),
-          el('div', { class: 'form-acciones' },
-            !sinDatosIniciales ? el('button', { type: 'button', class: 'btn btn-secondary', onclick: () => { fincaEditando = false; renderFinca(raiz); } }, 'Cancelar') : null,
-            el('button', { class: 'btn btn-primary', type: 'submit' }, 'Guardar Configuración de Finca')
-          )
-        );
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          try {
-            await apiJson('/finca-resumen', {
-              method: 'PUT',
-              body: {
-                nombre: form.querySelector('#f-nombre').value.trim(),
-                propietario: form.querySelector('#f-propietario').value.trim() || null,
-                hectareasTotales: Number(form.querySelector('#f-hectareas').value),
-                localidad: form.querySelector('#f-localidad').value.trim(),
-                provincia: form.querySelector('#f-provincia').value.trim(),
-                observaciones: form.querySelector('#f-obs').value.trim() || null,
-              },
-            });
-            fincaEditando = false;
-            avisar('Configuración de la finca actualizada.');
-            renderFinca(raiz);
-          } catch (err) {
-            avisar(err.message, 'error');
-          }
-        });
-        bloqueDetalle = form;
-      } else {
-        bloqueDetalle = el('div', { class: 'finca-summary-grid' },
-          el('div', { class: 'finca-summary-field' }, el('span', {}, 'Nombre de la Finca'), el('strong', {}, finca.nombre)),
-          el('div', { class: 'finca-summary-field' }, el('span', {}, 'Propietario'), el('strong', {}, finca.propietario || 'No especificado')),
-          el('div', { class: 'finca-summary-field' }, el('span', {}, 'Ubicación'), el('strong', {}, `${finca.localidad}, ${finca.provincia}`)),
-          el('div', { class: 'finca-summary-field' }, el('span', {}, 'Superficie Declarada'), el('strong', {}, `${finca.hectareasTotales} ha`)),
-          finca.observaciones ? el('div', { class: 'finca-summary-field', style: 'grid-column:1/-1' }, el('span', {}, 'Observaciones'), el('strong', { style: 'font-weight:500' }, finca.observaciones)) : null
-        );
+      const bloqueDetalle = el('div', { class: 'finca-summary-grid' },
+        el('div', { class: 'finca-summary-field' }, el('span', {}, 'Nombre de la Finca'), el('strong', {}, finca.nombre || 'Sin nombre')),
+        el('div', { class: 'finca-summary-field' }, el('span', {}, 'Propietario'), el('strong', {}, finca.propietario || 'No especificado')),
+        el('div', { class: 'finca-summary-field' }, el('span', {}, 'Ubicación'), el('strong', {}, `${finca.localidad || '—'}, ${finca.provincia || '—'}`)),
+        el('div', { class: 'finca-summary-field' }, el('span', {}, 'Superficie Declarada'), el('strong', {}, `${finca.hectareasTotales} ha`)),
+        finca.observaciones ? el('div', { class: 'finca-summary-field', style: 'grid-column:1/-1' }, el('span', {}, 'Observaciones'), el('strong', { style: 'font-weight:500' }, finca.observaciones)) : null
+      );
+
+      if (sinDatosIniciales && !fincaEditando) {
+        fincaEditando = true;
+        setTimeout(() => abrirModalEditarFinca(raiz, finca), 0);
       }
 
       raiz.replaceChildren(
@@ -194,6 +155,59 @@
       raiz.innerHTML = `<div class="pantalla-cab"><div><h2>Finca</h2><p class="ingreso-error">${err.message}</p></div></div>`;
     }
   };
+
+  function abrirModalEditarFinca(raiz, finca) {
+    const minHa = Number(finca.hectareasAsignadas || 0);
+    const form = el('form', { class: 'form-grid', style: 'padding:18px 20px', novalidate: true },
+      el('div', { class: 'campo' }, el('label', {}, 'Nombre de la Finca *'), el('input', { id: 'f-nombre', type: 'text', value: finca.nombre || '', required: true })),
+      el('div', { class: 'campo' }, el('label', {}, 'Propietario'), el('input', { id: 'f-propietario', type: 'text', value: finca.propietario || '' })),
+      el('div', { class: 'campo' }, el('label', {}, `Hectáreas Totales (ha) *${minHa > 0 ? ` (mín. ${minHa} ha)` : ''}`), el('input', { id: 'f-hectareas', type: 'number', step: '1', min: Math.max(1, Math.ceil(minHa)), value: finca.hectareasTotales, required: true })),
+      el('div', { class: 'campo' }, el('label', {}, 'Localidad *'), el('input', { id: 'f-localidad', type: 'text', value: finca.localidad || '', required: true })),
+      el('div', { class: 'campo' }, el('label', {}, 'Provincia *'), el('input', { id: 'f-provincia', type: 'text', value: finca.provincia || '', required: true })),
+      el('div', { class: 'campo campo-completo' }, el('label', {}, 'Observaciones'), el('textarea', { id: 'f-obs', rows: 3 }, finca.observaciones || '')),
+      el('div', { class: 'form-acciones' },
+        el('button', { type: 'button', class: 'btn btn-secondary', onclick: () => { fincaEditando = false; overlay.remove(); } }, 'Cancelar'),
+        el('button', { class: 'btn btn-primary', type: 'submit' }, 'Guardar Configuración de Finca')
+      )
+    );
+    const overlay = el('div', { class: 'modal-backdrop', style: 'display:flex' },
+      el('div', { class: 'modal-dialog glass', style: 'max-width:560px;width:100%' },
+        el('div', { class: 'modal-header' },
+          el('h2', {}, 'Editar Datos de la Finca'),
+          el('button', { class: 'close-btn', type: 'button', onclick: () => { fincaEditando = false; overlay.remove(); } }, '×')
+        ),
+        form
+      )
+    );
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ha = Number(form.querySelector('#f-hectareas').value);
+      if (minHa > 0 && ha < minHa) {
+        avisar(`Las hectáreas totales (${ha} ha) no pueden ser menores a las ya asignadas (${minHa} ha).`, 'error');
+        return;
+      }
+      try {
+        await apiJson('/finca-resumen', {
+          method: 'PUT',
+          body: {
+            nombre: form.querySelector('#f-nombre').value.trim(),
+            propietario: form.querySelector('#f-propietario').value.trim() || null,
+            hectareasTotales: ha,
+            localidad: form.querySelector('#f-localidad').value.trim(),
+            provincia: form.querySelector('#f-provincia').value.trim(),
+            observaciones: form.querySelector('#f-obs').value.trim() || null,
+          },
+        });
+        fincaEditando = false;
+        overlay.remove();
+        avisar('Configuración de la finca actualizada.');
+        renderFinca(raiz);
+      } catch (err) {
+        avisar(err.message, 'error');
+      }
+    });
+    document.body.appendChild(overlay);
+  }
 
   /* =========================================================================
      MÓDULO 2: PRODUCCIÓN (Lista + Detalle Unificado + Trazabilidad y QR)
@@ -917,7 +931,7 @@
         },
           el('div', { class: 'campo campo-completo' }, el('label', {}, 'Insumo *'), sel),
           el('div', { class: 'campo' }, el('label', {}, 'Cantidad *'), el('input', { id: 'is-cant', type: 'number', step: '1', min: '1', required: true })),
-          el('div', { class: 'campo' }, el('label', {}, 'Vencimiento (FEFO)'), el('input', { id: 'is-venc', type: 'date' })),
+          el('div', { class: 'campo' }, el('label', {}, 'Vencimiento (FEFO)'), el('input', { id: 'is-venc', type: 'date', value: hoyInput() })),
           el('div', { class: 'campo campo-completo' }, el('label', {}, 'Proveedor (opcional)'), el('input', { id: 'is-prov', type: 'text', placeholder: 'Proveedor General BPA' })),
           el('div', { class: 'form-acciones' },
             el('button', { type: 'button', class: 'btn btn-secondary', onclick: () => overlay.remove() }, 'Cancelar'),
@@ -939,7 +953,7 @@
         apiJson('/auditoria?limit=50').catch(() => ({ eventos: [], items: [] })),
         apiJson('/usuarios').catch(() => []),
       ]);
-      const logs = Array.isArray(audData) ? audData : (audData.eventos || audData.items || []);
+      const logs = Array.isArray(audData) ? audData : (audData.logs || audData.eventos || audData.items || []);
       const usuarios = Array.isArray(usuariosData) ? usuariosData : (usuariosData.usuarios || []);
 
       const cab = el('div', { class: 'pantalla-cab' },
